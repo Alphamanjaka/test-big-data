@@ -31,3 +31,9 @@ INFO | postgres | component=load | target=patient_plateform | status=success | m
 2026-09-01T10:35:34+00:00 | INFO | extraction | source=imaging | rows_read=2 | status=success
 2026-09-01T10:35:34+00:00 | INFO | deduplication | method=exact_then_probabilistic | master_patients=2 | identity_links=6 | status=success
 2026-09-01T10:35:34+00:00 | INFO | pipeline | status=completed
+2026-09-01T10:39:11+00:00 | INFO | pipeline | status=started
+2026-09-01T10:39:11+00:00 | INFO | extraction | source=pharmacy | rows_read=2 | status=success
+2026-09-01T10:39:11+00:00 | INFO | extraction | source=consultation | rows_read=2 | status=success
+2026-09-01T10:39:11+00:00 | INFO | extraction | source=imaging | rows_read=2 | status=success
+2026-09-01T10:39:11+00:00 | INFO | deduplication | method=exact_then_probabilistic | master_patients=2 | identity_links=6 | status=success
+2026-09-01T10:39:11+00:00 | INFO | pipeline | status=completed

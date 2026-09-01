@@ -1,5 +1,5 @@
 CREATE TABLE
-    raw_patient_record (
+    IF NOT EXISTS raw_patient_record (
         raw_id BIGSERIAL PRIMARY KEY,
         source_system TEXT NOT NULL,
         source_patient_id TEXT NOT NULL,
@@ -9,7 +9,7 @@ CREATE TABLE
     );
 
 CREATE TABLE
-    master_patient (
+    IF NOT EXISTS master_patient (
         master_patient_id TEXT PRIMARY KEY,
         first_name TEXT NOT NULL,
         last_name TEXT NOT NULL,
@@ -20,7 +20,7 @@ CREATE TABLE
     );
 
 CREATE TABLE
-    patient_identity_map (
+    IF NOT EXISTS patient_identity_map (
         identity_map_id BIGSERIAL PRIMARY KEY,
         master_patient_id TEXT NOT NULL REFERENCES master_patient (master_patient_id),
         source_system TEXT NOT NULL,
@@ -38,7 +38,7 @@ CREATE TABLE
     );
 
 CREATE TABLE
-    consent (
+    IF NOT EXISTS consent (
         consent_id BIGSERIAL PRIMARY KEY,
         master_patient_id TEXT NOT NULL REFERENCES master_patient (master_patient_id),
         purpose TEXT NOT NULL,
