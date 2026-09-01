@@ -1,10 +1,18 @@
-from fastapi import FastAPI, HTTPException
+from typing import Annotated
+
+from fastapi import Depends, FastAPI, HTTPException
+from pydantic import BaseModel
 from psycopg.rows import dict_row
 
+from patient_platform.api.auth import UserContext, get_current_user, require_role
+from patient_platform.api.audit import AuditMiddleware
+from patient_platform.api.consent import router as consent_router
 from patient_platform.load.database import connection_factory
 
 
-app = FastAPI(title="Patient Data Platform API", version="0.1.0")
+app = FastAPI(title="Patient Data Platform API", version="0.2.0")
+app.add_middleware(AuditMiddleware)
+app.include_router(consent_router)
 
 
 def query_one(query: str, parameters: tuple = ()) -> dict | None:
@@ -34,7 +42,7 @@ def health() -> dict[str, str]:
 
 
 @app.get("/metrics")
-def metrics() -> dict[str, int]:
+def metrics(user: Annotated[UserContext, Depends(get_current_user)]) -> dict[str, int]:
     row = query_one(
         """
         SELECT
@@ -50,7 +58,7 @@ def metrics() -> dict[str, int]:
 
 
 @app.get("/patients")
-def list_patients() -> list[dict]:
+def list_patients(user: Annotated[UserContext, Depends(get_current_user)]) -> list[dict]:
     return query_all(
         """
         SELECT master_patient_id, first_name, last_name, full_name, birth_date
@@ -61,7 +69,10 @@ def list_patients() -> list[dict]:
 
 
 @app.get("/patients/{master_patient_id}")
-def get_patient(master_patient_id: str) -> dict:
+def get_patient(
+    master_patient_id: str,
+    user: Annotated[UserContext, Depends(get_current_user)],
+) -> dict:
     patient = query_one(
         """
         SELECT master_patient_id, first_name, last_name, full_name, birth_date
@@ -95,3 +106,70 @@ def get_patient(master_patient_id: str) -> dict:
     patient["business_counts"] = {
         key: int(value) for key, value in counts.items()}
     return patient
+
+
+@app.get("/users")
+def list_users(user: Annotated[UserContext, Depends(require_role("admin"))]) -> list[dict]:
+    return query_all(
+        """
+        SELECT user_id, username, role, active, created_at
+        FROM api_user
+        ORDER BY user_id
+        """
+    )
+
+
+class UserCreate(BaseModel):
+    username: str
+    role: str
+
+
+@app.post("/users", status_code=201)
+def create_user(
+    user_data: UserCreate,
+    user: Annotated[UserContext, Depends(require_role("admin"))],
+) -> dict:
+    import secrets
+    import hashlib
+
+    api_key = secrets.token_hex(32)
+    api_key_hash = hashlib.sha256(api_key.encode()).hexdigest()
+
+    connection = connection_factory()
+    try:
+        with connection.cursor() as cursor:
+            cursor.execute(
+                """
+                INSERT INTO api_user (username, api_key_hash, role)
+                VALUES (%s, %s, %s)
+                RETURNING user_id
+                """,
+                (user_data.username, api_key_hash, user_data.role),
+            )
+            user_id = cursor.fetchone()[0]
+        connection.commit()
+    except Exception as e:
+        connection.rollback()
+        raise HTTPException(status_code=400, detail=f"Erreur création utilisateur: {str(e)}")
+    finally:
+        connection.close()
+
+    return {
+        "user_id": user_id,
+        "username": user_data.username,
+        "role": user_data.role,
+        "api_key": api_key,
+        "message": "Conservez cette clé API, elle ne sera plus affichée.",
+    }
+
+
+@app.get("/audit")
+def list_audit_logs(user: Annotated[UserContext, Depends(require_role("admin"))]) -> list[dict]:
+    return query_all(
+        """
+        SELECT audit_id, user_id, username, endpoint, method, response_status, ip_address, accessed_at
+        FROM access_audit
+        ORDER BY accessed_at DESC
+        LIMIT 100
+        """
+    )

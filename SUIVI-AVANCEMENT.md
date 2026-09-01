@@ -21,6 +21,11 @@ Dernière mise à jour : 2026-09-01
 | Cas de démonstration       | Terminé | Deux tests passent et le script produit les liens attendus     |
 | Journalisation temps réel  | Terminé | `logs/runtime.log` alimenté à chaque exécution du pipeline     |
 | Configuration Git          | Terminé | `.gitignore` et `.gitattributes` ajoutés, dépôt sur `main`     |
+| Contrôle d'accès API       | Terminé | Authentification par clé API + 3 rôles (admin, analyst, viewer) |
+| Audit des accès            | Terminé | Table `access_audit` alimentée à chaque requête API            |
+| Gestion du consentement    | Terminé | Endpoints CRUD `consent` + consentements de démo               |
+| Journal d'audit consultable| Terminé | Endpoint `/audit` réservé admin                                |
+| Autentification Dashboard  | Terminé | Sidebar à clé API + affichage selon le rôle                    |
 
 ## Validations réalisées
 
@@ -35,6 +40,11 @@ Dernière mise à jour : 2026-09-01
 - API : `/health`, `/metrics` et `/patients` validés sur `patient_plateform`.
 - Dashboard : serveur démarré sur `http://localhost:8501`, réponse HTTP `200`, requêtes mises en cache 30 secondes.
 - Configuration Git vérifiée : identité locale configurée, aucun commit encore créé.
+- `pytest -q` : 14 tests réussis (pipeline, API, auth, audit, consent).
+- Contrôle d'accès : token API requis sur les endpoints, roles appliqués (admin/analyst/viewer).
+- Endpoint `/audit` : journal d'accès réservé admin.
+- Endpoint `/consent` : lecture admin/analyst, écriture admin.
+- `scripts/init_governance.py` : crée les 3 utilisateurs de démo et les consentements.
 
 ## Hypothèses et blocages
 
@@ -42,5 +52,7 @@ Dernière mise à jour : 2026-09-01
 - Les fichiers CSV restent les sources d'entrée du MVP et PostgreSQL est maintenant la cible centrale.
 - Aucun blocage technique actuel pour le pipeline local.
 - La connexion au serveur PostgreSQL est configurée pour `patient_plateform`.
-- La gouvernance opérationnelle avancée et les contrôles d'accès restent à développer.
+- Les clés API sont stockées hachées (SHA-256) dans la table `api_user`.
+- Les clés API de démo sont régénérées à chaque exécution de `scripts/init_governance.py`.
 - Les lignes RAW sont append-only : les relances conservent l'historique des extractions.
+- La gouvernance avancée (audit, rôles, consentement) est en place ; l'exposition réelle des payloads RAW reste désactivée par conception.

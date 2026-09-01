@@ -78,3 +78,25 @@ CREATE TABLE
         payload JSONB NOT NULL,
         UNIQUE (source_system, source_record_id)
     );
+
+CREATE TABLE
+    IF NOT EXISTS api_user (
+        user_id SERIAL PRIMARY KEY,
+        username TEXT UNIQUE NOT NULL,
+        api_key_hash TEXT NOT NULL,
+        role TEXT NOT NULL CHECK (role IN ('admin', 'analyst', 'viewer')),
+        active BOOLEAN DEFAULT TRUE,
+        created_at TIMESTAMPTZ DEFAULT NOW ()
+    );
+
+CREATE TABLE
+    IF NOT EXISTS access_audit (
+        audit_id BIGSERIAL PRIMARY KEY,
+        user_id INTEGER REFERENCES api_user (user_id),
+        username TEXT NOT NULL,
+        endpoint TEXT NOT NULL,
+        method TEXT NOT NULL,
+        response_status INTEGER,
+        ip_address TEXT,
+        accessed_at TIMESTAMPTZ DEFAULT NOW ()
+    );

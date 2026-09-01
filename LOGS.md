@@ -75,3 +75,18 @@ INFO | validation | test_suite=pytest | status=success | tests_passed=3
 2026-09-01T10:46:27+00:00 | INFO | extraction | source=imaging | domain=imaging_exam | rows_read=2 | status=success
 2026-09-01T10:46:27+00:00 | INFO | deduplication | method=exact_then_probabilistic | master_patients=2 | identity_links=6 | status=success
 2026-09-01T10:46:27+00:00 | INFO | pipeline | status=completed
+
+## 2026-09-01 — Gouvernance et contrôle d'accès
+
+```text
+INFO | governance | schema | tables=api_user,access_audit | status=success | added
+INFO | governance | auth | method=api_key_sha256 | roles=admin,analyst,viewer | status=success
+INFO | governance | api | protected_endpoints=metrics,patients,users,audit,consent | status=success
+INFO | governance | audit_middleware | tabled=access_audit | status=success | every_request_logged
+INFO | governance | consent | endpoints=GET,GET_by_id,POST | status=success | purposes=api_access,research,analytics
+INFO | governance | dashboard | auth=sidebar_api_key | status=success | role_aware_views
+INFO | governance | init | script=scripts/init_governance.py | status=success | demo_users=3
+INFO | validation | test_suite=pytest | status=success | tests_passed=14
+INFO | validation | compile=python_compileall | status=success
+INFO | security | api_keys | storage=hashed_sha256 | plaintext_never_persisted | status=success
+```
