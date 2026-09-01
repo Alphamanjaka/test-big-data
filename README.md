@@ -14,6 +14,14 @@ Le pipeline local lit les trois sources CSV de `data/raw`, standardise les patie
 
 Les événements d'exécution sont ajoutés en temps réel dans `logs/runtime.log` et recopiés dans `LOGS.md` pour l'audit du projet.
 
+Quand la base `patient_plateform` existe, le chargement se lance avec :
+
+```powershell
+.venv\Scripts\python load_to_postgres.py
+```
+
+La connexion utilise `DATABASE_URL` depuis `.env`; cette valeur ne doit jamais être commitée.
+
 ## Structure
 
 - `src/patient_platform/extract/`: lecture des sources
