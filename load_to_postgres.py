@@ -23,5 +23,5 @@ if __name__ == "__main__":
     apply_schema()
     result = run_pipeline("data/raw")
     PostgresLoader(connection_factory).load(
-        result.patients, result.identity_map)
+        result.patients, result.identity_map, result.raw_records)
     print("Schema applique et donnees synthetiques chargees dans PostgreSQL.")

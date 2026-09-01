@@ -27,7 +27,7 @@ La connexion utilise `DATABASE_URL` depuis `.env`; cette valeur ne doit jamais Ã
 - `src/patient_platform/extract/`: lecture des sources
 - `src/patient_platform/transform/`: modele canonique et standardisation
 - `src/patient_platform/deduplication/`: matching exact et probabiliste
-- `src/patient_platform/load/`: futur chargement PostgreSQL
+- `src/patient_platform/load/`: chargement RAW, master et identity map vers PostgreSQL
 - `src/patient_platform/api/`: futurs endpoints
 - `src/patient_platform/dashboard/`: futur dashboard
 - `tests/`: cas critiques du MVP

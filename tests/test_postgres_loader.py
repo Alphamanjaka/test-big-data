@@ -42,11 +42,11 @@ def test_postgres_loader_writes_masters_and_identity_map(tmp_path):
     connection = FakeConnection()
 
     PostgresLoader(lambda: connection).load(
-        result.patients, result.identity_map)
+        result.patients, result.identity_map, result.raw_records)
 
-    assert len(connection.cursor_instance.calls) == 8
+    assert len(connection.cursor_instance.calls) == 14
     assert connection.committed is True
     assert connection.rolled_back is False
     assert connection.closed is True
-    assert connection.cursor_instance.calls[0][1][0] == "PAT-0001"
+    assert connection.cursor_instance.calls[0][1][0] == "pharmacy"
     assert connection.cursor_instance.calls[-1][1][0] == "PAT-0002"

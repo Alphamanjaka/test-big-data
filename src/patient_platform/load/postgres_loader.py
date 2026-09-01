@@ -2,7 +2,10 @@ from collections.abc import Callable
 from typing import Any
 
 from patient_platform.deduplication.matcher import MatchDecision
+from patient_platform.extract.raw_record import RawPatientRecord
 from patient_platform.transform.canonical import CanonicalPatient
+
+from psycopg.types.json import Json
 
 
 class PostgresLoader:
@@ -15,6 +18,7 @@ class PostgresLoader:
         self,
         patients: list[CanonicalPatient],
         identity_map: list[MatchDecision],
+        raw_records: list[RawPatientRecord] | None = None,
     ) -> None:
         patients_by_source = {
             (patient.source_system, patient.source_patient_id): patient
@@ -30,6 +34,21 @@ class PostgresLoader:
         connection = self.connection_factory()
         try:
             with connection.cursor() as cursor:
+                for raw_record in raw_records or []:
+                    cursor.execute(
+                        """
+                        INSERT INTO raw_patient_record
+                            (source_system, source_patient_id, source_file, payload)
+                        VALUES (%s, %s, %s, %s)
+                        """,
+                        (
+                            raw_record.source_system,
+                            raw_record.source_patient_id,
+                            raw_record.source_file,
+                            Json(raw_record.payload),
+                        ),
+                    )
+
                 for master_patient_id, source_key in master_sources.items():
                     patient = patients_by_source[source_key]
                     cursor.execute(
