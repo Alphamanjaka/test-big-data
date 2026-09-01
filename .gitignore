@@ -1,0 +1,28 @@
+# Python environments and caches
+.venv/
+venv/
+__pycache__/
+*.py[cod]
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+
+# Local configuration and secrets
+.env
+.env.*
+!.env.example
+
+# Runtime logs are generated locally; the audited summary stays in LOGS.md
+logs/*.log
+!logs/.gitkeep
+
+# Build and packaging artifacts
+build/
+dist/
+*.egg-info/
+
+# IDE and OS files
+.vscode/settings.json
+.idea/
+.DS_Store
+Thumbs.db

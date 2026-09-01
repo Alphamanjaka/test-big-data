@@ -1,0 +1,23 @@
+﻿# Journal du projet
+
+## 2026-09-01
+
+```text
+INFO | architecture | scope=mvp | status=success | python_package_structure_created
+INFO | extraction | sources=3_csv_synthetiques | status=success | rows_read=6
+INFO | transformation | target=canonical_patient | status=success | date_and_phone_standardized
+INFO | deduplication | method=exact_then_probabilistic | status=success | master_patients=2 | identity_links=6
+INFO | validation | test_suite=pytest | status=success | tests_passed=2
+INFO | validation | compile=python_compileall | status=success
+```
+
+Les journaux ne contiennent aucune donnée patient nominative. Les décisions de matching sont conservées dans l’identity map produite par le pipeline.
+2026-09-01T08:56:49+00:00 | INFO | pipeline | status=started
+2026-09-01T08:56:49+00:00 | INFO | extraction | source=pharmacy | rows_read=2 | status=success
+2026-09-01T08:56:49+00:00 | INFO | extraction | source=consultation | rows_read=2 | status=success
+2026-09-01T08:56:49+00:00 | INFO | extraction | source=imaging | rows_read=2 | status=success
+2026-09-01T08:56:49+00:00 | INFO | deduplication | method=exact_then_probabilistic | master_patients=2 | identity_links=6 | status=success
+2026-09-01T08:56:49+00:00 | INFO | pipeline | status=completed
+INFO | git | branch=main | status=initialized | author_configured
+INFO | git | configuration=.gitignore,.gitattributes | status=success
+INFO | validation | test_suite=pytest | status=success | tests_passed=3

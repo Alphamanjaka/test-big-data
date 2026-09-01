@@ -1,0 +1,14 @@
+{
+  "pharmacy": {
+    "type": "csv",
+    "patient_source": "data/raw/pharmacy/patients.csv"
+  },
+  "consultation": {
+    "type": "csv",
+    "patient_source": "data/raw/consultation/patients.csv"
+  },
+  "imaging": {
+    "type": "csv",
+    "patient_source": "data/raw/imaging/patients.csv"
+  }
+}
