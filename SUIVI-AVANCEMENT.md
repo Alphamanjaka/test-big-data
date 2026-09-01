@@ -16,7 +16,7 @@ Dernière mise à jour : 2026-09-01
 | Données métier             | Terminé | Achats, consultations et examens reliés aux patients master    |
 | Identity mapping           | Terminé | Six enregistrements source reliés à deux masters               |
 | PostgreSQL central         | Terminé | Schéma idempotent et données chargées dans `patient_plateform` |
-| API                        | À faire | Module réservé, endpoints non implémentés                      |
+| API                        | Terminé | Endpoints lecture seule validés sur PostgreSQL                 |
 | Dashboard                  | À faire | Module réservé, visualisation non implémentée                  |
 | Cas de démonstration       | Terminé | Deux tests passent et le script produit les liens attendus     |
 | Journalisation temps réel  | Terminé | `logs/runtime.log` alimenté à chaque exécution du pipeline     |
@@ -32,6 +32,7 @@ Dernière mise à jour : 2026-09-01
 - Vérification données métier : `2` achats, `2` consultations et `2` examens présents.
 - Relance de `python load_to_postgres.py` : réussie sans doublonner les lignes (`2` masters, `6` identity links).
 - `logs/runtime.log` : événements pipeline, extraction et déduplication écrits immédiatement.
+- API : `/health`, `/metrics` et `/patients` validés sur `patient_plateform`.
 - Configuration Git vérifiée : identité locale configurée, aucun commit encore créé.
 
 ## Hypothèses et blocages
@@ -41,3 +42,4 @@ Dernière mise à jour : 2026-09-01
 - Aucun blocage technique actuel pour le pipeline local.
 - La connexion au serveur PostgreSQL est configurée pour `patient_plateform`.
 - La gouvernance opérationnelle et le dashboard restent à développer.
+- Les lignes RAW sont append-only : les relances conservent l'historique des extractions.

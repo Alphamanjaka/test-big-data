@@ -25,6 +25,9 @@ INFO | postgres | component=raw_load | target=raw_patient_record | status=succes
 INFO | validation | traceability=raw_to_master | status=success | raw=6 | masters=2 | identity_links=6
 INFO | postgres | component=business_load | target=patient_plateform | status=success | purchases=2 | consultations=2 | exams=2
 INFO | validation | business_rerun=true | status=success | duplicate_business_rows=0
+INFO | api | endpoints=health,metrics,patients | target=patient_plateform | status=success
+INFO | api | health=ok | database=connected | status=success
+INFO | api | metrics=available | raw_records=18 | master_patients=2 | identity_links=6 | status=success
 INFO | postgres | component=connection | host=localhost | port=5432 | status=server_reachable | database=missing
 INFO | postgres | component=connection | host=localhost | port=5432 | status=success | database=patient_plateform
 INFO | postgres | component=schema | target=patient_plateform | status=success | tables=4
