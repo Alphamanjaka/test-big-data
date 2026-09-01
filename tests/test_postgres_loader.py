@@ -42,9 +42,10 @@ def test_postgres_loader_writes_masters_and_identity_map(tmp_path):
     connection = FakeConnection()
 
     PostgresLoader(lambda: connection).load(
-        result.patients, result.identity_map, result.raw_records)
+        result.patients, result.identity_map, result.raw_records,
+        result.business_records)
 
-    assert len(connection.cursor_instance.calls) == 14
+    assert len(connection.cursor_instance.calls) == 20
     assert connection.committed is True
     assert connection.rolled_back is False
     assert connection.closed is True

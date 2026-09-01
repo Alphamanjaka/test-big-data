@@ -1,14 +1,17 @@
 {
   "pharmacy": {
     "type": "csv",
-    "patient_source": "data/raw/pharmacy/patients.csv"
+    "patient_source": "data/raw/pharmacy/patients.csv",
+    "business_source": "data/raw/pharmacy/achats.csv"
   },
   "consultation": {
     "type": "csv",
-    "patient_source": "data/raw/consultation/patients.csv"
+    "patient_source": "data/raw/consultation/patients.csv",
+    "business_source": "data/raw/consultation/consultations.csv"
   },
   "imaging": {
     "type": "csv",
-    "patient_source": "data/raw/imaging/patients.csv"
+    "patient_source": "data/raw/imaging/patients.csv",
+    "business_source": "data/raw/imaging/examens.csv"
   }
 }

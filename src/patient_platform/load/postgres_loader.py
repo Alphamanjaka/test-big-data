@@ -3,6 +3,7 @@ from typing import Any
 
 from patient_platform.deduplication.matcher import MatchDecision
 from patient_platform.extract.raw_record import RawPatientRecord
+from patient_platform.extract.business_record import BusinessRecord
 from patient_platform.transform.canonical import CanonicalPatient
 
 from psycopg.types.json import Json
@@ -19,6 +20,7 @@ class PostgresLoader:
         patients: list[CanonicalPatient],
         identity_map: list[MatchDecision],
         raw_records: list[RawPatientRecord] | None = None,
+        business_records: list[BusinessRecord] | None = None,
     ) -> None:
         patients_by_source = {
             (patient.source_system, patient.source_patient_id): patient
@@ -47,6 +49,34 @@ class PostgresLoader:
                             raw_record.source_file,
                             Json(raw_record.payload),
                         ),
+                    )
+
+                source_to_master = {
+                    (decision.source_system, decision.source_patient_id): decision.master_patient_id
+                    for decision in identity_map
+                }
+                for record in business_records or []:
+                    master_patient_id = source_to_master.get(
+                        (record.source_system, record.source_patient_id))
+                    if master_patient_id is None:
+                        raise ValueError(
+                            f"No identity mapping for {record.source_system}:{record.source_patient_id}")
+                    table_by_domain = {
+                        "purchase": "medicine_purchase",
+                        "consultation": "patient_consultation",
+                        "imaging_exam": "imaging_exam",
+                    }
+                    cursor.execute(
+                        f"""
+                        INSERT INTO {table_by_domain[record.domain]}
+                            (source_record_id, master_patient_id, source_system,
+                             source_patient_id, payload)
+                        VALUES (%s, %s, %s, %s, %s)
+                        ON CONFLICT (source_system, source_record_id) DO NOTHING
+                        """,
+                        (record.source_record_id, master_patient_id,
+                         record.source_system, record.source_patient_id,
+                         Json(record.payload)),
                     )
 
                 for master_patient_id, source_key in master_sources.items():

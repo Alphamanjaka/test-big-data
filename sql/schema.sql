@@ -45,3 +45,36 @@ CREATE TABLE
         granted BOOLEAN NOT NULL,
         recorded_at TIMESTAMPTZ NOT NULL DEFAULT NOW ()
     );
+
+CREATE TABLE
+    IF NOT EXISTS medicine_purchase (
+        purchase_id BIGSERIAL PRIMARY KEY,
+        source_record_id TEXT NOT NULL,
+        master_patient_id TEXT NOT NULL REFERENCES master_patient (master_patient_id),
+        source_system TEXT NOT NULL,
+        source_patient_id TEXT NOT NULL,
+        payload JSONB NOT NULL,
+        UNIQUE (source_system, source_record_id)
+    );
+
+CREATE TABLE
+    IF NOT EXISTS patient_consultation (
+        consultation_id BIGSERIAL PRIMARY KEY,
+        source_record_id TEXT NOT NULL,
+        master_patient_id TEXT NOT NULL REFERENCES master_patient (master_patient_id),
+        source_system TEXT NOT NULL,
+        source_patient_id TEXT NOT NULL,
+        payload JSONB NOT NULL,
+        UNIQUE (source_system, source_record_id)
+    );
+
+CREATE TABLE
+    IF NOT EXISTS imaging_exam (
+        exam_id BIGSERIAL PRIMARY KEY,
+        source_record_id TEXT NOT NULL,
+        master_patient_id TEXT NOT NULL REFERENCES master_patient (master_patient_id),
+        source_system TEXT NOT NULL,
+        source_patient_id TEXT NOT NULL,
+        payload JSONB NOT NULL,
+        UNIQUE (source_system, source_record_id)
+    );

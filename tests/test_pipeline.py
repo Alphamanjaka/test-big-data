@@ -11,6 +11,10 @@ def test_pipeline_creates_explicable_identity_map_for_duplicate_patient(tmp_path
     )
 
     assert len(result.patients) == 6
+    assert len(result.business_records) == 6
+    assert {record.domain for record in result.business_records} == {
+        "purchase", "consultation", "imaging_exam"
+    }
     assert len(
         {decision.master_patient_id for decision in result.identity_map}) == 2
 

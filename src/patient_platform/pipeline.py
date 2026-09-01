@@ -3,6 +3,7 @@ from pathlib import Path
 
 from patient_platform.deduplication.matcher import MatchDecision, deduplicate
 from patient_platform.extract.csv_extractor import CSVExtractor
+from patient_platform.extract.business_record import BusinessRecord
 from patient_platform.extract.raw_record import RawPatientRecord
 from patient_platform.logging_utils import RuntimeLogger
 from patient_platform.transform.canonical import CanonicalPatient, standardize_patients
@@ -11,6 +12,7 @@ from patient_platform.transform.canonical import CanonicalPatient, standardize_p
 @dataclass(frozen=True)
 class PipelineResult:
     raw_records: list[RawPatientRecord]
+    business_records: list[BusinessRecord]
     patients: list[CanonicalPatient]
     identity_map: list[MatchDecision]
 
@@ -30,6 +32,7 @@ def run_pipeline(
     }
     canonical_patients: list[CanonicalPatient] = []
     raw_records: list[RawPatientRecord] = []
+    business_records: list[BusinessRecord] = []
     source_id_columns = {
         "pharmacy": "client_id",
         "consultation": "patient_code",
@@ -51,6 +54,26 @@ def run_pipeline(
         canonical_patients.extend(
             standardize_patients(raw_frame, source_system))
 
+    business_sources = {
+        "pharmacy": ("purchase", root / "pharmacy" / "achats.csv", "purchase_id", "customer_id"),
+        "consultation": ("consultation", root / "consultation" / "consultations.csv", "consultation_id", "patient_id"),
+        "imaging": ("imaging_exam", root / "imaging" / "examens.csv", "exam_id", "patient_code"),
+    }
+    for source_system, (domain, file_path, record_column, patient_column) in business_sources.items():
+        business_frame = CSVExtractor(file_path, source_system).extract()
+        logger.info("extraction", source=source_system, domain=domain,
+                    rows_read=len(business_frame), status="success")
+        business_records.extend(
+            BusinessRecord(
+                domain=domain,
+                source_record_id=str(row[record_column]),
+                source_system=source_system,
+                source_patient_id=str(row[patient_column]),
+                payload={key: str(value) for key, value in row.items()},
+            )
+            for _, row in business_frame.iterrows()
+        )
+
     identity_map = deduplicate(canonical_patients)
     logger.info(
         "deduplication",
@@ -61,4 +84,4 @@ def run_pipeline(
         status="success",
     )
     logger.info("pipeline", status="completed")
-    return PipelineResult(raw_records, canonical_patients, identity_map)
+    return PipelineResult(raw_records, business_records, canonical_patients, identity_map)

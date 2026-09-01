@@ -1,0 +1,3 @@
+exam_id,patient_code,exam_type,exam_date
+EXA-001,IMG001,Scanner thoracique,2026-01-22
+EXA-002,IMG002,Radiographie,2026-01-23

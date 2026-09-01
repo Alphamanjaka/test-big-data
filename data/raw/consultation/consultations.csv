@@ -1,0 +1,3 @@
+consultation_id,patient_id,diagnostic,consultation_date
+CON-001,50,Hypertension,2026-01-20
+CON-002,51,Grippe,2026-01-21
