@@ -17,7 +17,7 @@ Dernière mise à jour : 2026-09-01
 | Identity mapping           | Terminé | Six enregistrements source reliés à deux masters               |
 | PostgreSQL central         | Terminé | Schéma idempotent et données chargées dans `patient_plateform` |
 | API                        | Terminé | Endpoints lecture seule validés sur PostgreSQL                 |
-| Dashboard                  | Terminé | Vue Streamlit validée sur PostgreSQL                            |
+| Dashboard                  | Terminé | Vue Streamlit validée sur PostgreSQL                           |
 | Cas de démonstration       | Terminé | Deux tests passent et le script produit les liens attendus     |
 | Journalisation temps réel  | Terminé | `logs/runtime.log` alimenté à chaque exécution du pipeline     |
 | Configuration Git          | Terminé | `.gitignore` et `.gitattributes` ajoutés, dépôt sur `main`     |
