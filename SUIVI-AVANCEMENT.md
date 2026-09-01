@@ -17,14 +17,14 @@ Dernière mise à jour : 2026-09-01
 | Identity mapping           | Terminé | Six enregistrements source reliés à deux masters               |
 | PostgreSQL central         | Terminé | Schéma idempotent et données chargées dans `patient_plateform` |
 | API                        | Terminé | Endpoints lecture seule validés sur PostgreSQL                 |
-| Dashboard                  | À faire | Module réservé, visualisation non implémentée                  |
+| Dashboard                  | Terminé | Vue Streamlit validée sur PostgreSQL                            |
 | Cas de démonstration       | Terminé | Deux tests passent et le script produit les liens attendus     |
 | Journalisation temps réel  | Terminé | `logs/runtime.log` alimenté à chaque exécution du pipeline     |
 | Configuration Git          | Terminé | `.gitignore` et `.gitattributes` ajoutés, dépôt sur `main`     |
 
 ## Validations réalisées
 
-- `pytest -q` : 3 tests réussis.
+- `pytest -q` : 4 tests réussis.
 - `python -m compileall -q src` : compilation réussie.
 - `python run_pipeline.py` : trois sources traitées, deux patients master créés.
 - `python load_to_postgres.py` : schéma appliqué et données chargées dans `patient_plateform`.
@@ -33,6 +33,7 @@ Dernière mise à jour : 2026-09-01
 - Relance de `python load_to_postgres.py` : réussie sans doublonner les lignes (`2` masters, `6` identity links).
 - `logs/runtime.log` : événements pipeline, extraction et déduplication écrits immédiatement.
 - API : `/health`, `/metrics` et `/patients` validés sur `patient_plateform`.
+- Dashboard : serveur démarré sur `http://localhost:8501`, réponse HTTP `200`.
 - Configuration Git vérifiée : identité locale configurée, aucun commit encore créé.
 
 ## Hypothèses et blocages
@@ -41,5 +42,5 @@ Dernière mise à jour : 2026-09-01
 - Les fichiers CSV restent les sources d'entrée du MVP et PostgreSQL est maintenant la cible centrale.
 - Aucun blocage technique actuel pour le pipeline local.
 - La connexion au serveur PostgreSQL est configurée pour `patient_plateform`.
-- La gouvernance opérationnelle et le dashboard restent à développer.
+- La gouvernance opérationnelle avancée et les contrôles d'accès restent à développer.
 - Les lignes RAW sont append-only : les relances conservent l'historique des extractions.

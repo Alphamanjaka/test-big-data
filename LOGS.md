@@ -28,6 +28,9 @@ INFO | validation | business_rerun=true | status=success | duplicate_business_ro
 INFO | api | endpoints=health,metrics,patients | target=patient_plateform | status=success
 INFO | api | health=ok | database=connected | status=success
 INFO | api | metrics=available | raw_records=18 | master_patients=2 | identity_links=6 | status=success
+INFO | dashboard | framework=streamlit | port=8501 | status=started
+INFO | dashboard | smoke_test=http_200 | status=success
+INFO | validation | test_suite=pytest | status=success | tests_passed=4
 INFO | postgres | component=connection | host=localhost | port=5432 | status=server_reachable | database=missing
 INFO | postgres | component=connection | host=localhost | port=5432 | status=success | database=patient_plateform
 INFO | postgres | component=schema | target=patient_plateform | status=success | tables=4

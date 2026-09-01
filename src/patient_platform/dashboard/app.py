@@ -77,8 +77,7 @@ with right:
         ORDER BY master_patient_id
         """
     )
-    st.dataframe(pd.DataFrame(patients), hide_index=True,
-                 use_container_width=True)
+    st.dataframe(pd.DataFrame(patients), hide_index=True, width="stretch")
 
 if patients:
     selected_id = st.selectbox(
@@ -99,5 +98,4 @@ if patients:
         (selected_id,),
     )
     st.subheader(f"Identity map - {selected_id}")
-    st.dataframe(pd.DataFrame(links), hide_index=True,
-                 use_container_width=True)
+    st.dataframe(pd.DataFrame(links), hide_index=True, width="stretch")
