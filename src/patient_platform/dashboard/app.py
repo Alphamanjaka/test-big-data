@@ -9,6 +9,7 @@ st.set_page_config(page_title="Patient Data Platform",
                    page_icon="+", layout="wide")
 
 
+@st.cache_data(ttl=30)
 def query_all(query: str, parameters: tuple = ()) -> list[dict]:
     connection = connection_factory()
     try:
@@ -19,6 +20,7 @@ def query_all(query: str, parameters: tuple = ()) -> list[dict]:
         connection.close()
 
 
+@st.cache_data(ttl=30)
 def query_one(query: str, parameters: tuple = ()) -> dict:
     connection = connection_factory()
     try:

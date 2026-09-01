@@ -33,7 +33,7 @@ Dernière mise à jour : 2026-09-01
 - Relance de `python load_to_postgres.py` : réussie sans doublonner les lignes (`2` masters, `6` identity links).
 - `logs/runtime.log` : événements pipeline, extraction et déduplication écrits immédiatement.
 - API : `/health`, `/metrics` et `/patients` validés sur `patient_plateform`.
-- Dashboard : serveur démarré sur `http://localhost:8501`, réponse HTTP `200`.
+- Dashboard : serveur démarré sur `http://localhost:8501`, réponse HTTP `200`, requêtes mises en cache 30 secondes.
 - Configuration Git vérifiée : identité locale configurée, aucun commit encore créé.
 
 ## Hypothèses et blocages

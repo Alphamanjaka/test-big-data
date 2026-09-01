@@ -31,6 +31,7 @@ INFO | api | metrics=available | raw_records=18 | master_patients=2 | identity_l
 INFO | dashboard | framework=streamlit | port=8501 | status=started
 INFO | dashboard | smoke_test=http_200 | status=success
 INFO | validation | test_suite=pytest | status=success | tests_passed=4
+INFO | dashboard | framework=streamlit | cache_ttl_seconds=30 | status=optimized
 INFO | postgres | component=connection | host=localhost | port=5432 | status=server_reachable | database=missing
 INFO | postgres | component=connection | host=localhost | port=5432 | status=success | database=patient_plateform
 INFO | postgres | component=schema | target=patient_plateform | status=success | tables=4
