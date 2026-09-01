@@ -12,7 +12,7 @@ Dernière mise à jour : 2026-09-01
 | Mapping et standardisation | Terminé | Modèle canonique, dates et téléphones testés                   |
 | Nettoyage                  | Terminé | Normalisation des espaces, accents et formats                  |
 | Déduplication explicable   | Terminé | Matching exact puis probabiliste avec score et explication     |
-| Traçabilité RAW            | Terminé | Six lignes originales chargées dans `raw_patient_record`      |
+| Traçabilité RAW            | Terminé | Six lignes originales chargées dans `raw_patient_record`       |
 | Identity mapping           | Terminé | Six enregistrements source reliés à deux masters               |
 | PostgreSQL central         | Terminé | Schéma idempotent et données chargées dans `patient_plateform` |
 | API                        | À faire | Module réservé, endpoints non implémentés                      |
