@@ -67,14 +67,14 @@ def generate_exams(patients_df: pd.DataFrame, seed: int = settings.RANDOM_SEED) 
     rows: list[dict] = []
     counter = 0
 
-    for person_identifier in patients_df["id_personne"]:
+    for patient_code in patients_df["id_personne"]:
         n_exams = rng.randint(MIN_EXAMS_PER_PATIENT, MAX_EXAMS_PER_PATIENT)
         for _ in range(n_exams):
             counter += 1
             rows.append(
                 {
                     "exam_id": f"E{counter:06d}",
-                    "patient_code": person_identifier,
+                    "patient_code": patient_code,
                     "exam_type": rng.choice(EXAM_TYPES),
                     "exam_date": random_date_between(start, end, rng).isoformat(),
                 }
