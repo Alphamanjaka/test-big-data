@@ -62,7 +62,7 @@ Dernière mise à jour : 2026-09-02
 ## État global
 
 ```
-Prérequis ████████ 100%   S1 ░░░░ 5%   S2 ░░░░0%   S3 ░░░░0%   S4 ░░░░0%   S5 ░░░░0%   TOTAL ░░░░ 17%
+Prérequis ████████ 100%   S1 ░░░░ 25%   S2 ░░░░0%   S3 ░░░░0%   S4 ░░░░0%   S5 ░░░░0%   TOTAL ░░░░ 20%
 ```
 
 ## Critères de succès
