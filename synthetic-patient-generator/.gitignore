@@ -1,0 +1,13 @@
+__pycache__/
+*.pyc
+.venv/
+venv/
+*.egg-info/
+
+# Données générées (volumineuses, régénérables) — on garde la structure via .gitkeep
+data/ground_truth/*.csv
+data/raw/**/*.csv
+data/experiments/**/*.csv
+!data/**/.gitkeep
+
+.pytest_cache/

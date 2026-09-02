@@ -69,14 +69,22 @@ Dernière mise à jour : 2026-09-02
 
 | # | Tâche | État |
 |---|---|---|
-| S5.1 | Chargement PostgreSQL (Spark) | À faire |
-| S5.2 | Valider intégrité données | À faire |
-| S5.3 | Comparer résultats Pandas vs Spark | À faire |
+| S5.1 | Chargement PostgreSQL (Spark) | Terminé |
+| S5.2 | Valider intégrité données | Terminé |
+| S5.3 | Comparer résultats Pandas vs Spark | Terminé |
+
+> `spark/postgres_loader.py` : frames par table (raw, master, identity, business,
+> payload JSONB par `to_json`) puis écritures distribuées `foreachPartition`
+> + psycopg avec les mêmes `ON CONFLICT` que le MVP (idempotent). RAW rendu
+> idempotent (contrainte unique + `DO NOTHING`, aligné sur N1). `scripts/
+> run_spark_pipeline.py` : extraction → transformation → déduplication →
+> chargement, validation intégrité (18 raw / 11 masters / 18 liens / 6 métier,
+> zéro orphelin) et identité strictement identique au pipeline MVP.
 
 ## État global
 
 ```
-Prérequis ████████ 100%   S1 ████████ 100%   S2 ████████ 100%   S3 ████████ 100%   S4 ████████ 100%   S5 ░░░░0%   TOTAL ░░░░░ 80%
+Prérequis ████████ 100%   S1 ████████ 100%   S2 ████████ 100%   S3 ████████ 100%   S4 ████████ 100%   S5 ████████ 100%   TOTAL ████████ 100%
 ```
 
 ## Critères de succès
@@ -94,7 +102,7 @@ Prérequis ████████ 100%   S1 ████████ 100%   S2
 |---|---|---|
 | Framework | PySpark | Interface Python |
 | Session | Local (pas de cluster) | MVP Spark |
-| Chargement | JDBC → PostgreSQL | Compatible MVP |
+| Chargement | foreachPartition + psycopg | Écritures distribuées sans driver JDBC externe (non disponible localement), mêmes `ON CONFLICT` que le MVP |
 
 ## Hypothèses / Blocages / Journal
 
@@ -112,3 +120,4 @@ Prérequis ████████ 100%   S1 ████████ 100%   S2
   - 2026-09-02 | S2.1-S2.3 | Extraction Spark | SparkExtractor abstrait + SparkCSVExtractor, 36 lignes cohérentes avec Pandas
   - 2026-09-02 | S3.1-S3.4 | Transformation Spark | UDFs des fonctions N1, 18 patients exactement identiques au MVP. Bloqueurs levés : PYSPARK_PYTHON (stub MS Store) + inferSchema convertissant les dates
   - 2026-09-02 | S4.1-S4.4 | Déduplication Spark | Exact self-join + scores cross-join, 18 liens/11 masters identiques MVP, Jean Rakoto et Nirina validés
+  - 2026-09-02 | S5.1-S5.3 | Chargement PostgreSQL (Spark) | foreachPartition + psycopg (ON CONFLICT idempotents), RAW idempotent (unique + DO NOTHING), intégrité et comparaison Pandas/Spark validées — Niveau 2 terminé
