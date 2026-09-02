@@ -51,6 +51,33 @@ class PostgresLoader:
                         ),
                     )
 
+                for master_patient_id, source_key in master_sources.items():
+                    patient = patients_by_source[source_key]
+                    cursor.execute(
+                        """
+                        INSERT INTO master_patient
+                            (master_patient_id, first_name, last_name, full_name,
+                             birth_date, phone, address)
+                        VALUES (%s, %s, %s, %s, %s, %s, %s)
+                        ON CONFLICT (master_patient_id) DO UPDATE SET
+                            first_name = EXCLUDED.first_name,
+                            last_name = EXCLUDED.last_name,
+                            full_name = EXCLUDED.full_name,
+                            birth_date = EXCLUDED.birth_date,
+                            phone = EXCLUDED.phone,
+                            address = EXCLUDED.address
+                        """,
+                        (
+                            master_patient_id,
+                            patient.first_name,
+                            patient.last_name,
+                            patient.full_name,
+                            patient.birth_date,
+                            patient.phone,
+                            patient.address,
+                        ),
+                    )
+
                 source_to_master = {
                     (decision.source_system, decision.source_patient_id): decision.master_patient_id
                     for decision in identity_map
@@ -77,33 +104,6 @@ class PostgresLoader:
                         (record.source_record_id, master_patient_id,
                          record.source_system, record.source_patient_id,
                          Json(record.payload)),
-                    )
-
-                for master_patient_id, source_key in master_sources.items():
-                    patient = patients_by_source[source_key]
-                    cursor.execute(
-                        """
-                        INSERT INTO master_patient
-                            (master_patient_id, first_name, last_name, full_name,
-                             birth_date, phone, address)
-                        VALUES (%s, %s, %s, %s, %s, %s, %s)
-                        ON CONFLICT (master_patient_id) DO UPDATE SET
-                            first_name = EXCLUDED.first_name,
-                            last_name = EXCLUDED.last_name,
-                            full_name = EXCLUDED.full_name,
-                            birth_date = EXCLUDED.birth_date,
-                            phone = EXCLUDED.phone,
-                            address = EXCLUDED.address
-                        """,
-                        (
-                            master_patient_id,
-                            patient.first_name,
-                            patient.last_name,
-                            patient.full_name,
-                            patient.birth_date,
-                            patient.phone,
-                            patient.address,
-                        ),
                     )
 
                 for decision in identity_map:

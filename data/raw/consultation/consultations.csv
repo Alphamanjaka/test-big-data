@@ -1,3 +1,7 @@
 consultation_id,patient_id,diagnostic,consultation_date
 CON-001,50,Hypertension,2026-01-20
 CON-002,51,Grippe,2026-01-21
+CON-003,52,Diabete,2026-01-22
+CON-004,53,Asthme,2026-01-23
+CON-005,54,Migraine,2026-01-24
+CON-006,55,Hypertension,2026-01-25

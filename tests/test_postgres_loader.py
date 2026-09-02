@@ -45,9 +45,9 @@ def test_postgres_loader_writes_masters_and_identity_map(tmp_path):
         result.patients, result.identity_map, result.raw_records,
         result.business_records)
 
-    assert len(connection.cursor_instance.calls) == 20
+    assert len(connection.cursor_instance.calls) == 65
     assert connection.committed is True
     assert connection.rolled_back is False
     assert connection.closed is True
     assert connection.cursor_instance.calls[0][1][0] == "pharmacy"
-    assert connection.cursor_instance.calls[-1][1][0] == "PAT-0002"
+    assert connection.cursor_instance.calls[-1][1][0] == "PAT-0011"

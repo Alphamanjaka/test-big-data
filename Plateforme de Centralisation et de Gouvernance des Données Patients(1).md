@@ -2,13 +2,33 @@
 
 ## 📌 Contexte
 
-Les établissements de santé utilisent souvent plusieurs systèmes d'information indépendants pour gérer leurs activités : consultations médicales, pharmacies, laboratoires et services d'imagerie.
+Les établissements de santé utilisent souvent plusieurs systèmes d'information indépendants pour gérer différentes activités :
 
-Ces systèmes possèdent généralement leurs propres structures de données. Un même patient peut donc être enregistré plusieurs fois avec des identifiants, des noms de colonnes et des formats différents.
+- consultations médicales ;
+- pharmacies ;
+- laboratoires ;
+- services d'imagerie ;
+- dossiers médicaux.
 
-Ce projet propose la conception et le développement d'un **MVP (Minimum Viable Product)** permettant d'intégrer, nettoyer, dédupliquer et centraliser les données patients provenant de plusieurs sources hétérogènes vers une base centrale PostgreSQL.
+Ces systèmes sont généralement indépendants et utilisent des structures de données différentes. Un même patient peut donc être enregistré dans plusieurs systèmes avec :
 
-Le MVP utilise initialement des **fichiers CSV** afin d'accélérer le développement. L'architecture est cependant conçue pour permettre le remplacement progressif des fichiers CSV par de véritables bases de données telles que **MySQL, PostgreSQL ou SQLite**, sans modifier le pipeline principal.
+- des identifiants différents ;
+- des noms de tables différents ;
+- des noms de colonnes différents ;
+- des formats de données différents ;
+- des relations métier différentes.
+
+Par exemple, le même patient peut apparaître comme :
+
+```text
+Pharmacie     → Jean Rakoto
+Consultation  → Rakoto Jean
+Imagerie      → J. RAKOTO
+```
+
+Le défi consiste à déterminer s'il s'agit réellement du même patient, puis à centraliser ses informations tout en conservant la traçabilité de leur origine.
+
+Ce projet propose donc la conception et le développement d'une **plateforme de centralisation et de gouvernance des données patients**.
 
 ---
 
@@ -16,176 +36,156 @@ Le MVP utilise initialement des **fichiers CSV** afin d'accélérer le développ
 
 L'objectif principal est de construire une plateforme capable de :
 
-- Lire des données provenant de plusieurs sources.
-- Gérer des structures de données différentes.
-- Identifier les informations relatives aux patients.
-- Transformer les données vers un modèle commun.
-- Nettoyer et standardiser les données.
-- Détecter les doublons de patients.
-- Créer une identité patient unique.
-- Préserver les relations entre les patients et leurs données médicales.
-- Centraliser les données dans PostgreSQL.
-- Assurer la traçabilité des données.
-- Prévoir une gestion du consentement et du contrôle d'accès.
+- intégrer des données provenant de sources hétérogènes ;
+- gérer des structures de données différentes ;
+- mapper les données vers un modèle commun ;
+- nettoyer et standardiser les données ;
+- détecter les doublons de patients ;
+- créer une identité patient unique ;
+- préserver les relations entre les patients et leurs données médicales ;
+- centraliser les données dans une base PostgreSQL ;
+- assurer la traçabilité des données ;
+- préparer une gestion du consentement et du contrôle d'accès ;
+- permettre une évolution vers une architecture Big Data distribuée.
 
 ---
 
-# 💡 Approche MVP
+# 🔬 Problématique
 
-Afin de développer rapidement un prototype fonctionnel, le projet adopte une approche progressive.
+> **Comment concevoir une plateforme capable d'intégrer, nettoyer, dédupliquer et centraliser des données patients provenant de sources hétérogènes, tout en assurant la traçabilité des identités et la gouvernance des accès basée sur le consentement du patient ?**
 
-## Phase 1 — MVP avec fichiers CSV
+---
 
-Les différentes sources sont représentées par des fichiers CSV hétérogènes.
+# 💡 Principe général
+
+Le projet suit une approche progressive.
+
+L'objectif n'est pas d'utiliser immédiatement toutes les technologies Big Data.
+
+La priorité est :
 
 ```text
-CSV Sources
-     │
-     ▼
-Extraction
-     │
-     ▼
-Data Mapping
-     │
-     ▼
-Cleaning
-     │
-     ▼
-Deduplication
-     │
-     ▼
-Master Patient Index
-     │
-     ▼
-PostgreSQL Central
+1. Résoudre correctement le problème métier
+                ↓
+2. Construire un MVP fonctionnel
+                ↓
+3. Valider les algorithmes
+                ↓
+4. Faire évoluer l'architecture
+                ↓
+5. Ajouter les technologies Big Data lorsque nécessaire
 ```
 
-Cette approche permet de concentrer le développement sur les problématiques principales :
-
-- intégration de données ;
-- hétérogénéité des structures ;
-- nettoyage ;
-- standardisation ;
-- déduplication ;
-- centralisation.
+Cette approche permet d'éviter une architecture trop complexe dès le début.
 
 ---
 
-## Phase 2 — Remplacement progressif par des bases de données
+# 🚀 Stratégie de développement
 
-Une fois le pipeline validé avec les CSV, les sources pourront être remplacées progressivement.
+Le projet est développé en trois niveaux.
 
 ```text
-                    DATA SOURCES
-
-        ┌─────────────┬──────────────┬──────────────┐
-        │             │              │              │
-       CSV          MySQL       PostgreSQL       SQLite
-        │             │              │              │
-        └─────────────┴───────┬──────┴──────────────┘
-                              │
-                              ▼
-                     EXTRACTION LAYER
-                              │
-                              ▼
-                         DATAFRAME
-                              │
-                              ▼
-                      PIPELINE COMMUN
+NIVEAU 1
+MVP fonctionnel
+CSV + Pandas + PostgreSQL
+        │
+        ▼
+NIVEAU 2
+Scalabilité
+PySpark + traitement distribué
+        │
+        ▼
+NIVEAU 3
+Architecture Big Data complète
+Data Lake + HDFS + Hive + Spark
 ```
 
-Le principe fondamental est que le reste du pipeline ne dépend pas directement du type de source.
-
 ---
 
-# 🏗️ Architecture globale
+# 🥇 Niveau 1 — MVP rapide
+
+## Objectif
+
+Développer rapidement une solution fonctionnelle avant d'introduire la complexité des technologies Big Data.
+
+Architecture :
 
 ```text
-                         DATA SOURCES
+                SOURCES CSV
 
        ┌────────────┬─────────────┬─────────────┐
        │            │             │             │
        ▼            ▼             ▼
 
-   CSV / MySQL  CSV/PostgreSQL  CSV/SQLite
-   Pharmacie    Consultation     Imagerie
+    Pharmacie   Consultation   Imagerie
 
        └────────────┬─────────────┬─────────────┘
                     │
                     ▼
-          ┌────────────────────┐
-          │ EXTRACTION LAYER   │
-          │                    │
-          │ CSVExtractor       │
-          │ MySQLExtractor     │
-          │ PostgresExtractor  │
-          │ SQLiteExtractor    │
-          └─────────┬──────────┘
+             CSV EXTRACTOR
                     │
                     ▼
-               DATAFRAME
+              PANDAS DATAFRAME
                     │
                     ▼
-          ┌────────────────────┐
-          │ TRANSFORMATION     │
-          │                    │
-          │ Data Mapping       │
-          │ Standardisation    │
-          └─────────┬──────────┘
+             DATA MAPPING
                     │
                     ▼
-          ┌────────────────────┐
-          │ DATA CLEANING      │
-          │                    │
-          │ Normalisation      │
-          │ Validation         │
-          └─────────┬──────────┘
+             DATA CLEANING
                     │
                     ▼
-          ┌────────────────────┐
-          │ ENTITY RESOLUTION  │
-          │                    │
-          │ Deduplication      │
-          │ Similarity Score   │
-          └─────────┬──────────┘
+          ENTITY RESOLUTION
                     │
                     ▼
-          ┌────────────────────┐
-          │ MASTER PATIENT     │
-          │ INDEX              │
-          └─────────┬──────────┘
+           MASTER PATIENT INDEX
                     │
                     ▼
-          ┌────────────────────┐
-          │ POSTGRESQL CENTRAL │
-          │                    │
-          │ Patients           │
-          │ Consultations      │
-          │ Médicaments        │
-          │ Imagerie           │
-          └─────────┬──────────┘
+            POSTGRESQL CENTRAL
                     │
                     ▼
-          ┌────────────────────┐
-          │ DATA GOVERNANCE    │
-          │                    │
-          │ Consentement       │
-          │ Contrôle d'accès   │
-          │ Audit              │
-          └────────────────────┘
+                DASHBOARD
 ```
+
+---
+
+## Technologies MVP
+
+| Technologie | Rôle |
+|---|---|
+| Python | Langage principal |
+| CSV | Sources initiales |
+| Pandas | Manipulation des données |
+| RapidFuzz | Similarité et matching |
+| PostgreSQL | Base centrale |
+| SQLAlchemy | Accès aux bases |
+| Streamlit | Dashboard |
+| Git | Gestion de versions |
 
 ---
 
 # 📂 Sources de données
 
-Pour le MVP, trois domaines médicaux sont simulés.
+Pour le MVP, les sources sont représentées par des fichiers CSV.
 
-| Source | Domaine | Format initial |
-|---|---|---|
-| Source 1 | Pharmacie | CSV |
-| Source 2 | Consultations | CSV |
-| Source 3 | Imagerie | CSV |
+Cela permet de développer rapidement tout en simulant des systèmes indépendants.
+
+```text
+data/
+│
+├── raw/
+│   │
+│   ├── pharmacie/
+│   │   ├── patients.csv
+│   │   └── achats.csv
+│   │
+│   ├── consultation/
+│   │   ├── patients.csv
+│   │   └── consultations.csv
+│   │
+│   └── imagerie/
+│       ├── patients.csv
+│       └── examens.csv
+```
 
 Chaque source possède volontairement une structure différente.
 
@@ -195,10 +195,8 @@ Chaque source possède volontairement une structure différente.
 
 ## Patients
 
-Fichier :
-
 ```text
-patients_pharmacie.csv
+patients.csv
 ```
 
 Structure :
@@ -206,19 +204,10 @@ Structure :
 | client_id | nom_complet | naissance | telephone | adresse |
 |---|---|---|---|---|
 
-Exemple :
+## Achats
 
 ```text
-1,Jean Rakoto,1990-01-10,0341234567,Antananarivo
-2,Marie Rasoanaivo,1985-05-20,0329876543,Antananarivo
-```
-
-## Achats de médicaments
-
-Fichier :
-
-```text
-achats_medicaments.csv
+achats.csv
 ```
 
 Structure :
@@ -229,11 +218,11 @@ Structure :
 Relation :
 
 ```text
-patients_pharmacie
-        │
-        │ client_id
-        ▼
-achats_medicaments
+PATIENT
+   │
+   │ client_id
+   ▼
+ACHATS
 ```
 
 ---
@@ -242,10 +231,8 @@ achats_medicaments
 
 ## Patients
 
-Fichier :
-
 ```text
-patients_consultation.csv
+patients.csv
 ```
 
 Structure :
@@ -253,16 +240,7 @@ Structure :
 | patient_code | prenom | nom | date_naiss | phone_number |
 |---|---|---|---|---|
 
-Exemple :
-
-```text
-50,Jean,Rakoto,10/01/1990,+261341234567
-51,Marie,Rasoanaivo,20/05/1985,+261329876543
-```
-
 ## Consultations
-
-Fichier :
 
 ```text
 consultations.csv
@@ -276,11 +254,11 @@ Structure :
 Relation :
 
 ```text
-patients_consultation
-        │
-        │ patient_code
-        ▼
-consultations
+PATIENT
+   │
+   │ patient_code
+   ▼
+CONSULTATIONS
 ```
 
 ---
@@ -289,10 +267,8 @@ consultations
 
 ## Patients
 
-Fichier :
-
 ```text
-patients_imagerie.csv
+patients.csv
 ```
 
 Structure :
@@ -300,16 +276,7 @@ Structure :
 | id_personne | patient_name | dob | tel |
 |---|---|---|---|
 
-Exemple :
-
-```text
-IMG001,J. Rakoto,1990/01/10,034 123 4567
-IMG002,Marie Rasoanaivo,1985/05/20,032 987 6543
-```
-
 ## Examens
-
-Fichier :
 
 ```text
 examens.csv
@@ -323,12 +290,71 @@ Structure :
 Relation :
 
 ```text
-patients_imagerie
-        │
-        │ id_personne
-        ▼
-examens
+PATIENT
+   │
+   │ id_personne
+   ▼
+EXAMENS
 ```
+
+---
+
+# 🔌 Architecture des sources
+
+Les sources doivent être indépendantes du pipeline.
+
+Le pipeline ne doit pas savoir si les données proviennent :
+
+- d'un CSV ;
+- de MySQL ;
+- de PostgreSQL ;
+- de SQLite ;
+- d'une API.
+
+Architecture :
+
+```text
+                    DATA SOURCES
+
+          ┌───────────┼───────────┐
+          │           │           │
+
+         CSV        MySQL      PostgreSQL
+          │           │           │
+          └───────────┼───────────┘
+                      │
+                      ▼
+              EXTRACTION LAYER
+                      │
+                      ▼
+                 DATAFRAME
+                      │
+                      ▼
+                PIPELINE
+```
+
+---
+
+# 🧩 Architecture des Extracteurs
+
+Une abstraction permet de rendre les sources interchangeables.
+
+```text
+                 BaseExtractor
+                       │
+         ┌─────────────┼─────────────┐
+         │             │             │
+         ▼             ▼             ▼
+
+    CSVExtractor  MySQLExtractor  PostgresExtractor
+         │             │             │
+         └─────────────┼─────────────┘
+                       │
+                       ▼
+                  DataFrame
+```
+
+Le résultat de chaque extracteur doit être compatible avec le pipeline de transformation.
 
 ---
 
@@ -337,248 +363,77 @@ examens
 Le pipeline suit les étapes suivantes :
 
 ```text
-1. CONNECTER / LIRE LA SOURCE
+1. EXTRACTION
         ↓
-2. EXTRAIRE
+2. RAW DATA
         ↓
-3. STOCKER RAW
+3. DATA MAPPING
         ↓
-4. DATA MAPPING
+4. STANDARDISATION
         ↓
-5. STANDARDISER
+5. DATA CLEANING
         ↓
-6. NETTOYER
+6. VALIDATION
         ↓
-7. DÉDUPLIQUER
+7. BLOCKING
         ↓
-8. CRÉER MASTER PATIENT
+8. DEDUPLICATION
         ↓
-9. CRÉER IDENTITY MAP
+9. MASTER PATIENT INDEX
         ↓
-10. MIGRER LES DONNÉES LIÉES
+10. IDENTITY MAPPING
         ↓
-11. CENTRALISER
+11. CENTRALISATION
         ↓
-12. APPLIQUER LA GOUVERNANCE
+12. DATA GOVERNANCE
         ↓
-13. VISUALISER
+13. VISUALISATION
 ```
 
 ---
 
-# 🔌 Architecture des Extracteurs
+# 🗂️ Raw Layer
 
-Le projet utilise une couche d'abstraction afin de rendre les sources interchangeables.
+Les données originales doivent être conservées avant transformation.
 
 ```text
-                 BaseExtractor
-                       │
-          ┌────────────┼────────────┐
-          │            │            │
-          ▼            ▼            ▼
-
-     CSVExtractor  MySQLExtractor  PostgresExtractor
-          │            │            │
-          └────────────┼────────────┘
-                       │
-                       ▼
-                  DataFrame
+SOURCE
+   │
+   ▼
+RAW DATA
+   │
+   ▼
+TRANSFORMATION
 ```
 
-Chaque extracteur doit retourner un format commun.
+La zone RAW permet :
 
-```python
-DataFrame Pandas
-```
-
-Ainsi, le pipeline de transformation ne dépend pas de la technologie source.
-
----
-
-# 🧩 Base Extractor
-
-Tous les extracteurs suivent une interface commune.
-
-```python
-from abc import ABC, abstractmethod
-
-
-class BaseExtractor(ABC):
-
-    @abstractmethod
-    def extract(self):
-        pass
-```
-
----
-
-# 📄 CSV Extractor
-
-Pour le MVP initial :
-
-```python
-import pandas as pd
-from .base_extractor import BaseExtractor
-
-
-class CSVExtractor(BaseExtractor):
-
-    def __init__(self, file_path):
-        self.file_path = file_path
-
-    def extract(self):
-        return pd.read_csv(self.file_path)
-```
-
-Utilisation :
-
-```python
-extractor = CSVExtractor(
-    "data/raw/pharmacie/patients.csv"
-)
-
-df = extractor.extract()
-```
-
-Sortie :
-
-```text
-DataFrame Pandas
-```
-
----
-
-# 🗄️ Migration future vers MySQL
-
-Plus tard, un extracteur MySQL pourra remplacer le CSV.
-
-```python
-import pandas as pd
-from sqlalchemy import create_engine
-from .base_extractor import BaseExtractor
-
-
-class MySQLExtractor(BaseExtractor):
-
-    def __init__(self, connection_string, table_name):
-        self.connection_string = connection_string
-        self.table_name = table_name
-
-    def extract(self):
-
-        engine = create_engine(
-            self.connection_string
-        )
-
-        query = f"SELECT * FROM {self.table_name}"
-
-        return pd.read_sql(
-            query,
-            engine
-        )
-```
-
-Le résultat reste identique :
-
-```text
-DataFrame Pandas
-```
-
-Le pipeline principal ne change donc pas.
-
----
-
-# ⚙️ Configuration des sources
-
-Les sources sont définies dans un fichier de configuration.
-
-## `config/sources.json`
-
-### Phase CSV
-
-```json
-{
-    "pharmacy": {
-        "type": "csv",
-        "patient_source": "data/raw/pharmacie/patients.csv",
-        "purchase_source": "data/raw/pharmacie/achats.csv"
-    },
-
-    "consultation": {
-        "type": "csv",
-        "patient_source": "data/raw/consultation/patients.csv",
-        "consultation_source": "data/raw/consultation/consultations.csv"
-    },
-
-    "imaging": {
-        "type": "csv",
-        "patient_source": "data/raw/imagerie/patients.csv",
-        "exam_source": "data/raw/imagerie/examens.csv"
-    }
-}
-```
-
-Plus tard, une source pourra être remplacée par une base de données :
-
-```json
-{
-    "pharmacy": {
-        "type": "mysql",
-        "connection": "mysql+pymysql://user:password@localhost/pharmacy_db",
-        "patient_table": "pharmacy_customers",
-        "purchase_table": "medicine_purchases"
-    }
-}
-```
+- de conserver la donnée originale ;
+- d'assurer la traçabilité ;
+- de rejouer le pipeline ;
+- de corriger les erreurs ;
+- de comparer avant/après transformation.
 
 ---
 
 # 🔗 Data Mapping
 
-Les différentes sources utilisent des noms de colonnes différents.
+Chaque source possède ses propres noms de colonnes.
 
 | Concept | Pharmacie | Consultation | Imagerie |
 |---|---|---|---|
-| ID | client_id | patient_code | id_personne |
+| Identifiant | client_id | patient_code | id_personne |
 | Nom | nom_complet | prenom + nom | patient_name |
 | Naissance | naissance | date_naiss | dob |
 | Téléphone | telephone | phone_number | tel |
 
-Un mécanisme de mapping permet de transformer toutes les données vers un modèle commun.
-
-Exemple :
-
-```json
-{
-    "pharmacy": {
-        "id": "client_id",
-        "name": "nom_complet",
-        "birthdate": "naissance",
-        "phone": "telephone"
-    },
-
-    "consultation": {
-        "id": "patient_code",
-        "first_name": "prenom",
-        "last_name": "nom",
-        "birthdate": "date_naiss",
-        "phone": "phone_number"
-    },
-
-    "imaging": {
-        "id": "id_personne",
-        "name": "patient_name",
-        "birthdate": "dob",
-        "phone": "tel"
-    }
-}
-```
+Toutes les données doivent être converties vers un modèle commun.
 
 ---
 
 # 📐 Modèle Canonique
 
-Après extraction et mapping, toutes les données patients sont transformées vers un modèle commun.
+Après extraction, les données sont transformées vers un modèle standard.
 
 ```text
 CanonicalPatient
@@ -608,11 +463,21 @@ Exemple :
 }
 ```
 
+Le modèle canonique constitue le contrat entre :
+
+```text
+SOURCES
+   ↓
+TRANSFORMATION
+   ↓
+DEDUPLICATION
+```
+
 ---
 
-# 🧹 Nettoyage des données
+# 🧹 Data Cleaning
 
-Les données provenant des différentes sources peuvent contenir des incohérences.
+Les données peuvent contenir des incohérences.
 
 Exemple :
 
@@ -622,67 +487,94 @@ Exemple :
 "jean rakoto"
 ```
 
-Après nettoyage :
+Après normalisation :
 
 ```text
 jean rakoto
 ```
 
-Les opérations principales sont :
+Les opérations comprennent :
 
-- Suppression des espaces inutiles.
-- Conversion en minuscules.
-- Normalisation des numéros de téléphone.
-- Standardisation des dates.
-- Suppression des caractères inutiles.
-- Gestion des valeurs manquantes.
-- Correction de certains formats incohérents.
+- suppression des espaces ;
+- uniformisation des majuscules/minuscules ;
+- normalisation des accents ;
+- standardisation des téléphones ;
+- standardisation des dates ;
+- traitement des valeurs manquantes ;
+- suppression des caractères inutiles.
 
 ---
 
-# 🧠 Déduplication des patients
+# 🧠 Entity Resolution et Déduplication
 
-Le cœur du projet repose sur la détection des patients présents dans plusieurs sources.
+La déduplication constitue le cœur intelligent du projet.
 
 Exemple :
 
 ```text
-Source Pharmacie
+PHARMACIE
+
 Jean Rakoto
-
-Source Consultation
-Rakoto Jean
-
-Source Imagerie
-JEAN RAKOTO
+0341234567
+1990-01-10
 ```
 
-Ces trois enregistrements peuvent représenter le même patient.
+```text
+CONSULTATION
+
+Rakoto Jean
++261341234567
+10/01/1990
+```
+
+```text
+IMAGERIE
+
+J. RAKOTO
+034 123 4567
+1990/01/10
+```
+
+La question est :
+
+> S'agit-il du même patient ?
 
 ---
 
-## Matching déterministe
+## Niveau 1 — Exact Matching
 
-Identification basée sur des informations identiques.
+Comparaison exacte d'informations fiables.
 
 Exemples :
 
-- Numéro de téléphone.
-- Adresse email.
-- Identifiant national.
-- Combinaison de plusieurs attributs.
-
 ```text
-phone_A == phone_B
-
-→ Patient probablement identique
+Téléphone identique
+Email identique
+Identifiant national identique
 ```
 
 ---
 
-## Matching probabiliste / Fuzzy Matching
+## Niveau 2 — Fuzzy Matching
 
-Lorsque les données ne sont pas exactement identiques, un score de similarité est calculé.
+Lorsque les informations ne sont pas identiques.
+
+Exemple :
+
+```text
+Jean Rakoto
+Jean RAKOTO
+J Rakoto
+Rakoto Jean
+```
+
+Une mesure de similarité est calculée.
+
+---
+
+# 📊 Similarity Score
+
+Un score global est calculé.
 
 | Critère | Poids |
 |---|---:|
@@ -691,37 +583,92 @@ Lorsque les données ne sont pas exactement identiques, un score de similarité 
 | Téléphone | 20% |
 | Adresse | 10% |
 
-Formule :
-
 ```text
 Score =
-(Nom × 0.40)
+Nom × 0.40
 +
-(Date naissance × 0.30)
+Date de naissance × 0.30
 +
-(Téléphone × 0.20)
+Téléphone × 0.20
 +
-(Adresse × 0.10)
+Adresse × 0.10
 ```
 
 Décision :
 
 ```text
 Score >= 90%
-    → MATCH automatique
+        │
+        ▼
+MATCH AUTOMATIQUE
 
-Score entre 70% et 90%
-    → Vérification manuelle
+
+Score 70% - 90%
+        │
+        ▼
+REVIEW
+
 
 Score < 70%
-    → Patients différents
+        │
+        ▼
+NO MATCH
 ```
+
+---
+
+# 🚧 Blocking — Préparation à la scalabilité
+
+Comparer chaque patient avec tous les autres patients est inefficace.
+
+Exemple :
+
+```text
+1 000 000 patients
+
+Comparaison complète :
+
+1 000 000 × 1 000 000
+```
+
+Le nombre de comparaisons devient énorme.
+
+La technique de **Blocking** consiste à créer des groupes de candidats.
+
+Exemple :
+
+```text
+TOUS LES PATIENTS
+        │
+        ▼
+     BLOCKING
+        │
+   ┌────┼─────┐
+   │    │     │
+   ▼    ▼     ▼
+
+BLOCK A BLOCK B BLOCK C
+   │
+   ▼
+MATCHING
+```
+
+Exemple de règles :
+
+- même année de naissance ;
+- première lettre du nom ;
+- même zone géographique ;
+- préfixe du téléphone.
+
+Le matching est ensuite effectué uniquement entre les candidats d'un même groupe.
+
+Cette approche est particulièrement importante lors du passage à Apache Spark.
 
 ---
 
 # 👤 Master Patient Index
 
-Après déduplication, chaque patient possède une identité unique dans la base centrale.
+Après déduplication, un patient unique est créé.
 
 ```text
 MASTER PATIENT
@@ -733,18 +680,17 @@ Date de naissance : 1990-01-10
 Téléphone : 0341234567
 ```
 
-Ce patient peut être relié à plusieurs systèmes sources.
+Le Master Patient Index représente l'identité centrale du patient.
 
 ---
 
 # 🔑 Identity Mapping
 
-Les identifiants locaux doivent être associés à l'identifiant central.
+Chaque identifiant provenant d'une source est relié au Master Patient.
 
 ```text
 patient_identity_map
 
-id
 source_system
 source_patient_id
 master_patient_id
@@ -754,17 +700,22 @@ matching_method
 
 Exemple :
 
-| Source | Source ID | Master ID | Score |
+| Source | ID Source | Master ID | Score |
 |---|---|---|---:|
 | Pharmacie | 15 | 102 | 100% |
 | Consultation | 88 | 102 | 95% |
 | Imagerie | IMG-20 | 102 | 92% |
 
-Cette table est essentielle pour préserver la traçabilité.
+Cette table permet de conserver :
+
+- l'origine des données ;
+- la traçabilité ;
+- les identifiants historiques ;
+- les relations métier.
 
 ---
 
-# 🗃️ Base PostgreSQL centrale
+# 🗃️ PostgreSQL Central
 
 La base centrale contient :
 
@@ -795,69 +746,307 @@ Architecture :
              │            │            │
              ▼            ▼            ▼
 
-        Pharmacy      Consultation   Imaging
+        PHARMACIE     CONSULTATION   IMAGERIE
 ```
 
 ---
 
-# 🔒 Gouvernance et Consentement
+# 🔒 Data Governance et Consentement
 
-Le système prévoit une gestion du consentement concernant l'accès aux données du patient.
+Le système prévoit une gestion du consentement.
 
 ```text
-Patient
-   │
-   ▼
 Demande d'accès
-   │
-   ▼
+       │
+       ▼
 Vérification du consentement
-   │
- ┌─┴───────────┐
- │             │
- ▼             ▼
-Autorisé      Refusé
- │             │
- ▼             ▼
-Accès       Access Denied
+       │
+   ┌───┴────┐
+   │        │
+   ▼        ▼
+
+AUTORISÉ  REFUSÉ
+   │        │
+   ▼        ▼
+
+ACCÈS    ACCESS DENIED
 ```
 
 Exemple :
 
-| Patient | Type de données | Autorisation |
+| Patient | Donnée | Autorisation |
 |---|---|---|
-| Jean Rakoto | Consultation | Oui |
-| Jean Rakoto | Pharmacie | Oui |
-| Jean Rakoto | Imagerie | Non |
+| Patient 102 | Consultation | Oui |
+| Patient 102 | Pharmacie | Oui |
+| Patient 102 | Imagerie | Non |
 
 ---
 
-# 🛠️ Technologies
+# 🥈 Niveau 2 — Évolution vers Apache Spark
 
-## Phase MVP
+Une fois le MVP fonctionnel, le pipeline peut évoluer vers Apache Spark.
 
-- Python
-- Pandas
-- RapidFuzz
-- PostgreSQL
-- SQLAlchemy
-- CSV
+## Pourquoi Spark ?
 
-## API
+Spark devient intéressant lorsque :
 
-- FastAPI
+- le volume de données augmente ;
+- les traitements deviennent longs ;
+- plusieurs sources doivent être traitées simultanément ;
+- les comparaisons de patients deviennent nombreuses ;
+- le traitement distribué devient nécessaire.
 
-## Dashboard
+Architecture :
 
-- Streamlit
+```text
+CSV / DATABASES
+       │
+       ▼
+   APACHE SPARK
+       │
+       ├── Extraction
+       │
+       ├── Data Cleaning
+       │
+       ├── Standardisation
+       │
+       ├── Blocking
+       │
+       └── Deduplication
+               │
+               ▼
+       MASTER PATIENT INDEX
+               │
+               ▼
+        POSTGRESQL CENTRAL
+```
 
-## Évolution future
+---
 
-- MySQL
-- SQLite
-- PostgreSQL Sources
-- Apache Spark
-- Docker
+# 🐼 Pandas vs ⚡ Spark
+
+| Critère | Pandas | Apache Spark |
+|---|---|---|
+| Petit volume | Excellent | Possible mais excessif |
+| Prototype rapide | Excellent | Plus complexe |
+| Machine unique | Oui | Oui |
+| Cluster | Non | Oui |
+| Gros volume | Limité par RAM | Très adapté |
+| Traitement distribué | Non | Oui |
+| MVP | Recommandé | Option |
+| Big Data | Limité | Recommandé |
+
+## Stratégie adoptée
+
+```text
+MVP
+CSV
++
+Pandas
+        │
+        ▼
+Validation du pipeline
+        │
+        ▼
+PySpark
+        │
+        ▼
+Scalabilité
+```
+
+---
+
+# 🥉 Niveau 3 — Architecture Big Data complète
+
+Lorsque les volumes deviennent importants, une architecture Data Lake peut être introduite.
+
+```text
+                         DATA SOURCES
+
+             ┌──────────────┼──────────────┐
+             │              │              │
+
+           MySQL       PostgreSQL        APIs
+             │              │              │
+             └──────────────┼──────────────┘
+                            │
+                            ▼
+                      INGESTION
+                            │
+                            ▼
+                     DATA LAKE
+                       HDFS
+                            │
+            ┌───────────────┼───────────────┐
+            │                               │
+            ▼                               ▼
+
+       APACHE HIVE                     APACHE SPARK
+       SQL ANALYTICS                   DATA PROCESSING
+                                             │
+                                       Cleaning
+                                       Mapping
+                                       Blocking
+                                       Matching
+                                             │
+            └───────────────┼───────────────┘
+                            │
+                            ▼
+                      CURATED DATA
+                            │
+                            ▼
+                    MASTER PATIENT
+                            │
+                            ▼
+                   POSTGRESQL CENTRAL
+                            │
+                            ▼
+                      DASHBOARD
+```
+
+---
+
+# 🐘 Quand utiliser Hadoop / HDFS ?
+
+HDFS est utile lorsque :
+
+- les données sont très volumineuses ;
+- plusieurs machines doivent stocker les données ;
+- une architecture distribuée est nécessaire ;
+- un Data Lake doit être construit.
+
+Exemple :
+
+```text
+Sources
+   │
+   ▼
+HDFS
+
+/raw
+/staging
+/processed
+/curated
+```
+
+Pour le MVP initial, HDFS n'est pas nécessaire.
+
+---
+
+# 🐝 Quand utiliser Apache Hive ?
+
+Hive est principalement utilisé pour :
+
+- interroger de grandes quantités de données ;
+- utiliser SQL sur un Data Lake ;
+- faire des analyses ;
+- créer des tables externes sur les données stockées.
+
+Exemple :
+
+```sql
+SELECT
+    birth_date,
+    COUNT(*)
+FROM patients
+GROUP BY birth_date;
+```
+
+Dans ce projet, Hive devient intéressant dans une architecture Big Data complète.
+
+Il n'est pas indispensable au MVP.
+
+---
+
+# 💻 Quand utiliser VirtualBox ?
+
+VirtualBox n'est pas une technologie Big Data.
+
+C'est un logiciel de virtualisation.
+
+Il permet par exemple de créer :
+
+```text
+PC Windows
+     │
+     ▼
+VirtualBox
+     │
+     ▼
+Machine virtuelle Ubuntu
+     │
+     ├── Java
+     ├── Hadoop
+     ├── Spark
+     └── Hive
+```
+
+VirtualBox peut être utile pour créer un environnement isolé destiné à tester une architecture Hadoop.
+
+Cependant, il n'est pas recommandé comme point de départ pour ce MVP.
+
+---
+
+# 🐳 Docker comme alternative
+
+Docker peut être utilisé pour simplifier le déploiement.
+
+Exemple :
+
+```text
+Docker Compose
+
+├── PostgreSQL
+├── Spark
+├── Streamlit
+└── FastAPI
+```
+
+Pour le MVP :
+
+```text
+Docker
+   │
+   ├── PostgreSQL
+   ├── Application Python
+   └── Streamlit
+```
+
+Docker peut être ajouté après le fonctionnement du pipeline principal.
+
+---
+
+# 📊 Dashboard
+
+Le dashboard permet de visualiser les résultats.
+
+Indicateurs :
+
+- nombre de sources ;
+- nombre de patients extraits ;
+- nombre de patients nettoyés ;
+- nombre de doublons détectés ;
+- nombre de patients uniques ;
+- taux de déduplication ;
+- nombre de matchs exacts ;
+- nombre de matchs fuzzy ;
+- nombre de cas nécessitant une vérification.
+
+Exemple :
+
+```text
+┌───────────────────────────────────┐
+│ SOURCES                    3      │
+├───────────────────────────────────┤
+│ PATIENTS EXTRAITS          2 450  │
+├───────────────────────────────────┤
+│ MATCHS EXACTS                320  │
+├───────────────────────────────────┤
+│ MATCHS FUZZY                 230  │
+├───────────────────────────────────┤
+│ PATIENTS UNIQUES           1 900  │
+└───────────────────────────────────┘
+```
 
 ---
 
@@ -867,11 +1056,12 @@ Exemple :
 patient-data-platform/
 
 ├── README.md
+├── requirements.txt
+├── main.py
 │
 ├── data/
 │   │
 │   ├── raw/
-│   │   │
 │   │   ├── pharmacie/
 │   │   │   ├── patients.csv
 │   │   │   └── achats.csv
@@ -885,7 +1075,6 @@ patient-data-platform/
 │   │       └── examens.csv
 │   │
 │   ├── staging/
-│   │
 │   └── processed/
 │
 ├── config/
@@ -906,6 +1095,7 @@ patient-data-platform/
 │   └── orchestrator.py
 │
 ├── deduplication/
+│   ├── blocker.py
 │   ├── exact_matcher.py
 │   ├── fuzzy_matcher.py
 │   └── matcher.py
@@ -919,274 +1109,119 @@ patient-data-platform/
 ├── dashboard/
 │   └── app.py
 │
-├── tests/
+├── api/
+│   └── main.py
 │
-├── main.py
-│
-└── requirements.txt
+└── tests/
 ```
 
 ---
 
-# 📊 Dashboard MVP
+# 📅 Planning de développement — 1 mois
 
-Le dashboard permettra de visualiser :
+## Semaine 1 — Fondations et sources
 
-- Nombre de sources.
-- Nombre de patients extraits.
-- Nombre de doublons détectés.
-- Nombre de patients uniques.
-- Taux de déduplication.
-- Qualité des données.
-- Résultats du matching.
-- Historique consolidé d'un patient.
+### Objectifs
 
-Exemple :
-
-```text
-┌──────────────────────────────┐
-│ SOURCES CONNECTÉES        3  │
-├──────────────────────────────┤
-│ PATIENTS EXTRAITS      2 450 │
-├──────────────────────────────┤
-│ DOUBLONS DÉTECTÉS        550 │
-├──────────────────────────────┤
-│ PATIENTS UNIQUES       1 900 │
-└──────────────────────────────┘
-```
-
----
-
-# 🚀 Évolution CSV → Database
-
-L'architecture est conçue pour permettre cette évolution :
-
-## Aujourd'hui
-
-```text
-CSV
- │
- ▼
-CSVExtractor
- │
- ▼
-DataFrame
- │
- ▼
-Pipeline
-```
-
-## Plus tard
-
-```text
-MySQL
- │
- ▼
-MySQLExtractor
- │
- ▼
-DataFrame
- │
- ▼
-Pipeline
-```
-
-Ou :
-
-```text
-PostgreSQL
- │
- ▼
-PostgresExtractor
- │
- ▼
-DataFrame
- │
- ▼
-Pipeline
-```
-
-Le principe est :
-
-> **Le pipeline métier ne doit pas savoir si les données proviennent d'un CSV, d'une base MySQL, PostgreSQL ou SQLite.**
-
-Toutes les sources doivent être converties vers un format commun avant d'entrer dans le pipeline.
-
----
-
-# 📅 Planning MVP — 1 mois
-
-## Semaine 1 — Sources CSV et Architecture
-
-- Création de la structure du projet.
-- Création des trois sources CSV.
-- Création de données fictives.
-- Introduction volontaire de doublons.
-- Configuration du projet.
-- Mise en place de l'architecture des extracteurs.
+- Création du repository.
+- Architecture du projet.
+- Création des CSV.
+- Génération de données fictives.
+- Création volontaire de doublons.
+- Configuration PostgreSQL.
+- Définition du modèle canonique.
 
 ### Livrable
 
-Trois sources CSV hétérogènes fonctionnelles.
+```text
+3 sources hétérogènes
++
+Base PostgreSQL
++
+Architecture du projet
+```
 
 ---
 
-## Semaine 2 — ETL et Transformation
+## Semaine 2 — Pipeline ETL
 
-- Extraction des CSV.
-- Création du modèle canonique.
+### Objectifs
+
+- CSV Extractor.
 - Data Mapping.
-- Nettoyage.
-- Normalisation.
+- Standardisation.
+- Data Cleaning.
 - Validation.
+- Zone RAW.
+- Zone Staging.
 
 ### Livrable
 
-Pipeline de transformation fonctionnel.
+```text
+SOURCES
+   ↓
+EXTRACTION
+   ↓
+TRANSFORMATION
+   ↓
+CLEAN DATA
+```
 
 ---
 
-## Semaine 3 — Déduplication
+## Semaine 3 — Entity Resolution
+
+### Objectifs
 
 - Exact Matching.
 - Fuzzy Matching.
-- Similarity Scoring.
-- Création du Master Patient.
+- Similarity Score.
+- Blocking.
+- Détection des doublons.
+- Master Patient Index.
 - Identity Mapping.
 
 ### Livrable
 
-Système de déduplication fonctionnel.
-
----
-
-## Semaine 4 — Centralisation et Interface
-
-- Création de la base PostgreSQL centrale.
-- Chargement des données.
-- Migration des relations métier.
-- Gestion basique du consentement.
-- Dashboard.
-- Tests.
-- Préparation de la démonstration.
-
-### Livrable
-
-MVP complet et présentable.
-
----
-
-# 🎓 Pourquoi développer cette solution ?
-
-Des solutions professionnelles existent déjà dans les domaines de :
-
-- ETL ;
-- Data Integration ;
-- Data Quality ;
-- Master Data Management ;
-- Entity Resolution.
-
-Cependant, le développement d'un MVP personnalisé présente plusieurs avantages.
-
-## 1. Adaptation aux données hétérogènes
-
-Chaque système peut avoir :
-
-- des noms de tables différents ;
-- des noms de colonnes différents ;
-- des identifiants différents ;
-- des formats différents ;
-- des relations métier différentes.
-
-Une solution personnalisée permet d'adapter le pipeline à ces contraintes.
-
----
-
-## 2. Maîtrise de la logique de déduplication
-
-Le système permet de contrôler :
-
-- les critères de matching ;
-- les poids ;
-- les scores ;
-- les seuils de décision ;
-- les règles métier.
-
-La décision est donc transparente et explicable.
-
----
-
-## 3. Rapidité de prototypage et évolutivité
-
-L'utilisation initiale de CSV permet de développer rapidement le MVP.
-
-L'architecture modulaire permet ensuite de connecter de véritables bases de données sans modifier le cœur du système.
-
----
-
-## 4. Valeur académique
-
-Le projet permet de démontrer des compétences en :
-
-- Data Engineering ;
-- ETL ;
-- Data Integration ;
-- Data Cleaning ;
-- Data Quality ;
-- Entity Resolution ;
-- Master Data Management ;
-- Architecture logicielle ;
-- Bases de données ;
-- Data Governance.
-
----
-
-# 🔬 Problématique
-
-> **Comment concevoir une plateforme capable d'intégrer et de centraliser des données patients provenant de sources hétérogènes, tout en assurant leur qualité, la détection des doublons, la traçabilité des identités et la gouvernance des accès basée sur le consentement du patient ?**
-
----
-
-# 🎯 MVP attendu
-
-Le MVP final doit démontrer la chaîne complète :
-
 ```text
-SOURCES CSV HÉTÉROGÈNES
-            │
-            ▼
-       EXTRACTION
-            │
-            ▼
-       DATA MAPPING
-            │
-            ▼
-      STANDARDISATION
-            │
-            ▼
-       DATA CLEANING
-            │
-            ▼
-      DEDUPLICATION
-            │
-            ▼
-   MASTER PATIENT INDEX
-            │
-            ▼
-    IDENTITY MAPPING
-            │
-            ▼
-   CENTRALISATION POSTGRESQL
-            │
-            ▼
-       DASHBOARD
+PATIENTS SOURCES
+       │
+       ▼
+ENTITY RESOLUTION
+       │
+       ▼
+MASTER PATIENT
 ```
 
 ---
 
-# 🔮 Perspectives d'évolution
+## Semaine 4 — Centralisation et démonstration
 
-Après validation du MVP, plusieurs évolutions sont possibles :
+### Objectifs
+
+- Chargement PostgreSQL.
+- Migration des relations métier.
+- Consentement basique.
+- Dashboard Streamlit.
+- Tests.
+- Documentation.
+- Préparation soutenance.
+
+### Livrable
+
+```text
+MVP COMPLET
+ET
+DÉMONTRATION FONCTIONNELLE
+```
+
+---
+
+# 🔮 Évolutions futures
+
+Après validation du MVP :
+
+## Sources
 
 ```text
 CSV
@@ -1200,31 +1235,178 @@ SQLite
 API REST
 ```
 
-Ainsi que :
+## Scalabilité
 
-- Apache Spark pour le traitement distribué.
-- Apache Airflow pour l'orchestration.
-- Docker pour la conteneurisation.
-- Gestion avancée des rôles.
-- Chiffrement des données sensibles.
-- Audit complet.
-- Machine Learning pour améliorer la déduplication.
-- Intégration de standards médicaux comme HL7/FHIR.
+```text
+Pandas
+   ↓
+PySpark
+   ↓
+Spark Cluster
+```
+
+## Data Lake
+
+```text
+PostgreSQL Central
+       +
+HDFS / Object Storage
+       +
+Hive
+```
+
+## Gouvernance
+
+- contrôle d'accès basé sur les rôles ;
+- consentement avancé ;
+- audit complet ;
+- chiffrement des données ;
+- anonymisation ;
+- pseudonymisation.
+
+---
+
+# 🛠️ Technologies et justification
+
+| Technologie | Utilisation | Niveau |
+|---|---|---|
+| Python | Pipeline principal | MVP |
+| CSV | Simulation des sources | MVP |
+| Pandas | Traitement local | MVP |
+| RapidFuzz | Similarité | MVP |
+| PostgreSQL | Base centrale | MVP |
+| Streamlit | Dashboard | MVP |
+| Docker | Conteneurisation | Extension |
+| PySpark | Scalabilité | Extension |
+| HDFS | Data Lake distribué | Évolution |
+| Hive | SQL analytique Big Data | Évolution |
+| VirtualBox | Environnement virtualisé | Optionnel |
+
+---
+
+# 🎓 Positionnement académique
+
+Le projet adopte une démarche progressive inspirée des pratiques de Data Engineering.
+
+```text
+PROBLÈME MÉTIER
+       │
+       ▼
+MVP FONCTIONNEL
+       │
+       ▼
+VALIDATION DES ALGORITHMES
+       │
+       ▼
+PASSAGE À L'ÉCHELLE
+       │
+       ▼
+ARCHITECTURE BIG DATA
+```
+
+Le projet ne cherche donc pas à utiliser Hadoop, Hive ou Spark uniquement pour afficher des technologies Big Data.
+
+Chaque technologie est introduite en fonction d'un besoin précis :
+
+| Besoin | Technologie |
+|---|---|
+| Prototype rapide | Pandas |
+| Données hétérogènes | Extractor Layer |
+| Déduplication | RapidFuzz / Entity Resolution |
+| Passage à l'échelle | Apache Spark |
+| Stockage distribué | HDFS |
+| SQL analytique sur Data Lake | Hive |
+| Environnement isolé | VirtualBox / Docker |
+
+---
+
+# 🎯 MVP final attendu
+
+Le MVP doit démontrer la chaîne complète :
+
+```text
+                SOURCES HÉTÉROGÈNES
+                     CSV (MVP)
+                          │
+                          ▼
+                    EXTRACTION
+                          │
+                          ▼
+                     RAW DATA
+                          │
+                          ▼
+                    DATA MAPPING
+                          │
+                          ▼
+                  STANDARDISATION
+                          │
+                          ▼
+                   DATA CLEANING
+                          │
+                          ▼
+                      BLOCKING
+                          │
+                          ▼
+                  ENTITY RESOLUTION
+                          │
+                          ▼
+                  MASTER PATIENT INDEX
+                          │
+                          ▼
+                    IDENTITY MAP
+                          │
+                          ▼
+                 POSTGRESQL CENTRAL
+                          │
+                          ▼
+                      DASHBOARD
+```
 
 ---
 
 # 📌 Conclusion
 
-Ce projet ne consiste pas simplement à déplacer des fichiers CSV vers PostgreSQL.
+Ce projet ne consiste pas simplement à déplacer des données vers PostgreSQL.
 
-L'utilisation des fichiers CSV constitue une **première implémentation du MVP**, permettant de valider rapidement la logique métier.
+Il répond à un problème de **Data Integration et Master Data Management appliqué aux données de santé**.
 
-L'objectif principal reste :
+Le MVP est volontairement développé avec une architecture légère :
 
-> **Intégrer, nettoyer, réconcilier et centraliser des données patients hétérogènes tout en conservant la traçabilité des sources et des identités.**
+```text
+CSV
++
+Python
++
+Pandas
++
+Entity Resolution
++
+PostgreSQL
+```
 
-L'architecture modulaire permet ensuite de faire évoluer progressivement les sources CSV vers de véritables systèmes de bases de données.
+Cette première version permet de valider :
 
-Le principe fondamental du projet est donc :
+- l'intégration des sources ;
+- le modèle canonique ;
+- la qualité des données ;
+- la déduplication ;
+- le Master Patient Index ;
+- la centralisation.
 
-> **Changer la source sans changer le pipeline métier.**
+L'architecture est ensuite conçue pour évoluer progressivement vers une plateforme Big Data :
+
+```text
+Pandas
+   ↓
+PySpark
+   ↓
+Data Lake
+   ↓
+HDFS
+   ↓
+Hive
+   ↓
+Architecture distribuée
+```
+
+> **Le principe fondamental du projet est de résoudre d'abord correctement le problème métier, puis d'introduire progressivement les technologies Big Data lorsque le besoin de passage à l'échelle le justifie.**

@@ -1,3 +1,7 @@
 purchase_id,customer_id,medicine_name,quantity,purchase_date
 PUR-001,1,Paracetamol,2,2026-01-15
 PUR-002,2,Amoxicilline,1,2026-01-16
+PUR-003,3,Vitamine C,3,2026-01-17
+PUR-004,4,Ibuprofene,1,2026-01-18
+PUR-005,5,Paracetamol,2,2026-01-19
+PUR-006,6,Amoxicilline,1,2026-01-20
