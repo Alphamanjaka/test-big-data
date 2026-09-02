@@ -1,5 +1,6 @@
 from dataclasses import dataclass
-from difflib import SequenceMatcher
+
+from rapidfuzz import fuzz
 
 from patient_platform.transform.canonical import CanonicalPatient, matching_key
 
@@ -15,8 +16,8 @@ class MatchDecision:
 
 
 def _similarity(left: CanonicalPatient, right: CanonicalPatient) -> float:
-    name_score = SequenceMatcher(
-        None, left.full_name.lower(), right.full_name.lower()).ratio()
+    name_score = fuzz.ratio(
+        left.full_name.lower(), right.full_name.lower()) / 100.0
     birth_score = float(
         left.birth_date is not None and left.birth_date == right.birth_date)
     phone_score = float(bool(left.phone) and left.phone == right.phone)
