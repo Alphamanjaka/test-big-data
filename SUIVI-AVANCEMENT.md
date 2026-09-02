@@ -80,4 +80,4 @@ Le Niveau 1 (MVP) est le plus avancé. Les étapes du Niveau 2 et 3 sont détail
 - Les clés API de démo sont régénérées à chaque exécution de `scripts/init_governance.py`.
 - Les lignes RAW sont append-only : les relances conservent l'historique des extractions.
 - La gouvernance avancée (audit, rôles, consentement) est en place ; l'exposition réelle des payloads RAW reste désactivée par conception.
-- `pyspark==4.2.0` est présent dans `requirements.txt` mais absent de `pyproject.toml` et jamais importé.
+- `pyspark>=4.0` est maintenant officiellement dans `pyproject.toml`.

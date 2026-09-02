@@ -18,12 +18,12 @@ Dernière mise à jour : 2026-09-02
 
 | # | Tâche | État |
 |---|---|---|
-| S1.1 | Installer PySpark / vérifier environnement | En cours |
+| S1.1 | Installer PySpark / vérifier environnement | Terminé |
 | S1.2 | Session Spark de test | À faire |
 | S1.3 | Lecture CSV en Spark | À faire |
 | S1.4 | Benchmark Pandas vs Spark | À faire |
 
-> Note : `pyspark==4.2.0` est dans `requirements.txt` mais absent de `pyproject.toml` et jamais importé. Il faut l'ajouter aux dépendances officielles et valider une session Spark.
+> pyspark>=4.0 ajouté officiellement à `pyproject.toml`. Prêt pour S1.2 (session Spark).
 
 ## Phase 2 — Extraction
 
@@ -91,4 +91,4 @@ Prérequis ████████ 100%   S1 ░░░░ 25%   S2 ░░░░
 - **Blocages** : pyspark installé mais pas intégré au projet (`pyproject.toml` ne le liste pas)
 - **Journal** :
   - 2026-09-02 | Prérequis | MVP validé | P1-P5 terminés, Niveau 2 débloqué
-  - 2026-09-02 | S1.1 | pyspark==4.2.0 dans requirements.txt | Présent mais absent de pyproject.toml, jamais importé — à intégrer officiellement
+  - 2026-09-02 | S1.1 | pyspark>=4.0 ajouté à pyproject.toml | Dépendance officielle intégrée
