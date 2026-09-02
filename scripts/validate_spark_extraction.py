@@ -1,14 +1,12 @@
-import json
-
 import pandas as pd
 
+from patient_platform.config import load_sources
 from patient_platform.spark.csv_extractor import SparkCSVExtractor
 from patient_platform.spark.session import get_or_create_session
 
 
 def validate():
-    with open("config/sources.json", encoding="utf-8") as handle:
-        sources = json.load(handle)
+    sources = load_sources()
 
     errors = []
     spark = get_or_create_session()

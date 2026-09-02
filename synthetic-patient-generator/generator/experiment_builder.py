@@ -13,9 +13,9 @@ mêmes sources), mais un taux de variation différent :
 Chaque dossier `experiments/<niveau>/` est autonome :
 
     <niveau>/
-    ├── pharmacy/{patients.csv, purchases.csv}
+    ├── pharmacy/{patients.csv, achats.csv}
     ├── consultation/{patients.csv, consultations.csv}
-    ├── imaging/{patients.csv, exams.csv}
+    ├── imaging/{patients.csv, examens.csv}
     └── ground_truth/identity_mapping.csv   (réservé à l'évaluation)
 """
 

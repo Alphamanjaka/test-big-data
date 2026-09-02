@@ -18,11 +18,11 @@ def test_build_experiment_creates_all_expected_files(tmp_path):
 
     expected_files = [
         "pharmacy/patients.csv",
-        "pharmacy/purchases.csv",
+        "pharmacy/achats.csv",
         "consultation/patients.csv",
         "consultation/consultations.csv",
         "imaging/patients.csv",
-        "imaging/exams.csv",
+        "imaging/examens.csv",
         "ground_truth/identity_mapping.csv",
     ]
     for relative_path in expected_files:

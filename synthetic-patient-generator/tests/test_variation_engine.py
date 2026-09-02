@@ -22,6 +22,7 @@ SAMPLE_PATIENT = {
     "last_name": "Rakoto",
     "birth_date": "1990-01-10",
     "phone": "0341234567",
+    "address": "Antananarivo",
 }
 
 
@@ -69,7 +70,7 @@ def test_vary_date_format_produces_known_formats():
 def test_apply_variations_preserves_expected_keys(difficulty):
     rng = random.Random(1)
     result = apply_variations(SAMPLE_PATIENT, difficulty, rng)
-    assert set(result) == {"first_name", "last_name", "birth_date", "phone", "_variations_applied"}
+    assert set(result) == {"first_name", "last_name", "birth_date", "phone", "address", "_variations_applied"}
 
 
 def test_hard_difficulty_triggers_more_variations_than_easy_on_average():

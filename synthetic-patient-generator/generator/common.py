@@ -39,6 +39,7 @@ def build_source_patients(
             "last_name": row["last_name"],
             "birth_date": row["birth_date"],
             "phone": row["phone"],
+            "address": row.get("address", ""),
         }
         varied = apply_variations(clean_patient, difficulty, rng)
         rows.append(
@@ -49,6 +50,7 @@ def build_source_patients(
                 "last_name": varied["last_name"],
                 "birth_date": varied["birth_date"],
                 "phone": varied["phone"],
+                "address": varied["address"],
             }
         )
 

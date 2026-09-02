@@ -2,8 +2,8 @@
 Étape 5 — Source Generator : Imagerie.
 
 Produit :
-- data/raw/imaging/patients.csv  (person_identifier, patient_name, dob, tel)
-- data/raw/imaging/exams.csv     (exam_id, person_identifier, exam_type, exam_date)
+- data/raw/imaging/patients.csv  (id_personne, patient_name, dob, tel)
+- data/raw/imaging/examens.csv   (exam_id, patient_code, exam_type, exam_date)
 """
 
 from __future__ import annotations
@@ -41,7 +41,7 @@ def generate_imaging_patients(
     difficulty: str,
     seed: int = settings.RANDOM_SEED,
 ) -> pd.DataFrame:
-    """Génère data/raw/imaging/patients.csv : person_identifier, patient_name, dob, tel."""
+    """Génère data/raw/imaging/patients.csv : id_personne, patient_name, dob, tel."""
     varied = build_source_patients(
         master_patients, distribution_plan, "imaging", difficulty, seed
     )
@@ -52,7 +52,7 @@ def generate_imaging_patients(
 
     return pd.DataFrame(
         {
-            "person_identifier": varied["local_id"],
+            "id_personne": varied["local_id"],
             "patient_name": varied.apply(patient_name, axis=1),
             "dob": varied["birth_date"],
             "tel": varied["phone"],
@@ -61,20 +61,20 @@ def generate_imaging_patients(
 
 
 def generate_exams(patients_df: pd.DataFrame, seed: int = settings.RANDOM_SEED) -> pd.DataFrame:
-    """Génère data/raw/imaging/exams.csv : exam_id, person_identifier, exam_type, exam_date."""
+    """Génère data/raw/imaging/examens.csv : exam_id, patient_code, exam_type, exam_date."""
     rng = random.Random(seed)
     start, end = EXAM_DATE_RANGE
     rows: list[dict] = []
     counter = 0
 
-    for person_identifier in patients_df["person_identifier"]:
+    for person_identifier in patients_df["id_personne"]:
         n_exams = rng.randint(MIN_EXAMS_PER_PATIENT, MAX_EXAMS_PER_PATIENT)
         for _ in range(n_exams):
             counter += 1
             rows.append(
                 {
                     "exam_id": f"E{counter:06d}",
-                    "person_identifier": person_identifier,
+                    "patient_code": person_identifier,
                     "exam_type": rng.choice(EXAM_TYPES),
                     "exam_date": random_date_between(start, end, rng).isoformat(),
                 }
@@ -90,7 +90,7 @@ def save_imaging_data(
 ) -> None:
     output_dir.mkdir(parents=True, exist_ok=True)
     patients_df.to_csv(output_dir / "patients.csv", index=False)
-    exams_df.to_csv(output_dir / "exams.csv", index=False)
+    exams_df.to_csv(output_dir / "examens.csv", index=False)
 
 
 def main() -> None:

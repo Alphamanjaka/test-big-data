@@ -1,5 +1,4 @@
-import json
-
+from patient_platform.config import load_data_root, load_sources
 from patient_platform.deduplication.matcher import deduplicate as pandas_deduplicate, MatchDecision
 from patient_platform.pipeline import run_pipeline
 from patient_platform.spark.csv_extractor import SparkCSVExtractor
@@ -11,10 +10,10 @@ SOURCE_ORDER = ["pharmacy", "consultation", "imaging"]
 
 
 def validate():
-    with open("config/sources.json", encoding="utf-8") as handle:
-        sources = json.load(handle)
+    sources = load_sources()
+    data_root = load_data_root()
 
-    expected = run_pipeline("data/raw", "logs/runtime-spark-check.log", "LOGS-spark-check.md")
+    expected = run_pipeline(data_root, "logs/runtime-spark-check.log", "LOGS-spark-check.md")
     expected_map = [
         MatchDecision(d.master_patient_id, d.source_system, d.source_patient_id, d.method, d.score, d.explanation)
         for d in expected.identity_map

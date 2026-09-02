@@ -1,13 +1,12 @@
-import json
 import time
 
+from patient_platform.config import load_sources
 from patient_platform.spark.csv_extractor import SparkCSVExtractor
 from patient_platform.spark.session import get_or_create_session
 
 
 def benchmark():
-    with open("config/sources.json", encoding="utf-8") as handle:
-        sources = json.load(handle)
+    sources = load_sources()
 
     extractor_bench = {}
     total_patients = 0

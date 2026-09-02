@@ -2,8 +2,8 @@
 Étape 5 — Source Generator : Pharmacie.
 
 Produit :
-- data/raw/pharmacy/patients.csv   (customer_id, full_name, date_birth, phone_number)
-- data/raw/pharmacy/purchases.csv  (purchase_id, customer_id, medicine, quantity, purchase_date)
+- data/raw/pharmacy/patients.csv   (client_id, nom_complet, naissance, telephone, adresse)
+- data/raw/pharmacy/achats.csv     (purchase_id, customer_id, medicine, quantity, purchase_date)
 """
 
 from __future__ import annotations
@@ -44,7 +44,7 @@ def generate_pharmacy_patients(
     difficulty: str,
     seed: int = settings.RANDOM_SEED,
 ) -> pd.DataFrame:
-    """Génère data/raw/pharmacy/patients.csv : customer_id, full_name, date_birth, phone_number."""
+    """Génère data/raw/pharmacy/patients.csv : client_id, nom_complet, naissance, telephone, adresse."""
     varied = build_source_patients(
         master_patients, distribution_plan, "pharmacy", difficulty, seed
     )
@@ -55,10 +55,11 @@ def generate_pharmacy_patients(
 
     return pd.DataFrame(
         {
-            "customer_id": varied["local_id"],
-            "full_name": varied.apply(full_name, axis=1),
-            "date_birth": varied["birth_date"],
-            "phone_number": varied["phone"],
+            "client_id": varied["local_id"],
+            "nom_complet": varied.apply(full_name, axis=1),
+            "naissance": varied["birth_date"],
+            "telephone": varied["phone"],
+            "adresse": varied["address"],
         }
     )
 
@@ -66,13 +67,13 @@ def generate_pharmacy_patients(
 def generate_pharmacy_purchases(
     patients_df: pd.DataFrame, seed: int = settings.RANDOM_SEED
 ) -> pd.DataFrame:
-    """Génère data/raw/pharmacy/purchases.csv : purchase_id, customer_id, medicine, quantity, purchase_date."""
+    """Génère data/raw/pharmacy/achats.csv : purchase_id, customer_id, medicine, quantity, purchase_date."""
     rng = random.Random(seed)
     start, end = PURCHASE_DATE_RANGE
     rows: list[dict] = []
     counter = 0
 
-    for customer_id in patients_df["customer_id"]:
+    for customer_id in patients_df["client_id"]:
         n_purchases = rng.randint(MIN_PURCHASES_PER_PATIENT, MAX_PURCHASES_PER_PATIENT)
         for _ in range(n_purchases):
             counter += 1
@@ -96,7 +97,7 @@ def save_pharmacy_data(
 ) -> None:
     output_dir.mkdir(parents=True, exist_ok=True)
     patients_df.to_csv(output_dir / "patients.csv", index=False)
-    purchases_df.to_csv(output_dir / "purchases.csv", index=False)
+    purchases_df.to_csv(output_dir / "achats.csv", index=False)
 
 
 def main() -> None:

@@ -33,6 +33,7 @@ def normalize(patient: dict) -> dict:
         "last_name": patient["last_name"].strip(),
         "birth_date": patient["birth_date"],  # format ISO YYYY-MM-DD attendu
         "phone": patient["phone"],  # format ISO malgache: 0341234567
+        "address": (patient.get("address") or "").strip(),
     }
 
 

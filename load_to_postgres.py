@@ -1,5 +1,6 @@
 from pathlib import Path
 
+from patient_platform.config import load_data_root
 from patient_platform.load.database import connection_factory
 from patient_platform.load.postgres_loader import PostgresLoader
 from patient_platform.pipeline import run_pipeline
@@ -21,7 +22,7 @@ def apply_schema() -> None:
 
 if __name__ == "__main__":
     apply_schema()
-    result = run_pipeline("data/raw")
+    result = run_pipeline(load_data_root())
     PostgresLoader(connection_factory).load(
         result.patients, result.identity_map, result.raw_records,
         result.business_records)

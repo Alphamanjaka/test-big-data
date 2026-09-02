@@ -2,8 +2,8 @@
 Étape 5 — Source Generator : Consultation.
 
 Produit :
-- data/raw/consultation/patients.csv       (patient_code, first_name, last_name, birth_date, telephone)
-- data/raw/consultation/consultations.csv  (consultation_id, patient_code, diagnosis, consultation_date)
+- data/raw/consultation/patients.csv       (patient_code, prenom, nom, date_naiss, phone_number)
+- data/raw/consultation/consultations.csv  (consultation_id, patient_id, diagnosis, consultation_date)
 """
 
 from __future__ import annotations
@@ -44,7 +44,7 @@ def generate_consultation_patients(
     difficulty: str,
     seed: int = settings.RANDOM_SEED,
 ) -> pd.DataFrame:
-    """Génère data/raw/consultation/patients.csv : patient_code, first_name, last_name, birth_date, telephone."""
+    """Génère data/raw/consultation/patients.csv : patient_code, prenom, nom, date_naiss, phone_number."""
     varied = build_source_patients(
         master_patients, distribution_plan, "consultation", difficulty, seed
     )
@@ -52,10 +52,10 @@ def generate_consultation_patients(
     return pd.DataFrame(
         {
             "patient_code": varied["local_id"],
-            "first_name": varied["first_name"],
-            "last_name": varied["last_name"],
-            "birth_date": varied["birth_date"],
-            "telephone": varied["phone"],
+            "prenom": varied["first_name"],
+            "nom": varied["last_name"],
+            "date_naiss": varied["birth_date"],
+            "phone_number": varied["phone"],
         }
     )
 
@@ -78,7 +78,7 @@ def generate_consultations(
             rows.append(
                 {
                     "consultation_id": f"C{counter:06d}",
-                    "patient_code": patient_code,
+                    "patient_id": patient_code,
                     "diagnosis": rng.choice(DIAGNOSES),
                     "consultation_date": random_date_between(start, end, rng).isoformat(),
                 }
