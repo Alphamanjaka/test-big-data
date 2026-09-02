@@ -65,6 +65,32 @@ DIFFICULTY_LEVELS = {
     "hard": 0.50,
 }
 
+# Types de variations débloqués progressivement par niveau (cf. section
+# "Niveaux de difficulté" du document). Chaque type actif a une probabilité
+# d'être appliqué égale au taux de DIFFICULTY_LEVELS pour ce niveau.
+DIFFICULTY_VARIATION_TYPES = {
+    "easy": ["case", "spacing", "date_format", "phone_format"],
+    "medium": [
+        "case",
+        "spacing",
+        "date_format",
+        "phone_format",
+        "name_inversion",
+        "typo_light",
+    ],
+    "hard": [
+        "case",
+        "spacing",
+        "date_format",
+        "phone_format",
+        "name_inversion",
+        "typo_light",
+        "typo",
+        "abbreviation",
+        "missing_value",
+    ],
+}
+
 # Probabilités individuelles de variation, utilisées par le Variation Engine
 VARIATION_PROBABILITIES = {
     "name_variation": 0.30,
