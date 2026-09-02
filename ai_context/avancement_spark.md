@@ -1,9 +1,15 @@
 # Avancement Niveau 2 — Apache Spark
 
+<<<<<<< Updated upstream
+=======
+Dernière mise à jour : 2026-09-02
+
+>>>>>>> Stashed changes
 ## Prérequis (MVP validé)
 
 | # | Critère | État |
 |---|---|---|
+<<<<<<< Updated upstream
 | P1 | Pipeline Pandas bout en bout | À faire |
 | P2 | Déduplication Jean Rakoto validée | À faire |
 | P3 | PostgreSQL central alimenté | À faire |
@@ -11,6 +17,15 @@
 | P5 | Tests MVP passés | À faire |
 
 > Ne pas commencer le Niveau 2 tant que P1-P5 ne sont pas validés.
+=======
+| P1 | Pipeline Pandas bout en bout | Terminé |
+| P2 | Déduplication Jean Rakoto validée | Terminé |
+| P3 | PostgreSQL central alimenté | Terminé |
+| P4 | Dashboard opérationnel | Terminé |
+| P5 | Tests MVP passés | Terminé |
+
+> Prérequis validés — le Niveau 2 peut démarrer.
+>>>>>>> Stashed changes
 
 ## Phase 1 — Environnement
 
@@ -58,7 +73,11 @@
 ## État global
 
 ```
+<<<<<<< Updated upstream
 P1 ░░░░0%   P2 ░░░░0%   P3 ░░░░0%   P4 ░░░░0%   P5 ░░░░0%   TOTAL ░░░░0%
+=======
+P1 ████████ 100%   P2 ░░░░0%   P3 ░░░░0%   P4 ░░░░0%   P5 ░░░░0%   TOTAL ░░░░ 10%
+>>>>>>> Stashed changes
 ```
 
 ## Critères de succès
@@ -79,6 +98,17 @@ P1 ░░░░0%   P2 ░░░░0%   P3 ░░░░0%   P4 ░░░░0%   
 | Chargement | JDBC → PostgreSQL | Compatible MVP |
 
 ## Hypothèses / Blocages / Journal
+<<<<<<< Updated upstream
 - Hypothèses : HS1-HS3
 - Blocages : BS1 (vide)
 - Journal : (date | phase | action | résultat)
+=======
+
+- **Hypothèses** :
+  - HS1 : PySpark en mode local suffisant pour le Niveau 2
+  - HS2 : Résultats Pandas comme baseline de référence
+  - HS3 : Même schéma PostgreSQL que le MVP
+- **Blocages** : Aucun
+- **Journal** :
+  - 2026-09-02 | Prérequis | MVP validé | P1-P5 terminés, Niveau 2 débloqué
+>>>>>>> Stashed changes
