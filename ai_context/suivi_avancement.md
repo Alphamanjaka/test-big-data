@@ -1,43 +1,44 @@
-# Instruction de suivi d’avancement
+# Instruction de suivi d'avancement
 
-## Mission
+Projet sur 3 niveaux, strictement progressifs : MVP → Spark → Big Data.
 
-Suivre le projet de façon claire, traçable et alignée sur le MVP.
+## Fichiers de sortie
 
-## Fichier de sortie obligatoire
+| Niveau | Fichier |
+|---|---|
+| 1 MVP | `SUIVI-AVANCEMENT.md` + `ai_context/avancement_mvp.md` |
+| 2 Spark | `ai_context/avancement_spark.md` |
+| 3 Big Data | `ai_context/avancement_bigdata.md` |
 
-Tout état d’avancement, toute validation, toute hypothèse et tout blocage doivent être écrits dans le fichier racine `SUIVI-AVANCEMENT.md`.
-Ne pas créer un autre fichier de suivi et ne pas conserver uniquement ces informations dans la conversation, le terminal ou un fichier temporaire.
+Ne pas créer d'autres fichiers de suivi.
 
 ## Règles
 
-- Décomposer le travail en étapes logiques : architecture, extraction, transformation, déduplication, centralisation, dashboard.
-- Garder un état visible du progrès pour chaque étape.
-- Ne pas avancer dans une étape suivante sans validation de l’étape précédente.
-- Documenter les hypothèses et les blocages.
+- Un niveau n'est démarrable que si le précédent est validé.
+- Chaque fichier de niveau suit le même squelette : Prérequis, Tâches (tableau # / tâche / état), État global (barres), Critères de succès, Décisions, Hypothèses / Blocages / Journal.
+- Ne pas mélanger les étapes de niveaux différents.
+- Pas d'avancement dans une étape sans validation de la précédente.
+- Documenter hypothèses et blocages.
 
-## États attendus
+## États
 
-- À faire
-- En cours
-- Terminé
-- Bloqué
+À faire / En cours / Terminé / Bloqué
 
-## Checklist minimale
+## Checklist MVP (Niveau 1)
 
-- Sources connectées
-- Extraction fonctionnelle
-- Mapping et standardisation validés
-- Nettoyage appliqué
-- Déduplication explicable
-- Identity mapping créé
-- PostgreSQL central alimenté
-- Dashboard fonctionnel
-- Cas de démonstration validé
+Sources connectées · Extraction · Mapping/standardisation · Nettoyage · Déduplication expl. · Identity mapping · PostgreSQL · Dashboard · Cas démo
+
+## Checklist Spark (Niveau 2)
+
+PySpark + session · Extraction DataFrame · Transformation = MVP · Déduplication Jean Rakoto · Chargement PG · Résultats = Pandas · Performance
+
+## Checklist Big Data (Niveau 3)
+
+Hadoop (HDFS+Hive+Spark) · Data Lake /raw/staging/processed/curated · Tables Hive · Pipeline distribué bout en bout · Résultats cohérents 1-2 · Démo 3 niveaux
 
 ## Bonnes pratiques
 
-- Rendre la progression lisible pour une soutenance.
-- Faire une vérification avant de conclure qu’une étape est terminée.
-- Ne pas mélanger une étape “technique” avec une étape “présentation” si elle n’a pas été validée.
-- Chaque finalisation doit être accompagnée d’un justificatif clair : test, résultat ou trace de validation.
+- Progression lisible pour la soutenance.
+- Vérifier avant de déclarer une étape terminée.
+- Justifier chaque finalisation (test/résultat/trace).
+- Mettre à jour le fichier du niveau concerné dès qu'une action est terminée.

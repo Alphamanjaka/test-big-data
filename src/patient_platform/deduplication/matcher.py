@@ -23,7 +23,7 @@ def _similarity(left: CanonicalPatient, right: CanonicalPatient) -> float:
     return round((name_score * 0.5) + (birth_score * 0.3) + (phone_score * 0.2), 3)
 
 
-def deduplicate(patients: list[CanonicalPatient], probabilistic_threshold: float = 0.82) -> list[MatchDecision]:
+def deduplicate(patients: list[CanonicalPatient], probabilistic_threshold: float = 0.80) -> list[MatchDecision]:
     masters: list[CanonicalPatient] = []
     decisions: list[MatchDecision] = []
 
