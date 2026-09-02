@@ -5,7 +5,8 @@ CREATE TABLE
         source_patient_id TEXT NOT NULL,
         source_file TEXT NOT NULL,
         payload JSONB NOT NULL,
-        extracted_at TIMESTAMPTZ NOT NULL DEFAULT NOW ()
+        extracted_at TIMESTAMPTZ NOT NULL DEFAULT NOW (),
+        UNIQUE (source_system, source_patient_id)
     );
 
 CREATE TABLE

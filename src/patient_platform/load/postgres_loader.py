@@ -42,6 +42,7 @@ class PostgresLoader:
                         INSERT INTO raw_patient_record
                             (source_system, source_patient_id, source_file, payload)
                         VALUES (%s, %s, %s, %s)
+                        ON CONFLICT (source_system, source_patient_id) DO NOTHING
                         """,
                         (
                             raw_record.source_system,
