@@ -55,10 +55,15 @@ Dernière mise à jour : 2026-09-02
 
 | # | Tâche | État |
 |---|---|---|
-| S4.1 | Blocking en Spark | À faire |
-| S4.2 | Exact matching en Spark | À faire |
-| S4.3 | Fuzzy matching en Spark | À faire |
-| S4.4 | Valider cas Jean Rakoto en Spark | À faire |
+| S4.1 | Blocking en Spark | Terminé |
+| S4.2 | Exact matching en Spark | Terminé |
+| S4.3 | Fuzzy matching en Spark | Terminé |
+| S4.4 | Valider cas Jean Rakoto en Spark | Terminé |
+
+> `spark/deduplication.py` : exact classes par self-join, matrice de similarité
+> par cross join + UDF (scoring RapidFuzz identique N1), résolution séquentielle
+> sur driver (numérotation). 18 liens / 11 masters strictement identiques au MVP,
+> Jean Rakoto exact + Nirina probabiliste 0.8 validés.
 
 ## Phase 5 — Chargement
 
@@ -71,7 +76,7 @@ Dernière mise à jour : 2026-09-02
 ## État global
 
 ```
-Prérequis ████████ 100%   S1 ████████ 100%   S2 ████████ 100%   S3 ████████ 100%   S4 ░░░░0%   S5 ░░░░0%   TOTAL ░░░░░ 60%
+Prérequis ████████ 100%   S1 ████████ 100%   S2 ████████ 100%   S3 ████████ 100%   S4 ████████ 100%   S5 ░░░░0%   TOTAL ░░░░░ 80%
 ```
 
 ## Critères de succès
@@ -106,3 +111,4 @@ Prérequis ████████ 100%   S1 ████████ 100%   S2
   - 2026-09-02 | S1.4 | Benchmark Pandas vs Spark | Pandas ~1-2ms vs Spark ~0.4-4s à 6 lignes : overhead JVM domine sur petit volume, Spark se justifie sur gros volume
   - 2026-09-02 | S2.1-S2.3 | Extraction Spark | SparkExtractor abstrait + SparkCSVExtractor, 36 lignes cohérentes avec Pandas
   - 2026-09-02 | S3.1-S3.4 | Transformation Spark | UDFs des fonctions N1, 18 patients exactement identiques au MVP. Bloqueurs levés : PYSPARK_PYTHON (stub MS Store) + inferSchema convertissant les dates
+  - 2026-09-02 | S4.1-S4.4 | Déduplication Spark | Exact self-join + scores cross-join, 18 liens/11 masters identiques MVP, Jean Rakoto et Nirina validés
