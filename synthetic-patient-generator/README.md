@@ -50,9 +50,9 @@ mêmes données). `--difficulty` / `--variation` accepte : `easy`, `medium`, `ha
 |---|---|
 | `python -m generator.patient_generator --patients 10000 --seed 42` | Génère les patients maîtres (Ground Truth) → `data/ground_truth/master_patients.csv` |
 | `python -m generator.distribution_engine --patients 10000 --seed 42` | Génère les patients + les distribue dans les 3 sources → `data/ground_truth/distribution_plan.csv` |
-| `python -m generator.pharmacy_generator --patients 10000 --difficulty medium --seed 42` | Génère la source Pharmacie → `data/raw/pharmacy/{patients,purchases}.csv` |
+| `python -m generator.pharmacy_generator --patients 10000 --difficulty medium --seed 42` | Génère la source Pharmacie → `data/raw/pharmacy/{patients,achats}.csv` |
 | `python -m generator.consultation_generator --patients 10000 --difficulty medium --seed 42` | Génère la source Consultation → `data/raw/consultation/{patients,consultations}.csv` |
-| `python -m generator.imaging_generator --patients 10000 --difficulty medium --seed 42` | Génère la source Imagerie → `data/raw/imaging/{patients,exams}.csv` |
+| `python -m generator.imaging_generator --patients 10000 --difficulty medium --seed 42` | Génère la source Imagerie → `data/raw/imaging/{patients,examens}.csv` |
 | `python -m generator.identity_mapping --patients 10000 --seed 42` | Génère le fichier de vérité → `data/ground_truth/identity_mapping.csv` |
 | `python -m generator.experiment_builder --patients 10000 --seed 42` | Génère **les 3 datasets complets** (easy/medium/hard) → `data/experiments/{easy,medium,hard}/` |
 
