@@ -1,28 +1,17 @@
 # Avancement Niveau 3 — Architecture Big Data complète
 
-<<<<<<< Updated upstream
-=======
 Dernière mise à jour : 2026-09-02
 
->>>>>>> Stashed changes
 ## Prérequis (Niveaux 1-2 validés)
 
 | # | Critère | État |
 |---|---|---|
-<<<<<<< Updated upstream
-| P1 | MVP complet et fonctionnel | À faire |
-=======
 | P1 | MVP complet et fonctionnel | Terminé |
->>>>>>> Stashed changes
 | P2 | Niveau 2 Spark validé | À faire |
 | P3 | Performances Spark documentées | À faire |
 | P4 | Scalabilité démontrée | À faire |
 
-<<<<<<< Updated upstream
-> Ne pas commencer le Niveau 3 tant que P1-P4 ne sont pas validés.
-=======
 > P1 validé. P2-P4 dépendent du Niveau 2 — ne pas commencer.
->>>>>>> Stashed changes
 
 ## Phase 1 — Environnement
 
@@ -77,11 +66,7 @@ Dernière mise à jour : 2026-09-02
 ## État global
 
 ```
-<<<<<<< Updated upstream
-P1 ░░░░0%   P2 ░░░░0%   P3 ░░░░0%   P4 ░░░░0%   P5 ░░░░0%   TOTAL ░░░░0%
-=======
-P1 ░░░░25%   P2 ░░░░0%   P3 ░░░░0%   P4 ░░░░0%   TOTAL ░░░░ 5%
->>>>>>> Stashed changes
+Prérequis ░░░░ 25%   D1 ░░░░0%   D2 ░░░░0%   D3 ░░░░0%   D4 ░░░░0%   D5 ░░░░0%   TOTAL ░░░░ 4%
 ```
 
 ## Critères de succès
@@ -107,18 +92,12 @@ P1 ░░░░25%   P2 ░░░░0%   P3 ░░░░0%   P4 ░░░░0%  
 | Streamlit | Dashboard |
 
 ## Hypothèses / Blocages / Journal
-<<<<<<< Updated upstream
-- Hypothèses : HD1-HD4
-- Blocages : BD1 (vide)
-- Journal : (date | phase | action | résultat)
-=======
 
 - **Hypothèses** :
   - HD1 : VirtualBox/Docker disponible pour virtualisation
   - HD2 : Cluster pseudo-distribué suffisant pour la démo
   - HD3 : Mêmes données sources que le MVP
   - HD4 : Résultats Niveaux 1-2 comme baseline
-- **Blocages** : Aucun
+- **Blocages** : Aucun — en attente validación Niveau 2
 - **Journal** :
-  - 2026-09-02 | Prérequis | MVP validé | P1 terminé, Niveau 3 partially débloqué (P2-P4 en attente Niveau 2)
->>>>>>> Stashed changes
+  - 2026-09-02 | Prérequis | MVP validé | P1 terminé, P2-P4 en attente Niveau 2
