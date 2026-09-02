@@ -19,19 +19,24 @@ Dernière mise à jour : 2026-09-02
 | # | Tâche | État |
 |---|---|---|
 | S1.1 | Installer PySpark / vérifier environnement | Terminé |
-| S1.2 | Session Spark de test | À faire |
-| S1.3 | Lecture CSV en Spark | À faire |
-| S1.4 | Benchmark Pandas vs Spark | À faire |
+| S1.2 | Session Spark de test | Terminé |
+| S1.3 | Lecture CSV en Spark | Terminé |
+| S1.4 | Benchmark Pandas vs Spark | Terminé |
 
-> pyspark>=4.0 ajouté officiellement à `pyproject.toml`. Prêt pour S1.2 (session Spark).
+> Phase 1 complète. `src/patient_platform/spark/session.py` normalise JAVA_HOME
+> (correction du `\bin` en trop) et fournit une session locale partagée ;
+> `SparkCSVExtractor` lit les CSV avec `source_system`/`source_file`.
 
 ## Phase 2 — Extraction
 
 | # | Tâche | État |
 |---|---|---|
-| S2.1 | Adapter CSVExtractor → Spark DataFrame | À faire |
-| S2.2 | SparkExtractor (abstrait) | À faire |
-| S2.3 | Valider extraction des 3 sources | À faire |
+| S2.1 | Adapter CSVExtractor → Spark DataFrame | Terminé |
+| S2.2 | SparkExtractor (abstrait) | Terminé |
+| S2.3 | Valider extraction des 3 sources | Terminé |
+
+> `SparkExtractor` (ABC) + `SparkCSVExtractor`. Validation : colonnes et comptes
+> identiques à Pandas (36 lignes), `source_system` correct.
 
 ## Phase 3 — Transformation
 
@@ -62,7 +67,7 @@ Dernière mise à jour : 2026-09-02
 ## État global
 
 ```
-Prérequis ████████ 100%   S1 ░░░░ 25%   S2 ░░░░0%   S3 ░░░░0%   S4 ░░░░0%   S5 ░░░░0%   TOTAL ░░░░ 20%
+Prérequis ████████ 100%   S1 ████████ 100%   S2 ████████ 100%   S3 ░░░░0%   S4 ░░░░0%   S5 ░░░░0%   TOTAL ░░░░░ 45%
 ```
 
 ## Critères de succès
@@ -88,7 +93,11 @@ Prérequis ████████ 100%   S1 ░░░░ 25%   S2 ░░░░
   - HS1 : PySpark en mode local suffisant pour le Niveau 2
   - HS2 : Résultats Pandas comme baseline de référence
   - HS3 : Même schéma PostgreSQL que le MVP
-- **Blocages** : pyspark installé mais pas intégré au projet (`pyproject.toml` ne le liste pas)
+- **Blocages** : levés — `JAVA_HOME` contenait `\bin` en trop et bloquait tout lancement Spark ; corrigé au niveau utilisateur et normalisé dans `spark/session.py`. Avertissements winutils/native-hadoop non bloquants en mode local.
 - **Journal** :
   - 2026-09-02 | Prérequis | MVP validé | P1-P5 terminés, Niveau 2 débloqué
   - 2026-09-02 | S1.1 | pyspark>=4.0 ajouté à pyproject.toml | Dépendance officielle intégrée
+  - 2026-09-02 | S1.2 | Session Spark validée | Spark 4.2.0, master local[2], range count OK
+  - 2026-09-02 | S1.3 | Lecture CSV en Spark | 18 patients + 18 métier = MVP, via SparkCSVExtractor
+  - 2026-09-02 | S1.4 | Benchmark Pandas vs Spark | Pandas ~1-2ms vs Spark ~0.4-4s à 6 lignes : overhead JVM domine sur petit volume, Spark se justifie sur gros volume
+  - 2026-09-02 | S2.1-S2.3 | Extraction Spark | SparkExtractor abstrait + SparkCSVExtractor, 36 lignes cohérentes avec Pandas

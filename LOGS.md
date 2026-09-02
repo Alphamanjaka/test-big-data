@@ -49,3 +49,12 @@ Pipeline pandas complet : extraction (3 sources) + mapping canonique + nettoyage
 
 - Aucune donnée patient nominative dans les journaux.
 - Les décisions de matching sont conservées dans l'identity map produite par le pipeline.
+2026-09-02T07:30:44+00:00 | INFO | pipeline | status=started
+2026-09-02T07:30:44+00:00 | INFO | extraction | source=pharmacy | rows_read=6 | status=success
+2026-09-02T07:30:44+00:00 | INFO | extraction | source=consultation | rows_read=6 | status=success
+2026-09-02T07:30:44+00:00 | INFO | extraction | source=imaging | rows_read=6 | status=success
+2026-09-02T07:30:44+00:00 | INFO | extraction | source=pharmacy | domain=purchase | rows_read=6 | status=success
+2026-09-02T07:30:44+00:00 | INFO | extraction | source=consultation | domain=consultation | rows_read=6 | status=success
+2026-09-02T07:30:44+00:00 | INFO | extraction | source=imaging | domain=imaging_exam | rows_read=6 | status=success
+2026-09-02T07:30:44+00:00 | INFO | deduplication | method=exact_then_probabilistic | master_patients=11 | identity_links=18 | status=success
+2026-09-02T07:30:44+00:00 | INFO | pipeline | status=completed
