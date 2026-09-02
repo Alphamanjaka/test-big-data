@@ -1,171 +1,51 @@
 ﻿# Journal du projet
 
-## 2026-09-01
+Journal des événements marquants uniquement. Les exécutions répétitives du pipeline sont condensées en une ligne.
 
-```text
-INFO | architecture | scope=mvp | status=success | python_package_structure_created
-INFO | extraction | sources=3_csv_synthetiques | status=success | rows_read=6
-INFO | transformation | target=canonical_patient | status=success | date_and_phone_standardized
-INFO | deduplication | method=exact_then_probabilistic | status=success | master_patients=2 | identity_links=6
-INFO | validation | test_suite=pytest | status=success | tests_passed=2
-INFO | validation | compile=python_compileall | status=success
-```
+## 2026-09-01 — Fondations
 
-Les journaux ne contiennent aucune donnée patient nominative. Les décisions de matching sont conservées dans l’identity map produite par le pipeline.
-2026-09-01T08:56:49+00:00 | INFO | pipeline | status=started
-2026-09-01T08:56:49+00:00 | INFO | extraction | source=pharmacy | rows_read=2 | status=success
-2026-09-01T08:56:49+00:00 | INFO | extraction | source=consultation | rows_read=2 | status=success
-2026-09-01T08:56:49+00:00 | INFO | extraction | source=imaging | rows_read=2 | status=success
-2026-09-01T08:56:49+00:00 | INFO | deduplication | method=exact_then_probabilistic | master_patients=2 | identity_links=6 | status=success
-2026-09-01T08:56:49+00:00 | INFO | pipeline | status=completed
-INFO | git | branch=main | status=initialized | author_configured
-INFO | git | configuration=.gitignore,.gitattributes | status=success
-INFO | validation | test_suite=pytest | status=success | tests_passed=3
-INFO | postgres | component=raw_load | target=raw_patient_record | status=success | rows=6
-INFO | validation | traceability=raw_to_master | status=success | raw=6 | masters=2 | identity_links=6
-INFO | postgres | component=business_load | target=patient_plateform | status=success | purchases=2 | consultations=2 | exams=2
-INFO | validation | business_rerun=true | status=success | duplicate_business_rows=0
-INFO | api | endpoints=health,metrics,patients | target=patient_plateform | status=success
-INFO | api | health=ok | database=connected | status=success
-INFO | api | metrics=available | raw_records=18 | master_patients=2 | identity_links=6 | status=success
-INFO | dashboard | framework=streamlit | port=8501 | status=started
-INFO | dashboard | smoke_test=http_200 | status=success
-INFO | validation | test_suite=pytest | status=success | tests_passed=4
-INFO | dashboard | framework=streamlit | cache_ttl_seconds=30 | status=optimized
-INFO | postgres | component=connection | host=localhost | port=5432 | status=server_reachable | database=missing
-INFO | postgres | component=connection | host=localhost | port=5432 | status=success | database=patient_plateform
-INFO | postgres | component=schema | target=patient_plateform | status=success | tables=4
-INFO | postgres | component=load | target=patient_plateform | status=success | master_patients=2 | identity_links=6
-2026-09-01T10:35:34+00:00 | INFO | pipeline | status=started
-2026-09-01T10:35:34+00:00 | INFO | extraction | source=pharmacy | rows_read=2 | status=success
-2026-09-01T10:35:34+00:00 | INFO | extraction | source=consultation | rows_read=2 | status=success
-2026-09-01T10:35:34+00:00 | INFO | extraction | source=imaging | rows_read=2 | status=success
-2026-09-01T10:35:34+00:00 | INFO | deduplication | method=exact_then_probabilistic | master_patients=2 | identity_links=6 | status=success
-2026-09-01T10:35:34+00:00 | INFO | pipeline | status=completed
-2026-09-01T10:39:11+00:00 | INFO | pipeline | status=started
-2026-09-01T10:39:11+00:00 | INFO | extraction | source=pharmacy | rows_read=2 | status=success
-2026-09-01T10:39:11+00:00 | INFO | extraction | source=consultation | rows_read=2 | status=success
-2026-09-01T10:39:11+00:00 | INFO | extraction | source=imaging | rows_read=2 | status=success
-2026-09-01T10:39:11+00:00 | INFO | deduplication | method=exact_then_probabilistic | master_patients=2 | identity_links=6 | status=success
-2026-09-01T10:39:11+00:00 | INFO | pipeline | status=completed
-INFO | postgres | component=schema | target=patient_plateform | status=success | idempotent=true
-INFO | postgres | component=load | target=patient_plateform | status=success | rerun=true | master_patients=2 | identity_links=6
-INFO | validation | test_suite=pytest | status=success | tests_passed=3
-2026-09-01T10:42:48+00:00 | INFO | pipeline | status=started
-2026-09-01T10:42:48+00:00 | INFO | extraction | source=pharmacy | rows_read=2 | status=success
-2026-09-01T10:42:48+00:00 | INFO | extraction | source=consultation | rows_read=2 | status=success
-2026-09-01T10:42:48+00:00 | INFO | extraction | source=imaging | rows_read=2 | status=success
-2026-09-01T10:42:48+00:00 | INFO | deduplication | method=exact_then_probabilistic | master_patients=2 | identity_links=6 | status=success
-2026-09-01T10:42:48+00:00 | INFO | pipeline | status=completed
-2026-09-01T10:46:25+00:00 | INFO | pipeline | status=started
-2026-09-01T10:46:25+00:00 | INFO | extraction | source=pharmacy | rows_read=2 | status=success
-2026-09-01T10:46:25+00:00 | INFO | extraction | source=consultation | rows_read=2 | status=success
-2026-09-01T10:46:25+00:00 | INFO | extraction | source=imaging | rows_read=2 | status=success
-2026-09-01T10:46:25+00:00 | INFO | extraction | source=pharmacy | domain=purchase | rows_read=2 | status=success
-2026-09-01T10:46:25+00:00 | INFO | extraction | source=consultation | domain=consultation | rows_read=2 | status=success
-2026-09-01T10:46:25+00:00 | INFO | extraction | source=imaging | domain=imaging_exam | rows_read=2 | status=success
-2026-09-01T10:46:25+00:00 | INFO | deduplication | method=exact_then_probabilistic | master_patients=2 | identity_links=6 | status=success
-2026-09-01T10:46:25+00:00 | INFO | pipeline | status=completed
-2026-09-01T10:46:27+00:00 | INFO | pipeline | status=started
-2026-09-01T10:46:27+00:00 | INFO | extraction | source=pharmacy | rows_read=2 | status=success
-2026-09-01T10:46:27+00:00 | INFO | extraction | source=consultation | rows_read=2 | status=success
-2026-09-01T10:46:27+00:00 | INFO | extraction | source=imaging | rows_read=2 | status=success
-2026-09-01T10:46:27+00:00 | INFO | extraction | source=pharmacy | domain=purchase | rows_read=2 | status=success
-2026-09-01T10:46:27+00:00 | INFO | extraction | source=consultation | domain=consultation | rows_read=2 | status=success
-2026-09-01T10:46:27+00:00 | INFO | extraction | source=imaging | domain=imaging_exam | rows_read=2 | status=success
-2026-09-01T10:46:27+00:00 | INFO | deduplication | method=exact_then_probabilistic | master_patients=2 | identity_links=6 | status=success
-2026-09-01T10:46:27+00:00 | INFO | pipeline | status=completed
+- `INFO | architecture | scope=mvp | python_package_structure_created | success`
+- `INFO | data | sources=3_CSV_synthetiques | rows=60 (20/source) | success`
+- `INFO | postgres | schema=patient_plateform | tables=4 | idempotent=true | success`
+- `INFO | git | branch=main | .gitignore,.gitattributes | initialized`
+
+## 2026-09-01 — Pipeline MVP (exécutions 08:56→10:46)
+
+Pipeline pandas complet : extraction (3 sources) + mapping canonique + nettoyage → déduplication → loader. Résultat stable à chaque run :
+
+- `INFO | deduplication | method=exact_then_probabilistic | master_patients=2 | identity_links=6 | success`
+- Validation : `pytest` (2→4 tests), `compileall` OK, `raw=6 → masters=2 → links=6`, `business=purchases=2,consultations=2,exams=2`, rerun sans doublons.
+- API : `/health,/metrics,/patients` OK (`health=ok`, `metrics raw=18/masters=2/links=6`).
+- Dashboard : Streamlit port 8501, `http_200`, cache `ttl=30s`.
 
 ## 2026-09-01 — Gouvernance et contrôle d'accès
 
-```text
-INFO | governance | schema | tables=api_user,access_audit | status=success | added
-INFO | governance | auth | method=api_key_sha256 | roles=admin,analyst,viewer | status=success
-INFO | governance | api | protected_endpoints=metrics,patients,users,audit,consent | status=success
-INFO | governance | audit_middleware | tabled=access_audit | status=success | every_request_logged
-INFO | governance | consent | endpoints=GET,GET_by_id,POST | status=success | purposes=api_access,research,analytics
-INFO | governance | dashboard | auth=sidebar_api_key | status=success | role_aware_views
-INFO | governance | init | script=scripts/init_governance.py | status=success | demo_users=3
-INFO | validation | test_suite=pytest | status=success | tests_passed=14
-INFO | validation | compile=python_compileall | status=success
-INFO | security | api_keys | storage=hashed_sha256 | plaintext_never_persisted | status=success
-```
-2026-09-01T11:26:25+00:00 | INFO | pipeline | status=started
-2026-09-01T11:26:25+00:00 | INFO | extraction | source=pharmacy | rows_read=2 | status=success
-2026-09-01T11:26:25+00:00 | INFO | extraction | source=consultation | rows_read=2 | status=success
-2026-09-01T11:26:25+00:00 | INFO | extraction | source=imaging | rows_read=2 | status=success
-2026-09-01T11:26:25+00:00 | INFO | extraction | source=pharmacy | domain=purchase | rows_read=2 | status=success
-2026-09-01T11:26:25+00:00 | INFO | extraction | source=consultation | domain=consultation | rows_read=2 | status=success
-2026-09-01T11:26:25+00:00 | INFO | extraction | source=imaging | domain=imaging_exam | rows_read=2 | status=success
-2026-09-01T11:26:25+00:00 | INFO | deduplication | method=exact_then_probabilistic | master_patients=2 | identity_links=6 | status=success
-2026-09-01T11:26:25+00:00 | INFO | pipeline | status=completed
-2026-09-01T11:26:43+00:00 | INFO | pipeline | status=started
-2026-09-01T11:26:43+00:00 | INFO | extraction | source=pharmacy | rows_read=2 | status=success
-2026-09-01T11:26:43+00:00 | INFO | extraction | source=consultation | rows_read=2 | status=success
-2026-09-01T11:26:43+00:00 | INFO | extraction | source=imaging | rows_read=2 | status=success
-2026-09-01T11:26:43+00:00 | INFO | extraction | source=pharmacy | domain=purchase | rows_read=2 | status=success
-2026-09-01T11:26:43+00:00 | INFO | extraction | source=consultation | domain=consultation | rows_read=2 | status=success
-2026-09-01T11:26:43+00:00 | INFO | extraction | source=imaging | domain=imaging_exam | rows_read=2 | status=success
-2026-09-01T11:26:43+00:00 | INFO | deduplication | method=exact_then_probabilistic | master_patients=2 | identity_links=6 | status=success
-2026-09-01T11:26:43+00:00 | INFO | pipeline | status=completed
-2026-09-01T11:44:18+00:00 | INFO | pipeline | status=started
-2026-09-01T11:44:18+00:00 | INFO | extraction | source=pharmacy | rows_read=20 | status=success
-2026-09-01T11:44:18+00:00 | INFO | extraction | source=consultation | rows_read=20 | status=success
-2026-09-01T11:44:18+00:00 | INFO | extraction | source=imaging | rows_read=20 | status=success
-2026-09-01T11:44:18+00:00 | INFO | extraction | source=pharmacy | domain=purchase | rows_read=20 | status=success
-2026-09-01T11:44:18+00:00 | INFO | extraction | source=consultation | domain=consultation | rows_read=20 | status=success
-2026-09-01T11:44:19+00:00 | INFO | extraction | source=imaging | domain=imaging_exam | rows_read=20 | status=success
-2026-09-01T11:44:19+00:00 | INFO | deduplication | method=exact_then_probabilistic | master_patients=36 | identity_links=60 | status=success
-2026-09-01T11:44:19+00:00 | INFO | pipeline | status=completed
-2026-09-01T11:45:29+00:00 | INFO | pipeline | status=started
-2026-09-01T11:45:29+00:00 | INFO | extraction | source=pharmacy | rows_read=20 | status=success
-2026-09-01T11:45:29+00:00 | INFO | extraction | source=consultation | rows_read=20 | status=success
-2026-09-01T11:45:29+00:00 | INFO | extraction | source=imaging | rows_read=20 | status=success
-2026-09-01T11:45:29+00:00 | INFO | extraction | source=pharmacy | domain=purchase | rows_read=20 | status=success
-2026-09-01T11:45:29+00:00 | INFO | extraction | source=consultation | domain=consultation | rows_read=20 | status=success
-2026-09-01T11:45:29+00:00 | INFO | extraction | source=imaging | domain=imaging_exam | rows_read=20 | status=success
-2026-09-01T11:45:29+00:00 | INFO | deduplication | method=exact_then_probabilistic | master_patients=36 | identity_links=60 | status=success
-2026-09-01T11:45:29+00:00 | INFO | pipeline | status=completed
-2026-09-01T11:46:35+00:00 | INFO | pipeline | status=started
-2026-09-01T11:46:35+00:00 | INFO | extraction | source=pharmacy | rows_read=20 | status=success
-2026-09-01T11:46:35+00:00 | INFO | extraction | source=consultation | rows_read=20 | status=success
-2026-09-01T11:46:35+00:00 | INFO | extraction | source=imaging | rows_read=20 | status=success
-2026-09-01T11:46:35+00:00 | INFO | extraction | source=pharmacy | domain=purchase | rows_read=20 | status=success
-2026-09-01T11:46:35+00:00 | INFO | extraction | source=consultation | domain=consultation | rows_read=20 | status=success
-2026-09-01T11:46:35+00:00 | INFO | extraction | source=imaging | domain=imaging_exam | rows_read=20 | status=success
-2026-09-01T11:46:35+00:00 | INFO | deduplication | method=exact_then_probabilistic | master_patients=36 | identity_links=60 | status=success
-2026-09-01T11:46:35+00:00 | INFO | pipeline | status=completed
+- `INFO | governance | schema | tables=api_user,access_audit | added | success`
+- `INFO | governance | auth | method=api_key_sha256 | roles=admin,analyst,viewer | success`
+- `INFO | governance | consent | endpoints=GET,GET_by_id,POST | purposes=api_access,research,analytics | success`
+- `INFO | governance | dashboard | auth=sidebar_api_key | role_aware_views | success`
+- `INFO | governance | init | scripts/init_governance.py | demo_users=3 | success`
+- `INFO | security | api_keys | storage=hashed_sha256 | plaintext_never_persisted | success`
+- Validation : `pytest` → 14 tests OK, `compileall` OK.
 
-## 2026-09-01 — Extension des données (20 lignes par source)
+## 2026-09-01 — Extension des données (20 lignes/source)
 
-```text
-INFO | data | source=pharmacy | rows=20 | status=success | patients.csv
-INFO | data | source=consultation | rows=20 | status=success | patients.csv
-INFO | data | source=imaging | rows=20 | status=success | patients.csv
-INFO | data | business=achats | rows=20 | status=success
-INFO | data | business=consultations | rows=20 | status=success
-INFO | data | business=examens | rows=20 | status=success
-INFO | deduplication | method=exact_then_probabilistic | source_rows=60 | master_patients=36 | exact_merges=24 | identity_links=60 | status=success
-INFO | load | fix=postgres_loader | order=masters_before_business | reason=foreign_key_violation | status=fixed
-INFO | postgres | target=patient_plateform | raw=60 | masters=36 | identity_links=60 | purchases=20 | consultations=20 | exams=20 | status=success
-INFO | governance | consents=108 | masters=36 | purposes=api_access,research,analytics | status=success
-INFO | validation | test_suite=pytest | status=success | tests_passed=14
-```
-2026-09-01T12:22:44+00:00 | INFO | pipeline | status=started
-2026-09-01T12:22:44+00:00 | INFO | extraction | source=pharmacy | rows_read=6 | status=success
-2026-09-01T12:22:44+00:00 | INFO | extraction | source=consultation | rows_read=6 | status=success
-2026-09-01T12:22:44+00:00 | INFO | extraction | source=imaging | rows_read=6 | status=success
-2026-09-01T12:22:44+00:00 | INFO | extraction | source=pharmacy | domain=purchase | rows_read=6 | status=success
-2026-09-01T12:22:44+00:00 | INFO | extraction | source=consultation | domain=consultation | rows_read=6 | status=success
-2026-09-01T12:22:44+00:00 | INFO | extraction | source=imaging | domain=imaging_exam | rows_read=6 | status=success
-2026-09-01T12:22:44+00:00 | INFO | deduplication | method=exact_then_probabilistic | master_patients=11 | identity_links=18 | status=success
-2026-09-01T12:22:44+00:00 | INFO | pipeline | status=completed
-2026-09-01T12:26:05+00:00 | INFO | pipeline | status=started
-2026-09-01T12:26:05+00:00 | INFO | extraction | source=pharmacy | rows_read=6 | status=success
-2026-09-01T12:26:05+00:00 | INFO | extraction | source=consultation | rows_read=6 | status=success
-2026-09-01T12:26:05+00:00 | INFO | extraction | source=imaging | rows_read=6 | status=success
-2026-09-01T12:26:05+00:00 | INFO | extraction | source=pharmacy | domain=purchase | rows_read=6 | status=success
-2026-09-01T12:26:05+00:00 | INFO | extraction | source=consultation | domain=consultation | rows_read=6 | status=success
-2026-09-01T12:26:05+00:00 | INFO | extraction | source=imaging | domain=imaging_exam | rows_read=6 | status=success
-2026-09-01T12:26:05+00:00 | INFO | deduplication | method=exact_then_probabilistic | master_patients=11 | identity_links=18 | status=success
-2026-09-01T12:26:05+00:00 | INFO | pipeline | status=completed
+- `INFO | deduplication | method=exact_then_probabilistic | source_rows=60 | master_patients=36 | exact_merges=24 | identity_links=60 | success`
+- `INFO | load | fix=postgres_loader | order=masters_before_business | reason=foreign_key_violation | fixed`
+- `INFO | postgres | target=patient_plateform | raw=60 | masters=36 | links=60 | purchases=20 | consultations=20 | exams=20 | success`
+- `INFO | governance | consents=108 | masters=36 | success`
+- Validation : `pytest` → 14 tests OK.
+
+## Exécutions de pipeline complémentaires
+
+| Heure | Lignes/source | Masters | Links |
+|---|---|---|---|
+| 12:22 | 6 | 11 | 18 |
+| 12:26 | 6 | 11 | 18 |
+
+(Exécutions mineures identiques : 11:26→11:46 à 20 lignes/source, master=36/links=60 — non répétées.)
+
+## Notes
+
+- Aucune donnée patient nominative dans les journaux.
+- Les décisions de matching sont conservées dans l'identity map produite par le pipeline.

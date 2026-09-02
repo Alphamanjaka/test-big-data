@@ -1,6 +1,33 @@
-# Suivi d’avancement du MVP
+# Suivi d'avancement global
 
-Dernière mise à jour : 2026-09-01
+Dernière mise à jour : 2026-09-02
+
+## Vue d'ensemble des 3 niveaux
+
+| Niveau | Description | État | Détail |
+|---|---|---|---|
+| 1 | MVP — CSV + Pandas + PostgreSQL | Terminé | [ai_context/avancement_mvp.md](ai_context/avancement_mvp.md) |
+| 2 | Scalabilité — PySpark distribué | À faire | [ai_context/avancement_spark.md](ai_context/avancement_spark.md) |
+| 3 | Big Data — Data Lake + HDFS + Hive + Spark | À faire | [ai_context/avancement_bigdata.md](ai_context/avancement_bigdata.md) |
+
+**Règle** : Les Niveaux 2 et 3 ne peuvent commencer que si le Niveau 1 est validé.
+
+---
+
+# Niveau 1 — MVP (suivi détaillé)
+
+Le Niveau 1 (MVP) est le plus avancé. Les étapes du Niveau 2 et 3 sont détaillées dans les fichiers de suivi dédiés
+(`ai_context/avancement_spark.md` et `ai_context/avancement_bigdata.md`).
+
+## Prérequis du Niveau 2 (Spark) — à valider avant de commencer
+
+| # | Critère | État |
+|---|---|---|
+| P1 | PySpark installé et session fonctionnelle | À faire |
+| P2 | Extraction en Spark DataFrame | À faire |
+| P3 | Transformation identique au MVP | À faire |
+| P4 | Déduplication validée en Spark | À faire |
+| P5 | Résultats identiques à Pandas | À faire |
 
 ## État des étapes
 

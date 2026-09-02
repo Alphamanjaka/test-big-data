@@ -1,32 +1,27 @@
 # Sécurité et gouvernance
 
 ## Règles fondamentales
-
-- Ne jamais utiliser de vraies données patients.
-- Ne jamais exposer des informations sensibles dans les logs, le terminal ou les captures.
-- Travailler uniquement avec des données fictives ou synthétiques.
-- Considérer la donnée de santé comme sensible.
+- Jamais de vraies données patients.
+- Jamais d'infos sensibles dans logs / terminal / captures.
+- Données fictives ou synthétiques uniquement.
+- Donnée de santé = sensible.
 
 ## Consentement
-
-- Le consentement doit être traité comme un élément fonctionnel du système.
-- Un accès ou un partage de données ne doit pas être effectué sans validation explicite du consentement.
-- Les règles d’accès doivent être distinguées entre données brutes, nettoyées et consolidées.
+- Élément fonctionnel du système.
+- Pas d'accès/partage sans validation explicite.
+- Distinguer données brutes / nettoyées / consolidées.
 
 ## Traçabilité
-
-- Conserver l’historique des transformations et du matching.
-- Garder les liens source_system → source_patient_id → master_patient_id.
-- Les décisions de matching doivent être explicables et auditables.
+- Historique des transformations et du matching.
+- Liens source_system → source_patient_id → master_patient_id.
+- Décisions de matching explicables et auditables.
 
 ## Séparation des données
-
-- Stocker séparément les données brutes, validées et consolidées.
-- Ne pas fusionner directement des enregistrements sans score de confiance.
-- Ne pas supprimer les éléments nécessaires à l’audit.
+- Stocker séparément données brutes, validées, consolidées.
+- Ne pas fusionner sans score de confiance.
+- Ne pas supprimer les éléments d'audit.
 
 ## Recommandations
-
-- Masquer les valeurs sensibles dans les messages d’erreur et les sorties utilisateur.
-- Utiliser des variables d’environnement pour les secrets et les paramètres sensibles.
-- Vérifier les permissions d’accès avant toute exposition d’API ou de dashboard.
+- Masquer les valeurs sensibles (erreurs, sorties).
+- Variables d'environnement pour secrets.
+- Vérifier les permissions avant toute exposition API/dashboard.
