@@ -1,5 +1,6 @@
 import os
 import shutil
+import sys
 from functools import lru_cache
 from pathlib import Path
 
@@ -30,6 +31,8 @@ def _resolve_java_home() -> Path:
 def get_or_create_session(app_name: str = "patient-data-platform", master: str = "local[2]") -> SparkSession:
     """Create a shared local Spark session once per process."""
     os.environ["JAVA_HOME"] = str(_resolve_java_home())
+    os.environ["PYSPARK_PYTHON"] = sys.executable
+    os.environ["PYSPARK_DRIVER_PYTHON"] = sys.executable
     return (
         SparkSession.builder
         .master(master)

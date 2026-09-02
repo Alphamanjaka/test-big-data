@@ -42,10 +42,14 @@ Dernière mise à jour : 2026-09-02
 
 | # | Tâche | État |
 |---|---|---|
-| S3.1 | Mapping canonique en Spark | À faire |
-| S3.2 | Standardisation en Spark | À faire |
-| S3.3 | Nettoyage en Spark | À faire |
-| S3.4 | Validation en Spark | À faire |
+| S3.1 | Mapping canonique en Spark | Terminé |
+| S3.2 | Standardisation en Spark | Terminé |
+| S3.3 | Nettoyage en Spark | Terminé |
+| S3.4 | Validation en Spark | Terminé |
+
+> `spark/transform.py` réutilise les fonctions N1 (`_text`, `_phone`, `_birth_date`)
+> via UDFs : transformation strictement identique. 18 patients canoniques validés
+> champ par champ contre le MVP.
 
 ## Phase 4 — Déduplication
 
@@ -67,7 +71,7 @@ Dernière mise à jour : 2026-09-02
 ## État global
 
 ```
-Prérequis ████████ 100%   S1 ████████ 100%   S2 ████████ 100%   S3 ░░░░0%   S4 ░░░░0%   S5 ░░░░0%   TOTAL ░░░░░ 45%
+Prérequis ████████ 100%   S1 ████████ 100%   S2 ████████ 100%   S3 ████████ 100%   S4 ░░░░0%   S5 ░░░░0%   TOTAL ░░░░░ 60%
 ```
 
 ## Critères de succès
@@ -101,3 +105,4 @@ Prérequis ████████ 100%   S1 ████████ 100%   S2
   - 2026-09-02 | S1.3 | Lecture CSV en Spark | 18 patients + 18 métier = MVP, via SparkCSVExtractor
   - 2026-09-02 | S1.4 | Benchmark Pandas vs Spark | Pandas ~1-2ms vs Spark ~0.4-4s à 6 lignes : overhead JVM domine sur petit volume, Spark se justifie sur gros volume
   - 2026-09-02 | S2.1-S2.3 | Extraction Spark | SparkExtractor abstrait + SparkCSVExtractor, 36 lignes cohérentes avec Pandas
+  - 2026-09-02 | S3.1-S3.4 | Transformation Spark | UDFs des fonctions N1, 18 patients exactement identiques au MVP. Bloqueurs levés : PYSPARK_PYTHON (stub MS Store) + inferSchema convertissant les dates

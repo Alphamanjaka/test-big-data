@@ -14,6 +14,6 @@ class SparkCSVExtractor(SparkExtractor):
         if not self.file_path.exists():
             raise FileNotFoundError(f"Source file not found: {self.file_path}")
         spark = get_or_create_session()
-        frame = spark.read.option("header", True).option("inferSchema", True).csv(str(self.file_path))
+        frame = spark.read.option("header", True).csv(str(self.file_path))
         frame = frame.withColumn("source_system", F.lit(self.source_system))
         return frame.withColumn("source_file", F.lit(self.file_path.name))
