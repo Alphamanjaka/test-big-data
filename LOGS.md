@@ -67,3 +67,30 @@ Pipeline pandas complet : extraction (3 sources) + mapping canonique + nettoyage
 2026-09-02T10:58:28+00:00 | INFO | extraction | source=imaging | domain=imaging_exam | rows_read=6 | status=success
 2026-09-02T10:58:28+00:00 | INFO | deduplication | method=exact_then_probabilistic | master_patients=11 | identity_links=18 | status=success
 2026-09-02T10:58:28+00:00 | INFO | pipeline | status=completed
+2026-09-02T11:33:06+00:00 | INFO | pipeline | status=started
+2026-09-02T11:33:06+00:00 | INFO | extraction | source=pharmacy | rows_read=404 | status=success
+2026-09-02T11:33:07+00:00 | INFO | extraction | source=consultation | rows_read=353 | status=success
+2026-09-02T11:33:07+00:00 | INFO | extraction | source=imaging | rows_read=300 | status=success
+2026-09-02T11:33:07+00:00 | INFO | extraction | source=pharmacy | domain=purchase | rows_read=792 | status=success
+2026-09-02T11:33:07+00:00 | INFO | extraction | source=consultation | domain=consultation | rows_read=519 | status=success
+2026-09-02T11:33:07+00:00 | INFO | extraction | source=imaging | domain=imaging_exam | rows_read=450 | status=success
+2026-09-02T11:33:09+00:00 | INFO | deduplication | method=exact_then_probabilistic | master_patients=500 | identity_links=1057 | status=success
+2026-09-02T11:33:09+00:00 | INFO | pipeline | status=completed
+2026-09-02T11:38:56+00:00 | INFO | pipeline | status=started
+2026-09-02T11:38:56+00:00 | INFO | extraction | source=pharmacy | rows_read=404 | status=success
+2026-09-02T11:38:56+00:00 | INFO | extraction | source=consultation | rows_read=353 | status=success
+2026-09-02T11:38:56+00:00 | INFO | extraction | source=imaging | rows_read=300 | status=success
+2026-09-02T11:38:56+00:00 | INFO | extraction | source=pharmacy | domain=purchase | rows_read=792 | status=success
+2026-09-02T11:38:56+00:00 | INFO | extraction | source=consultation | domain=consultation | rows_read=519 | status=success
+2026-09-02T11:38:56+00:00 | INFO | extraction | source=imaging | domain=imaging_exam | rows_read=450 | status=success
+2026-09-02T11:38:58+00:00 | INFO | deduplication | method=exact_then_probabilistic | master_patients=500 | identity_links=1057 | status=success
+2026-09-02T11:38:58+00:00 | INFO | pipeline | status=completed
+2026-09-02T11:42:26+00:00 | INFO | pipeline | status=started
+2026-09-02T11:42:26+00:00 | INFO | extraction | source=pharmacy | rows_read=404 | status=success
+2026-09-02T11:42:26+00:00 | INFO | extraction | source=consultation | rows_read=353 | status=success
+2026-09-02T11:42:26+00:00 | INFO | extraction | source=imaging | rows_read=300 | status=success
+2026-09-02T11:42:26+00:00 | INFO | extraction | source=pharmacy | domain=purchase | rows_read=792 | status=success
+2026-09-02T11:42:26+00:00 | INFO | extraction | source=consultation | domain=consultation | rows_read=519 | status=success
+2026-09-02T11:42:26+00:00 | INFO | extraction | source=imaging | domain=imaging_exam | rows_read=450 | status=success
+2026-09-02T11:42:28+00:00 | INFO | deduplication | method=exact_then_probabilistic | master_patients=500 | identity_links=1057 | status=success
+2026-09-02T11:42:28+00:00 | INFO | pipeline | status=completed
