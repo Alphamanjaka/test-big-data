@@ -1,3 +1,5 @@
+import pandas as pd
+
 from patient_platform.config import load_sources
 from patient_platform.extract.csv_extractor import CSVExtractor
 from patient_platform.spark.csv_extractor import SparkCSVExtractor
