@@ -3,13 +3,19 @@ from pathlib import Path
 
 
 class RuntimeLogger:
-    """Writes structured runtime events immediately to operational and audit logs."""
+    """Journalise chaque événement dans UN SEUL fichier et l'affiche en console.
 
-    def __init__(self, runtime_path: str | Path = "logs/runtime.log", audit_path: str | Path = "LOGS.md"):
-        self.runtime_path = Path(runtime_path)
-        self.audit_path = Path(audit_path)
-        self.runtime_path.parent.mkdir(parents=True, exist_ok=True)
-        self.audit_path.parent.mkdir(parents=True, exist_ok=True)
+    Toute journalisation converge vers un fichier unique (par défaut `LOGS.md`,
+    conforme à ai_context/logs.md) et est aussi émise sur la sortie standard.
+    """
+
+    def __init__(self, runtime_path: str | Path = "logs/runtime.log",
+                 audit_path: str | Path = "LOGS.md",
+                 console: bool = True):
+        # Une seule destination : le fichier d'audit consolidé.
+        self.log_path = Path(audit_path)
+        self.console = console
+        self.log_path.parent.mkdir(parents=True, exist_ok=True)
 
     def info(self, step: str, **fields: object) -> None:
         self.write("INFO", step, fields)
@@ -27,10 +33,9 @@ class RuntimeLogger:
         if values:
             entry = f"{entry} | {values}"
 
-        with self.runtime_path.open("a", encoding="utf-8") as runtime_file:
-            runtime_file.write(entry + "\n")
-            runtime_file.flush()
+        with self.log_path.open("a", encoding="utf-8") as log_file:
+            log_file.write(entry + "\n")
+            log_file.flush()
 
-        with self.audit_path.open("a", encoding="utf-8") as audit_file:
-            audit_file.write(entry + "\n")
-            audit_file.flush()
+        if self.console:
+            print(entry)

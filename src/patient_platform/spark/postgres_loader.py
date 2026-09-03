@@ -3,6 +3,7 @@ from typing import Callable, Iterable
 
 from pyspark.sql import Column, DataFrame, functions as F
 
+from patient_platform.logging_utils import RuntimeLogger
 from patient_platform.spark.session import get_or_create_session
 
 PATIENT_ID_COLUMN = {
@@ -96,15 +97,43 @@ _ROW_PARAMS: dict[str, Callable[[object], tuple]] = {
 }
 
 
-def _write_partition(url: str, sql: str, params_for_row: Callable, rows: Iterable) -> None:
+def _patient_id_for(table: str, parameters: tuple) -> str:
+    if table == "raw_patient_record":
+        return parameters[1]
+    if table == "patient_identity_map":
+        return parameters[2]
+    if table == "master_patient":
+        return ""
+    return parameters[3]
+
+
+def _master_id_for(table: str, parameters: tuple) -> str:
+    if table == "raw_patient_record":
+        return ""
+    if table == "patient_identity_map":
+        return parameters[0]
+    if table == "master_patient":
+        return parameters[0]
+    return parameters[1]
+
+
+def _write_partition(url: str, table: str, sql: str, params_for_row: Callable, rows: Iterable) -> None:
     import psycopg
 
+    logger = RuntimeLogger("logs/runtime.log", "LOGS.md")
     connection = psycopg.connect(url)
     try:
         batch = []
         with connection.cursor() as cursor:
             for row in rows:
                 batch.append(params_for_row(row))
+                parameters = batch[-1]
+                logger.info(
+                    "db_line", engine="spark", table=table,
+                    source_patient_id=_patient_id_for(table, parameters),
+                    master_patient_id=_master_id_for(table, parameters),
+                    row_number=len(batch), status="written",
+                )
                 if len(batch) >= _BATCH_SIZE:
                     cursor.executemany(sql, batch)
                     batch = []
@@ -139,7 +168,8 @@ class SparkPostgresLoader:
             url = self.url
             rows_written[table] = frame.count()
             frame.foreachPartition(
-                lambda rows: _write_partition(url, sql, params_for_row, rows))
+                lambda rows, t=table, s=sql, p=params_for_row, u=url:
+                _write_partition(u, t, s, p, rows))
         return rows_written
 
 

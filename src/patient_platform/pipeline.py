@@ -42,15 +42,20 @@ def run_pipeline(
         raw_frame = CSVExtractor(file_path, source_system).extract()
         logger.info("extraction", source=source_system,
                     rows_read=len(raw_frame), status="success")
-        raw_records.extend(
-            RawPatientRecord(
+        source_patient_id = source_id_columns[source_system]
+        for index, (_, row) in enumerate(raw_frame.iterrows()):
+            record = RawPatientRecord(
                 source_system=source_system,
-                source_patient_id=str(row[source_id_columns[source_system]]),
+                source_patient_id=str(row[source_patient_id]),
                 source_file=str(row["source_file"]),
                 payload={key: str(value) for key, value in row.items()},
             )
-            for _, row in raw_frame.iterrows()
-        )
+            raw_records.append(record)
+            logger.info(
+                "raw_line", source=source_system,
+                source_patient_id=record.source_patient_id,
+                row_number=index + 1, status="captured",
+            )
         canonical_patients.extend(
             standardize_patients(raw_frame, source_system))
 
@@ -63,18 +68,30 @@ def run_pipeline(
         business_frame = CSVExtractor(file_path, source_system).extract()
         logger.info("extraction", source=source_system, domain=domain,
                     rows_read=len(business_frame), status="success")
-        business_records.extend(
-            BusinessRecord(
+        for index, (_, row) in enumerate(business_frame.iterrows()):
+            record = BusinessRecord(
                 domain=domain,
                 source_record_id=str(row[record_column]),
                 source_system=source_system,
                 source_patient_id=str(row[patient_column]),
                 payload={key: str(value) for key, value in row.items()},
             )
-            for _, row in business_frame.iterrows()
-        )
+            business_records.append(record)
+            logger.info(
+                "business_line", source=source_system, domain=domain,
+                source_record_id=record.source_record_id,
+                source_patient_id=record.source_patient_id,
+                row_number=index + 1, status="captured",
+            )
 
     identity_map = deduplicate(canonical_patients)
+    for decision in identity_map:
+        logger.info(
+            "identity_line", source=decision.source_system,
+            source_patient_id=decision.source_patient_id,
+            master_patient_id=decision.master_patient_id,
+            method=decision.method, score=decision.score, status="linked",
+        )
     logger.info(
         "deduplication",
         method="exact_then_probabilistic",

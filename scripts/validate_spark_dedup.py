@@ -13,7 +13,7 @@ def validate():
     sources = load_sources()
     data_root = load_data_root()
 
-    expected = run_pipeline(data_root, "logs/runtime-spark-check.log", "LOGS-spark-check.md")
+    expected = run_pipeline(data_root, "logs/runtime.log", "LOGS.md")
     expected_map = [
         MatchDecision(d.master_patient_id, d.source_system, d.source_patient_id, d.method, d.score, d.explanation)
         for d in expected.identity_map

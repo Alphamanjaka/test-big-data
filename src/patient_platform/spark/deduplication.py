@@ -5,6 +5,7 @@ from pyspark.sql import DataFrame, Row, Window, functions as F
 from pyspark.sql.types import DoubleType, LongType, StringType, StructField, StructType
 
 from patient_platform.deduplication.matcher import _similarity
+from patient_platform.logging_utils import RuntimeLogger
 from patient_platform.spark.session import get_or_create_session
 from patient_platform.transform.canonical import _normalized
 
@@ -120,6 +121,7 @@ def deduplicate(frame: DataFrame, *ordered_frames: DataFrame,
     masters: list[dict[str, Any]] = []
     resolved: dict[int, str] = {}
     decisions: list[dict[str, Any]] = []
+    logger = RuntimeLogger("logs/runtime.log", "LOGS.md")
 
     for row in rows:
         if not row["is_anchor"]:
@@ -132,6 +134,11 @@ def deduplicate(frame: DataFrame, *ordered_frames: DataFrame,
                 score=1.0,
                 explanation="nom, date de naissance et telephone normalises identiques",
             ))
+            logger.info("spark_identity_line", engine="spark",
+                        source=row["source_system"],
+                        source_patient_id=row["source_patient_id"],
+                        master_patient_id=master_id, method="exact",
+                        score=1.0, status="linked")
             resolved[int(row["__order"])] = master_id
             continue
 
@@ -151,6 +158,11 @@ def deduplicate(frame: DataFrame, *ordered_frames: DataFrame,
                 score=round(best[1], 3),
                 explanation="similarite nom/date/telephone au-dessus du seuil",
             ))
+            logger.info("spark_identity_line", engine="spark",
+                        source=row["source_system"],
+                        source_patient_id=row["source_patient_id"],
+                        master_patient_id=master_id, method="probabilistic",
+                        score=round(best[1], 3), status="linked")
             resolved[int(row["__order"])] = master_id
         else:
             master_id = f"PAT-{len(masters) + 1:04d}"
@@ -163,6 +175,11 @@ def deduplicate(frame: DataFrame, *ordered_frames: DataFrame,
                 score=1.0,
                 explanation="aucun match explicable au-dessus du seuil",
             ))
+            logger.info("spark_identity_line", engine="spark",
+                        source=row["source_system"],
+                        source_patient_id=row["source_patient_id"],
+                        master_patient_id=master_id, method="new_master",
+                        score=1.0, status="linked")
         resolved[int(row["__order"])] = master_id
 
     return spark.createDataFrame([Row(**decision) for decision in decisions], DECISION_SCHEMA)

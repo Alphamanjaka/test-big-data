@@ -27,6 +27,7 @@ from typing import Callable
 import pandas as pd
 
 from patient_platform.config import load_data_root, load_sources
+from patient_platform.logging_utils import RuntimeLogger
 from patient_platform.pipeline import run_pipeline
 from patient_platform.spark.csv_extractor import SparkCSVExtractor
 from patient_platform.spark.deduplication import deduplicate as spark_deduplicate
@@ -35,6 +36,12 @@ from patient_platform.spark.transform import standardize_patients
 
 ROOT = Path(__file__).resolve().parent
 SOURCE_ORDER = ["pharmacy", "consultation", "imaging"]
+
+LOGGER = RuntimeLogger("logs/runtime.log", "LOGS.md")
+
+
+def _eval_log(step: str, **fields: object) -> None:
+    LOGGER.info(step, **fields)
 
 
 # ---------------------------------------------------------------------------
@@ -59,28 +66,49 @@ def ensure_dataset(level: str, patients: int, seed: int) -> None:
 def load_ground_truth(level: str) -> dict[tuple[str, str], str]:
     path = ground_truth_path(level)
     frame = pd.read_csv(path, dtype=str)
-    return {
+    _eval_log("ground_truth", level=level, path=str(path),
+              rows_read=len(frame), status="loaded")
+    mapping = {
         (row["source"], row["source_patient_id"]): row["ground_truth_id"]
         for _, row in frame.iterrows()
     }
+    for index, (key, group) in enumerate(mapping.items()):
+        _eval_log("ground_truth_line", source=key[0],
+                  source_patient_id=key[1], ground_truth_id=group,
+                  row_number=index + 1, status="registered")
+    return mapping
 
 
 # ---------------------------------------------------------------------------
 # Prédictions
 # ---------------------------------------------------------------------------
 def _decisions_from_pipeline(data_root: Path) -> list:
-    result = run_pipeline(data_root, "logs/runtime-eval.log", "LOGS-eval.md")
+    result = run_pipeline(data_root, "logs/runtime.log", "LOGS.md")
     return list(result.identity_map)
 
 
-def predictions_mvp(data_root: Path, level: str) -> tuple[dict, dict]:
+def predictions_mvp(data_root: Path, level: str,
+                    only: str | None = None) -> tuple[dict, dict] | None:
+    if only == "spark":
+        _eval_log("predictions", engine="mvp", status="skipped")
+        return None
     decisions = _decisions_from_pipeline(data_root)
     pred = {(d.source_system, d.source_patient_id): d.master_patient_id for d in decisions}
     methods = {(d.source_system, d.source_patient_id): d.method for d in decisions}
+    _eval_log("predictions", engine="mvp", level=level,
+              decisions=len(decisions), status="built")
+    for index, (key, group) in enumerate(pred.items()):
+        _eval_log("prediction_line", engine="mvp", source=key[0],
+                  source_patient_id=key[1], master_patient_id=group,
+                  method=methods[key], row_number=index + 1, status="predicted")
     return pred, methods
 
 
-def predictions_spark(sources, level: str) -> tuple[dict, dict]:
+def predictions_spark(sources, level: str,
+                      only: str | None = None) -> tuple[dict, dict] | None:
+    if only == "mvp":
+        _eval_log("predictions", engine="spark", status="skipped")
+        return None
     spark = get_or_create_session()
     try:
         frames = [
@@ -93,6 +121,12 @@ def predictions_spark(sources, level: str) -> tuple[dict, dict]:
         spark.stop()
     pred = {(d.source_system, d.source_patient_id): d.master_patient_id for d in decisions}
     methods = {(d.source_system, d.source_patient_id): d.method for d in decisions}
+    _eval_log("predictions", engine="spark", level=level,
+              decisions=len(decisions), status="built")
+    for index, (key, group) in enumerate(pred.items()):
+        _eval_log("prediction_line", engine="spark", source=key[0],
+                  source_patient_id=key[1], master_patient_id=group,
+                  method=methods[key], row_number=index + 1, status="predicted")
     return pred, methods
 
 
@@ -228,13 +262,30 @@ def format_metrics(metrics: dict) -> str:
     )
 
 
-def build_report(level: str, sources, data_root: Path) -> str:
+def build_report(level: str, sources, data_root: Path,
+                 only: str | None = None) -> str:
     truth = load_ground_truth(level)
-    mvp_pred, mvp_methods = predictions_mvp(data_root, level)
-    spark_pred, spark_methods = predictions_spark(sources, level)
+    mvp_pred, mvp_methods = predictions_mvp(data_root, level, only) or (None, None)
+    spark_pred, spark_methods = predictions_spark(sources, level, only) or (None, None)
 
-    mvp_m = pairs_metrics(truth, mvp_pred)
-    spark_m = pairs_metrics(truth, spark_pred)
+    mvp_m = pairs_metrics(truth, mvp_pred) if mvp_pred else None
+    spark_m = pairs_metrics(truth, spark_pred) if spark_pred else None
+    for index, key in enumerate(sorted(truth)):
+        truth_group = truth[key]
+        mvp_master = mvp_pred.get(key) if mvp_pred else None
+        spark_master = spark_pred.get(key) if spark_pred else None
+        _eval_log("compare_line", source=key[0], source_patient_id=key[1],
+                  ground_truth_id=truth_group, mvp_master=mvp_master,
+                  spark_master=spark_master,
+                  mvp_correct=str(mvp_master == truth_group),
+                  spark_correct=str(spark_master == truth_group),
+                  row_number=index + 1)
+
+    def fmt(cell: dict | None) -> str:
+        return "—" if cell is None else f"{cell:.3f}"
+
+    def fmt_count(value) -> str:
+        return "—" if value is None else str(value)
 
     lines = [
         f"# Évaluation Ground Truth — Niveau `{level}`",
@@ -242,6 +293,7 @@ def build_report(level: str, sources, data_root: Path) -> str:
         f"- Date : {pd.Timestamp.now().strftime('%Y-%m-%d %H:%M')}",
         f"- Ground Truth : {ground_truth_path(level)}",
         f"- Data root : {data_root}",
+        f"- Mode : {'MVP' if only == 'mvp' else ('Spark' if only == 'spark' else 'MVP + Spark')}",
         f"- Patients source : {len(truth)}",
         "",
         "## Comparaison MVP (N1) vs Spark (N2)",
@@ -264,9 +316,13 @@ def build_report(level: str, sources, data_root: Path) -> str:
     for key in keys:
         label = labels[key]
         if key in ("precision", "recall", "f1"):
-            lines.append(f"| {label} | {mvp_m[key]:.3f} | {spark_m[key]:.3f} |")
+            mvp_val = fmt(mvp_m[key]) if mvp_m else "—"
+            spark_val = fmt(spark_m[key]) if spark_m else "—"
+            lines.append(f"| {label} | {mvp_val} | {spark_val} |")
         else:
-            lines.append(f"| {label} | {mvp_m[key]} | {spark_m[key]} |")
+            mvp_val = fmt_count(mvp_m[key]) if mvp_m else "—"
+            spark_val = fmt_count(spark_m[key]) if spark_m else "—"
+            lines.append(f"| {label} | {mvp_val} | {spark_val} |")
 
     lines += [
         "",
@@ -275,8 +331,8 @@ def build_report(level: str, sources, data_root: Path) -> str:
         "| Méthode | MVP (P/R/F1) | Spark (P/R/F1) |",
         "|---|---|---|",
     ]
-    mvp_by_method = method_breakdown(truth, mvp_pred, mvp_methods)
-    spark_by_method = method_breakdown(truth, spark_pred, spark_methods)
+    mvp_by_method = method_breakdown(truth, mvp_pred, mvp_methods) if mvp_pred else {}
+    spark_by_method = method_breakdown(truth, spark_pred, spark_methods) if spark_pred else {}
     for method in sorted(set(list(mvp_by_method) + list(spark_by_method))):
         if method == "new_master":
             continue  # new_master ne crée aucun lien ; non pertinent ici
@@ -296,16 +352,16 @@ def build_report(level: str, sources, data_root: Path) -> str:
         "| Source | MVP (R) | Spark (R) |",
         "|---|---|---|",
     ]
-    mvp_src = source_breakdown(truth, mvp_pred)
-    spark_src = source_breakdown(truth, spark_pred)
+    mvp_src = source_breakdown(truth, mvp_pred) if mvp_pred else {}
+    spark_src = source_breakdown(truth, spark_pred) if spark_pred else {}
     for source in SOURCE_ORDER:
-        lines.append(
-            f"| {source} | {mvp_src[source]['recall']:.3f} | "
-            f"{spark_src[source]['recall']:.3f} |")
+        mvp_r = f"{mvp_src[source]['recall']:.3f}" if source in mvp_src else "—"
+        spark_r = f"{spark_src[source]['recall']:.3f}" if source in spark_src else "—"
+        lines.append(f"| {source} | {mvp_r} | {spark_r} |")
 
     lines += ["", "## Résumé", "",
-              f"- MVP  : {format_metrics(mvp_m)}",
-              f"- Spark: {format_metrics(spark_m)}", ""]
+              f"- MVP  : {format_metrics(mvp_m)}" if mvp_m else "- MVP  : —",
+              f"- Spark: {format_metrics(spark_m)}" if spark_m else "- Spark: —", ""]
     return "\n".join(lines)
 
 
@@ -320,7 +376,7 @@ def main() -> None:
     ensure_dataset(args.level, args.patients, args.seed)
     sources = load_sources()
     data_root = load_data_root()
-    report = build_report(args.level, sources, data_root)
+    report = build_report(args.level, sources, data_root, only=args.only)
     out = ROOT / "evaluation_truth.md"
     out.write_text(report, encoding="utf-8")
     print(report)

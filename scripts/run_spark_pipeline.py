@@ -58,7 +58,7 @@ def run():
     sources = load_sources()
     data_root = load_data_root()
 
-    expected = pandas_run_pipeline(data_root, "logs/runtime-spark-load.log", "LOGS-spark-load.md")
+    expected = pandas_run_pipeline(data_root, "logs/runtime.log", "LOGS.md")
     expected_links = {
         (d.source_system, d.source_patient_id): (d.master_patient_id, d.method, round(d.score, 3))
         for d in expected.identity_map

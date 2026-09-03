@@ -4,6 +4,7 @@ from typing import Any
 from patient_platform.deduplication.matcher import MatchDecision
 from patient_platform.extract.raw_record import RawPatientRecord
 from patient_platform.extract.business_record import BusinessRecord
+from patient_platform.logging_utils import RuntimeLogger
 from patient_platform.transform.canonical import CanonicalPatient
 
 from psycopg.types.json import Json
@@ -12,8 +13,11 @@ from psycopg.types.json import Json
 class PostgresLoader:
     """Loads canonical patients and identity decisions through a DB-API connection."""
 
-    def __init__(self, connection_factory: Callable[[], Any]):
+    def __init__(self, connection_factory: Callable[[], Any],
+                 runtime_log_path: str | Any = "logs/runtime.log",
+                 audit_log_path: str | Any = "LOGS.md"):
         self.connection_factory = connection_factory
+        self.logger = RuntimeLogger(runtime_log_path, audit_log_path)
 
     def load(
         self,
@@ -36,7 +40,7 @@ class PostgresLoader:
         connection = self.connection_factory()
         try:
             with connection.cursor() as cursor:
-                for raw_record in raw_records or []:
+                for index, raw_record in enumerate(raw_records or []):
                     cursor.execute(
                         """
                         INSERT INTO raw_patient_record
@@ -51,8 +55,14 @@ class PostgresLoader:
                             Json(raw_record.payload),
                         ),
                     )
+                    self.logger.info(
+                        "db_line", table="raw_patient_record",
+                        source=raw_record.source_system,
+                        source_patient_id=raw_record.source_patient_id,
+                        row_number=index + 1, status="inserted",
+                    )
 
-                for master_patient_id, source_key in master_sources.items():
+                for index, (master_patient_id, source_key) in enumerate(master_sources.items()):
                     patient = patients_by_source[source_key]
                     cursor.execute(
                         """
@@ -78,12 +88,17 @@ class PostgresLoader:
                             patient.address,
                         ),
                     )
+                    self.logger.info(
+                        "db_line", table="master_patient",
+                        master_patient_id=master_patient_id,
+                        row_number=index + 1, status="inserted",
+                    )
 
                 source_to_master = {
                     (decision.source_system, decision.source_patient_id): decision.master_patient_id
                     for decision in identity_map
                 }
-                for record in business_records or []:
+                for index, record in enumerate(business_records or []):
                     master_patient_id = source_to_master.get(
                         (record.source_system, record.source_patient_id))
                     if master_patient_id is None:
@@ -94,9 +109,10 @@ class PostgresLoader:
                         "consultation": "patient_consultation",
                         "imaging_exam": "imaging_exam",
                     }
+                    target_table = table_by_domain[record.domain]
                     cursor.execute(
                         f"""
-                        INSERT INTO {table_by_domain[record.domain]}
+                        INSERT INTO {target_table}
                             (source_record_id, master_patient_id, source_system,
                              source_patient_id, payload)
                         VALUES (%s, %s, %s, %s, %s)
@@ -106,8 +122,16 @@ class PostgresLoader:
                          record.source_system, record.source_patient_id,
                          Json(record.payload)),
                     )
+                    self.logger.info(
+                        "db_line", table=target_table,
+                        source=record.source_system,
+                        source_record_id=record.source_record_id,
+                        source_patient_id=record.source_patient_id,
+                        master_patient_id=master_patient_id,
+                        row_number=index + 1, status="inserted",
+                    )
 
-                for decision in identity_map:
+                for index, decision in enumerate(identity_map):
                     cursor.execute(
                         """
                         INSERT INTO patient_identity_map
@@ -128,6 +152,14 @@ class PostgresLoader:
                             decision.score,
                             decision.explanation,
                         ),
+                    )
+                    self.logger.info(
+                        "db_line", table="patient_identity_map",
+                        source=decision.source_system,
+                        source_patient_id=decision.source_patient_id,
+                        master_patient_id=decision.master_patient_id,
+                        method=decision.method, score=decision.score,
+                        row_number=index + 1, status="inserted",
                     )
             connection.commit()
         except Exception:
