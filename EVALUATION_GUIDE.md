@@ -12,12 +12,12 @@ $env:JAVA_HOME='C:\Program Files\Java\jdk-25.0.2'   # obligatoire pour Spark
 $env:PYTHONIOENCODING='utf-8'                        # pour les accents en console
 
 # Vérifier le venv
-& "F:\GITHUB\test big data\.venv\Scripts\python.exe" --version
+& "F:\GITHUB\test_bigdata\.venv\Scripts\python.exe" --version
 ```
 
 Ouvrir le projet :
 ```powershell
-cd "F:\GITHUB\test big data"
+cd "F:\GITHUB\test_bigdata"
 ```
 
 ---
@@ -29,7 +29,7 @@ mêmes patients, mêmes sources, seul le taux de variation change.
 
 ```powershell
 cd synthetic-patient-generator
-& "F:\GITHUB\test big data\.venv\Scripts\python.exe" -m generator.experiment_builder --patients 5000 --seed 42
+& "F:\GITHUB\test_bigdata\.venv\Scripts\python.exe" -m generator.experiment_builder --patients 5000 --seed 42
 cd ..
 ```
 
@@ -63,7 +63,7 @@ Modifier `config/sources.json` → clé `data_root` :
 ## 3. Lancer l'évaluation
 
 ```powershell
-& "F:\GITHUB\test big data\.venv\Scripts\python.exe" evaluation_truth.py --level hard
+& "F:\GITHUB\test_bigdata\.venv\Scripts\python.exe" evaluation_truth.py --level hard
 ```
 
 Arguments :

@@ -19,17 +19,30 @@ class CanonicalPatient:
     source_file: str
 
 
+def _is_missing(value: object) -> bool:
+    try:
+        return value is None or bool(pd.isna(value))
+    except (TypeError, ValueError):
+        return False
+
+
 def _text(value: object) -> str:
+    if _is_missing(value):
+        return ""
     return " ".join(str(value).strip().split())
 
 
 def _normalized(value: str) -> str:
+    if value is None:
+        return ""
     without_accents = unicodedata.normalize(
         "NFKD", value).encode("ascii", "ignore").decode()
     return re.sub(r"[^a-z0-9]", "", without_accents.lower())
 
 
 def _phone(value: str) -> str:
+    if value is None:
+        return ""
     digits = re.sub(r"\D", "", value)
     if digits.startswith("261") and len(digits) >= 11:
         return "0" + digits[-9:]
@@ -37,7 +50,7 @@ def _phone(value: str) -> str:
 
 
 def _birth_date(value: str) -> date | None:
-    value = value.strip()
+    value = value.strip() if value is not None else ""
     date_format = "%Y-%m-%d" if re.fullmatch(
         r"\d{4}-\d{2}-\d{2}", value) else None
     if date_format is None and re.fullmatch(r"\d{4}/\d{2}/\d{2}", value):

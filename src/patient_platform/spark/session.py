@@ -28,7 +28,7 @@ def _resolve_java_home() -> Path:
 
 
 @lru_cache(maxsize=1)
-def get_or_create_session(app_name: str = "patient-data-platform", master: str = "local[2]") -> SparkSession:
+def get_or_create_session(app_name: str = "patient-data-platform", master: str = "local[6]") -> SparkSession:
     """Create a shared local Spark session once per process."""
     os.environ["JAVA_HOME"] = str(_resolve_java_home())
     os.environ["PYSPARK_PYTHON"] = sys.executable
@@ -39,5 +39,8 @@ def get_or_create_session(app_name: str = "patient-data-platform", master: str =
         .appName(app_name)
         .config("spark.ui.enabled", "false")
         .config("spark.log.level", "WARN")
+        .config("spark.driver.memory", "8g")
+        .config("spark.sql.execution.pyspark.udf.faulthandler.enabled", "true")
+        .config("spark.python.worker.faulthandler.enabled", "true")
         .getOrCreate()
     )

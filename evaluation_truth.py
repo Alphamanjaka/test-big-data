@@ -26,7 +26,6 @@ from typing import Callable
 
 import pandas as pd
 
-from patient_platform.config import load_data_root, load_sources
 from patient_platform.logging_utils import RuntimeLogger
 from patient_platform.pipeline import run_pipeline
 from patient_platform.spark.csv_extractor import SparkCSVExtractor
@@ -47,9 +46,26 @@ def _eval_log(step: str, **fields: object) -> None:
 # ---------------------------------------------------------------------------
 # Chargement de la vérité de référence
 # ---------------------------------------------------------------------------
+def experiment_dir(level: str) -> Path:
+    return ROOT / "synthetic-patient-generator" / "data" / "experiments" / level
+
+
 def ground_truth_path(level: str) -> Path:
-    return ROOT / "synthetic-patient-generator" / "data" / "experiments" / level / \
-        "ground_truth" / "identity_mapping.csv"
+    return experiment_dir(level) / "ground_truth" / "identity_mapping.csv"
+
+
+def sources_for_level(level: str) -> dict[str, dict[str, Path]]:
+    """Sources résolues sur le répertoire d'expérience du niveau,
+    garantissant que données et ground truth du niveau sont cohérents."""
+    root = experiment_dir(level)
+    return {
+        "pharmacy": {"patient_source": root / "pharmacy" / "patients.csv",
+                     "business_source": root / "pharmacy" / "achats.csv"},
+        "consultation": {"patient_source": root / "consultation" / "patients.csv",
+                         "business_source": root / "consultation" / "consultations.csv"},
+        "imaging": {"patient_source": root / "imaging" / "patients.csv",
+                    "business_source": root / "imaging" / "examens.csv"},
+    }
 
 
 def ensure_dataset(level: str, patients: int, seed: int) -> None:
@@ -104,11 +120,12 @@ def predictions_mvp(data_root: Path, level: str,
     return pred, methods
 
 
-def predictions_spark(sources, level: str,
+def predictions_spark(level: str,
                       only: str | None = None) -> tuple[dict, dict] | None:
     if only == "mvp":
         _eval_log("predictions", engine="spark", status="skipped")
         return None
+    sources = sources_for_level(level)
     spark = get_or_create_session()
     try:
         frames = [
@@ -262,11 +279,12 @@ def format_metrics(metrics: dict) -> str:
     )
 
 
-def build_report(level: str, sources, data_root: Path,
+def build_report(level: str,
                  only: str | None = None) -> str:
     truth = load_ground_truth(level)
+    data_root = experiment_dir(level)
     mvp_pred, mvp_methods = predictions_mvp(data_root, level, only) or (None, None)
-    spark_pred, spark_methods = predictions_spark(sources, level, only) or (None, None)
+    spark_pred, spark_methods = predictions_spark(level, only) or (None, None)
 
     mvp_m = pairs_metrics(truth, mvp_pred) if mvp_pred else None
     spark_m = pairs_metrics(truth, spark_pred) if spark_pred else None
@@ -374,9 +392,7 @@ def main() -> None:
     args = parser.parse_args()
 
     ensure_dataset(args.level, args.patients, args.seed)
-    sources = load_sources()
-    data_root = load_data_root()
-    report = build_report(args.level, sources, data_root, only=args.only)
+    report = build_report(args.level, only=args.only)
     out = ROOT / "evaluation_truth.md"
     out.write_text(report, encoding="utf-8")
     print(report)
