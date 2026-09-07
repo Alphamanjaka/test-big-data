@@ -1,0 +1,50 @@
+[
+  {
+    "name": "MAVIS",
+    "type": "postgres",
+    "ssh": {
+      "host": "102.16.7.154",
+      "port": 8090,
+      "user": "<CHANGE_ME>",
+      "password": "<CHANGE_ME>"
+    },
+    "db": {
+      "host": "localhost",
+      "port": 5432,
+      "user": "<CHANGE_ME>",
+      "password": "<CHANGE_ME>",
+      "database": "mavis_notheme"
+    },
+    "main_table": "hms_patient",
+    "tables_to_include": [
+      "ir_attachment",
+      "hr_employee",
+      "res_users",
+      "patient_death_register",
+      "hms_physician",
+      "acs_ethnicity",
+      "hms_diseases",
+      "product_product",
+      "hms_patient",
+      "res_partner",
+      "account_move"
+    ]
+  },
+  {
+    "name": "MMT_DB",
+    "type": "postgres",
+    "db": {
+      "host": "192.168.56.1",
+      "port": 5432,
+      "user": "<CHANGE_ME>",
+      "password": "<CHANGE_ME>",
+      "database": "mmt_db"
+    },
+    "main_table": "gnuhealth_patient",
+    "tables_to_include": [
+      "party_party",
+      "gnuhealth_patient",
+      "gnuhealth_family"
+    ]
+  }
+]

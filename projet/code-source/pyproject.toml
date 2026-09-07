@@ -1,0 +1,35 @@
+[build-system]
+requires = ["setuptools>=61"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "datalake-final-engine"
+version = "0.1.0"
+description = "Moteur de deduplication (master patient) et gouvernance (consentement, audit) pour la plateforme de centralisation de donnees patients synthetiques."
+readme = "README.md"
+requires-python = ">=3.8"
+dependencies = [
+    "pandas>=2.0,<3.0",
+    "rapidfuzz>=3.0,<5.0",
+    "psycopg[binary]>=3.2,<4.0",
+    "python-dotenv>=1.0,<2.0",
+    "fastapi>=0.115,<1.0",
+    "uvicorn[standard]>=0.30,<1.0",
+    "pydantic>=2.0,<3.0",
+]
+
+[project.optional-dependencies]
+test = ["pytest>=7.0"]
+spark = ["pyspark>=3.4"]
+
+[tool.setuptools]
+packages = [
+    "engine",
+    "engine.identity",
+    "engine.governance",
+]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+python_files = "test_*.py"
+addopts = "-q"

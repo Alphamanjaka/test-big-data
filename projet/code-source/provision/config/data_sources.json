@@ -1,0 +1,29 @@
+[
+  {
+    "name": "pharmacy",
+    "type": "csv",
+    "db": {
+      "dir": "/home/vagrant/datalake-final/evaluation/synthetic-patient-generator/data/raw/pharmacy"
+    },
+    "main_table": "patients",
+    "tables_to_include": ["patients"]
+  },
+  {
+    "name": "consultation",
+    "type": "csv",
+    "db": {
+      "dir": "/home/vagrant/datalake-final/evaluation/synthetic-patient-generator/data/raw/consultation"
+    },
+    "main_table": "patients",
+    "tables_to_include": ["patients"]
+  },
+  {
+    "name": "imaging",
+    "type": "csv",
+    "db": {
+      "dir": "/home/vagrant/datalake-final/evaluation/synthetic-patient-generator/data/raw/imaging"
+    },
+    "main_table": "patients",
+    "tables_to_include": ["patients"]
+  }
+]

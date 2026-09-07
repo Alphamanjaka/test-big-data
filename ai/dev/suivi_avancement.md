@@ -1,0 +1,71 @@
+# Suivi d'avancement — feuille de route
+
+Sources : `ai_context/suivi_avancement.md` (test_bigdata) + `.ai_context/04_priorities.md` (Mavis) + plan de fusion.
+
+## État global de la fusion `data_lake_final`
+
+```
+Phase 0 repo+root [██████████] 100%   Phase 1 docs [██████████] 100%
+Phase 2 ai/       [██████████] 100%   Phase 3 copies [██████████] 100%
+Phase 4 moteur    [██████████] 100%   Phase 5 GOLD+API [██████████] 100%
+Phase 6 éval+tests [████████░░] 80%   Commit initial git [░░░░░░░░░░] 0%
+```
+
+### Phases
+
+| Phase | Description | Statut |
+|---|---|---|
+| 0 | Repo `data_lake_final` (git init, README, AGENTS.md, .gitignore, arborescence) | ✅ |
+| 1 | Docs consolidées : cahier des charges + manuel conceptuel (7 fichiers thématiques) | ✅ |
+| 2 | `ai/memoire/` + `ai/dev/` (instructions agents fusionnées) | ✅ |
+| 3 | Copies : `provision/`, `front-optional/`, `sql/schema.sql`, dossiers engine/evaluation/tests | ✅ |
+| 4 | Moteur porté `engine/` (identity + governance) + évaluateur adapté + tests 9/9 | ✅ |
+| 5 | Intégration SILVER/GOLD + API : `master_patient_id`, consent GOLD, endpoints gouvernance | ✅ |
+| 6 | Évaluation finale (easy/medium/hard), tests API/parité, commit git initial | ⏳ |
+
+## Règles de progression
+
+- Une phase n'est **démarrable** que si la précédente est validée.
+- Vérifier **avant** de déclarer une étape terminée (test / run / trace de validation).
+- Documenter hypothèses et blocages dans `ai/dev/logs.md`.
+- Ne pas créer d'autres fichiers de suivi.
+- États : À faire / En cours / Terminé / Bloqué.
+
+## Priorités actuelles
+
+1. **[Phase 6]** Évaluation easy/medium/hard + `pytest` 9/9 **fait** ; reste : re-run pipeline VM,
+   `test_api.sh`, commit git initial.
+2. **[Code]** Validation VM : re-run `run_pipeline.sh` bout en bout (moteur intégré dans
+   `create_silver.py`, consent GOLD alimenté) puis `test_api.sh`.
+3. **[Mémoire]** Rédiger `Mon_Memoire/chapters/` (01→06) en suivant `ai/memoire/`.
+
+## Dettes techniques connues
+
+- Mapping FHIR : relier encounters/conditions/observations aux patients (GOLD ~16 lignes en test).
+- Gender/birth_date NULL côté MMT_DB (âge « unknown »).
+- JWT côté API Flask (RBAC web ≠ API données).
+- Docker/CI, export VM `.box`, tests unitaires ≥80 % (hors moteur).
+- Pages governance/consentements frontend (optionnel).
+
+## Critères de succès
+
+| Critère | Cible |
+|---|---|
+| Pipeline Medallion | RAW→SILVER→GOLD bout en bout |
+| Déduplication | Explicable, precision ≥0.95, parité Pandas/Spark |
+| Consentement | Purpose-by-purpose fonctionnel (GOLD + API + PostgreSQL) |
+| Évaluation | Ground-truth P/R/F1 documenté (easy/medium/hard) |
+| Tests | Moteur + consentement + API PASS |
+| Fusion | Un seul repo autonome, docs sans doublon, commit git initial |
+| Mémoire | Chapitres 01→06 rédigés |
+
+## Journal
+
+- 07/09 : démarrage fusion ; Phases 0, 3, 4 terminées (moteur porté + 9/9 tests).
+- 07/09 : Phase 1 docs consolidées rédigées (cahier + 7 thématiques) ; Phase 2 ai/memoire + ai/dev rédigées.
+- 07/09 : guide technique `projet/code-source/README.md` + `pyproject.toml` créés ; journal `ai/dev/logs.md` initialisé.
+- 07/09 : Phase 5 terminée — `create_silver.py` relié au moteur (master_patient_id/match_method/match_score) ;
+  `create_gold.py` produit `patient_consent_gold` ; endpoints `/api/governance/duplicates` + `/api/governance/consent`
+  ajoutés à `hive_api.py` (fallback mock) ; chemins VM passés à `datalake-final`.
+- 07/09 : Phase 6 (partiel) — `pytest` 9/9 PASS ; évaluation easy/medium/hard exécutée (parité MVP=Spark,
+  zero FP, hard Recall 0.287 documenté) ; `evaluation.md` mis à jour. Reste : re-run pipeline VM + tests API + commit initial.
