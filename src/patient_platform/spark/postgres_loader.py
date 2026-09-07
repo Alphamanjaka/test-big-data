@@ -28,15 +28,16 @@ _RAW_SQL = """
 
 _MASTER_SQL = """
     INSERT INTO master_patient
-        (master_patient_id, first_name, last_name, full_name, birth_date, phone, address)
-    VALUES (%s, %s, %s, %s, %s, %s, %s)
+        (master_patient_id, first_name, last_name, full_name, birth_date, phone, address, gender)
+    VALUES (%s, %s, %s, %s, %s, %s, %s, %s)
     ON CONFLICT (master_patient_id) DO UPDATE SET
         first_name = EXCLUDED.first_name,
         last_name = EXCLUDED.last_name,
         full_name = EXCLUDED.full_name,
         birth_date = EXCLUDED.birth_date,
         phone = EXCLUDED.phone,
-        address = EXCLUDED.address
+        address = EXCLUDED.address,
+        gender = EXCLUDED.gender
 """
 
 _IDENTITY_SQL = """
@@ -74,7 +75,7 @@ def _raw_params(row) -> tuple:
 
 def _master_params(row) -> tuple:
     return (row.master_patient_id, row.first_name, row.last_name, row.full_name,
-            row.birth_date, row.phone, row.address)
+            row.birth_date, row.phone, row.address, row.gender)
 
 
 def _identity_params(row) -> tuple:
@@ -214,7 +215,7 @@ def build_master_frame(decisions: DataFrame,
         merged = merged.union(frame)
     return merged.select(
         "master_patient_id", "first_name", "last_name", "full_name",
-        "birth_date", "phone", "address",
+        "birth_date", "phone", "address", "gender",
     )
 
 

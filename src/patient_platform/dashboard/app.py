@@ -116,7 +116,7 @@ with right:
     st.subheader("Patients master")
     patients = query_all(
         """
-        SELECT master_patient_id, full_name, birth_date
+        SELECT master_patient_id, full_name, birth_date, gender
         FROM master_patient
         ORDER BY master_patient_id
         """

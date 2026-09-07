@@ -1,6 +1,6 @@
 # Avancement Niveau 1 — MVP (CSV + Pandas + PostgreSQL)
 
-Dernière mise à jour : 2026-09-01
+Dernière mise à jour : 2026-09-07
 
 ## Semaine 1 — Fondations et sources
 
@@ -71,7 +71,7 @@ S1 ████████ 100%   S2 ████████ 100%   S3 ██�
 
 ## Validations
 
-- `pytest -q` : 14 tests réussis (pipeline, API, auth, audit, consent)
+- `pytest -q` : 20 tests réussis (pipeline, API, auth, audit, consent) + 44 tests du générateur
 - `python run_pipeline.py` : 3 sources, 60 lignes RAW, 36 masters, 24 fusions exactes, 60 identity links
 - `python load_to_postgres.py` : schéma idempotent, 60 RAW, 36 masters, 60 identity links, 60 enregistrements métier, 108 consentements
 - API : `/health`, `/metrics`, `/patients`, `/audit`, `/consent` validés
@@ -89,3 +89,14 @@ S1 ████████ 100%   S2 ████████ 100%   S3 ██�
 - **Blocages** : Aucun blocage technique actuel
 - **Journal** :
   - 2026-09-01 | S1-S4 | Pipeline complet | 3 sources → 36 masters → PostgreSQL → Dashboard → API → Tests → Gouvernance
+  - 2026-09-07 | Évolution | Ajout du genre (`gender`) de bout en bout | colonnes sources `sexe`/`genre`/`sex` → champ canonique → `master_patient.gender` → dashboard/API ; déduplication inchangée ; datasets régénérés
+
+## Nouveauté : prise en compte du genre
+
+- `synthetic-patient-generator/generator/common.py` : propage `gender` du Ground Truth vers chaque source (genre non "sali" par le Variation Engine).
+- `pharmacy_generator` / `consultation_generator` / `imaging_generator` : colonnes `sexe` / `genre` / `sex` avec **vocabulaire hétérogène volontaire** — pharmacie `H`/`F`, consultation `male`/`female`, imagerie `Homme`/`femme`.
+- `transform/canonical.py` : champ `gender` + helper `_gender` (normalise `F`/`female`/`femme` → `F`, `H`/`male`/`Homme`/`M` → `M`), mapping des 3 sources.
+- `sql/schema.sql` : `master_patient.gender` + `ALTER ... ADD COLUMN IF NOT EXISTS` (idempotent).
+- Level Spark : `spark/transform.py`, `spark/postgres_loader.py`, `validate_spark_transform.py` mis en cohérence.
+- Le genre n'intervient **pas** dans le scoring de déduplication (règle MVP conservée : cas Jean Rakoto, score 0.8 de Nirina inchangés).
+- Validation : démo `data/raw` → 18 patients, 11 masters, genres `M`/`F` corrects ; `master_patient.gender` alimenté en PostgreSQL (schéma idempotent) ; normalisation ex. `H`/`male`/`Homme` → `M` ; Spark vs MVP `MATCH True` sur les 3 sources.

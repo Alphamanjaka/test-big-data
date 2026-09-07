@@ -2,7 +2,7 @@
 Étape 5 — Source Generator : Pharmacie.
 
 Produit :
-- data/raw/pharmacy/patients.csv   (client_id, nom_complet, naissance, telephone, adresse)
+- data/raw/pharmacy/patients.csv   (client_id, nom_complet, naissance, telephone, adresse, sexe)
 - data/raw/pharmacy/achats.csv     (purchase_id, customer_id, medicine, quantity, purchase_date)
 """
 
@@ -37,6 +37,10 @@ MIN_PURCHASES_PER_PATIENT = 1
 MAX_PURCHASES_PER_PATIENT = 3
 PURCHASE_DATE_RANGE = (date(2025, 1, 1), date(2026, 8, 1))
 
+# Vocabulaire sexe propre à la source Pharmacie :
+# le genre maître ("M"/"F") est traduit en "H" (homme) / "F" (femme).
+SEXE_LABELS = {"M": "H", "F": "F"}
+
 
 def generate_pharmacy_patients(
     master_patients: pd.DataFrame,
@@ -44,7 +48,7 @@ def generate_pharmacy_patients(
     difficulty: str,
     seed: int = settings.RANDOM_SEED,
 ) -> pd.DataFrame:
-    """Génère data/raw/pharmacy/patients.csv : client_id, nom_complet, naissance, telephone, adresse."""
+    """Génère data/raw/pharmacy/patients.csv : client_id, nom_complet, naissance, telephone, adresse, sexe."""
     varied = build_source_patients(
         master_patients, distribution_plan, "pharmacy", difficulty, seed
     )
@@ -60,6 +64,7 @@ def generate_pharmacy_patients(
             "naissance": varied["birth_date"],
             "telephone": varied["phone"],
             "adresse": varied["address"],
+            "sexe": varied["gender"].replace(SEXE_LABELS),
         }
     )
 

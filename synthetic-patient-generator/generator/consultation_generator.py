@@ -2,7 +2,7 @@
 Étape 5 — Source Generator : Consultation.
 
 Produit :
-- data/raw/consultation/patients.csv       (patient_code, prenom, nom, date_naiss, phone_number)
+- data/raw/consultation/patients.csv       (patient_code, prenom, nom, date_naiss, phone_number, genre)
 - data/raw/consultation/consultations.csv  (consultation_id, patient_id, diagnosis, consultation_date)
 """
 
@@ -37,6 +37,10 @@ MIN_CONSULTATIONS_PER_PATIENT = 1
 MAX_CONSULTATIONS_PER_PATIENT = 2
 CONSULTATION_DATE_RANGE = (date(2025, 1, 1), date(2026, 8, 1))
 
+# Vocabulaire genre propre à la source Consultation (libellés anglais) :
+# "M" -> "male", "F" -> "female".
+GENRE_LABELS = {"M": "male", "F": "female"}
+
 
 def generate_consultation_patients(
     master_patients: pd.DataFrame,
@@ -44,7 +48,7 @@ def generate_consultation_patients(
     difficulty: str,
     seed: int = settings.RANDOM_SEED,
 ) -> pd.DataFrame:
-    """Génère data/raw/consultation/patients.csv : patient_code, prenom, nom, date_naiss, phone_number."""
+    """Génère data/raw/consultation/patients.csv : patient_code, prenom, nom, date_naiss, phone_number, genre."""
     varied = build_source_patients(
         master_patients, distribution_plan, "consultation", difficulty, seed
     )
@@ -56,6 +60,7 @@ def generate_consultation_patients(
             "nom": varied["last_name"],
             "date_naiss": varied["birth_date"],
             "phone_number": varied["phone"],
+            "genre": varied["gender"].replace(GENRE_LABELS),
         }
     )
 

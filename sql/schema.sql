@@ -17,8 +17,14 @@ CREATE TABLE
         full_name TEXT NOT NULL,
         birth_date DATE,
         phone TEXT,
-        address TEXT
+        address TEXT,
+        gender TEXT CHECK (gender IN ('M', 'F', ''))
     );
+
+-- Idempotence : si la table a déjà été créée sans la colonne gender
+-- (version antérieure du schéma), on l'ajoute sans erreur au rechargement.
+ALTER TABLE master_patient
+    ADD COLUMN IF NOT EXISTS gender TEXT CHECK (gender IN ('M', 'F', ''));
 
 CREATE TABLE
     IF NOT EXISTS patient_identity_map (

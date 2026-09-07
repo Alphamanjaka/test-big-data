@@ -1,13 +1,13 @@
 # Suivi d'avancement global
 
-Dernière mise à jour : 2026-09-02
+Dernière mise à jour : 2026-09-07
 
 ## Vue d'ensemble des 3 niveaux
 
 | Niveau | Description | État | Détail |
 |---|---|---|---|
 | 1 | MVP — CSV + Pandas + PostgreSQL | Terminé | [ai_context/avancement_mvp.md](ai_context/avancement_mvp.md) |
-| 2 | Scalabilité — PySpark distribué | À faire | [ai_context/avancement_spark.md](ai_context/avancement_spark.md) |
+| 2 | Scalabilité — PySpark distribué | Terminé | [ai_context/avancement_spark.md](ai_context/avancement_spark.md) |
 | 3 | Big Data — Data Lake + HDFS + Hive + Spark | À faire | [ai_context/avancement_bigdata.md](ai_context/avancement_bigdata.md) |
 
 **Règle** : Les Niveaux 2 et 3 ne peuvent commencer que si le Niveau 1 est validé.
@@ -23,11 +23,11 @@ Le Niveau 1 (MVP) est le plus avancé. Les étapes du Niveau 2 et 3 sont détail
 
 | # | Critère | État |
 |---|---|---|
-| P1 | PySpark installé et session fonctionnelle | À faire |
-| P2 | Extraction en Spark DataFrame | À faire |
-| P3 | Transformation identique au MVP | À faire |
-| P4 | Déduplication validée en Spark | À faire |
-| P5 | Résultats identiques à Pandas | À faire |
+| P1 | PySpark installé et session fonctionnelle | Terminé |
+| P2 | Extraction en Spark DataFrame | Terminé |
+| P3 | Transformation identique au MVP | Terminé |
+| P4 | Déduplication validée en Spark | Terminé |
+| P5 | Résultats identiques à Pandas | Terminé |
 
 ## État des étapes
 
@@ -56,7 +56,8 @@ Le Niveau 1 (MVP) est le plus avancé. Les étapes du Niveau 2 et 3 sont détail
 
 ## Validations réalisées
 
-- `pytest -q` : 14 tests réussis (pipeline, API, auth, audit, consent).
+- `pytest -q` : 20 tests réussis (pipeline, API, auth, audit, consent) + 44 tests du générateur.
+- Prise en compte du genre de bout en bout : vocabulaire hétérogène par source (`sexe` H/F pharmacie, `genre` male/female consultation, `sex` Homme/femme imagerie) normalisé en `M`/`F` dans le canonique et `master_patient.gender` — déduplication inchangée.
 - `python run_pipeline.py` : 3 sources traitées (6 lignes chacune), 11 patients master créés.
 - `python load_to_postgres.py` : schéma appliqué et données chargées dans `patient_plateform`.
 - Vérification PostgreSQL : `18` RAW, `11` masters et `18` identity links présents.

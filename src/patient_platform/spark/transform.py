@@ -2,11 +2,12 @@ from pyspark.sql import DataFrame
 from pyspark.sql import functions as F
 from pyspark.sql.types import DateType, StringType
 
-from patient_platform.transform.canonical import _birth_date, _phone, _text
+from patient_platform.transform.canonical import _birth_date, _gender, _phone, _text
 
 _text_udf = F.udf(_text, StringType())
 _phone_udf = F.udf(_phone, StringType())
 _birth_date_udf = F.udf(_birth_date, DateType())
+_gender_udf = F.udf(_gender, StringType())
 
 
 def _split_name(value: str, strip_dots: bool) -> tuple[str, str]:
@@ -44,6 +45,7 @@ def map_patient(frame: DataFrame, source_system: str) -> DataFrame:
             .withColumn("phone", _phone_udf(F.col("telephone")))
             .withColumn("address", _text_udf(F.col("adresse")))
             .withColumn("birth_date", _birth_date_udf(F.col("naissance")))
+            .withColumn("gender", _gender_udf(F.col("sexe")))
         )
     elif source_system == "consultation":
         mapped = (
@@ -53,6 +55,7 @@ def map_patient(frame: DataFrame, source_system: str) -> DataFrame:
             .withColumn("phone", _phone_udf(F.col("phone_number")))
             .withColumn("address", F.lit(""))
             .withColumn("birth_date", _birth_date_udf(F.col("date_naiss")))
+            .withColumn("gender", _gender_udf(F.col("genre")))
         )
         mapped = mapped.withColumn(
             "full_name",
@@ -68,6 +71,7 @@ def map_patient(frame: DataFrame, source_system: str) -> DataFrame:
             .withColumn("phone", _phone_udf(F.col("tel")))
             .withColumn("address", F.lit(""))
             .withColumn("birth_date", _birth_date_udf(F.col("dob")))
+            .withColumn("gender", _gender_udf(F.col("sex")))
         )
     else:
         raise ValueError(f"Unsupported source system: {source_system}")
@@ -76,7 +80,7 @@ def map_patient(frame: DataFrame, source_system: str) -> DataFrame:
         mapped.withColumn("source_system", F.lit(source_system))
         .select(
             "source_system", "source_patient_id", "first_name", "last_name",
-            "full_name", "birth_date", "phone", "address", "source_file",
+            "full_name", "birth_date", "phone", "address", "gender", "source_file",
         )
     )
 

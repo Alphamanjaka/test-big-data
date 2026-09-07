@@ -1,6 +1,6 @@
 # Avancement Niveau 2 — Apache Spark
 
-Dernière mise à jour : 2026-09-02
+Dernière mise à jour : 2026-09-07
 
 ## Prérequis (MVP validé)
 
@@ -49,7 +49,9 @@ Dernière mise à jour : 2026-09-02
 
 > `spark/transform.py` réutilise les fonctions N1 (`_text`, `_phone`, `_birth_date`)
 > via UDFs : transformation strictement identique. 18 patients canoniques validés
-> champ par champ contre le MVP.
+> champ par champ contre le MVP. Depuis 2026-09-07, le genre fait partie du
+> canonique Spark (UDF `_gender`, vocabulaire hétérogène des sources normalisé en
+> `M`/`F`), toujours identique au MVP.
 
 ## Phase 4 — Déduplication
 
@@ -122,3 +124,4 @@ Prérequis ████████ 100%   S1 ████████ 100%   S2
   - 2026-09-02 | S4.1-S4.4 | Déduplication Spark | Exact self-join + scores cross-join, 18 liens/11 masters identiques MVP, Jean Rakoto et Nirina validés
   - 2026-09-02 | S5.1-S5.3 | Chargement PostgreSQL (Spark) | foreachPartition + psycopg (ON CONFLICT idempotents), RAW idempotent (unique + DO NOTHING), intégrité et comparaison Pandas/Spark validées — Niveau 2 terminé
   - 2026-09-02 | Générateur | Intégration format pipeline | synthetic-patient-generator adapté au schéma MVP (client_id/nom_complet/naissance/... , adresse fictive, achats.csv/examens.csv). Bascule via `data_root` dans config/sources.json. Validation : N1 + N2 extraction/transformation OK sur dataset généré (easy/medium/hard), fix import `pd` dans validate_spark_transform.py
+  - 2026-09-07 | Évolution | Alignement du genre au niveau Spark | `spark/transform.py` (UDF de la normalisation `_gender`), `spark/postgres_loader.py` (`master_patient.gender` dans `_MASTER_SQL`/`_master_params`/`build_master_frame`), `CANONICAL_FIELDS` dans validate_spark_transform.py. Résultats MVP ↔ Spark strictement identiques sur les 3 sources (`MATCH True`), déduplication inchangée

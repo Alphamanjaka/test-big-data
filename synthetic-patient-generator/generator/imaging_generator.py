@@ -2,7 +2,7 @@
 Étape 5 — Source Generator : Imagerie.
 
 Produit :
-- data/raw/imaging/patients.csv  (id_personne, patient_name, dob, tel)
+- data/raw/imaging/patients.csv  (id_personne, patient_name, dob, tel, sex)
 - data/raw/imaging/examens.csv   (exam_id, patient_code, exam_type, exam_date)
 """
 
@@ -34,6 +34,10 @@ MIN_EXAMS_PER_PATIENT = 1
 MAX_EXAMS_PER_PATIENT = 2
 EXAM_DATE_RANGE = (date(2025, 1, 1), date(2026, 8, 1))
 
+# Vocabulaire sex propre à la source Imagerie (mots français) :
+# "M" -> "Homme", "F" -> "femme".
+SEX_LABELS = {"M": "Homme", "F": "femme"}
+
 
 def generate_imaging_patients(
     master_patients: pd.DataFrame,
@@ -41,7 +45,7 @@ def generate_imaging_patients(
     difficulty: str,
     seed: int = settings.RANDOM_SEED,
 ) -> pd.DataFrame:
-    """Génère data/raw/imaging/patients.csv : id_personne, patient_name, dob, tel."""
+    """Génère data/raw/imaging/patients.csv : id_personne, patient_name, dob, tel, sex."""
     varied = build_source_patients(
         master_patients, distribution_plan, "imaging", difficulty, seed
     )
@@ -56,6 +60,7 @@ def generate_imaging_patients(
             "patient_name": varied.apply(patient_name, axis=1),
             "dob": varied["birth_date"],
             "tel": varied["phone"],
+            "sex": varied["gender"].replace(SEX_LABELS),
         }
     )
 

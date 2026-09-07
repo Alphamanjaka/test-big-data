@@ -68,15 +68,16 @@ class PostgresLoader:
                         """
                         INSERT INTO master_patient
                             (master_patient_id, first_name, last_name, full_name,
-                             birth_date, phone, address)
-                        VALUES (%s, %s, %s, %s, %s, %s, %s)
+                             birth_date, phone, address, gender)
+                        VALUES (%s, %s, %s, %s, %s, %s, %s, %s)
                         ON CONFLICT (master_patient_id) DO UPDATE SET
                             first_name = EXCLUDED.first_name,
                             last_name = EXCLUDED.last_name,
                             full_name = EXCLUDED.full_name,
                             birth_date = EXCLUDED.birth_date,
                             phone = EXCLUDED.phone,
-                            address = EXCLUDED.address
+                            address = EXCLUDED.address,
+                            gender = EXCLUDED.gender
                         """,
                         (
                             master_patient_id,
@@ -86,6 +87,7 @@ class PostgresLoader:
                             patient.birth_date,
                             patient.phone,
                             patient.address,
+                            patient.gender,
                         ),
                     )
                     self.logger.info(

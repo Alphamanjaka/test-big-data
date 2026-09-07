@@ -24,8 +24,9 @@ def build_source_patients(
     et leur applique le Variation Engine (Étape 4) pour "salir" leur identité.
 
     Retourne un DataFrame avec les colonnes : local_id, master_id, first_name,
-    last_name, birth_date, phone — à mapper ensuite vers le schéma propre à
-    chaque source (noms de colonnes différents, cf. hétérogénéité volontaire).
+    last_name, birth_date, gender, phone, address — à mapper ensuite vers le
+    schéma propre à chaque source (noms de colonnes différents, cf.
+    hétérogénéité volontaire).
     """
     rng = random.Random(seed)
     merged = distribution_plan[distribution_plan["source"] == source].merge(
@@ -42,6 +43,9 @@ def build_source_patients(
             "address": row.get("address", ""),
         }
         varied = apply_variations(clean_patient, difficulty, rng)
+        # Le genre est un attribut démographique fiable : il n'est JAMAIS
+        # "sali" par le Variation Engine, pour qu'un même patient garde le
+        # même genre dans les trois sources (cohérence cross-source).
         rows.append(
             {
                 "local_id": row["local_id"],
@@ -49,6 +53,7 @@ def build_source_patients(
                 "first_name": varied["first_name"],
                 "last_name": varied["last_name"],
                 "birth_date": varied["birth_date"],
+                "gender": row.get("gender", ""),
                 "phone": varied["phone"],
                 "address": varied["address"],
             }

@@ -61,7 +61,7 @@ def metrics(user: Annotated[UserContext, Depends(get_current_user)]) -> dict[str
 def list_patients(user: Annotated[UserContext, Depends(get_current_user)]) -> list[dict]:
     return query_all(
         """
-        SELECT master_patient_id, first_name, last_name, full_name, birth_date
+        SELECT master_patient_id, first_name, last_name, full_name, birth_date, gender
         FROM master_patient
         ORDER BY master_patient_id
         """
@@ -75,7 +75,7 @@ def get_patient(
 ) -> dict:
     patient = query_one(
         """
-        SELECT master_patient_id, first_name, last_name, full_name, birth_date
+        SELECT master_patient_id, first_name, last_name, full_name, birth_date, gender
         FROM master_patient
         WHERE master_patient_id = %s
         """,

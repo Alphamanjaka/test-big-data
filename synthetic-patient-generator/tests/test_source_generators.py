@@ -14,10 +14,11 @@ PLAN = distribute_patients(MASTER, seed=10)
 
 def test_pharmacy_patients_schema_and_count():
     df = generate_pharmacy_patients(MASTER, PLAN, "medium", seed=10)
-    assert list(df.columns) == ["client_id", "nom_complet", "naissance", "telephone", "adresse"]
+    assert list(df.columns) == ["client_id", "nom_complet", "naissance", "telephone", "adresse", "sexe"]
     expected = (PLAN["source"] == "pharmacy").sum()
     assert len(df) == expected
     assert df["client_id"].str.startswith("PH").all()
+    assert df["sexe"].isin(["H", "F"]).all()
 
 
 def test_pharmacy_purchases_reference_existing_customers():
@@ -35,8 +36,10 @@ def test_consultation_patients_schema():
         "nom",
         "date_naiss",
         "phone_number",
+        "genre",
     ]
     assert df["patient_code"].str.startswith("MED").all()
+    assert df["genre"].isin(["male", "female"]).all()
 
 
 def test_consultations_reference_existing_patients():
@@ -48,8 +51,9 @@ def test_consultations_reference_existing_patients():
 
 def test_imaging_patients_schema():
     df = generate_imaging_patients(MASTER, PLAN, "medium", seed=10)
-    assert list(df.columns) == ["id_personne", "patient_name", "dob", "tel"]
+    assert list(df.columns) == ["id_personne", "patient_name", "dob", "tel", "sex"]
     assert df["id_personne"].str.startswith("IMG").all()
+    assert df["sex"].isin(["Homme", "femme"]).all()
 
 
 def test_exams_reference_existing_patients():

@@ -16,6 +16,7 @@ class CanonicalPatient:
     birth_date: date | None
     phone: str
     address: str
+    gender: str
     source_file: str
 
 
@@ -49,6 +50,25 @@ def _phone(value: str) -> str:
     return digits
 
 
+def _gender(value: object) -> str:
+    """Standardise le genre vers 'M' ou 'F'.
+
+    Chaque source utilise son propre vocabulaire :
+      - féminin : 'F', 'female', 'femme' (et 'FEMININ') ;
+      - masculin : 'H' (homme), 'male', 'Homme' (et 'M' issu des données
+        maîtres du générateur).
+    On normalise vers une valeur canonique unique ('M'/'F'). Une valeur
+    absente ou inconnue reste vide ('') plutôt que de créer une valeur
+    invalide (le texte est comparé en majuscules, la casse est ignorée).
+    """
+    text = _text(value).upper()
+    if text in {"M", "H", "HOMME", "MALE", "MASCULIN"}:
+        return "M"
+    if text in {"F", "FEMME", "FEMALE", "FEMININ"}:
+        return "F"
+    return ""
+
+
 def _birth_date(value: str) -> date | None:
     value = value.strip() if value is not None else ""
     date_format = "%Y-%m-%d" if re.fullmatch(
@@ -69,6 +89,8 @@ def map_patient(row: pd.Series, source_system: str) -> CanonicalPatient:
         phone = _phone(_text(row["telephone"]))
         address = _text(row["adresse"])
         birth_value = _text(row["naissance"])
+        # row.get() tolère une colonne genre absente (anciennes données) -> ""
+        gender_value = row.get("sexe", "")
     elif source_system == "consultation":
         first_name = _text(row["prenom"])
         last_name = _text(row["nom"])
@@ -77,6 +99,7 @@ def map_patient(row: pd.Series, source_system: str) -> CanonicalPatient:
         phone = _phone(_text(row["phone_number"]))
         address = ""
         birth_value = _text(row["date_naiss"])
+        gender_value = row.get("genre", "")
     elif source_system == "imaging":
         full_name = _text(row["patient_name"]).replace(".", "")
         name_parts = full_name.split(" ", 1)
@@ -85,6 +108,7 @@ def map_patient(row: pd.Series, source_system: str) -> CanonicalPatient:
         phone = _phone(_text(row["tel"]))
         address = ""
         birth_value = _text(row["dob"])
+        gender_value = row.get("sex", "")
     else:
         raise ValueError(f"Unsupported source system: {source_system}")
 
@@ -97,6 +121,7 @@ def map_patient(row: pd.Series, source_system: str) -> CanonicalPatient:
         birth_date=_birth_date(birth_value),
         phone=phone,
         address=address,
+        gender=_gender(gender_value),
         source_file=_text(row["source_file"]),
     )
 

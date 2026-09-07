@@ -8,7 +8,7 @@ from patient_platform.spark.transform import standardize_patients
 from patient_platform.transform.canonical import standardize_patients as pandas_standardize
 
 CANONICAL_FIELDS = ["source_system", "source_patient_id", "first_name", "last_name",
-                    "full_name", "birth_date", "phone", "address", "source_file"]
+                    "full_name", "birth_date", "phone", "address", "gender", "source_file"]
 
 
 def validate():
