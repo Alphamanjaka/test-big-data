@@ -1,0 +1,77 @@
+[
+  {
+    "source_name": "consultation",
+    "table_name": "patients",
+    "table_type": "BASE TABLE",
+    "columns": [
+      {
+        "name": "patient_code",
+        "type": "string"
+      },
+      {
+        "name": "prenom",
+        "type": "string"
+      },
+      {
+        "name": "nom",
+        "type": "string"
+      },
+      {
+        "name": "date_naiss",
+        "type": "string"
+      },
+      {
+        "name": "phone_number",
+        "type": "string"
+      },
+      {
+        "name": "genre",
+        "type": "string"
+      }
+    ],
+    "row_count": 76,
+    "sample_data": [
+      {
+        "patient_code": "MED000001",
+        "prenom": "Marie ",
+        "nom": "Tmioth\u00e9e",
+        "date_naiss": "1934-02-01",
+        "phone_number": "0324332181",
+        "genre": "male"
+      },
+      {
+        "patient_code": "MED000002",
+        "prenom": " Boutin",
+        "nom": "Victor",
+        "date_naiss": "2004-11-06",
+        "phone_number": "038 379 4026",
+        "genre": "male"
+      },
+      {
+        "patient_code": "MED000003",
+        "prenom": "Constance",
+        "nom": "Rcher",
+        "date_naiss": "1988-03-14",
+        "phone_number": "0342351161",
+        "genre": "female"
+      },
+      {
+        "patient_code": "MED000004",
+        "prenom": "martine",
+        "nom": " BARRE",
+        "date_naiss": "2012-11-06",
+        "phone_number": "0349407816",
+        "genre": "female"
+      },
+      {
+        "patient_code": "MED000005",
+        "prenom": "Thomas",
+        "nom": "Maurice",
+        "date_naiss": "1979-11-25",
+        "phone_number": "0349593103",
+        "genre": "male"
+      }
+    ],
+    "hdfs_path": "hdfs://localhost:9000/datalake/raw/consultation/patients"
+  }
+]

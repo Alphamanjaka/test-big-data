@@ -1,0 +1,41 @@
+{
+  "pharmacy": {
+    "Patient": {
+      "patients": [
+        "nom_complet",
+        "naissance",
+        "sexe",
+        "telephone"
+      ]
+    },
+    "Encounter": {},
+    "Condition": {},
+    "Observation": {}
+  },
+  "consultation": {
+    "Patient": {
+      "patients": [
+        "prenom",
+        "date_naiss",
+        "genre",
+        "phone_number"
+      ]
+    },
+    "Encounter": {},
+    "Condition": {},
+    "Observation": {}
+  },
+  "imaging": {
+    "Patient": {
+      "patients": [
+        "patient_name",
+        "dob",
+        "sex",
+        "tel"
+      ]
+    },
+    "Encounter": {},
+    "Condition": {},
+    "Observation": {}
+  }
+}
