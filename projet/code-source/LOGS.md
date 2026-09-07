@@ -57743,3 +57743,68 @@
 2026-09-07T18:41:29+00:00 | INFO | db_line | table=patient_identity_map | source=imaging | source_patient_id=IMG005 | master_patient_id=PAT-0009 | method=new_master | score=1.0 | row_number=16 | status=inserted
 2026-09-07T18:41:29+00:00 | INFO | db_line | table=patient_identity_map | source=imaging | source_patient_id=IMG006 | master_patient_id=PAT-0010 | method=new_master | score=1.0 | row_number=17 | status=inserted
 2026-09-07T18:41:29+00:00 | INFO | db_line | table=patient_identity_map | source=imaging | source_patient_id=IMG007 | master_patient_id=PAT-0011 | method=new_master | score=1.0 | row_number=18 | status=inserted
+2026-09-07T19:25:06+00:00 | INFO | db_line | table=raw_patient_record | source=pharmacy | source_patient_id=1 | row_number=1 | status=inserted
+2026-09-07T19:25:06+00:00 | INFO | db_line | table=raw_patient_record | source=pharmacy | source_patient_id=2 | row_number=2 | status=inserted
+2026-09-07T19:25:06+00:00 | INFO | db_line | table=raw_patient_record | source=pharmacy | source_patient_id=3 | row_number=3 | status=inserted
+2026-09-07T19:25:06+00:00 | INFO | db_line | table=raw_patient_record | source=pharmacy | source_patient_id=4 | row_number=4 | status=inserted
+2026-09-07T19:25:06+00:00 | INFO | db_line | table=raw_patient_record | source=pharmacy | source_patient_id=5 | row_number=5 | status=inserted
+2026-09-07T19:25:06+00:00 | INFO | db_line | table=raw_patient_record | source=pharmacy | source_patient_id=6 | row_number=6 | status=inserted
+2026-09-07T19:25:06+00:00 | INFO | db_line | table=raw_patient_record | source=consultation | source_patient_id=50 | row_number=7 | status=inserted
+2026-09-07T19:25:06+00:00 | INFO | db_line | table=raw_patient_record | source=consultation | source_patient_id=51 | row_number=8 | status=inserted
+2026-09-07T19:25:06+00:00 | INFO | db_line | table=raw_patient_record | source=consultation | source_patient_id=52 | row_number=9 | status=inserted
+2026-09-07T19:25:06+00:00 | INFO | db_line | table=raw_patient_record | source=consultation | source_patient_id=53 | row_number=10 | status=inserted
+2026-09-07T19:25:06+00:00 | INFO | db_line | table=raw_patient_record | source=consultation | source_patient_id=54 | row_number=11 | status=inserted
+2026-09-07T19:25:06+00:00 | INFO | db_line | table=raw_patient_record | source=consultation | source_patient_id=55 | row_number=12 | status=inserted
+2026-09-07T19:25:06+00:00 | INFO | db_line | table=raw_patient_record | source=imaging | source_patient_id=IMG001 | row_number=13 | status=inserted
+2026-09-07T19:25:06+00:00 | INFO | db_line | table=raw_patient_record | source=imaging | source_patient_id=IMG003 | row_number=14 | status=inserted
+2026-09-07T19:25:06+00:00 | INFO | db_line | table=raw_patient_record | source=imaging | source_patient_id=IMG004 | row_number=15 | status=inserted
+2026-09-07T19:25:06+00:00 | INFO | db_line | table=raw_patient_record | source=imaging | source_patient_id=IMG005 | row_number=16 | status=inserted
+2026-09-07T19:25:06+00:00 | INFO | db_line | table=raw_patient_record | source=imaging | source_patient_id=IMG006 | row_number=17 | status=inserted
+2026-09-07T19:25:06+00:00 | INFO | db_line | table=raw_patient_record | source=imaging | source_patient_id=IMG007 | row_number=18 | status=inserted
+2026-09-07T19:25:06+00:00 | INFO | db_line | table=master_patient | master_patient_id=PAT-0001 | row_number=1 | status=inserted
+2026-09-07T19:25:06+00:00 | INFO | db_line | table=master_patient | master_patient_id=PAT-0002 | row_number=2 | status=inserted
+2026-09-07T19:25:06+00:00 | INFO | db_line | table=master_patient | master_patient_id=PAT-0003 | row_number=3 | status=inserted
+2026-09-07T19:25:06+00:00 | INFO | db_line | table=master_patient | master_patient_id=PAT-0004 | row_number=4 | status=inserted
+2026-09-07T19:25:06+00:00 | INFO | db_line | table=master_patient | master_patient_id=PAT-0005 | row_number=5 | status=inserted
+2026-09-07T19:25:06+00:00 | INFO | db_line | table=master_patient | master_patient_id=PAT-0006 | row_number=6 | status=inserted
+2026-09-07T19:25:06+00:00 | INFO | db_line | table=master_patient | master_patient_id=PAT-0007 | row_number=7 | status=inserted
+2026-09-07T19:25:06+00:00 | INFO | db_line | table=master_patient | master_patient_id=PAT-0008 | row_number=8 | status=inserted
+2026-09-07T19:25:06+00:00 | INFO | db_line | table=master_patient | master_patient_id=PAT-0009 | row_number=9 | status=inserted
+2026-09-07T19:25:06+00:00 | INFO | db_line | table=master_patient | master_patient_id=PAT-0010 | row_number=10 | status=inserted
+2026-09-07T19:25:06+00:00 | INFO | db_line | table=master_patient | master_patient_id=PAT-0011 | row_number=11 | status=inserted
+2026-09-07T19:25:06+00:00 | INFO | db_line | table=medicine_purchase | source=pharmacy | source_record_id=PUR-001 | source_patient_id=1 | master_patient_id=PAT-0001 | row_number=1 | status=inserted
+2026-09-07T19:25:06+00:00 | INFO | db_line | table=medicine_purchase | source=pharmacy | source_record_id=PUR-002 | source_patient_id=2 | master_patient_id=PAT-0002 | row_number=2 | status=inserted
+2026-09-07T19:25:06+00:00 | INFO | db_line | table=medicine_purchase | source=pharmacy | source_record_id=PUR-003 | source_patient_id=3 | master_patient_id=PAT-0003 | row_number=3 | status=inserted
+2026-09-07T19:25:06+00:00 | INFO | db_line | table=medicine_purchase | source=pharmacy | source_record_id=PUR-004 | source_patient_id=4 | master_patient_id=PAT-0004 | row_number=4 | status=inserted
+2026-09-07T19:25:06+00:00 | INFO | db_line | table=medicine_purchase | source=pharmacy | source_record_id=PUR-005 | source_patient_id=5 | master_patient_id=PAT-0005 | row_number=5 | status=inserted
+2026-09-07T19:25:06+00:00 | INFO | db_line | table=medicine_purchase | source=pharmacy | source_record_id=PUR-006 | source_patient_id=6 | master_patient_id=PAT-0006 | row_number=6 | status=inserted
+2026-09-07T19:25:06+00:00 | INFO | db_line | table=patient_consultation | source=consultation | source_record_id=CON-001 | source_patient_id=50 | master_patient_id=PAT-0001 | row_number=7 | status=inserted
+2026-09-07T19:25:06+00:00 | INFO | db_line | table=patient_consultation | source=consultation | source_record_id=CON-002 | source_patient_id=51 | master_patient_id=PAT-0002 | row_number=8 | status=inserted
+2026-09-07T19:25:06+00:00 | INFO | db_line | table=patient_consultation | source=consultation | source_record_id=CON-003 | source_patient_id=52 | master_patient_id=PAT-0003 | row_number=9 | status=inserted
+2026-09-07T19:25:06+00:00 | INFO | db_line | table=patient_consultation | source=consultation | source_record_id=CON-004 | source_patient_id=53 | master_patient_id=PAT-0004 | row_number=10 | status=inserted
+2026-09-07T19:25:06+00:00 | INFO | db_line | table=patient_consultation | source=consultation | source_record_id=CON-005 | source_patient_id=54 | master_patient_id=PAT-0007 | row_number=11 | status=inserted
+2026-09-07T19:25:06+00:00 | INFO | db_line | table=patient_consultation | source=consultation | source_record_id=CON-006 | source_patient_id=55 | master_patient_id=PAT-0008 | row_number=12 | status=inserted
+2026-09-07T19:25:06+00:00 | INFO | db_line | table=imaging_exam | source=imaging | source_record_id=EXA-001 | source_patient_id=IMG001 | master_patient_id=PAT-0001 | row_number=13 | status=inserted
+2026-09-07T19:25:06+00:00 | INFO | db_line | table=imaging_exam | source=imaging | source_record_id=EXA-002 | source_patient_id=IMG003 | master_patient_id=PAT-0003 | row_number=14 | status=inserted
+2026-09-07T19:25:06+00:00 | INFO | db_line | table=imaging_exam | source=imaging | source_record_id=EXA-003 | source_patient_id=IMG004 | master_patient_id=PAT-0004 | row_number=15 | status=inserted
+2026-09-07T19:25:06+00:00 | INFO | db_line | table=imaging_exam | source=imaging | source_record_id=EXA-004 | source_patient_id=IMG005 | master_patient_id=PAT-0009 | row_number=16 | status=inserted
+2026-09-07T19:25:06+00:00 | INFO | db_line | table=imaging_exam | source=imaging | source_record_id=EXA-005 | source_patient_id=IMG006 | master_patient_id=PAT-0010 | row_number=17 | status=inserted
+2026-09-07T19:25:06+00:00 | INFO | db_line | table=imaging_exam | source=imaging | source_record_id=EXA-006 | source_patient_id=IMG007 | master_patient_id=PAT-0011 | row_number=18 | status=inserted
+2026-09-07T19:25:06+00:00 | INFO | db_line | table=patient_identity_map | source=pharmacy | source_patient_id=1 | master_patient_id=PAT-0001 | method=new_master | score=1.0 | row_number=1 | status=inserted
+2026-09-07T19:25:06+00:00 | INFO | db_line | table=patient_identity_map | source=pharmacy | source_patient_id=2 | master_patient_id=PAT-0002 | method=new_master | score=1.0 | row_number=2 | status=inserted
+2026-09-07T19:25:06+00:00 | INFO | db_line | table=patient_identity_map | source=pharmacy | source_patient_id=3 | master_patient_id=PAT-0003 | method=new_master | score=1.0 | row_number=3 | status=inserted
+2026-09-07T19:25:06+00:00 | INFO | db_line | table=patient_identity_map | source=pharmacy | source_patient_id=4 | master_patient_id=PAT-0004 | method=new_master | score=1.0 | row_number=4 | status=inserted
+2026-09-07T19:25:06+00:00 | INFO | db_line | table=patient_identity_map | source=pharmacy | source_patient_id=5 | master_patient_id=PAT-0005 | method=new_master | score=1.0 | row_number=5 | status=inserted
+2026-09-07T19:25:06+00:00 | INFO | db_line | table=patient_identity_map | source=pharmacy | source_patient_id=6 | master_patient_id=PAT-0006 | method=new_master | score=1.0 | row_number=6 | status=inserted
+2026-09-07T19:25:06+00:00 | INFO | db_line | table=patient_identity_map | source=consultation | source_patient_id=50 | master_patient_id=PAT-0001 | method=exact | score=1.0 | row_number=7 | status=inserted
+2026-09-07T19:25:06+00:00 | INFO | db_line | table=patient_identity_map | source=consultation | source_patient_id=51 | master_patient_id=PAT-0002 | method=exact | score=1.0 | row_number=8 | status=inserted
+2026-09-07T19:25:06+00:00 | INFO | db_line | table=patient_identity_map | source=consultation | source_patient_id=52 | master_patient_id=PAT-0003 | method=exact | score=1.0 | row_number=9 | status=inserted
+2026-09-07T19:25:06+00:00 | INFO | db_line | table=patient_identity_map | source=consultation | source_patient_id=53 | master_patient_id=PAT-0004 | method=probabilistic | score=0.8 | row_number=10 | status=inserted
+2026-09-07T19:25:06+00:00 | INFO | db_line | table=patient_identity_map | source=consultation | source_patient_id=54 | master_patient_id=PAT-0007 | method=new_master | score=1.0 | row_number=11 | status=inserted
+2026-09-07T19:25:06+00:00 | INFO | db_line | table=patient_identity_map | source=consultation | source_patient_id=55 | master_patient_id=PAT-0008 | method=new_master | score=1.0 | row_number=12 | status=inserted
+2026-09-07T19:25:06+00:00 | INFO | db_line | table=patient_identity_map | source=imaging | source_patient_id=IMG001 | master_patient_id=PAT-0001 | method=exact | score=1.0 | row_number=13 | status=inserted
+2026-09-07T19:25:06+00:00 | INFO | db_line | table=patient_identity_map | source=imaging | source_patient_id=IMG003 | master_patient_id=PAT-0003 | method=exact | score=1.0 | row_number=14 | status=inserted
+2026-09-07T19:25:06+00:00 | INFO | db_line | table=patient_identity_map | source=imaging | source_patient_id=IMG004 | master_patient_id=PAT-0004 | method=exact | score=1.0 | row_number=15 | status=inserted
+2026-09-07T19:25:06+00:00 | INFO | db_line | table=patient_identity_map | source=imaging | source_patient_id=IMG005 | master_patient_id=PAT-0009 | method=new_master | score=1.0 | row_number=16 | status=inserted
+2026-09-07T19:25:06+00:00 | INFO | db_line | table=patient_identity_map | source=imaging | source_patient_id=IMG006 | master_patient_id=PAT-0010 | method=new_master | score=1.0 | row_number=17 | status=inserted
+2026-09-07T19:25:06+00:00 | INFO | db_line | table=patient_identity_map | source=imaging | source_patient_id=IMG007 | master_patient_id=PAT-0011 | method=new_master | score=1.0 | row_number=18 | status=inserted
