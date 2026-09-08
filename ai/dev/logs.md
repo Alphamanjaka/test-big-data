@@ -122,3 +122,26 @@ quoting PowerShell → scripts dans `provision/metadata/`.
 initial (après accord) + suite rédaction du mémoire.
 
 ---
+
+## 09/09/2026 — Consolidation : dépôt unique `Mon_Memoire`
+
+**Contexte :** rapatrier `data_lake_final` et `datalake_mavis` dans un **dépôt unique** `Mon_Memoire`
+(validation utilisateur : « une organisation unique »), en préservant l'historique git de `data_lake_final`
+via `git subtree`, puis supprimer les anciens répertoires.
+
+| # | Action | Fichiers | Détail |
+|---|---|---|---|
+| 1 | Import `data_lake_final` | `git subtree add --prefix=atelier` (commit `3a303dd`) + commit `8a0a217` | Historique git préservé (a2c7250→2004865) ; renaming `git mv` (atelier→documents/, ai/, projet/) ; 219 fichiers |
+| 2 | PoC `test_bigdata` → `projet/mvp/` | commit `3b31559` | 112 fichiers, rename 100 % ; purge `.venv`/`.pytest_cache`/`.env` |
+| 3 | Secret/artefacts hors suivi | `data_sources.json`, `cim_embeddings.pkl`, `documents/*.docx`, `.gitignore` | `git rm --cached` conformément AGENTS ; règles `.gitignore` ajoutées (pkl, docx externe utilisateur) |
+| 4 | Archive `datalake_mavis` | `archives/datalake_mavis/` (commit `ad862c5`) | Source seule (docs, provision, visualisation_app) ; exclus `.git`, venv/node_modules, logs, metadata, rapports d'autres étudiants (docs/ 47 Mo) ; ~5 Mo |
+| 5 | Références dépôt unique | `chapters/02/03/05`, `README.md`, `AGENTS.md`, `cahier_des_charges.md`, `ai/memoire/*`, `documentation/*`, `Vagrantfile` (commit `a15deda`) | Liens chapitres réécrits (`../projet/code-source`, `../documents`), prose ch.01 neutralisée, chemin hôte Vagrantfile → `Mon_Memoire/projet/code-source` |
+| 6 | Suppression anciens répertoires | `datalake_mavis` (supprimé) ; `data_lake_final` (vidé) | `datalake_mavis` supprimé ; coquille `data_lake_final` vide verrouillée par un process externe (suppression manuelle restante) |
+
+**Vérifications :** `pytest` moteur **9/9** + générateur **44/44** re-passés dans `Mon_Memoire` (`.venv`
+recréé) ; liens des chapitres `Test-Path` OK ; `git log` montre l'historique importé ; parité archive vs
+source vérifiée (seuls exclusions prévues : .pyc, logs, metadata, .pkl, .db, docs externes) ; tree propre.
+
+**Résultat :** **dépôt unique `Mon_Memoire`** = mémoires (`chapters/`), docs (`documents/`), code
+(`projet/code-source/`), PoC (`projet/mvp/`), archive (`archives/datalake_mavis/`), références
+(`references/`), consignes (`ai/`).

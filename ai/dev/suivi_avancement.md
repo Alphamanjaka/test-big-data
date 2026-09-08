@@ -41,6 +41,9 @@ Phase 6 éval+tests [██████████] 100%   Commit initial git [
    beeline HS2 instable → validation par scripts Spark (`provision/metadata/check_data.py`).
 3. **[Mémoire]** Rédaction `Mon_Memoire/chapters/` (01→06) **faite** (08/09) + `references/bibliographie.md`
    (12 réf. vérifiées) ; reste : relecture/conversion docx par l'utilisateur.
+4. **[Dépôt unique]** Consolidation **faite** (09/09) — `data_lake_final` + `datalake_mavis` rapatriés
+   dans `Mon_Memoire` (subtree → `projet/code-source/`, `projet/mvp/`, `archives/datalake_mavis/`) ;
+   pytest 9/9 + générateur 44/44 re-vérifiés.
 
 ## Dettes techniques connues
 
@@ -82,3 +85,8 @@ Phase 6 éval+tests [██████████] 100%   Commit initial git [
 - 08/09 : **Mémoire rédigé** — chapitres 01→06 (`Mon_Memoire/chapters/`, statut « rédigé » daté) +
   `references/bibliographie.md` (B1–B12 vérifiées) ; `ai/dev/logs.md` entrée « Mémoire : chapitres 01→06 ».
   Reste : relecture/conversion docx par l'utilisateur.
+- 09/09 : **Dépôt unique `Mon_Memoire` consolidé** — `data_lake_final` importé via `git subtree` (historique
+  préservé), PoC `test_bigdata` → `projet/mvp/`, PoC `datalake_mavis` → `archives/datalake_mavis/` (source
+  seule) ; artefacts dérivés hors suivi (data_sources.json, cim_embeddings.pkl, docx externe) ; liens
+  chapitres + README + AGENTS + cahier des charges alignés ; pytest 9/9 + générateur 44/44 re-vérifiés ;
+  anciens répertoires supprimés (coquille `data_lake_final` vide verrouillée — suppression manuelle restante).
