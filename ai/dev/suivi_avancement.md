@@ -13,15 +13,15 @@ Phase 6 éval+tests [██████████] 100%   Commit initial git [
 
 ### Phases
 
-| Phase | Description | Statut |
-|---|---|---|
-| 0 | Repo `data_lake_final` (git init, README, AGENTS.md, .gitignore, arborescence) | ✅ |
-| 1 | Docs consolidées : cahier des charges + manuel conceptuel (7 fichiers thématiques) | ✅ |
-| 2 | `ai/memoire/` + `ai/dev/` (instructions agents fusionnées) | ✅ |
-| 3 | Copies : `provision/`, `front-optional/`, `sql/schema.sql`, dossiers engine/evaluation/tests | ✅ |
-| 4 | Moteur porté `engine/` (identity + governance) + évaluateur adapté + tests 15/15 | ✅ |
-| 5 | Intégration SILVER/GOLD + API : `master_patient_id`, consent GOLD, endpoints gouvernance | ✅ |
-| 6 | Évaluation finale (easy/medium/hard), tests API/parité, commit git initial | ✅ |
+| Phase | Description                                                                                  | Statut |
+| ----- | -------------------------------------------------------------------------------------------- | ------ |
+| 0     | Repo `data_lake_final` (git init, README, AGENTS.md, .gitignore, arborescence)               | ✅     |
+| 1     | Docs consolidées : cahier des charges + manuel conceptuel (7 fichiers thématiques)           | ✅     |
+| 2     | `ai/memoire/` + `ai/dev/` (instructions agents fusionnées)                                   | ✅     |
+| 3     | Copies : `provision/`, `front-optional/`, `sql/schema.sql`, dossiers engine/evaluation/tests | ✅     |
+| 4     | Moteur porté `engine/` (identity + governance) + évaluateur adapté + tests 15/15             | ✅     |
+| 5     | Intégration SILVER/GOLD + API : `master_patient_id`, consent GOLD, endpoints gouvernance     | ✅     |
+| 6     | Évaluation finale (easy/medium/hard), tests API/parité, commit git initial                   | ✅     |
 
 ## Règles de progression
 
@@ -51,9 +51,9 @@ Phase 6 éval+tests [██████████] 100%   Commit initial git [
 6. **[Sécurité]** Purge secrets en dur **faite** (08/09) — `mavis_diag.py` supprimé (identifiants SSH),
    mot de passe PG externalisé via `.env` (template `provision/.env.example`), docs trouées
    (placeholders), hook `githooks/pre-commit` actif (bloque secrets/DSN, `core.hooksPath` activé) ;
-  dépôt **exempt de secrets** (live + archive). **Reste :** rotation des identifiants côté serveur
+   dépôt **exempt de secrets** (live + archive). **Reste :** rotation des identifiants côté serveur
    `102.16.7.154` + recréer `projet/code-source/.env`.
-6. **[Config YAML]** Calibration déduplication **déclarative** (08/09) — `config/deduplication.yaml`
+7. **[Config YAML]** Calibration déduplication **déclarative** (08/09) — `config/deduplication.yaml`
    (weights, threshold, blocking) lu par matcher/spark/éval/SILVER via `engine/identity/config.py`
    (fallback défauts) ; une future modification = 1 édit YAML (+ tableau de référence) sans toucher au code.
 
@@ -67,15 +67,15 @@ Phase 6 éval+tests [██████████] 100%   Commit initial git [
 
 ## Critères de succès
 
-| Critère | Cible |
-|---|---|
-| Pipeline Medallion | RAW→SILVER→GOLD bout en bout |
-| Déduplication | Explicable, precision ≥0.95, parité Pandas/Spark |
-| Consentement | Purpose-by-purpose fonctionnel (GOLD + API + PostgreSQL) |
-| Évaluation | Ground-truth P/R/F1 documenté (easy/medium/hard) |
-| Tests | Moteur + consentement + API PASS |
-| Fusion | Un seul repo autonome, docs sans doublon, commit git initial |
-| Mémoire | Chapitres 01→06 rédigés |
+| Critère            | Cible                                                        |
+| ------------------ | ------------------------------------------------------------ |
+| Pipeline Medallion | RAW→SILVER→GOLD bout en bout                                 |
+| Déduplication      | Explicable, precision ≥0.95, parité Pandas/Spark             |
+| Consentement       | Purpose-by-purpose fonctionnel (GOLD + API + PostgreSQL)     |
+| Évaluation         | Ground-truth P/R/F1 documenté (easy/medium/hard)             |
+| Tests              | Moteur + consentement + API PASS                             |
+| Fusion             | Un seul repo autonome, docs sans doublon, commit git initial |
+| Mémoire            | Chapitres 01→06 rédigés                                      |
 
 ## Journal
 
@@ -104,11 +104,11 @@ Phase 6 éval+tests [██████████] 100%   Commit initial git [
   anciens répertoires supprimés (coquille `data_lake_final` vide verrouillée — suppression manuelle restante).
 - 08/09 : **Rework CIN + ville de naissance** — remplacement téléphone par CIN (~75 %, clé forte) + ville
   (poids 0.1) dans toute la chaîne live (`projet/code-source/`) ; `_phone` → `_cin` (canonical, matcher,
-  spark, __init__) ; `MasterPatient.cin/birth_city` ; `make_missing` naissance/ville ; tests matcher 6→9
+  spark, **init**) ; `MasterPatient.cin/birth_city` ; `make_missing` naissance/ville ; tests matcher 6→9
   (formats CIN, ville, CIN différents) → **pytest moteur 12/12** ; évaluation régénérée (hard TP 307 / FP 0 /
   FN 420 → **R 0.422, F1 0.594**, medium R 0.884, F1 0.939) ; `evaluation_truth.md` mis à jour (hard) ;
-  chapitres 01→06, cahier des charges, deduplication.md, evaluation.md, contexte_projet.md, architecture.md,
-  deduplication dev harmonisés ; logs.md entrée ajoutée. Outils legacy `rebuild_*.py` et `ELT.before/` non
+  chapitres 01→06, cahier des charges, deduplication.md, evaluation.md, contexte*projet.md, architecture.md,
+  deduplication dev harmonisés ; logs.md entrée ajoutée. Outils legacy `rebuild*\*.py`et`ELT.before/` non
   modifiés (hors périmètre actif).
 - 08/09 : **Config YAML (source de vérité)** — poids/seuil/préfixe de blocage extraits dans
   `config/deduplication.yaml`, lus par `engine/identity/config.py` (fallback défauts) ; `matcher.py`,
