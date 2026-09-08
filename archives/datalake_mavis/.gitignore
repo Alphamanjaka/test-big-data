@@ -1,0 +1,59 @@
+# Dépendances Node pour tous les dossiers
+**/node_modules/
+
+# Build et production
+**/.next/
+**/out/
+**/dist/
+**/build/
+
+# Fichiers d'environnement
+**/.env*
+!.env.example
+
+# Logs
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# Système / OS
+.DS_Store
+Thumbs.db
+desktop.ini
+*.swp
+
+# Vagrant
+.vagrant/
+*.box
+
+# IDE et éditeurs
+.vscode/
+.idea/
+
+# Autre
+*.log
+
+# Python
+**/__pycache__/
+**/*.pyc
+**/venv/
+**/.venv/
+**/env/
+
+# Spark / Hive
+spark-warehouse/
+metastore_db/
+derby.log
+
+# Projet
+mavis_datalake.pub
+old/
+
+# Contexte IA (non poussé)
+.ai_context/
+
+# Artefacts de sortie du pipeline (régénérés à chaque run)
+provision/metadata/
+
+# Config de sources avec secrets (restaurée localement depuis .example)
+provision/config/data_sources.json

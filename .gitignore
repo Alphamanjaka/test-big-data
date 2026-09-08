@@ -24,6 +24,7 @@ provision/metadata/
 # Données générées et artefacts Big Data
 data/
 projet/code-source/evaluation/ground_truth/
+**/provision/config/*.pkl
 spark-warehouse/
 metastore_db/
 derby.log
