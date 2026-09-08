@@ -29,6 +29,12 @@ from datetime import date, datetime, timedelta
 import psycopg2
 from psycopg2.extras import execute_values
 
+try:  # python-dotenv (dépendance du projet) : lit le .env gitignoré de projet/code-source/
+    from dotenv import load_dotenv
+    load_dotenv(os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "..", ".env"))
+except ImportError:
+    pass
+
 # ------------------------------------------------------------------
 # Configuration
 # ------------------------------------------------------------------
@@ -36,7 +42,19 @@ BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 SCHEMA_PATH = os.path.join(BASE_DIR, "metadata", "mavis_schema.json")
 CIM10_PATH = os.path.join(BASE_DIR, "config", "cim10_liste.csv")
 
-PG = dict(host="localhost", port=5432, user="postgres", password="jonah", dbname="mavis_notheme")
+# Identifiants lus depuis l'environnement (.env gitignoré) — jamais en dur.
+PG = dict(
+    host=os.getenv("PGHOST", "localhost"),
+    port=int(os.getenv("PGPORT", "5432")),
+    user=os.getenv("PGUSER", "postgres"),
+    password=os.getenv("PGPASSWORD", ""),
+    dbname="mavis_notheme",
+)
+if not PG["password"]:
+    sys.exit(
+        "PGPASSWORD non défini : créer un fichier `.env` gitignoré à la racine de "
+        "projet/code-source/ avec PGPASSWORD=<mot de passe postgres> (voir provision/.env.example)."
+    )
 
 random.seed(42)
 

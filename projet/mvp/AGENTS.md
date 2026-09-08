@@ -1,5 +1,8 @@
 ﻿# AGENTS.md
 
+> Ce dossier décrit le PoC MVP historique. Pour le développement courant, appliquer d'abord les règles
+> de `AGENTS.md` et de `ai/dev/`; les chemins `ai_context/` ci-dessous sont conservés comme références.
+
 ## Références
 
 - [ai_context/README.md](ai_context/README.md)

@@ -46,3 +46,14 @@ Rédiger en remplaçant le squelette « Objectif + Notes/TODO » existant :
 - [ ] Vocabulaire du thème défini
 - [ ] Lien vers le document conceptuel correspondant
 - [ ] Conclusion + transition vers le chapitre suivant
+
+## Communication et soutenance
+
+- Construire un scénario reproductible avec prérequis, commande, données synthétiques, résultat attendu
+  et preuve capturée.
+- Séparer le message métier du message technique : gouvernance des usages d'un côté, pipeline,
+  déduplication explicable, MPI et audit de l'autre.
+- Étiqueter chaque affirmation comme réalisée, simulée, prévue ou limitée au PoC. Les performances et
+  les résultats doivent toujours renvoyer à une commande, un rapport ou un fichier vérifiable.
+- Les figures et captures indiquent leur source, date, périmètre et unité ; elles ne contiennent jamais
+  de secret ni de donnée patient réelle.

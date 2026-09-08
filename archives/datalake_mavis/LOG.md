@@ -230,7 +230,7 @@ hive -e "SELECT count(*) FROM datalake_silver.patient_fhir WHERE is_duplicate = 
 ## 24 Août 2026 — Configuration de MMT_DB (source GNU Health sur l'hôte Windows)
 
 - Découverte : PostgreSQL **18.2** installé via **Laragon** (`C:\laragon\bin\postgresql`), données dans `C:\laragon\data\postgresql`, superuser réel = `alpha` (pas de rôle `postgres`).
-- Création du rôle `postgres` (superuser, mot de passe `jonah`) et de la base **`mmt_db`** (owner postgres) conformes à `provision/config/data_sources.json`.
+- Création du rôle `postgres` (superuser, mot de passe `<PASSWORD>`, chargé via `.env` gitignoré) et de la base **`mmt_db`** (owner postgres) conformes à `provision/config/data_sources.json`.
 - `pg_hba.conf` : ajout règle `host all all 192.168.56.0/24 scram-sha-256` (réseau VirtualBox) ; `postgresql.conf` : `listen_addresses = '*'`.
 - Redémarrage via `pg_ctl -D C:\laragon\data\postgresql start` en process détaché (`Start-Process`, sinon les enfants crashent 0xC0000142 quand la console hôte meurt).
 - ⚠️ PostgreSQL n'est PAS un service Windows ici : après un reboot, le démarrer via l'UI Laragon ou `pg_ctl start`.

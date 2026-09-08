@@ -48,6 +48,11 @@ Phase 6 éval+tests [██████████] 100%   Commit initial git [
    ville de naissance (poids 0.1) remplacent téléphone dans `projet/code-source/` ; weights 0.5/0.3/0.1/0.1 ;
    **pytest moteur 15/15** (matcher 12 incl. config) ; évaluation régénérée (hard : R 0.422, F1 0.594) ;
    docs/mémoire harmonisées. Commits en attente de push (branche `develop_spark`).
+6. **[Sécurité]** Purge secrets en dur **faite** (08/09) — `mavis_diag.py` supprimé (identifiants SSH),
+   mot de passe PG externalisé via `.env` (template `provision/.env.example`), docs trouées
+   (placeholders), hook `githooks/pre-commit` actif (bloque secrets/DSN, `core.hooksPath` activé) ;
+  dépôt **exempt de secrets** (live + archive). **Reste :** rotation des identifiants côté serveur
+   `102.16.7.154` + recréer `projet/code-source/.env`.
 6. **[Config YAML]** Calibration déduplication **déclarative** (08/09) — `config/deduplication.yaml`
    (weights, threshold, blocking) lu par matcher/spark/éval/SILVER via `engine/identity/config.py`
    (fallback défauts) ; une future modification = 1 édit YAML (+ tableau de référence) sans toucher au code.

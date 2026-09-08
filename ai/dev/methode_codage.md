@@ -39,4 +39,20 @@ sql/schema.sql      PostgreSQL central
 - Tests : doublons, valeurs nulles, formats hétérogènes, parité Pandas/Spark.
 - Score de matching **toujours explicite** (méthode + score + seuil).
 - Traçabilité conservée : `source → canonique → master patient`.
-- Validation : `pytest` (tests moteur + consentement), évaluateur ground-truth, API données 12/12.
+- Validation : `pytest` moteur + consentement (15/15 documenté), évaluateur ground-truth, API données
+  (14/14 documenté).
+
+## Pyramide de tests et critères de validation
+
+- **Unitaires** : canonique, normalisation, matching exact/probabiliste, consentement et contrôles de
+  rôles ; inclure valeurs manquantes, formats hétérogènes et erreurs attendues.
+- **Intégration** : flux RAW → SILVER → GOLD, schémas Hive/PostgreSQL, idempotence, audit après accès
+  autorisé ou refusé et contrôle des réponses API.
+- **Système** : démarrage des composants disponibles, pipeline complet, parité Pandas/Spark et
+  évaluation ground-truth.
+- **Sécurité et non-régression** : aucun secret dans les logs/réponses, refus sans consentement,
+  refus pour rôle insuffisant, et absence de régression des schémas ou des valeurs métier.
+
+Pour chaque validation, indiquer la commande, le périmètre, le résultat observé et la date. Distinguer
+les tests réellement exécutés des tests prévus, impossibles ou non applicables. Ne jamais déclarer une
+fonctionnalité testée sur la seule base d'une lecture de code.

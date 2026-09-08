@@ -25,10 +25,46 @@ Les donnees sont toujours fictives.
    et le(s) document(s) `documents/documentation/*` concerne(s).
 3. Seuil : simple run / reboot / fix robustesse → logs uniquement.
 
+## Hiérarchie des consignes
+
+- Ce fichier définit les règles globales du dépôt.
+- `ai/dev/` définit les règles opérationnelles du code consolidé.
+- `ai/memoire/` définit les règles de rédaction et de démonstration.
+- `projet/mvp/` et `archives/datalake_mavis/` sont des périmètres historiques ou locaux : leurs
+  consignes ne s'appliquent pas au code consolidé sauf mention explicite.
+- En cas de conflit, appliquer la règle la plus spécifique si elle reste compatible avec les règles
+  globales ; sinon conserver la règle globale et documenter l'écart.
+
+## Validation et communication
+
+- Avant toute modification : identifier le chemin contrôlant le comportement, vérifier l'état Git et
+  formuler une hypothèse vérifiable.
+- Après une modification : exécuter le contrôle le plus ciblé disponible, puis vérifier les régressions
+  pertinentes.
+- Ne jamais annoncer un test, un résultat, une performance ou une fonctionnalité comme réalisé sans
+  preuve dans la sortie d'une commande, un rapport ou un fichier versionné.
+- Distinguer explicitement ce qui est réalisé, simulé, prévu, optionnel ou limité au PoC.
+- Toute modification importante doit préserver la séparation ingestion, validation, nettoyage,
+  normalisation, déduplication, MPI, gouvernance, audit et exposition.
+
+## Git et dépendances
+
+- Vérifier `git status` avant toute modification et ne jamais écraser les changements existants.
+- Ne pas exécuter `git push`, `git reset --hard`, suppression distante ou commande destructive sans
+  demande explicite.
+- Avant commit, contrôler les tests ciblés, le scan des secrets et les fichiers générés/non commitables.
+- Ajouter une dépendance seulement après avoir vérifié qu'une solution existante ne suffit pas et que la
+  compatibilité Python 3.8 est préservée.
+
 ## A ne JAMAIS faire
 
 - Introduire de vraies donnees patients.
 - Commiter `provision/config/data_sources.json`, `.env`, `provision/metadata/` ou le dossier `data/`.
+- Commiter de secrets en dur (mots de passe, cles, tokens) : hook `githooks/pre-commit` (active via
+  `git config core.hooksPath githooks`) bloque les identifiants connus, les affectations de mots de passe,
+  les valeurs PGPASSWORD entre guillemets et les DSN contenant un mot de passe. Externaliser via variables
+  d'environnement / `.env` gitignore
+  (template : `projet/code-source/provision/.env.example`).
 - Fusionner sans logique explicable (chaque master patient doit etre justifie par un match).
 - Rajouter des fonctionnalites hors perimetre (pas de frontend perfectionne).
 - Reintroduire `sentence_transformers` (crash Python 3.8) → RapidFuzz + synonymes.

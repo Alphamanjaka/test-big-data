@@ -116,7 +116,7 @@ MMT_DB est une base PostgreSQL 18 sur l'hôte Windows (Laragon), **pas un servic
 & "C:\laragon\bin\postgresql\postgresql\bin\pg_ctl.exe" -D "C:\laragon\data\postgresql" -l "C:\laragon\data\postgresql\startup.log" start
 
 # Vérification
-$env:PGPASSWORD="jonah"
+$env:PGPASSWORD="<PASSWORD>"
 & "C:\laragon\bin\postgresql\postgresql\bin\psql.exe" -U postgres -h 127.0.0.1 -d mmt_db -tAc "SELECT count(*) FROM gnuhealth_patient;"
 # Attendu : 9791
 ```

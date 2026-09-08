@@ -15,16 +15,16 @@ frontend. Données toujours fictives. Structure simple et minimale.
 
 ## Fichiers du dossier
 
-| Fichier | Contenu | À consulter quand |
-|---|---|---|
-| `README.md` | Index + contexte projet + environnement | Début de session, contrefactuel |
-| `architecture.md` | Stack, architecture, ports, sources, schémas, répertoires | Avant toute modification d'architecture |
-| `pipeline_elt.md` | Consignes PySpark/Hive/Medallion, règles Silver/Gold, pièges | Travail sur `projet/code-source/provision/` |
-| `deduplication.md` | Consignes moteur d'identité (canonique, matching, seuil, parité) | Travail sur `projet/code-source/engine/` |
-| `methode_codage.md` | Qualité du code, conventions, tests | Avant/ pendant l'écriture de code |
-| `security.md` | Données, consentement, secrets, audit, web/RBAC | Travail sur API, gouvernance, frontend |
-| `logs.md` | Journalisation (LOGS) et traçabilité | Toute activité |
-| `suivi_avancement.md` | Feuille de route, priorités, règles anti-régression | Avant de choisir la prochaine tâche |
+| Fichier               | Contenu                                                          | À consulter quand                           |
+| --------------------- | ---------------------------------------------------------------- | ------------------------------------------- |
+| `README.md`           | Index + contexte projet + environnement                          | Début de session, contrefactuel             |
+| `architecture.md`     | Stack, architecture, ports, sources, schémas, répertoires        | Avant toute modification d'architecture     |
+| `pipeline_elt.md`     | Consignes PySpark/Hive/Medallion, règles Silver/Gold, pièges     | Travail sur `projet/code-source/provision/` |
+| `deduplication.md`    | Consignes moteur d'identité (canonique, matching, seuil, parité) | Travail sur `projet/code-source/engine/`    |
+| `methode_codage.md`   | Qualité du code, conventions, tests                              | Avant/ pendant l'écriture de code           |
+| `security.md`         | Données, consentement, secrets, audit, web/RBAC                  | Travail sur API, gouvernance, frontend      |
+| `logs.md`             | Journalisation (LOGS) et traçabilité                             | Toute activité                              |
+| `suivi_avancement.md` | Feuille de route, priorités, règles anti-régression              | Avant de choisir la prochaine tâche         |
 
 ## Contexte projet
 
@@ -55,7 +55,7 @@ python3 -m provision.scripts.ELT.create_gold         # une étape seule (chemin 
 
 ```bash
 python -m provision.api.hive_api                     # Flask port 5000, CORS localhost:3000
-python -m provision.api.test_api                     # 12/12 PASS attendu
+python -m provision.api.test_api                     # 14/14 PASS attendu
 # front-optional : npm run dev · npm run build · npm run lint · npx prisma migrate deploy && prisma db seed
 ```
 
@@ -65,7 +65,7 @@ python -m provision.api.test_api                     # 12/12 PASS attendu
 # venv
 python -m venv .venv
 .venv\Scripts\python -m pip install -e ".[test]"
-.venv\Scripts\python -m pytest -q                    # tests moteur + consentement
+.venv\Scripts\python -m pytest -q                    # 15/15 attendu (matcher + consentement)
 .venv\Scripts\python evaluation\evaluate_engine.py --level hard
 ```
 
@@ -87,3 +87,30 @@ python -m venv .venv
 - État des lieux complet : `documents/` (cahier + manuel conceptuel).
 - Code : `projet/code-source/README.md` (guide technique) + `sql/schema.sql`.
 - Traçabilité : `ai/dev/logs.md` (journal) — ne pas créer d'autres fichiers de suivi.
+
+## Workflow obligatoire pour l'agent
+
+1. Lire `AGENTS.md`, ce fichier et le document propriétaire du composant touché.
+2. Vérifier `git status` et ne pas écraser les modifications existantes.
+3. Identifier le code qui décide réellement du comportement avant de modifier un simple relais ou
+   contrôleur.
+4. Faire une modification minimale, puis exécuter immédiatement le contrôle ciblé le moins coûteux.
+5. Journaliser toute session, correction, incident ou exécution dans `logs.md` sans secret ni donnée
+   patient.
+
+## Qualité, performance et preuve
+
+- Toute fonctionnalité importante doit avoir des tests unitaires, d'intégration ou système adaptés ;
+  les tests négatifs et les cas limites sont obligatoires pour consentement, permissions, audit et
+  déduplication.
+- Les performances ne sont pas déduites de la présence de Spark : mesurer au minimum durée, volume
+  entrée/sortie, partitions, mémoire et erreurs, et distinguer optimisation de la VM et scalabilité.
+- Toute conclusion du mémoire ou de la documentation doit indiquer sa preuve et ses limites. Ne jamais
+  inventer de métriques ni présenter une hypothèse comme un résultat.
+
+## Git et archives
+
+- Le hook `githooks/pre-commit` et les vérifications ciblées constituent le minimum avant commit.
+- Les artefacts générés, secrets, fichiers `.env`, données et métadonnées locales restent hors commit.
+- Les dossiers `projet/mvp/` et `archives/datalake_mavis/` sont consultables pour comprendre l'historique ;
+  ils ne redéfinissent pas les chemins, journaux ou commandes du code consolidé.

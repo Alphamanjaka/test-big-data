@@ -45,8 +45,8 @@ npm install
 # 2. Configurer les variables d'environnement
 # Creer un fichier .env a la racine du projet :
 NEXT_PUBLIC_SERVER_URL=http://localhost:5000
-DATABASE_URL="postgresql://postgres:jonah@localhost:5432/datalake_user_db?schema=public"
-NEXTAUTH_SECRET=48f565bf218679c77a57feb02969e6b059d24f1d0e9082e6d686d7c6ecbff195
+DATABASE_URL="postgresql://postgres:<PASSWORD>@localhost:5432/datalake_user_db?schema=public"
+NEXTAUTH_SECRET=<GENERATE_A_RANDOM_64_HEX_VALUE>
 NEXTAUTH_URL=http://localhost:3000
 
 # 3. Initialiser la base de donnees
@@ -196,9 +196,9 @@ Le fichier `.env` doit contenir :
 NEXT_PUBLIC_SERVER_URL=http://localhost:5000
 
 # Connexion PostgreSQL (authentification)
-DATABASE_URL="postgresql://postgres:jonah@localhost:5432/datalake_user_db?schema=public"
+DATABASE_URL="postgresql://postgres:<PASSWORD>@localhost:5432/datalake_user_db?schema=public"
 
 # Secrets NextAuth
-NEXTAUTH_SECRET=48f565bf218679c77a57feb02969e6b059d24f1d0e9082e6d686d7c6ecbff195
+NEXTAUTH_SECRET=<GENERATE_A_RANDOM_64_HEX_VALUE>
 NEXTAUTH_URL=http://localhost:3000
 ```

@@ -1,5 +1,8 @@
 # Consignes projet — DataLake Mavis
 
+> Archive historique en lecture et référence. Ces consignes ne s'appliquent pas au développement
+> consolidé, qui suit `AGENTS.md` et `ai/dev/` à la racine.
+
 - Lire `.ai_context/00_index.md` au début de chaque session (puis `01` → `04` selon la tâche).
 - Docs de référence : `PIPELINE.md` (pipeline ELT), `LOG.md` (historique/incidents), `CAHIER_DE_CHARGE.md` (périmètre), `SUIVI_AVANCEMENT.md` (état d'avancement).
 - `.ai_context/`, `provision/metadata/` et `provision/config/data_sources.json` ne sont **PAS** commités (voir `.gitignore`). Fichier de config d'exemple : `provision/config/data_sources.example.json`.

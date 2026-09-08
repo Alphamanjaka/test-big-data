@@ -12,12 +12,12 @@ Source : fusion de `.ai_context/02_pipeline_elt.md` (Mavis) + consignes pipeline
 
 ## 2. Étapes et orchestration (4/4)
 
-| Étape | Script | Entrée → Sortie |
-|---|---|---|
-| 1/4 Extraction | `provision/scripts/ELT/gen_extract_raw.py` | `data_sources.json` → Parquet HDFS, Hive externes, `extract_raw_report.json` |
-| 2/4 Mapping | `provision/scripts/ELT/gen_fhir_mapping.py` | `extract_raw_report.json` → `fhir_mapping.json` (RapidFuzz + synonymes) |
-| 3/4 Silver | `provision/scripts/ELT/create_silver.py` | `fhir_mapping.json` + RAW → `datalake_silver.*_fhir` |
-| 4/4 Gold | `provision/scripts/ELT/create_gold.py` | 4 tables Silver → `datalake_gold.patient_events_gold` |
+| Étape          | Script                                      | Entrée → Sortie                                                              |
+| -------------- | ------------------------------------------- | ---------------------------------------------------------------------------- |
+| 1/4 Extraction | `provision/scripts/ELT/gen_extract_raw.py`  | `data_sources.json` → Parquet HDFS, Hive externes, `extract_raw_report.json` |
+| 2/4 Mapping    | `provision/scripts/ELT/gen_fhir_mapping.py` | `extract_raw_report.json` → `fhir_mapping.json` (RapidFuzz + synonymes)      |
+| 3/4 Silver     | `provision/scripts/ELT/create_silver.py`    | `fhir_mapping.json` + RAW → `datalake_silver.*_fhir`                         |
+| 4/4 Gold       | `provision/scripts/ELT/create_gold.py`      | 4 tables Silver → `datalake_gold.patient_events_gold`                        |
 
 Depuis la racine projet (imports relatifs obligent le `-m`) :
 
@@ -68,3 +68,15 @@ Logs : `provision/logs/elt.log` · Suivi : `provision/metadata/sync_metadata.jso
 - **Interdiction** : `sentence_transformers`.
 
 Détails : `documents/documentation/pipeline_elt.md`.
+
+## Performance et capacité
+
+Toute mesure de pipeline doit conserver : durée par étape, volume en entrée et en sortie, nombre de
+partitions, mémoire observée ou configurée, erreurs et environnement d'exécution. Utiliser au moins
+trois scénarios de charge (petit, moyen, grand) lorsque les données le permettent.
+
+Comparer Pandas et Spark sur un jeu identique seulement si le périmètre, les résultats et la méthode de
+mesure sont identiques. Documenter séparément l'optimisation de la VM 8 Go et la scalabilité distribuée.
+Pour la déduplication, mesurer l'effet du blocking sur le nombre de candidats et expliquer pourquoi une
+comparaison naïve O(n²) ne convient pas lorsque le volume augmente. Ne fixer aucun seuil de performance
+sans mesure reproductible et sans préciser qu'il s'agit d'un critère du PoC ou d'une cible future.

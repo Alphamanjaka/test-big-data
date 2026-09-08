@@ -56,3 +56,19 @@ puis probabiliste, master patient, identity map, parité Pandas/Spark.
 ```
 
 Référence concept : `documents/documentation/deduplication.md` · évaluation : `documents/documentation/evaluation.md`.
+
+## Complexité et calibration
+
+- Le blocking réduit le nombre de candidats ; documenter sa clé, son coût et les enregistrements qu'il
+  peut exclure. Ne pas remplacer cette explication par la seule mention de Spark.
+- Décrire séparément vrais positifs, vrais négatifs, faux positifs et faux négatifs, avec les données
+  manquantes et variations d'écriture représentées dans les cas de test.
+- Toute calibration des poids, du préfixe ou du seuil doit être faite dans `config/deduplication.yaml`,
+  accompagnée d'une évaluation ground-truth et d'une comparaison avant/après. Un score est une preuve
+  de décision, pas une certitude clinique.
+
+## Nomenclature canonique
+
+La colonne `match_method` accepte exactement : `new_master` (aucune fusion), `exact` (règle
+déterministe) et `probabilistic` (score au-dessus du seuil). Toute nouvelle valeur doit d'abord être
+ajoutée au schéma, au code, aux tests et à la documentation.

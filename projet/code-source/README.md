@@ -39,7 +39,7 @@ projet/code-source/
 ```powershell
 python -m venv .venv
 .venv\Scripts\python -m pip install -e ".[test]"
-.venv\Scripts\python -m pytest -q        # 12/12 attendu (matcher + consentement)
+.venv\Scripts\python -m pytest -q        # 15/15 attendu (matcher + consentement)
 .venv\Scripts\python evaluation\evaluate_engine.py --level hard   # évaluation ground-truth
 ```
 
@@ -51,7 +51,7 @@ start-dfs.sh; start-yarn.sh              # HDFS puis YARN (ordre STRICT)
 beeline -u jdbc:hive2://localhost:10000 -n vagrant -e "SHOW DATABASES"
 bash provision/scripts/run_pipeline.sh   # RAW → SILVER → GOLD (logs provision/logs/elt.log)
 python -m provision.api.hive_api         # API Flask — port 5000
-python -m provision.api.test_api         # 12/12 PASS attendu
+python -m provision.api.test_api         # 14/14 PASS attendu
 ```
 
 > Préalable : `cp provision/config/data_sources.example.json provision/config/data_sources.json` puis
