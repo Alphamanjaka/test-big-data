@@ -1,8 +1,9 @@
 # ai/memoire — Consignes de rédaction du mémoire
 
 > **Lire ce dossier au début de toute session de rédaction du mémoire.** Il centralise le contexte et la
-> méthode de rédaction. Le mémoire vit dans `F:\MBDS\STAGE\PROJECT\Mon_Memoire\` (repo séparé de
-> `data_lake_final` — la mémoire reste dans Mon_Memoire, le code fusionné est dans data_lake_final).
+> méthode de rédaction. Le mémoire vit dans `chapters/` du dépôt unique (`Mon_Memoire`), qui contient
+> aussi le code (`projet/code-source/`), le PoC `test_bigdata` (`projet/mvp/`) et l'archive du PoC Big
+> Data (`archives/datalake_mavis/`).
 
 ## Fichiers
 
@@ -26,10 +27,11 @@ Chaque chapitre commence par un bloc « Objectif » + « Notes / TODO » (squele
 
 ## Sources de référence (à citer / aligner)
 
-- `F:\MBDS\STAGE\PROJECT\data_lake_final\documents\` — cahier des charges + manuel conceptuel (fusionnés).
-- `F:\MBDS\STAGE\PROJECT\Mon_Memoire\projet\code-source\` — code (ex test_bigdata) + `ai_context/` consignes.
-- `F:\MBDS\STAGE\PROJECT\datalake_mavis\` — docs d'architecture Big Data d'origine.
-- `references/` (Mon_Memoire) — bibliographie.
+- `documents/` — cahier des charges + manuel conceptuel (fusionnés).
+- `projet/code-source/` — code consolidé (ex `test_bigdata`) + consignes.
+- `projet/mvp/` — PoC `test_bigdata` (niveaux 1 et 2).
+- `archives/datalake_mavis/` — PoC Big Data d'origine (source seule).
+- `references/` — bibliographie.
 
 ## Règles de rédaction
 

@@ -90,7 +90,7 @@ flowchart LR
 | **3 — Big Data** | Data Lake + HDFS + Hive + Spark, pipeline ELT Medallion 4 étapes, API Flask | traiter des volumes réels dans une architecture médicale |
 
 Les deux premiers niveaux proviennent du PoC `test_bigdata`, le troisième du PoC `datalake_mavis`.
-Le présent projet (`data_lake_final`) en est la **fusion consolidée** : un seul dépôt, une seule
+Ce dépôt unique en est la **fusion consolidée** : un seul dépôt, une seule
 documentation, le moteur de déduplication porté dans `engine/`, l'évaluation ground-truth et le
 consentement intégré à la couche GOLD [cahier_des_charges.md §10].
 

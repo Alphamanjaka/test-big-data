@@ -10,7 +10,7 @@ blocking), Master Patient Index (MPI) et interopérabilité FHIR, architectures 
 Data (HDFS, MapReduce, Spark, Hive, Data Lake Medallion) et cadre juridique du
 consentement sur les données de santé. Chaque concept est relié au rôle qu'il joue
 dans le projet, conformément au document conceptuel
-[`bigdata_concepts.md`](../../data_lake_final/documents/documentation/bigdata_concepts.md).
+[`bigdata_concepts.md`](../documents/documentation/bigdata_concepts.md).
 
 ---
 

@@ -1,11 +1,13 @@
-# AGENTS.md — Consignes projet DataLake Final
+# AGENTS.md — Consignes projet (dépôt unique `Mon_Memoire`)
 
 ## Références (lire en début de session)
 
 - `ai/dev/README.md` : index des consignes de developpement (fusion des `.ai_context`).
-- `ai/memoire/README.md` : index des consignes de redaction du memoire.
+- `ai/memoire/README.md` : index des consignes de redaction du memoire (chapters/01..06).
 - `documents/cahier_des_charges.md` : perimetre.
 - `documents/documentation/` : manuel conceptuel (Big Data, de-duplication, consentement).
+- `projet/code-source/` : code consolide (Big Data + moteur de de-duplication).
+- `projet/mvp/` : PoC `test_bigdata` (niveaux 1 et 2) ; `archives/datalake_mavis/` : PoC Big Data d'origine.
 
 ## Règle unique
 

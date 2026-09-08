@@ -39,12 +39,12 @@ Data uniquement lorsque le besoin de passage à l'échelle le justifie.
 PROBLÈME MÉTIER → MVP FONCTIONNEL → VALIDATION DES ALGORITHMES → PASSAGE À L'ÉCHELLE → ARCHITECTURE BIG DATA
 ```
 
-Le présent dépôt **`data_lake_final`** est la fusion des deux projets :
+Le présent **dépôt unique** est la fusion des deux projets :
 
 | Projet source | Apport |
 |---|---|
 | `datalake_mavis/` | Architecture Big Data complète : VM Hadoop/Hive/Spark, pipeline ELT Medallion (RAW→SILVER→GOLD), mapping FHIR, API Flask, frontend Next.js |
-| `Mon_Memoire/projet/code-source/` (ex `test_bigdata`) | Déduplication exacte + probabiliste (master patient, identity map), consentement + audit + clés API, générateur de données + évaluation ground-truth |
+| `projet/mvp/` (ex `test_bigdata` ; moteur porté dans `projet/code-source/engine/`) | Déduplication exacte + probabiliste (master patient, identity map), consentement + audit + clés API, générateur de données + évaluation ground-truth |
 
 ## 3. Objectifs du projet
 
@@ -200,12 +200,12 @@ raw_patient_record · master_patient (+ gender) · patient_identity_map · conse
 | Niveau 1 (test_bigdata) | MVP Pandas + PostgreSQL : extraction, mapping, nettoyage, déduplication, master patient, dashboard — terminé |
 | Niveau 2 (test_bigdata) | PySpark local, résultats strictement identiques au MVP — terminé |
 | Niveau 3 (datalake_mavis) | Architecture Big Data complète HDFS + Hive + Spark, pipeline ELT 4 étapes, API Flask, frontend — terminé (~85 %) |
-| Fusion `data_lake_final` | Un seul repo autonome : docs consolidées, moteur porté, évaluation ground-truth, consentement GOLD | **en cours** |
+| **Fusion — dépôt unique** | Un seul repo autonome : docs consolidées, moteur porté, évaluation ground-truth, consentement GOLD | **fait** (09/09) |
 | Finalisation | Export VM `.box`, rapport de stage, slides, commit initial git | à venir |
 
 ## 10. Livrables
 
-1. Code source complet (repo `data_lake_final`).
+1. Code source complet (dépôt unique `Mon_Memoire`).
 2. Pipeline ELT Big Data (provision + scripts PySpark).
 3. Moteur de déduplication + évaluation ground-truth.
 4. PostgreSQL central (master patient, consentement, audit).

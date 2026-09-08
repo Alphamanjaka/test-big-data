@@ -50,7 +50,7 @@ données patients synthétiques. Deux voies complémentaires cohabitent :
 ## 2. Structure du dépôt
 
 ```
-data_lake_final/
+Mon_Memoire/
 ├── README.md                  ← présentation + démarrage
 ├── AGENTS.md                  ← consignes agents IA + règle unique
 ├── documents/

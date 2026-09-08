@@ -21,6 +21,9 @@ provision/metadata/
 *.pem
 *.key
 
+# Livrables externes utilisateur (jamais commités)
+documents/*.docx
+
 # Données générées et artefacts Big Data
 data/
 projet/code-source/evaluation/ground_truth/

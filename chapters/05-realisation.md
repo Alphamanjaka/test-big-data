@@ -14,7 +14,7 @@ rencontrées sur la VM et leur résolution.
 ## 5.1 Générateur de données et vérité terrain
 
 Le générateur
-[`synthetic-patient-generator`](../../data_lake_final/projet/code-source/evaluation/synthetic-patient-generator)
+[`synthetic-patient-generator`](../projet/code-source/evaluation/synthetic-patient-generator)
 est implémenté en 7 étapes, déterministe (seed 42) :
 
 | Module | Rôle réalisé |

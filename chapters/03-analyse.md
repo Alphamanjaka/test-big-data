@@ -62,7 +62,7 @@ Chaque source adjoint ses transactions métier : achats (pharmacy), consultation
 
 L'évaluation objective exige de **connaître la vérité** — impossible avec de vraies
 données. Le générateur
-[`synthetic-patient-generator`](../../data_lake_final/projet/code-source/evaluation/synthetic-patient-generator/README.md)
+[`synthetic-patient-generator`](../projet/code-source/evaluation/synthetic-patient-generator/README.md)
 produit des données fictives **et** leur vérité terrain, en 7 étapes
 (déterministe : `RANDOM_SEED = 42`, locale `fr_FR`, préfixes téléphone malgaches
 `032/033/034/038`) :

@@ -1,7 +1,7 @@
 # projet/code-source — Guide technique
 
 Code fusionné de la plateforme de centralisation et de gouvernance des données patients
-(`data_lake_final`). Deux volets :
+(dépôt unique consolidé). Deux volets :
 
 - **Big Data (Medallion)** : VM Hadoop/Hive/Spark + pipeline ELT (via `provision/`) — porté de `datalake_mavis`.
 - **Déduplication + gouvernance** : moteur `engine/` (canonique, matching exact/probabiliste, master

@@ -1,7 +1,7 @@
 """
 Engine — moteur autonome de résolution d'identité patient.
 
-Adapté du projet test_bigdata (Mon_Memoire/projet/code-source) pour être
+Adapté du PoC test_bigdata (aujourd'hui dans projet/mvp/) pour être
 autonome et compatible Python 3.8 (VM Big Data). Contenu :
 
 - identity/  : modèle canonique + de-duplication exacte/probabiliste

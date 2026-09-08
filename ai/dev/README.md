@@ -1,6 +1,6 @@
 # ai/dev — Consignes de développement
 
-> **Lire ce dossier au début de chaque session de travail sur `data_lake_final`.** Il centralise les
+> **Lire ce dossier au début de chaque session de travail sur le dépôt unique `Mon_Memoire`.** Il centralise les
 > consignes opérationnelles (fusion des `.ai_context` des deux projets sources). Il **est** commité
 > (contrairement aux anciens `.ai_context` du projet Mavis).
 

@@ -111,6 +111,6 @@ Démo de référence à présenter :
 
 Le projet `datalake_mavis` avait le RBAC **web** (NextAuth/Prisma) mais le consentement/audit **Post-MVP**
 (commenté dans le schéma Prisma). Le projet `test_bigdata` avait le consentement/audit **fonctionnel**
-côté plateforme (SQLAlchemy/PG). La fusion **`data_lake_final`** porte le consentement/audit dans le
+côté plateforme (SQLAlchemy/PG). La fusion (**dépôt unique**) porte le consentement/audit dans le
 **moteur + PostgreSQL central + table GOLD du Data Lake** (décision : « Hive GOLD + API »), en plus du
 RBAC web conservé en optionnel.

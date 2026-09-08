@@ -21,11 +21,11 @@ du même patient, centraliser en **conservant la traçabilité d'origine**, et *
 Chaque technologie est introduite **par besoin**, pas par effet de mode (documenté dans
 `documents/documentation/bigdata_concepts.md`).
 
-## Projet fusionné `data_lake_final`
+## Projet fusionné (dépôt unique)
 
 Fusion de deux PoC complémentaires :
 - `datalake_mavis` → architecture Big Data complète (VM Hadoop/Hive/Spark, ELT 4 étapes, FHIR, API Flask, Next.js).
-- `test_bigdata` (devenu `Mon_Memoire/projet/code-source/`) → dédup explicable, consentement/audit, évaluation ground-truth.
+- `test_bigdata` (repris dans `projet/mvp/`, moteur porté dans `projet/code-source/engine/`) → dédup explicable, consentement/audit, évaluation ground-truth.
 
 Choix de fusion validés : nouveau repo autonome ; docs = un seul set logique
 (`documents/cahier_des_charges.md` + `documents/documentation/*` ; SUIVI/LOGS consolidés — pas de doublons) ;
@@ -33,7 +33,7 @@ Choix de fusion validés : nouveau repo autonome ; docs = un seul set logique
 
 ## Chiffres clés réels (à réutiliser avec mentions)
 
-### Run final fusion `data_lake_final` (07/09/2026, VM datalake_mavis, sources CSV synthétiques)
+### Run final fusion (07/09/2026, VM, sources CSV synthétiques)
 
 | Domaine | Donnée vérifiable |
 |---|---|

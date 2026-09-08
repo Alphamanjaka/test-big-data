@@ -1,8 +1,8 @@
 # Évaluation Ground Truth — Niveau `hard`
 
 - Date : 2026-09-07 23:31
-- Ground Truth : F:\MBDS\STAGE\PROJECT\data_lake_final\projet\code-source\evaluation\synthetic-patient-generator\data\experiments\hard\ground_truth\identity_mapping.csv
-- Data root : F:\MBDS\STAGE\PROJECT\data_lake_final\projet\code-source\evaluation\synthetic-patient-generator\data\experiments\hard
+- Ground Truth : F:\MBDS\STAGE\PROJECT\Mon_Memoire\projet\code-source\evaluation\synthetic-patient-generator\data\experiments\hard\ground_truth\identity_mapping.csv
+- Data root : F:\MBDS\STAGE\PROJECT\Mon_Memoire\projet\code-source\evaluation\synthetic-patient-generator\data\experiments\hard
 - Mode : MVP + Spark
 - Enregistrements : 1057
 

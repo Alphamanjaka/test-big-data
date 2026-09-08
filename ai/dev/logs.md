@@ -1,6 +1,6 @@
 # Logs — journal d'activité
 
-Journal unique de toutes les sessions, fixes, incidents et runs du projet `data_lake_final`.
+Journal unique de toutes les sessions, fixes, incidents et runs du projet (dépôt unique `Mon_Memoire`).
 Format : entrée datée (tableau action/fichiers/détail) + vérifications + résultat.
 Ne jamais y mettre de données sensibles.
 

@@ -5,7 +5,7 @@
 - Le mémoire raconte une **démarche progressive et honnête** : problème métier → MVP → validation des
   algorithmes → passage à l'échelle → architecture Big Data.
 - **Preuves avant affirmations** : chaque chiffre doit être vérifiable dans le dépôt
-  (`data_lake_final/documents/`, `Mon_Memoire/projet/code-source/`) — pas d'invention de résultat.
+  (`documents/`, `projet/code-source/`, `archives/`) — pas d'invention de résultat.
 - Conserver un ton pédagogique : expliquer **pourquoi** chaque technologie (voir
   `documents/documentation/bigdata_concepts.md`).
 
@@ -37,7 +37,7 @@ Rédiger en remplaçant le squelette « Objectif + Notes/TODO » existant :
 
 - Toute étape MAJEURE de rédaction (chapitre rédigé, figures ajoutées) est journalisée dans
   `ai/dev/logs.md` et le jalon dans `ai/dev/suivi_avancement.md`.
-- Les sources à citer vivent dans `Mon_Memoire/references/` et `Mon_Memoire/documents/articles/`.
+- Les sources à citer vivent dans `references/` et `documents/articles/`.
 
 ## Alphabet de checklist par chapitre
 

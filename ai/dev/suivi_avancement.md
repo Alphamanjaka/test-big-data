@@ -2,7 +2,7 @@
 
 Sources : `ai_context/suivi_avancement.md` (test_bigdata) + `.ai_context/04_priorities.md` (Mavis) + plan de fusion.
 
-## État global de la fusion `data_lake_final`
+## État global de la fusion (dépôt unique `Mon_Memoire`)
 
 ```
 Phase 0 repo+root [██████████] 100%   Phase 1 docs [██████████] 100%

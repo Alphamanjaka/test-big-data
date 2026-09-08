@@ -72,7 +72,7 @@ API **lecture seule** exposant le PostgreSQL central (master patient, consenteme
 Sécurité : clés API hachées SHA-256, rôles `admin`/`analyst`/`viewer`, audit systématique de chaque
 accès (autorisé ou refusé).
 
-Depuis la fusion (`data_lake_final`), deux endpoints de gouvernance sont implémentés **dans
+Depuis la fusion (dépôt unique), deux endpoints de gouvernance sont implémentés **dans
 `provision/api/hive_api.py`** (un seul service Flask) :
 `GET /api/governance/duplicates` (KPIs de déduplication depuis `datalake_silver.patient_fhir`) et
 `GET /api/governance/consent` (consentements depuis `datalake_gold.patient_consent_gold`). Les deux
