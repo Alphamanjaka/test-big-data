@@ -32,7 +32,8 @@ def normalize(patient: dict) -> dict:
         "first_name": patient["first_name"].strip(),
         "last_name": patient["last_name"].strip(),
         "birth_date": patient["birth_date"],  # format ISO YYYY-MM-DD attendu
-        "phone": patient["phone"],  # format ISO malgache: 0341234567
+        "cin": patient.get("cin"),  # CIN malgache "DDD DDDDD D" (ou None)
+        "birth_city": (patient.get("birth_city") or "").strip(),
         "address": (patient.get("address") or "").strip(),
     }
 
@@ -94,25 +95,25 @@ def apply_typo(text: str, rng: random.Random) -> str:
 
 
 # ---------------------------------------------------------------------------
-# 4. Format — téléphone et date
+# 4. Format — CIN et date
 # ---------------------------------------------------------------------------
 
 
-def vary_phone_format(phone: str, rng: random.Random) -> str:
+def vary_cin_format(cin: str, rng: random.Random) -> str:
     """
-    Reformate un numéro malgache (ex: 0341234567) selon un des formats
-    observés dans les sources : espacé, international avec/sans '+'.
+    Reformate un CIN malgache (ex: 101 024045 2) selon un des formats
+    observés dans les sources : espacé, compact, ou tel quel.
     """
-    digits = phone.lstrip("0")  # ex: "341234567"
-    style = rng.choice(["raw", "spaced", "intl_plus", "intl_no_plus"])
+    if not cin:
+        return cin
+    digits = "".join(ch for ch in cin if ch.isdigit())  # ex: "101024045"
+    style = rng.choice(["raw", "spaced", "compact"])
 
     if style == "raw":
-        return phone
+        return cin
     if style == "spaced":
-        return f"0{digits[:2]} {digits[2:5]} {digits[5:]}"
-    if style == "intl_plus":
-        return f"+261{digits}"
-    return f"261{digits}"
+        return f"{digits[:3]} {digits[3:8]} {digits[8:]}"
+    return digits
 
 
 def vary_date_format(birth_date: str, rng: random.Random) -> str:
@@ -138,8 +139,12 @@ def vary_date_format(birth_date: str, rng: random.Random) -> str:
 
 
 def make_missing(rng: random.Random) -> dict:
-    """Choisit un champ non-identitaire à vider (birth_date ou phone)."""
-    return {"field": rng.choice(["birth_date", "phone"])}
+    """Choisit un champ non-identitaire à vider (birth_date ou birth_city).
+
+    Le CIN, lui, ne passe JAMAIS par ici : son absence est une décision de
+    niveau maître (~75 % de couverture), toujours cohérente entre les sources.
+    """
+    return {"field": rng.choice(["birth_date", "birth_city"])}
 
 
 # ---------------------------------------------------------------------------
@@ -200,9 +205,9 @@ def apply_variations(
         applied.append("typo")
 
     # format
-    if "phone_format" in allowed_types and rng.random() < probability:
-        result["phone"] = vary_phone_format(result["phone"], rng)
-        applied.append("phone_format")
+    if "cin_format" in allowed_types and result.get("cin") and rng.random() < probability:
+        result["cin"] = vary_cin_format(result["cin"], rng)
+        applied.append("cin_format")
 
     if "date_format" in allowed_types and rng.random() < probability:
         result["birth_date"] = vary_date_format(result["birth_date"], rng)

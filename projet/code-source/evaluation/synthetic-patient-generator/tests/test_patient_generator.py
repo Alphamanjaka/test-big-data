@@ -12,9 +12,10 @@ EXPECTED_COLUMNS = {
     "last_name",
     "birth_date",
     "gender",
-    "phone",
+    "cin",
     "email",
     "address",
+    "birth_city",
 }
 
 
@@ -34,10 +35,13 @@ def test_expected_columns_present():
     assert EXPECTED_COLUMNS.issubset(set(df.columns))
 
 
-def test_phone_number_is_malagasy_format():
-    df = generate_master_patients(n=100)
-    pattern = re.compile(r"^0(32|33|34|38)\d{7}$")
-    assert df["phone"].apply(lambda p: bool(pattern.match(p))).all()
+def test_cin_format_when_present():
+    df = generate_master_patients(n=200)
+    present = df["cin"].dropna()
+    # Couverture partielle réaliste : ~75 % des maîtres possèdent un CIN.
+    assert 0.5 < len(present) / len(df) < 0.95
+    pattern = re.compile(r"^\d{3} \d{5} \d$")
+    assert present.apply(lambda c: bool(pattern.match(c))).all()
 
 
 def test_gender_is_m_or_f():
@@ -48,4 +52,4 @@ def test_gender_is_m_or_f():
 def test_reproducibility_with_same_seed():
     df1 = generate_master_patients(n=30, seed=123)
     df2 = generate_master_patients(n=30, seed=123)
-    assert df1["phone"].tolist() == df2["phone"].tolist()
+    assert df1["cin"].tolist() == df2["cin"].tolist()

@@ -29,7 +29,7 @@ projet/code-source/
 │   ├── synthetic-patient-generator/   générateur easy/medium/hard (+ ground truth)
 │   ├── evaluation_truth.py            calcul P/R/F1 + breakdown
 │   └── evaluate_engine.py             évaluateur adapté au moteur engine/
-├── tests/                test_matcher.py (6) · test_consent.py (3)
+├── tests/                test_matcher.py (9) · test_consent.py (3)
 ├── sql/schema.sql        schéma PostgreSQL central (RAW, master, identity map, consent, api_user, audit)
 └── front-optional/       visualisation Next.js (optionnel — ex visualisation_app)
 ```
@@ -39,7 +39,7 @@ projet/code-source/
 ```powershell
 python -m venv .venv
 .venv\Scripts\python -m pip install -e ".[test]"
-.venv\Scripts\python -m pytest -q        # 9/9 attendu (matcher + consentement)
+.venv\Scripts\python -m pytest -q        # 12/12 attendu (matcher + consentement)
 .venv\Scripts\python evaluation\evaluate_engine.py --level hard   # évaluation ground-truth
 ```
 

@@ -33,9 +33,6 @@ DEFAULT_NUM_PATIENTS = 10_000
 FAKER_LOCALE = "fr_FR"   # peut être ajusté (ex: "fr_FR", "en_US")
 RANDOM_SEED = 42          # pour la reproductibilité des expériences
 
-# Préfixes des opérateurs mobiles malgaches (format Ground Truth : 0341234567)
-MG_PHONE_PREFIXES = ["032", "033", "034", "038"]
-
 # ---------------------------------------------------------------------------
 # Sources hétérogènes (Étape 3)
 # ---------------------------------------------------------------------------
@@ -48,13 +45,24 @@ SOURCE_PRESENCE_PROBABILITY = {
     "imaging": 0.6,
 }
 
-# Préfixes des IDs locaux générés par source (Étape 3 — Distribution Engine)
+# Préfixes des ID locaux générés par source (Étape 3 — Distribution Engine)
 # ex: GT000001 -> PH000001 / MED000001 / IMG000001
 SOURCE_ID_PREFIXES = {
     "pharmacy": "PH",
     "consultation": "MED",
     "imaging": "IMG",
 }
+
+# ---------------------------------------------------------------------------
+# CIN (Carte Nationale d'Identité) — fichiers Patients maîtres (Étape 1)
+# ---------------------------------------------------------------------------
+# Couverture réaliste : ~75 % des patients maîtres possèdent un CIN. Un patient
+# SANS CIN est absent de toutes les sources (cohérence cross-source). Format
+# malgache "DDD DDDDD D" (province + n° d'ordre + clé), ex: 101 024045 2.
+CIN_COVERAGE = 0.75
+CIN_PROVINCE_MIN = 101
+CIN_PROVINCE_MAX = 122
+CIN_SERIAL_LENGTH = 5
 
 # ---------------------------------------------------------------------------
 # Niveaux de difficulté (Étape 4 — Variation Engine)
@@ -69,12 +77,12 @@ DIFFICULTY_LEVELS = {
 # "Niveaux de difficulté" du document). Chaque type actif a une probabilité
 # d'être appliqué égale au taux de DIFFICULTY_LEVELS pour ce niveau.
 DIFFICULTY_VARIATION_TYPES = {
-    "easy": ["case", "spacing", "date_format", "phone_format"],
+    "easy": ["case", "spacing", "date_format", "cin_format"],
     "medium": [
         "case",
         "spacing",
         "date_format",
-        "phone_format",
+        "cin_format",
         "name_inversion",
         "typo_light",
     ],
@@ -82,7 +90,7 @@ DIFFICULTY_VARIATION_TYPES = {
         "case",
         "spacing",
         "date_format",
-        "phone_format",
+        "cin_format",
         "name_inversion",
         "typo_light",
         "typo",
@@ -94,6 +102,6 @@ DIFFICULTY_VARIATION_TYPES = {
 # Probabilités individuelles de variation, utilisées par le Variation Engine
 VARIATION_PROBABILITIES = {
     "name_variation": 0.30,
-    "phone_variation": 0.20,
+    "cin_variation": 0.20,
     "missing_value": 0.10,
 }

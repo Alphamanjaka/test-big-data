@@ -22,20 +22,21 @@ Chaque source a ses propres noms de colonnes et formats :
 | Identifiant | client_id | patient_code | id_personne |
 | Nom | nom_complet | prenom + nom | patient_name |
 | Naissance | naissance | date_naiss | dob |
-| Téléphone | telephone | phone_number | tel |
+| CIN | cin | no_cin | cin_number |
+| Ville de naissance | ville_naissance | ville_nai | birth_place |
 
 Le **modèle canonique** `CanonicalPatient` normalise la contre-partie entre sources, transformation et
 déduplication :
 
 ```text
 source_system · source_patient_id · first_name · last_name · full_name
-birth_date · phone · address · gender
+birth_date · cin · birth_city · address · gender
 ```
 
 Implémentation : [`engine/identity/canonical.py`](../../projet/code-source/engine/identity/canonical.py)
 — `map_patient()` transforme une ligne source, `CanonicalPatient.from_dict()` reconstruit l'objet.
-Les fonctions `_text`/`_normalized`/`_phone`/`_gender`/`_birth_date` assurent la standardisation, et
-`matching_key` produit la clé de matching `(nom normalisé, birth_date, phone)`.
+Les fonctions `_text`/`_normalized`/`_cin`/`_gender`/`_birth_date` assurent la standardisation, et
+`matching_key` produit la clé de matching `(nom normalisé, birth_date, cin)`.
 
 ## 3. Standardisation / nettoyage
 
@@ -44,10 +45,10 @@ Les fonctions `_text`/`_normalized`/`_phone`/`_gender`/`_birth_date` assurent la
 - suppression des espaces ;
 - uniformisation majuscules/minuscules ;
 - normalisation des accents ;
-- standardisation des téléphones (chiffres, préfixe `+261` → `0`) ;
+- normalisation des CIN (chiffres uniquement, formats espacé/compact uniformisés) ;
 - standardisation des dates (formats multiples → ISO `YYYY-MM-DD`) ;
 - normalisation du genre instructive : `F`/`female`/`femme` → `F` ; `H`/`male`/`Homme`/`M` → `M` ;
-- traitement des valeurs manquantes.
+- traitement des valeurs manquantes (naissance, ville de naissance).
 
 ## 4. Blocking
 
@@ -57,13 +58,13 @@ Comparer chaque patient à tous les autres est inefficace (O(n²)) :
 1 000 000 patients → 1 000 000 × 1 000 000 comparaisons
 ```
 
-Le **blocking** crée des groupes de candidats (même préfixe du nom, même année de naissance, même
-préfixe téléphone…) ; le matching n'est exécuté qu'entre candidats **du même groupe**.
+Le **blocking** crée des groupes de candidats (même préfixe du nom, même date de naissance, même
+CIN) ; le matching n'est exécuté qu'entre candidats **du même groupe**.
 
 ## 5. Matching EXACT puis PROBABILISTE
 
-1. **Exact matching** : comparaison exacte d'informations fiables (téléphone identique, clé de matching
-   identique).
+1. **Exact matching** : comparaison exacte d'informations fiables (CIN identique non vide, clé de
+   matching identique).
 2. **Probabilistic matching** : lorsque les informations diffèrent légèrement (variations de casse,
    d'ordre, de format), calcul d'un **score de similarité** (RapidFuzz).
 
@@ -73,7 +74,8 @@ préfixe téléphone…) ; le matching n'est exécuté qu'entre candidats **du m
 |---|---:|
 | Nom | 0.50 |
 | Date de naissance | 0.30 |
-| Téléphone | 0.20 |
+| CIN | 0.10 |
+| Ville de naissance | 0.10 |
 
 **Décision (seuil configurable, valeur retenue 0.80) :**
 
@@ -104,13 +106,13 @@ métier (achats, consultations, examens rattachés au master).
 Vecteur de validation reproductible :
 
 ```text
-PHARMACIE    Jean Rakoto · 0341234567 · 1990-01-10
-CONSULTATION Rakoto Jean · +261341234567 · 10/01/1990
-IMAGERIE     J. RAKOTO  · 034 123 4567 · 1990/01/10
+PHARMACIE    Jean Rakoto · CIN 101 02404 5 · 1990-01-10
+CONSULTATION Rakoto Jean · 101024045 · 10/01/1990
+IMAGERIE     J. RAKOTO  · 101024045 · 1990/01/10
 ```
 
 Résultat attendu : les 3 enregistrements fusionnés en **un seul master** — Jean Rakoto par **exact**
-(téléphone) + **probabiliste** (score 0.8+ pour les variations de pseudo).
+(CIN) + **probabiliste** (score 0.8+ pour les variations de pseudo).
 
 ## 8. Implémentation (moteur `engine/`)
 
@@ -119,7 +121,7 @@ Répertoire : [`projet/code-source/engine/`](../../projet/code-source/engine/)
 | Fichier | Rôle |
 |---|---|
 | `identity/canonical.py` | `CanonicalPatient`, standardisation, `matching_key` |
-| `identity/matcher.py` | `_MasterIndex`, `deduplicate()` — exact + probabiliste, seuil 0.80, scores 0.5/0.3/0.2 |
+| `identity/matcher.py` | `_MasterIndex`, `deduplicate()` — exact + probabiliste, seuil 0.80, scores 0.5/0.3/0.1/0.1 |
 | `identity/spark_dedup.py` | Version **driver-side** Parquet même logique, `_BoundedMasterIndex` |
 | `identity/__init__.py` | API publique du paquet |
 
@@ -129,13 +131,17 @@ Répertoire : [`projet/code-source/engine/`](../../projet/code-source/engine/)
 
 ## 9. Tests
 
-`tests/test_matcher.py` — 6 cas :
+`tests/test_matcher.py` — 9 cas :
 
 1. match exact (clé identique) ;
-2. nom inversé (probabiliste) ;
-3. nom identique + naissance + téléphone avec faute de frappe (probabiliste) ;
-4. patients distincts → non fusionnés (précision) ;
-5. parité Pandas / Spark sur le jeu de référence.
+2. nom inversé + CIN non vide (exact Naissance+CIN) ;
+3. CIN au seuil 0.80 (nom + naissance = 0.8, sans CIN ni ville) ;
+4. faute de frappe compensée par naissance ;
+5. ville de naissance identique → score augmenté ;
+6. formats de CIN (espacé / compact) normalisés ;
+7. patients distincts → non fusionnés (précision) ;
+8. CIN différents (même nom, même naissance) → non fusionnés ;
+9. parité Pandas / Spark sur le jeu de référence.
 
 ## 10. Synchronisation avec la zone SILVER
 

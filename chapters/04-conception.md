@@ -57,19 +57,20 @@ représentation unique, `CanonicalPatient` [deduplication.md §2] :
 
 ```text
 source_system · source_patient_id · first_name · last_name · full_name
-birth_date · phone · address · gender
+birth_date · cin · birth_city · address · gender
 ```
 
 Le mapping des colonnes source → canonique est **explicite et déterministe**
 (`canonical.py::map_patient()`) ; le `matching_key` produit la clé de déduplication
-`(birth_date, phone, nom normalisé)`.
+`(birth_date, cin, nom normalisé)`.
 
 | Champ | pharmacy | consultation | imaging | Standardisation `_*` |
 |---|---|---|---|---|
 | ID | `client_id` | `patient_code` | `id_personne` | — |
 | Nom | `nom_complet` | `prenom` + `nom` | `patient_name` | `_normalized` : minuscules, sans accents, sans ponctuation |
 | Naissance | `naissance` | `date_naiss` | `dob` | `_birth_date` → ISO `YYYY-MM-DD` |
-| Téléphone | `telephone` | `phone_number` | `tel` | `_phone` : chiffres, `+261…` → `0…` |
+| CIN | `cin` | `no_cin` | `cin_number` | `_cin` : chiffres uniquement |
+| Ville de naissance | `ville_naissance` | `ville_nai` | `birth_place` | `_text` + `_normalized` |
 | Genre | `sexe` H/F | `genre` male/female | `sex` Homme/femme | `_gender` → `M` / `F` |
 
 La normalisation rend comparable ce que la saisie rendait divergent : les trois
@@ -79,14 +80,14 @@ formes du cas « Jean Rakoto » produisent des valeurs canoniques identiques.
 
 **Blocking.** Comparer chaque enregistrement à tous les autres est en O(n²). Le
 concept utilise trois index de candidats : préfixe du nom (4 lettres), date de
-naissance ISO, téléphone (`_MasterIndex`, 3 buckets) ; le matching n'évalue que
+naissance ISO, CIN (`_MasterIndex`, 3 buckets) ; le matching n'évalue que
 l'union des candidats de ces buckets [deduplication.md §4].
 
 **Déduplication en deux passes** (`deduplicate()`, seuil `probabilistic_threshold`
 = 0.80) :
 
 1. **Exact matching** — le patient partage la `matching_key` d'un master, ou bien
-   naissance égale **et** téléphone non vide identique (absorbe les inversions
+   naissance égale **et** CIN non vide identique (absorbe les inversions
    prénom/nom). Décision `exact`, score 1.0.
 2. **Probabilistic matching** — parmi les candidats du blocking, score de
    similarité **pondéré** [deduplication.md §5] :
@@ -95,7 +96,8 @@ l'union des candidats de ces buckets [deduplication.md §4].
    |---|---|---:|
    | Nom | `fuzz.ratio` (token, insensible à l'ordre) | 0.50 |
    | Date de naissance | exacte | 0.30 |
-   | Téléphone | exact | 0.20 |
+   | CIN | exact (si présent, ~75 %) | 0.10 |
+   | Ville de naissance | exacte (normalisée) | 0.10 |
 
    Score ≥ 0.80 → décision `probabilistic` (score conservé) ; sinon → nouveau
    master (`new_master`).
@@ -103,7 +105,7 @@ l'union des candidats de ces buckets [deduplication.md §4].
    la règle d'or « jamais fusionner sans logique explicable » est structurelle,
    pas une convention [deduplication.md — règle métier].
 
-Le cas de référence est conçu pour être résolu : Jean Rakoto (exact, téléphone) et
+Le cas de référence est conçu pour être résolu : Jean Rakoto (exact, CIN) et
 Nirina (probabiliste, score 0.8+) [deduplication.md §7].
 
 ## 4.4 Modèle de données PostgreSQL et idempotence

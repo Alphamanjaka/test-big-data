@@ -145,3 +145,28 @@ source vérifiée (seuls exclusions prévues : .pyc, logs, metadata, .pkl, .db, 
 **Résultat :** **dépôt unique `Mon_Memoire`** = mémoires (`chapters/`), docs (`documents/`), code
 (`projet/code-source/`), PoC (`projet/mvp/`), archive (`archives/datalake_mavis/`), références
 (`references/`), consignes (`ai/`).
+
+---
+
+## 08/09/2026 — Rework déduplication : clé CIN + ville de naissance (chaîne live)
+
+**Contexte :** décision utilisateur de remplacer le téléphone par le **CIN** (~75 % de couverture, clé
+forte) et d'ajouter la **ville de naissance** (poids faible) dans le matching, **uniquement sur la
+chaîne live** (`projet/code-source/`, hors `projet/mvp/` PoC archivé), puis recalculer l'évaluation et
+mettre à jour toute la documentation.
+
+| # | Action | Fichiers | Détail |
+|---|---|---|---|
+| 1 | Générateur (CIN/ville) | `evaluation/synthetic-patient-generator/config/settings.py`, `patient_generator.py`, `common.py`, `variation_engine.py`, 3 générateurs sources | `MasterPatient.cin/birth_city` ; `_generate_mg_cin` ; CIN absent décidé au maître (jamais « sali ») ; `make_missing` cible naissance/ville ; `cin_format` remplace `phone_format` ; tests → **pytest 44/44** |
+| 2 | Moteur (canonical + matcher) | `engine/identity/canonical.py`, `matcher.py`, `spark_dedup.py`, `__init__.py` | `CanonicalPatient` cin/birth_city ; `matching_key (birth_date, cin, nom)` ; poids **0.5/0.3/0.1/0.1** ; règle exacte « naissance + CIN non vide » ; `_MasterIndex._by_cin` ; `_cin` remplace `_phone` ; **parité Spark** conservée ; `tests/test_matcher.py` **9 cas** (dont formats CIN, ville, CIN différents→non fusion) → **pytest moteur 12/12** (matcher 9 + consent 3) |
+| 3 | Pipeline/schéma | `sql/schema.sql`, `provision/scripts/utils/fhir_schema.py`, `fhir_synonyms.py`, `provision/scripts/ELT/create_silver.py`, `evaluate_engine.py`, `README.md` | colonnes `cin`/`birth_city` ; Patient FHIR (sans phone) ; synonymes ; `from_dict` COLS ; compteurs 12/12 |
+| 4 | Réévaluation | données régénérées (seed 42) ; `evaluate_engine.py` easy/medium/hard ; `evaluation_truth.md` | Nouveaux chiffres hard : **TP 307 / FP 0 / FN 420, 804 masters → P 1.000 / R 0.422 / F1 0.594** ; exact 1.000/0.854/0.921 ; probabilistic 1.000/0.533/0.696 ; rappel source 0.422/0.422/0.423 ; medium 554/643/84 → 1.000/0.884/0.939 |
+| 5 | Docs & mémoire (harmonisation) | `chapters/01..06.md`, `documents/cahier_des_charges.md`, `documents/documentation/{deduplication,architecture,evaluation}.md`, `ai/memoire/contexte_projet.md`, `ai/dev/{deduplication,architecture}.md` | suppression téléphone → CIN/ville ; poids 0.5/0.3/0.1/0.1 ; seuil 0.80 ; cas Jean Rakoto (exact CIN) ; nouveaux chiffres éval ; compteurs 12/12 |
+| 6 | Legacy | `provision/db/rebuild_*.py`, `provision/scripts/ELT.before/` | **non modifiés** (outils démo de bases legacy, hors chaîne master-patient active) |
+
+**Vérisable :** `pytest` moteur **12/12** (9 matcher + 3 consent) + générateur **44/44** ; évaluation 3
+niveaux régénérée ; recherche grep des références `phone`/`0.287`/`0.447`/`0.3/0.2`/`9/9` purgée dans
+`chapters/` et `documents/`.
+
+**Résultat :** rappel hard relevé de 0.287 → **0.422** sans aucun faux positif (P 1.000 intact) grâce à
+la clé CIN. Commits par lots non poussés sur `origin` (en attente d'accord, branche `develop_spark`).

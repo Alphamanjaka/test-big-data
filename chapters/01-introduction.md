@@ -30,9 +30,9 @@ médicaux. Chacun possède sa propre base, son propre format et ses propres iden
 Le même patient est enregistré dans plusieurs systèmes, **sous des formes différentes** :
 
 ```text
-Pharmacie     → Jean Rakoto · 0341234567 · 1990-01-10
-Consultation  → Rakoto Jean · +261341234567 · 10/01/1990
-Imagerie      → J. RAKOTO · 034 123 4567 · 1990/01/10
+Pharmacie     → Jean Rakoto · CIN 101 02404 5 · 1990-01-10
+Consultation  → Rakoto Jean · 101024045 · 10/01/1990
+Imagerie      → J. RAKOTO · 101024045 · 1990/01/10
 ```
 
 Exemple réel du cas de référence de la plateforme : les trois enregistrements ci-dessus
@@ -101,7 +101,7 @@ Périmètre fonctionnel couvert par ce stage :
 - pipeline ELT Big Data en 4 étapes (RAW → mapping FHIR → SILVER → GOLD), orchestré par
   `run_pipeline.sh`, logs `elt.log`, suivi `sync_metadata.json` [cahier_des_charges.md §4.1] ;
 - moteur de déduplication exact + probabiliste (seuil 0.80, pondération nom 0.5 / naissance 0.3 /
-  téléphone 0.2), implémenté en Pandas **et** en PySpark [cahier_des_charges.md §4.2] ;
+  CIN 0.1 / ville de naissance 0.1), implémenté en Pandas **et** en PySpark [cahier_des_charges.md §4.2] ;
 - gouvernance : RBAC, consentement par finalité, audit d'accès, clés API hachées SHA-256
   [cahier_des_charges.md §4.3] ;
 - deux API REST : données (Flask, endpoints `/rma/*`) et gouvernance (lecture seule) ;
@@ -116,7 +116,7 @@ Les principaux chiffres vérifiables, détaillés dans les chapitres 3 à 6, son
 - **Générateur** : 500 patients maîtres, 1 057 enregistrements répartis sur 3 sources
   (pharmacy 404, consultation 353, imaging 300), 3 niveaux de difficulté (easy 10 % / medium 30 % /
   hard 50 % de variations) [synthetic-patient-generator].
-- **Évaluation (dataset hard)** : Precision **1.000**, Recall **0.287**, F1 **0.447**, zéro faux
+- **Évaluation (dataset hard)** : Precision **1.000**, Recall **0.422**, F1 **0.594**, zéro faux
   positif, parité MVP = Spark parfaite [evaluation_truth.md].
 - **Pipeline fusion** (run 07/09/2026, sources CSV synthétiques) : 4/4 vert, SILVER `patient_fhir`
   **214** lignes, **145** masters, **69** doublons liés, GOLD consentements 145, API **14/14 PASS**

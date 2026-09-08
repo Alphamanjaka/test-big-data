@@ -3,6 +3,7 @@ Tests de l'Étape 4 — Variation Engine.
 """
 
 import random
+import re
 
 import pytest
 
@@ -12,8 +13,8 @@ from generator.variation_engine import (
     apply_variations,
     invert_name,
     vary_case,
+    vary_cin_format,
     vary_date_format,
-    vary_phone_format,
     vary_spacing,
 )
 
@@ -21,8 +22,9 @@ SAMPLE_PATIENT = {
     "first_name": "Jean",
     "last_name": "Rakoto",
     "birth_date": "1990-01-10",
-    "phone": "0341234567",
-    "address": "Antananarivo",
+    "cin": "101 02404 5",
+    "birth_city": "Fianarantsoa",
+    "address": "Lots 45 Antananarivo",
 }
 
 
@@ -53,12 +55,11 @@ def test_apply_typo_keeps_similar_length():
     assert abs(len(result) - len("Rakoto")) <= 1
 
 
-def test_vary_phone_format_produces_known_formats():
+def test_vary_cin_format_produces_known_formats():
     rng = random.Random(0)
-    seen = {vary_phone_format("0341234567", random.Random(i)) for i in range(20)}
-    assert any(f.startswith("+261") for f in seen)
-    assert any(f.startswith("261") and not f.startswith("+") for f in seen)
+    seen = {vary_cin_format("101024045", random.Random(i)) for i in range(20)}
     assert any(" " in f for f in seen)
+    assert any(re.fullmatch(r"\d{9}", f) for f in seen)
 
 
 def test_vary_date_format_produces_known_formats():
@@ -70,7 +71,7 @@ def test_vary_date_format_produces_known_formats():
 def test_apply_variations_preserves_expected_keys(difficulty):
     rng = random.Random(1)
     result = apply_variations(SAMPLE_PATIENT, difficulty, rng)
-    assert set(result) == {"first_name", "last_name", "birth_date", "phone", "address", "_variations_applied"}
+    assert set(result) == {"first_name", "last_name", "birth_date", "cin", "birth_city", "address", "_variations_applied"}
 
 
 def test_hard_difficulty_triggers_more_variations_than_easy_on_average():

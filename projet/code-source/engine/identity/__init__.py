@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from engine.identity.canonical import CanonicalPatient, matching_key, _normalized, _phone, _text, _gender, _birth_date
+from engine.identity.canonical import CanonicalPatient, matching_key, _normalized, _cin, _text, _gender, _birth_date
 from engine.identity.matcher import MatchDecision, deduplicate
 
 __all__ = [
@@ -11,7 +11,7 @@ __all__ = [
     "matching_key",
     "deduplicate",
     "_normalized",
-    "_phone",
+    "_cin",
     "_text",
     "_gender",
     "_birth_date",

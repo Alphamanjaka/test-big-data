@@ -2,7 +2,7 @@
 Étape 5 — Source Generator : Imagerie.
 
 Produit :
-- data/raw/imaging/patients.csv  (id_personne, patient_name, dob, tel, sex)
+- data/raw/imaging/patients.csv  (id_personne, patient_name, dob, cin_number, birth_place, sex)
 - data/raw/imaging/examens.csv   (exam_id, patient_code, exam_type, exam_date)
 """
 
@@ -45,7 +45,7 @@ def generate_imaging_patients(
     difficulty: str,
     seed: int = settings.RANDOM_SEED,
 ) -> pd.DataFrame:
-    """Génère data/raw/imaging/patients.csv : id_personne, patient_name, dob, tel, sex."""
+    """Génère data/raw/imaging/patients.csv : id_personne, patient_name, dob, cin_number, birth_place, sex."""
     varied = build_source_patients(
         master_patients, distribution_plan, "imaging", difficulty, seed
     )
@@ -59,7 +59,8 @@ def generate_imaging_patients(
             "id_personne": varied["local_id"],
             "patient_name": varied.apply(patient_name, axis=1),
             "dob": varied["birth_date"],
-            "tel": varied["phone"],
+            "cin_number": varied["cin"],
+            "birth_place": varied["birth_city"],
             "sex": varied["gender"].replace(SEX_LABELS),
         }
     )

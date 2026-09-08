@@ -18,7 +18,8 @@ class CanonicalPatient:
     last_name: str
     full_name: str
     birth_date: date | None
-    phone: str
+    cin: str
+    birth_city: str
     address: str
     gender: str
     source_file: str
@@ -44,13 +45,12 @@ def _normalized(value: str) -> str:
     return re.sub(r"[^a-z0-9]", "", without_accents.lower())
 
 
-def _phone(value) -> str:
+def _cin(value) -> str:
+    """Normalise un CIN en ne gardant que les chiffres (ex: 101 02404 5 -> 101024045)."""
     if value is None:
         return ""
     digits = re.sub(r"\D", "", str(value))
-    if digits.startswith("261") and len(digits) >= 11:
-        return "0" + digits[-9:]
-    return digits
+    return digits if 6 <= len(digits) <= 12 else ""
 
 
 def _gender(value) -> str:
@@ -73,7 +73,7 @@ def _birth_date(value) -> date | None:
 
 def matching_key(patient: CanonicalPatient) -> tuple[str, str, str]:
     birth_date = patient.birth_date.isoformat() if patient.birth_date else ""
-    return (birth_date, patient.phone, _normalized(patient.full_name))
+    return (birth_date, patient.cin, _normalized(patient.full_name))
 
 
 def map_patient(row, source_system: str, source_file: str = "") -> CanonicalPatient:
@@ -82,7 +82,8 @@ def map_patient(row, source_system: str, source_file: str = "") -> CanonicalPati
         first_name, last_name = (name_parts + [""])[:2]
         full_name = _text(row["nom_complet"])
         source_id = _text(row["client_id"])
-        phone = _phone(_text(row["telephone"]))
+        cin = _cin(row.get("cin", ""))
+        birth_city = _text(row.get("ville_naissance", ""))
         address = _text(row["adresse"])
         birth_value = _text(row["naissance"])
         gender_value = row.get("sexe", "")
@@ -91,7 +92,8 @@ def map_patient(row, source_system: str, source_file: str = "") -> CanonicalPati
         last_name = _text(row["nom"])
         full_name = f"{first_name} {last_name}".strip()
         source_id = _text(row["patient_code"])
-        phone = _phone(_text(row["phone_number"]))
+        cin = _cin(row.get("no_cin", ""))
+        birth_city = _text(row.get("ville_nai", ""))
         address = ""
         birth_value = _text(row["date_naiss"])
         gender_value = row.get("genre", "")
@@ -100,7 +102,8 @@ def map_patient(row, source_system: str, source_file: str = "") -> CanonicalPati
         name_parts = full_name.split(" ", 1)
         first_name, last_name = (name_parts + [""])[:2]
         source_id = _text(row["id_personne"])
-        phone = _phone(_text(row["tel"]))
+        cin = _cin(row.get("cin_number", ""))
+        birth_city = _text(row.get("birth_place", ""))
         address = ""
         birth_value = _text(row["dob"])
         gender_value = row.get("sex", "")
@@ -114,7 +117,8 @@ def map_patient(row, source_system: str, source_file: str = "") -> CanonicalPati
         last_name=last_name,
         full_name=full_name,
         birth_date=_birth_date(birth_value),
-        phone=phone,
+        cin=cin,
+        birth_city=birth_city,
         address=address,
         gender=_gender(gender_value),
         source_file=_text(source_file),
@@ -125,8 +129,8 @@ def from_dict(row: dict) -> CanonicalPatient:
     """Construit un CanonicalPatient depuis un dict canonique (source agnostique).
 
     Champs attendus : source_system, source_patient_id, full_name (ou
-    first_name+last_name), birth_date (date ou chaîne ISO), phone, address,
-    gender, source_file (optionnel).
+    first_name+last_name), birth_date (date ou chaîne ISO), cin, birth_city,
+    address, gender, source_file (optionnel).
     """
     full_name = _text(row.get("full_name"))
     if not full_name:
@@ -139,7 +143,8 @@ def from_dict(row: dict) -> CanonicalPatient:
         last_name=name_parts[1] if len(name_parts) > 1 else "",
         full_name=full_name,
         birth_date=row.get("birth_date") if isinstance(row.get("birth_date"), date) else _birth_date(row.get("birth_date") or ""),
-        phone=_phone(row.get("phone")),
+        cin=_cin(row.get("cin")),
+        birth_city=_text(row.get("birth_city")),
         address=_text(row.get("address")),
         gender=_gender(row.get("gender")),
         source_file=_text(row.get("source_file")),

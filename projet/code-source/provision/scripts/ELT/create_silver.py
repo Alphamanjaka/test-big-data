@@ -111,7 +111,7 @@ def enrichir_dedup_moteur():
         logging.warning(f"Moteur engine indisponible ({e}) — enrichissement dédup sauté.")
         return
 
-    colonnes = ["_source_system", "source_patient_id", "name", "birth_date", "phone"]
+    colonnes = ["_source_system", "source_patient_id", "name", "birth_date", "cin", "birth_city"]
     presentes = [c for c in colonnes if c in df_patient.columns]
     rows = [r.asDict() for r in df_patient.select(*presentes).collect()]
 
@@ -121,7 +121,8 @@ def enrichir_dedup_moteur():
             "source_patient_id": r.get("source_patient_id") or "",
             "full_name": r.get("name") or "",
             "birth_date": r.get("birth_date"),
-            "phone": r.get("phone"),
+            "cin": r.get("cin"),
+            "birth_city": r.get("birth_city") or "",
             "address": "",
             "gender": "",
             "source_file": "",
@@ -207,7 +208,8 @@ logging.info("✅ Mapping FHIR chargé")
 # Quelques synonymes utiles pour les abréviations courtes
 SYNONYMES_COURTS = {
     "birth_date": ["dob", "bdate", "birthday", "naissance", "date_naiss"],
-    "phone": ["tel", "telephone", "mobile", "phone_number"],
+    "cin": ["cin", "no_cin", "cin_number", "numero_cin", "number_cin"],
+    "birth_city": ["birth_city", "ville_naissance", "ville_nai", "birth_place", "ville_naiss"],
     "email": ["mail"],
     "gender": ["sex", "sexe", "genre"],
     # nom de préférence : nom complet / nom de famille avant le prénom

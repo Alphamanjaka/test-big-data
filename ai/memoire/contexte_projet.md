@@ -53,10 +53,10 @@ Choix de fusion validés : nouveau repo autonome ; docs = un seul set logique
 | Sources ELT | MAVIS (11 tables), MMT_DB (3 tables, base synthétique 60 271 lignes), CLINIQUE SQLite (54 582 lignes) |
 | GOLD | `datalake_gold.patient_events_gold` (17 colonnes, 8 tranches RMA) ; dette : jointures GOLD limitées |
 | Plateforme | 3 sources CSV ; 60 RAW → 36 masters ; 24 fusions exactes ; 60 identity links ; 108 consentements |
-| Dédup | Score nom 0.5 / naissance 0.3 / tél 0.2 ; seuil 0.80 ; blocking ; exact + probabiliste |
-| Évaluation | hard (2026-09-07, `evaluation_truth.md`) : **Precision 1.000, Recall 0.287, F1 0.447** ; exact P/R/F1 1.000/0.737/0.848 ; probabilistic 1.000/0.667/0.800 ; 0 FP ; rappel par source pharmacy 0.299 / consultation 0.286 / imaging 0.276 |
-| Spark | Spark 3.4.2 (VM) / 4.2 local ; dédup Spark **identique** au MVP (JSON `evaluation_truth.md` : modes MVP+Spark, TP=209 FP=0 FN=518, 869 masters prédits, 500 groupes vérité, 1 057 enregistrements) |
-| Tests | moteur 9/9 PASS (matcher 6, consent 3) ; API données **14/14 PASS** ; MVP 20 tests + 44 tests générateur |
+| Dédup | Score nom 0.5 / naissance 0.3 / CIN 0.1 / ville de naissance 0.1 ; seuil 0.80 ; blocking ; exact + probabiliste |
+| Évaluation | hard (2026-09-08, `evaluation_truth.md`) : **Precision 1.000, Recall 0.422, F1 0.594** ; exact P/R/F1 1.000/0.854/0.921 ; probabilistic 1.000/0.533/0.696 ; 0 FP ; rappel par source pharmacy 0.422 / consultation 0.422 / imaging 0.423 |
+| Spark | Spark 3.4.2 (VM) / 4.2 local ; dédup Spark **identique** au MVP (JSON `evaluation_truth.md` : modes MVP+Spark, TP=307 FP=0 FN=420, 804 masters prédits, 500 groupes vérité, 1 057 enregistrements) |
+| Tests | moteur 12/12 PASS (matcher 9, consent 3) ; API données **14/14 PASS** ; MVP 20 tests + 44 tests générateur |
 | API | Flask 11 endpoints (9 `/rma/*` + 2 `/api/governance/*`) + mocks backend ; FastAPI lecture seule `/health /metrics /patients /audit /consent` |
 
 ## Pièges / anti-régression à évoquer (preuves de robustesse)

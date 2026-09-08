@@ -14,7 +14,7 @@ PLAN = distribute_patients(MASTER, seed=10)
 
 def test_pharmacy_patients_schema_and_count():
     df = generate_pharmacy_patients(MASTER, PLAN, "medium", seed=10)
-    assert list(df.columns) == ["client_id", "nom_complet", "naissance", "telephone", "adresse", "sexe"]
+    assert list(df.columns) == ["client_id", "nom_complet", "naissance", "cin", "ville_naissance", "adresse", "sexe"]
     expected = (PLAN["source"] == "pharmacy").sum()
     assert len(df) == expected
     assert df["client_id"].str.startswith("PH").all()
@@ -35,7 +35,8 @@ def test_consultation_patients_schema():
         "prenom",
         "nom",
         "date_naiss",
-        "phone_number",
+        "no_cin",
+        "ville_nai",
         "genre",
     ]
     assert df["patient_code"].str.startswith("MED").all()
@@ -51,7 +52,7 @@ def test_consultations_reference_existing_patients():
 
 def test_imaging_patients_schema():
     df = generate_imaging_patients(MASTER, PLAN, "medium", seed=10)
-    assert list(df.columns) == ["id_personne", "patient_name", "dob", "tel", "sex"]
+    assert list(df.columns) == ["id_personne", "patient_name", "dob", "cin_number", "birth_place", "sex"]
     assert df["id_personne"].str.startswith("IMG").all()
     assert df["sex"].isin(["Homme", "femme"]).all()
 
@@ -65,8 +66,9 @@ def test_exams_reference_existing_patients():
 
 def test_hard_difficulty_can_produce_missing_values():
     df = generate_pharmacy_patients(MASTER, PLAN, "hard", seed=10)
-    # Sur 100 patients à 50% de variation, il doit statistiquement manquer au moins une valeur.
-    assert df["naissance"].isna().any() or df["telephone"].isna().any()
+    # Le CIN est couvert au niveau maître : en "hard", les valeurs manquantes
+    # portent sur la date de naissance ou la ville de naissance.
+    assert df["naissance"].isna().any() or df["ville_naissance"].isna().any()
 
 
 def test_pharmacy_patients_have_address():

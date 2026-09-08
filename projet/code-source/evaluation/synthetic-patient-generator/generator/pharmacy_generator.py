@@ -2,7 +2,7 @@
 Étape 5 — Source Generator : Pharmacie.
 
 Produit :
-- data/raw/pharmacy/patients.csv   (client_id, nom_complet, naissance, telephone, adresse, sexe)
+- data/raw/pharmacy/patients.csv   (client_id, nom_complet, naissance, cin, ville_naissance, adresse, sexe)
 - data/raw/pharmacy/achats.csv     (purchase_id, customer_id, medicine, quantity, purchase_date)
 """
 
@@ -48,7 +48,7 @@ def generate_pharmacy_patients(
     difficulty: str,
     seed: int = settings.RANDOM_SEED,
 ) -> pd.DataFrame:
-    """Génère data/raw/pharmacy/patients.csv : client_id, nom_complet, naissance, telephone, adresse, sexe."""
+    """Génère data/raw/pharmacy/patients.csv : client_id, nom_complet, naissance, cin, ville_naissance, adresse, sexe."""
     varied = build_source_patients(
         master_patients, distribution_plan, "pharmacy", difficulty, seed
     )
@@ -62,7 +62,8 @@ def generate_pharmacy_patients(
             "client_id": varied["local_id"],
             "nom_complet": varied.apply(full_name, axis=1),
             "naissance": varied["birth_date"],
-            "telephone": varied["phone"],
+            "cin": varied["cin"],
+            "ville_naissance": varied["birth_city"],
             "adresse": varied["address"],
             "sexe": varied["gender"].replace(SEXE_LABELS),
         }

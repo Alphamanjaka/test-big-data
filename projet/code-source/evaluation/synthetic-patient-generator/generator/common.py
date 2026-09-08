@@ -24,8 +24,8 @@ def build_source_patients(
     et leur applique le Variation Engine (Étape 4) pour "salir" leur identité.
 
     Retourne un DataFrame avec les colonnes : local_id, master_id, first_name,
-    last_name, birth_date, gender, phone, address — à mapper ensuite vers le
-    schéma propre à chaque source (noms de colonnes différents, cf.
+    last_name, birth_date, gender, cin, birth_city, address — à mapper ensuite
+    vers le schéma propre à chaque source (noms de colonnes différents, cf.
     hétérogénéité volontaire).
     """
     rng = random.Random(seed)
@@ -39,13 +39,16 @@ def build_source_patients(
             "first_name": row["first_name"],
             "last_name": row["last_name"],
             "birth_date": row["birth_date"],
-            "phone": row["phone"],
+            "cin": row["cin"],
+            "birth_city": row["birth_city"],
             "address": row.get("address", ""),
         }
         varied = apply_variations(clean_patient, difficulty, rng)
         # Le genre est un attribut démographique fiable : il n'est JAMAIS
         # "sali" par le Variation Engine, pour qu'un même patient garde le
-        # même genre dans les trois sources (cohérence cross-source).
+        # même genre dans les trois sources (cohérence cross-source). Le CIN,
+        # quand il existe, est lui aussi stable (autoritatif) : seul son format
+        # d'écriture peut varier.
         rows.append(
             {
                 "local_id": row["local_id"],
@@ -54,7 +57,8 @@ def build_source_patients(
                 "last_name": varied["last_name"],
                 "birth_date": varied["birth_date"],
                 "gender": row.get("gender", ""),
-                "phone": varied["phone"],
+                "cin": varied["cin"],
+                "birth_city": varied["birth_city"],
                 "address": varied["address"],
             }
         )

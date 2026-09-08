@@ -27,10 +27,12 @@ est implémenté en 7 étapes, déterministe (seed 42) :
 | `experiment_builder.py` | datasets easy / medium / hard |
 
 Types de variations réels : casse, espaces, inversion prénom/nom, abréviation,
-typo (suppression/duplication/permutation), formats téléphone (+261 / espacés) et
-dates (ISO, DD/MM/YYYY…), valeurs manquantes. Résultat pour le dataset hard :
+typo (suppression/duplication/permutation), formats CIN (espacé / compact) et
+dates (ISO, DD/MM/YYYY…), valeurs manquantes (naissance ou ville de naissance).
+Résultat pour le dataset hard :
 **1 057 enregistrements, 500 groupes de vérité, répartition 404 / 353 / 300**, et
-792 achats / 519 consultations / 450 examens. Le fichier de vérité est **réservé à
+792 achats / 519 consultations / 450 examens. Le CIN est porté par ~75 % des
+maîtres, stable entre les sources (autoritatif). Le fichier de vérité est **réservé à
 l'évaluation** — jamais fourni à l'algorithme [deduplication.md — règle métier].
 
 ## 5.2 Pipeline ELT Medallion en 4 étapes
@@ -73,15 +75,15 @@ Le moteur `engine/identity/` est la pièce centrale, deux implantations alignée
 | Aspect | `matcher.py` (Pandas) | `spark_dedup.py` (PySpark driver-side) |
 |---|---|---|
 | Canonique | `canonical.py` (`map_patient`, `from_dict`) | réutilise `matcher`/`canonical` |
-| Exact | `matching_key` + naissance/téléphone | clusters par `groupBy` de la clé |
+| Exact | `matching_key` + naissance/CIN | clusters par `groupBy` de la clé |
 | Probabiliste | `_MasterIndex` (3 buckets) | `_BoundedMasterIndex` sur ancres de clusters |
-| Score | `fuzz.ratio(nom)×0.5 + naissance×0.3 + tél×0.2` | identique |
+| Score | `fuzz.ratio(nom)×0.5 + naissance×0.3 + CIN×0.1 + ville×0.1` | identique |
 | Décision | `exact` / `probabilistic` / `new_master`, seuil 0.80 | identique |
 | Sortie | `MatchDecision` | dicts `(master_patient_id, method, score, explanation)` |
 
 La **sémantique est strictement alignée** et la **parité est vérifiée** : démo 18
 patients → 11 masters identiques Pandas et Spark, et évaluation ground-truth
-« modes MVP+Spark identiques » (TP=209, FP=0, FN=518 pour les deux)
+« modes MVP+Spark identiques » (TP=307, FP=0, FN=420 pour les deux)
 [`evaluation_truth.md`] — voir chapitre 6.
 
 ## 5.4 Chargement PostgreSQL et GOLD du consentement

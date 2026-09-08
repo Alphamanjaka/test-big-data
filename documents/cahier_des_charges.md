@@ -74,11 +74,11 @@ suivi `sync_metadata.json` (UTC+3).
 
 ### 4.2 Déduplication (moteur `engine/`)
 
-- Modèle canonique `CanonicalPatient` (source, id source, nom, naissance, tél, adresse, genre).
-- Nettoyage/standardisation : casse, accents, téléphones, dates, genre.
+- Modèle canonique `CanonicalPatient` (source, id source, nom, naissance, CIN, ville de naissance, adresse, genre).
+- Nettoyage/standardisation : casse, accents, CIN (formats espacé/compact), dates, genre.
 - **Exact matching** puis **probabilistic matching** (scoring RapidFuzz) avec **blocking** (candidats
-  partageant préfixe nom / date / tél).
-- Score pondéré : nom 0.5 · naissance 0.3 · tél 0.2 — seuil **0.80**.
+  partageant préfixe nom / date / CIN).
+- Score pondéré : nom 0.5 · naissance 0.3 · CIN 0.1 · ville de naissance 0.1 — seuil **0.80**.
 - Sorties : `master_patient`, `patient_identity_map` (source_system → source_patient_id → master_patient_id,
   avec `matching_method` et `matching_score`).
 - Implémentation en **Pandas** et en **PySpark** (driver-side, strictement identiques).
@@ -152,11 +152,12 @@ Sources (PostgreSQL / SQLite / CSV synthétiques)
 
 ```text
 CanonicalPatient : source_system · source_patient_id · first_name · last_name · full_name
-                   · birth_date · phone · address · gender
+                   · birth_date · cin · birth_city · address · gender
 ```
 
-Normalisation : `" Jean Rakoto " / "JEAN RAKOTO" / "jean rakoto"` → `jean rakoto` ; téléphones,
-dates et genre standardisés (`H`/`male`/`Homme` → `M` ; `F`/`female`/`femme` → `F`).
+Normalisation : `" Jean Rakoto " / "JEAN RAKOTO" / "jean rakoto"` → `jean rakoto` ; CIN (espacé
+`101 02404 5` / compact `101024045`), dates et genre standardisés
+(`H`/`male`/`Homme` → `M` ; `F`/`female`/`femme` → `F`).
 
 ### 7.2 Schéma pivot FHIR (zones SILVER / GOLD)
 
@@ -164,7 +165,7 @@ dates et genre standardisés (`H`/`male`/`Homme` → `M` ; `F`/`female`/`femme` 
 
 | Entité | Champs |
 |---|---|
-| Patient | patient_uuid (SHA-256), source_patient_id, name, birth_date, gender, address, phone, email (+ `is_duplicate`, `_source_table`) |
+| Patient | patient_uuid (SHA-256), source_patient_id, name, birth_date, gender, address, cin, birth_city (+ `is_duplicate`, `_source_table`) |
 | Encounter | patient_uuid, encounter_id, admission_date, discharge_date, create_date, visit_type |
 | Condition | patient_uuid, diagnosis, diagnosis_code, category, code, info, name |
 | Observation | patient_uuid, mortality, parity, gravida, live_births |
@@ -187,8 +188,8 @@ raw_patient_record · master_patient (+ gender) · patient_identity_map · conse
 |---|---|---|
 | Pipeline ELT bout en bout | < 30 min, idempotent | Atteint |
 | Précision déduplication | ≥ 0.95 | 1.000 (easy → hard) |
-| Rappel déduplication | diagnostic de l'algo (dataset hard) | 0.287 (hard, 50 % de variations — éval. 07/09/2026, `evaluation_truth.md`) |
-| F1 déduplication | ≥ 0.80 (easy/medium) | 0.447 (hard) — dataset volontairement dur |
+| Rappel déduplication | diagnostic de l'algo (dataset hard) | 0.422 (hard, 50 % de variations — éval. 08/09/2026, `evaluation_truth.md`) |
+| F1 déduplication | ≥ 0.80 (easy/medium) | 0.594 (hard) — dataset volontairement dur |
 | Normalisation genre | ≥ 95 % | male/female (reste NULL côté MMT_DB selon source) |
 | Tests | ≥ 80 % | tests moteur + consentement + API PASS |
 | Zéro accès non autorisé | 0 violation | audit + RBAC testés |

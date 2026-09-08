@@ -7,7 +7,10 @@ construit le Ground Truth : data/ground_truth/master_patients.csv
 Chaque patient reçoit :
 - un master_id unique (GT000001, GT000002, ...)
 - une identité générée par Faker (nom, prénom, date de naissance, genre,
-  téléphone au format malgache, email, adresse)
+  CIN malgache optionnel, email, adresse, ville de naissance)
+
+Le CIN est présent sur ~75 % des patients (couverture réaliste) et, le cas
+échéant, toujours cohérent d'une source à l'autre (décidé au niveau maître).
 
 Ce fichier constitue la "vérité absolue" : il ne doit jamais être fourni
 tel quel à l'algorithme de déduplication (voir Règle fondamentale du doc).
@@ -32,16 +35,23 @@ class MasterPatient:
     last_name: str
     birth_date: str
     gender: str
-    phone: str
+    cin: str | None
     email: str
     address: str
+    birth_city: str
 
 
-def _generate_mg_phone_number(rng: random.Random) -> str:
-    """Génère un numéro de téléphone malgache réaliste, ex: 0341234567."""
-    prefix = rng.choice(settings.MG_PHONE_PREFIXES)
-    suffix = "".join(str(rng.randint(0, 9)) for _ in range(7))
-    return f"{prefix}{suffix}"
+def _generate_mg_cin(rng: random.Random) -> str | None:
+    """Génère un CIN malgache réaliste, format "DDD DDDDD D", ex: 101 024045 2.
+
+    Couverture partielle : ~75 % des patients maîtres possèdent un CIN.
+    """
+    if rng.random() > settings.CIN_COVERAGE:
+        return None
+    province = rng.randint(settings.CIN_PROVINCE_MIN, settings.CIN_PROVINCE_MAX)
+    serial = rng.randint(0, 10 ** settings.CIN_SERIAL_LENGTH - 1)
+    check = rng.randint(0, 9)
+    return f"{province:03d} {serial:0{settings.CIN_SERIAL_LENGTH}d} {check}"
 
 
 def generate_master_patients(
@@ -66,9 +76,10 @@ def generate_master_patients(
             last_name=last_name,
             birth_date=faker.date_of_birth(minimum_age=0, maximum_age=95).isoformat(),
             gender=gender,
-            phone=_generate_mg_phone_number(rng),
+            cin=_generate_mg_cin(rng),
             email=faker.unique.email(),
-            address=faker.city(),
+            address=faker.street_address(),
+            birth_city=faker.city(),
         )
         patients.append(patient)
 

@@ -32,8 +32,8 @@ Le processus générique, décrit par Elmagarmid et al. [B1] et détaillé par C
 
 | Étape | Rôle | Application dans le projet |
 |---|---|---|
-| **Prétraitement** | nettoyer, standardiser les champs | `CanonicalPatient` : casse, accents, téléphones, dates [deduplication.md §3] |
-| **Indexation (blocking)** | réduire les comparaisons en groupes de candidats | préfixe nom, année de naissance, préfixe téléphone [deduplication.md §4] |
+| **Prétraitement** | nettoyer, standardiser les champs | `CanonicalPatient` : casse, accents, CIN, villes, dates [deduplication.md §3] |
+| **Indexation (blocking)** | réduire les comparaisons en groupes de candidats | préfixe nom, date de naissance, CIN [deduplication.md §4] |
 | **Comparaison** | mesurer la similarité champ à champ | RapidFuzz, score pondéré [deduplication.md §5] |
 | **Classification** | décider match / non-match | seuil 0.80, exact puis probabiliste [deduplication.md §5] |
 | **Évaluation** | mesurer la qualité sur une vérité terrain | ground truth P/R/F1 [evaluation.md] |
@@ -68,29 +68,30 @@ décisif est **opérationnel** : léger, compatible Python 3.8 (indispensable su
 VM), sans dépendance NLP lourde — le recours à `sentence_transformers` a été
 explicitement **interdit** (crash sous Python 3.8) [bigdata_concepts.md §8].
 
-Le score combine trois champs **pondérés** et **configurables** [deduplication.md §5] :
+Le score combine quatre champs **pondérés** et **configurables** [deduplication.md §5] :
 
 | Critère | Poids |
 |---|---:|
 | Nom | 0.50 |
 | Date de naissance | 0.30 |
-| Téléphone | 0.20 |
+| CIN | 0.10 |
+| Ville de naissance | 0.10 |
 
 Décision : **score ≥ 0.80 → fusion automatique**, sinon pas de fusion (aucune
 logique arbitraire). Les deux valeurs — pondérations et seuil — sont calibrées sur
 le cas de référence « Jean Rakoto » et vérifiées par évaluation ; sur le jeu de
-difficulté « hard », la similarité seule plafonne le rappel autour de **0.287**
-(F1 0.447, précision 1.000) — voir chapitre 6 [evaluation_truth.md].
+difficulté « hard », la similarité seule plafonne le rappel autour de **0.422**
+(F1 0.594, précision 1.000) — voir chapitre 6 [evaluation_truth.md].
 
 ## 2.3 Blocking et complexité
 
 Comparer chaque enregistrement à tous les autres est **quadratique** : pour n
 patients, n² comparaisons. La pratique standard du domaine, le **blocking** (ou
 indexation), regroupe les enregistrements en blocs de candidats partageant une clé
-grossière (préfixe de nom, année de naissance, préfixe téléphonique) ; le matching
+grossière (préfixe de nom, date de naissance, CIN) ; le matching
 n'est exécuté que **dans chaque bloc** [B1], [B3].
 
-Dans le projet, la clé de matching est `(nom normalisé, birth_date, phone)`
+Dans le projet, la clé de matching est `(nom normalisé, birth_date, cin)`
 [deduplication.md §2] et le moteur exploite deux index bornés :
 `_MasterIndex` (version Pandas) et `_BoundedMasterIndex` (version Spark)
 [deduplication.md §8]. Cette limite de comparaison est un point clé de passage à
@@ -201,7 +202,7 @@ Face à cet état de l'art, les choix du projet sont assumés et explicables :
 |---|---|---|
 | **RapidFuzz** + synonymes | NLP lourd (`sentence_transformers`) | crash Python 3.8 ; mapping fake illustratif |
 | **MPI local + FHIR pivot** | DMP/MPI réglementaire dédié | périmètre stage, données synthétiques |
-| **Seuil 0.80 pondéré 0.5/0.3/0.2** | seuil à 3 niveaux (90/70) | parité ground-truth, logique explicable |
+| **Seuil 0.80 pondéré 0.5/0.3/0.1/0.1** | seuil à 3 niveaux (90/70) | parité ground-truth, logique explicable |
 | **3 niveaux MVP → Spark → Big Data** | Big Data direct | chaque technologie introduite par besoin |
 | **Parité Pandas = Spark vérifiée** | logiques divergentes | démontrer que scale ≠ changement de sémantique |
 
@@ -212,7 +213,7 @@ flowchart RL
     subgraph Concepts
         ER[Entity Resolution / Record Linking]
         SIM[Similarités Levenshtein / Jaro-Winkler]
-        BLK[Blocking : clé nom + naissance + tél]
+        BLK[Blocking : clé nom + naissance + CIN]
         MPI[Master Patient Index + Identity Map]
         RGDP[RGPD art. 9 : consentement purpose-by-purpose]
         FH[Interopérabilité FHIR : Patient / $match]

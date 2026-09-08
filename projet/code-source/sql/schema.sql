@@ -16,7 +16,8 @@ CREATE TABLE
         last_name TEXT NOT NULL,
         full_name TEXT NOT NULL,
         birth_date DATE,
-        phone TEXT,
+        cin TEXT,
+        birth_city TEXT,
         address TEXT,
         gender TEXT CHECK (gender IN ('M', 'F', ''))
     );

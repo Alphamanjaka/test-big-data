@@ -1,6 +1,6 @@
 # Évaluation Ground Truth — Niveau `hard`
 
-- Date : 2026-09-07 23:31
+- Date : 2026-09-08 10:03
 - Ground Truth : F:\MBDS\STAGE\PROJECT\Mon_Memoire\projet\code-source\evaluation\synthetic-patient-generator\data\experiments\hard\ground_truth\identity_mapping.csv
 - Data root : F:\MBDS\STAGE\PROJECT\Mon_Memoire\projet\code-source\evaluation\synthetic-patient-generator\data\experiments\hard
 - Mode : MVP + Spark
@@ -10,21 +10,21 @@
 
 | Métrique | MVP (Pandas) | Spark |
 |---|---|---|
-| Masters prédits | 869 | 869 |
+| Masters prédits | 804 | 804 |
 | Groupes vérité | 500 | 500 |
-| Vrais positifs (paires) | 209 | 209 |
+| Vrais positifs (paires) | 307 | 307 |
 | Faux positifs (fusion à tort) | 0 | 0 |
-| Faux négatifs (non-fusion) | 518 | 518 |
+| Faux négatifs (non-fusion) | 420 | 420 |
 | Precision (Pair Quality) | 1.000 | 1.000 |
-| Recall (Pair Completeness) | 0.287 | 0.287 |
-| F1 | 0.447 | 0.447 |
+| Recall (Pair Completeness) | 0.422 | 0.422 |
+| F1 | 0.594 | 0.594 |
 
 ## Precision / Rappel / F1 par type de match
 
 | Méthode | MVP | Spark |
 |---|---|---|
-| exact | 1.000/0.737/0.848 | 1.000/0.737/0.848 |
-| probabilistic | 1.000/0.667/0.800 | 1.000/0.667/0.800 |
+| exact | 1.000/0.854/0.921 | 1.000/0.854/0.921 |
+| probabilistic | 1.000/0.533/0.696 | 1.000/0.533/0.696 |
 
 ## Contribution par source (rappel)
 
@@ -32,9 +32,9 @@
 
 | Source | MVP | Spark |
 |---|---|---|
-| pharmacy | 0.299 | 0.299 |
-| consultation | 0.286 | 0.286 |
-| imaging | 0.276 | 0.276 |
+| pharmacy | 0.422 | 0.422 |
+| consultation | 0.422 | 0.422 |
+| imaging | 0.423 | 0.423 |
 
-- MVP  : TP=209 FP=0 FN=518 | Precision=1.000 Recall=0.287 F1=0.447
-- Spark: TP=209 FP=0 FN=518 | Precision=1.000 Recall=0.287 F1=0.447
+- MVP  : TP=307 FP=0 FN=420 | Precision=1.000 Recall=0.422 F1=0.594
+- Spark: TP=307 FP=0 FN=420 | Precision=1.000 Recall=0.422 F1=0.594

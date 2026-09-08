@@ -51,7 +51,7 @@ Config : `provision/config/data_sources.json` (**non committé**, secrets) — t
 ### Data Lake (Hive)
 
 - **SILVER** (`datalake_silver.*_fhir`) :
-  - Patient : patient_uuid (SHA-256), source_patient_id, name, birth_date, gender, address, phone, email
+  - Patient : patient_uuid (SHA-256), source_patient_id, name, birth_date, gender, address, cin, birth_city
     (+ is_duplicate, _source_table)
   - Encounter : patient_uuid, encounter_id, admission_date, discharge_date, create_date, visit_type
   - Condition : patient_uuid, diagnosis, diagnosis_code, category, code, info, name

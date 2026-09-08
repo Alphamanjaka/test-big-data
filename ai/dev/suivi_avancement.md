@@ -19,7 +19,7 @@ Phase 6 éval+tests [██████████] 100%   Commit initial git [
 | 1 | Docs consolidées : cahier des charges + manuel conceptuel (7 fichiers thématiques) | ✅ |
 | 2 | `ai/memoire/` + `ai/dev/` (instructions agents fusionnées) | ✅ |
 | 3 | Copies : `provision/`, `front-optional/`, `sql/schema.sql`, dossiers engine/evaluation/tests | ✅ |
-| 4 | Moteur porté `engine/` (identity + governance) + évaluateur adapté + tests 9/9 | ✅ |
+| 4 | Moteur porté `engine/` (identity + governance) + évaluateur adapté + tests 12/12 | ✅ |
 | 5 | Intégration SILVER/GOLD + API : `master_patient_id`, consent GOLD, endpoints gouvernance | ✅ |
 | 6 | Évaluation finale (easy/medium/hard), tests API/parité, commit git initial | ✅ |
 
@@ -44,6 +44,10 @@ Phase 6 éval+tests [██████████] 100%   Commit initial git [
 4. **[Dépôt unique]** Consolidation **faite** (09/09) — `data_lake_final` + `datalake_mavis` rapatriés
    dans `Mon_Memoire` (subtree → `projet/code-source/`, `projet/mvp/`, `archives/datalake_mavis/`) ;
    pytest 9/9 + générateur 44/44 re-vérifiés.
+5. **[Rework CIN + ville]** Rework déduplication **fait** (08/09) — clé CIN (couverture ~75 %) +
+   ville de naissance (poids 0.1) remplacent téléphone dans `projet/code-source/` ; weights 0.5/0.3/0.1/0.1 ;
+   **pytest moteur 12/12** (matcher 9) ; évaluation régénérée (hard : R 0.422, F1 0.594) ; docs/mémoire
+   harmonisées. Commits en attente de push (branche `develop_spark`).
 
 ## Dettes techniques connues
 
@@ -90,3 +94,11 @@ Phase 6 éval+tests [██████████] 100%   Commit initial git [
   seule) ; artefacts dérivés hors suivi (data_sources.json, cim_embeddings.pkl, docx externe) ; liens
   chapitres + README + AGENTS + cahier des charges alignés ; pytest 9/9 + générateur 44/44 re-vérifiés ;
   anciens répertoires supprimés (coquille `data_lake_final` vide verrouillée — suppression manuelle restante).
+- 08/09 : **Rework CIN + ville de naissance** — remplacement téléphone par CIN (~75 %, clé forte) + ville
+  (poids 0.1) dans toute la chaîne live (`projet/code-source/`) ; `_phone` → `_cin` (canonical, matcher,
+  spark, __init__) ; `MasterPatient.cin/birth_city` ; `make_missing` naissance/ville ; tests matcher 6→9
+  (formats CIN, ville, CIN différents) → **pytest moteur 12/12** ; évaluation régénérée (hard TP 307 / FP 0 /
+  FN 420 → **R 0.422, F1 0.594**, medium R 0.884, F1 0.939) ; `evaluation_truth.md` mis à jour (hard) ;
+  chapitres 01→06, cahier des charges, deduplication.md, evaluation.md, contexte_projet.md, architecture.md,
+  deduplication dev harmonisés ; logs.md entrée ajoutée. Outils legacy `rebuild_*.py` et `ELT.before/` non
+  modifiés (hors périmètre actif).

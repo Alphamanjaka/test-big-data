@@ -6,7 +6,7 @@ Pipeline :
    normalisée) et détermine une ancre par cluster (celle dont la cle de
    matching est non vide est résolue contre les masters existants) ;
 2. le driver exécute la résolution probabiliste greedy avec blocking
-   (préfixe nom, date de naissance, téléphone) — la comparaison ne se fait
+   (préfixe nom, date de naissance, CIN) — la comparaison ne se fait
    que sur les ancres de clusters, d'où la montée en charge.
 
 Sémantique strictement alignée sur engine.identity.matcher.deduplicate :
@@ -16,7 +16,7 @@ exact → probabiliste (seuil 0.80) → new_master.
 from __future__ import annotations
 
 from engine.identity.matcher import _similarity
-from engine.identity.canonical import _normalized, _phone, _birth_date
+from engine.identity.canonical import _normalized, _cin, _birth_date
 
 
 def canonical_rows(rows: list[dict]) -> list[dict]:
@@ -34,7 +34,8 @@ def canonical_rows(rows: list[dict]) -> list[dict]:
             "source_patient_id": str(row["source_patient_id"]),
             "full_name": full_name,
             "birth_date": birth_date,
-            "phone": _phone(row.get("phone")),
+            "cin": _cin(row.get("cin")),
+            "birth_city": _text(row.get("birth_city")),
             "__normalized_name": _normalized(full_name),
         })
     return out
@@ -49,13 +50,13 @@ def _join_names(row: dict) -> str:
 
 
 class _BoundedMasterIndex:
-    """Blocage des masters : préfixe nom, date de naissance, téléphone."""
+    """Blocage des masters : préfixe nom, date de naissance, CIN."""
 
     def __init__(self) -> None:
         self._masters: list[tuple[int, dict]] = []
         self._by_prefix: dict[str, list[int]] = {}
         self._by_birth: dict[str, list[int]] = {}
-        self._by_phone: dict[str, list[int]] = {}
+        self._by_cin: dict[str, list[int]] = {}
 
     def add(self, master_idx: int, row: dict) -> None:
         self._masters.append((master_idx, row))
@@ -65,20 +66,20 @@ class _BoundedMasterIndex:
         birth_key = bd.isoformat() if hasattr(bd, "isoformat") else (bd or "")
         if birth_key:
             self._by_birth.setdefault(birth_key, []).append(master_idx)
-        phone = row.get("phone") or ""
-        if phone:
-            self._by_phone.setdefault(phone, []).append(master_idx)
+        cin = row.get("cin") or ""
+        if cin:
+            self._by_cin.setdefault(cin, []).append(master_idx)
 
     def candidates(self, row: dict) -> list[int]:
         name = row.get("__normalized_name") or ""
         bd = row.get("birth_date")
         birth_key = bd.isoformat() if hasattr(bd, "isoformat") else (bd or "")
-        phone = row.get("phone") or ""
+        cin = row.get("cin") or ""
         said: set[int] = set()
         out: list[int] = []
         for bucket in (self._by_prefix.get(name[:4], []),
                        self._by_birth.get(birth_key, []) if birth_key else [],
-                       self._by_phone.get(phone, []) if phone else []):
+                       self._by_cin.get(cin, []) if cin else []):
             for idx in bucket:
                 if idx not in said:
                     said.add(idx)
@@ -88,17 +89,17 @@ class _BoundedMasterIndex:
     def representative(self, master_idx: int) -> dict:
         return next(rep for i, rep in self._masters if i == master_idx)
 
-    def exact_birth_phone(self, row: dict) -> int | None:
+    def exact_birth_cin(self, row: dict) -> int | None:
         bd = row.get("birth_date")
         birth_key = bd.isoformat() if hasattr(bd, "isoformat") else (bd or "")
-        phone = row.get("phone") or ""
-        if not birth_key or not phone:
+        cin = row.get("cin") or ""
+        if not birth_key or not cin:
             return None
         for master_idx, rep in self._masters:
             rb = rep.get("birth_date")
             rbk = rb.isoformat() if hasattr(rb, "isoformat") else (rb or "")
-            rp = rep.get("phone") or ""
-            if rbk == birth_key and rp and rp == phone:
+            rcin = rep.get("cin") or ""
+            if rbk == birth_key and rcin and rcin == cin:
                 return master_idx
         return None
 
@@ -111,12 +112,12 @@ def deduplicate(rows: list[dict], probabilistic_threshold: float = 0.80) -> list
     """
     canon = canonical_rows(rows)
 
-    # --- Etape 1 (Spark) : clusters exacts par (naissance, tel, nom normalisé) ---
+    # --- Etape 1 (Spark) : clusters exacts par (naissance, CIN, nom normalisé) ---
     clusters: dict[tuple, list[dict]] = {}
     cluster_order: list[tuple] = []
     for row in canon:
         key = (row["birth_date"].isoformat() if row["birth_date"] else "",
-               row["phone"], row.get("__normalized_name") or "")
+               row["cin"], row.get("__normalized_name") or "")
         if key not in clusters:
             clusters[key] = []
             cluster_order.append(key)
@@ -134,7 +135,7 @@ def deduplicate(rows: list[dict], probabilistic_threshold: float = 0.80) -> list
         rows_in_cluster = clusters[key]
         anchor = rows_in_cluster[0]
 
-        if not (anchor["__normalized_name"] or anchor["birth_date"] or anchor["phone"]):
+        if not (anchor["__normalized_name"] or anchor["birth_date"] or anchor["cin"]):
             # Aucune identité partagée : chaque ligne devient un master isolé.
             for row in rows_in_cluster:
                 master_id = _new_master_id()
@@ -145,10 +146,10 @@ def deduplicate(rows: list[dict], probabilistic_threshold: float = 0.80) -> list
             continue
 
         # Résolution de l'ancre contre les masters existants
-        bp_idx = index.exact_birth_phone(anchor)
-        if bp_idx is not None:
-            master_id = masters[bp_idx]["master_patient_id"]
-            method, score, explanation = "exact", 1.0, "date de naissance et telephone identiques"
+        bc_idx = index.exact_birth_cin(anchor)
+        if bc_idx is not None:
+            master_id = masters[bc_idx]["master_patient_id"]
+            method, score, explanation = "exact", 1.0, "date de naissance et CIN identiques"
         else:
             best_idx, best_score = None, 0.0
             for midx in index.candidates(anchor):
@@ -159,7 +160,7 @@ def deduplicate(rows: list[dict], probabilistic_threshold: float = 0.80) -> list
             if best_idx is not None and best_score >= probabilistic_threshold:
                 master_id = masters[best_idx]["master_patient_id"]
                 method, score, explanation = "probabilistic", round(best_score, 3), \
-                    "similarite nom/date/telephone au-dessus du seuil"
+                    "similarite nom/date/CIN/ville au-dessus du seuil"
             else:
                 master_id = _new_master_id()
                 master_row = dict(anchor, master_patient_id=master_id)
@@ -184,8 +185,10 @@ def row_fields(row: dict) -> dict:
 
 def _like(row: dict):
     class _P:
-        def __init__(self, full_name: str, birth_date, phone: str) -> None:
+        def __init__(self, full_name: str, birth_date, cin: str, birth_city: str) -> None:
             self.full_name = full_name
             self.birth_date = birth_date
-            self.phone = phone
-    return _P(row.get("full_name") or "", row.get("birth_date"), row.get("phone") or "")
+            self.cin = cin
+            self.birth_city = birth_city
+    return _P(row.get("full_name") or "", row.get("birth_date"),
+              row.get("cin") or "", row.get("birth_city") or "")

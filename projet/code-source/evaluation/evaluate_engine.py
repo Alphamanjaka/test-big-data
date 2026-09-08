@@ -28,9 +28,9 @@ from engine.identity.canonical import map_patient
 ROOT = Path(__file__).resolve().parent.parent
 GENERATOR_ROOT = ROOT / "evaluation" / "synthetic-patient-generator"
 COLS = {
-    "pharmacy": ["client_id", "nom_complet", "naissance", "telephone", "adresse", "sexe"],
-    "consultation": ["patient_code", "prenom", "nom", "date_naiss", "phone_number", "genre"],
-    "imaging": ["id_personne", "patient_name", "dob", "tel", "sex"],
+    "pharmacy": ["client_id", "nom_complet", "naissance", "cin", "ville_naissance", "adresse", "sexe"],
+    "consultation": ["patient_code", "prenom", "nom", "date_naiss", "no_cin", "ville_nai", "genre"],
+    "imaging": ["id_personne", "patient_name", "dob", "cin_number", "birth_place", "sex"],
 }
 SOURCE_ORDER = ["pharmacy", "consultation", "imaging"]
 
@@ -91,7 +91,8 @@ def predictions_spark(level: str, only: str | None = None):
             "source_patient_id": p.source_patient_id,
             "full_name": p.full_name,
             "birth_date": p.birth_date,
-            "phone": p.phone,
+            "cin": p.cin,
+            "birth_city": p.birth_city,
         }
         for p in patients
     ]

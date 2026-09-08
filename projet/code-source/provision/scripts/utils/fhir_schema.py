@@ -9,7 +9,8 @@ FHIR_FIELDS = {
         "birth_date": "date",
         "gender": "string",
         "address": "string",
-        "phone": "string",
+        "cin": "string",
+        "birth_city": "string",
         "email": "string",
     },
     "Encounter": {
@@ -44,7 +45,8 @@ FHIR_FIELDS = {
 # name : nom complet du patient
 # birth_date : date de naissance
 # gender : sexe
-# address, phone, email : infos de contact
+# address, cin, birth_city, email : infos de contact et d'identité
+# cin : numéro de Carte Nationale d'Identité (présent ~75 % des patients)
 
 ## Encounter
 # encounter_id : identifiant unique de la consultation ou hospitalisation

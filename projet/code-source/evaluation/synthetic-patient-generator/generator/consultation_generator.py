@@ -2,7 +2,7 @@
 Étape 5 — Source Generator : Consultation.
 
 Produit :
-- data/raw/consultation/patients.csv       (patient_code, prenom, nom, date_naiss, phone_number, genre)
+- data/raw/consultation/patients.csv       (patient_code, prenom, nom, date_naiss, no_cin, ville_nai, genre)
 - data/raw/consultation/consultations.csv  (consultation_id, patient_id, diagnosis, consultation_date)
 """
 
@@ -48,7 +48,7 @@ def generate_consultation_patients(
     difficulty: str,
     seed: int = settings.RANDOM_SEED,
 ) -> pd.DataFrame:
-    """Génère data/raw/consultation/patients.csv : patient_code, prenom, nom, date_naiss, phone_number, genre."""
+    """Génère data/raw/consultation/patients.csv : patient_code, prenom, nom, date_naiss, no_cin, ville_nai, genre."""
     varied = build_source_patients(
         master_patients, distribution_plan, "consultation", difficulty, seed
     )
@@ -59,7 +59,8 @@ def generate_consultation_patients(
             "prenom": varied["first_name"],
             "nom": varied["last_name"],
             "date_naiss": varied["birth_date"],
-            "phone_number": varied["phone"],
+            "no_cin": varied["cin"],
+            "ville_nai": varied["birth_city"],
             "genre": varied["gender"].replace(GENRE_LABELS),
         }
     )

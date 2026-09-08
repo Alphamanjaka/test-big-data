@@ -37,9 +37,9 @@ Trois sources métier, modélisées sur les systèmes réellement rencontrés en
 
 | Source | Fichier | Identifiant | Champs patients |
 |---|---|---|---|
-| **pharmacy** | `pharmacy/patients.csv` | `client_id` | `nom_complet, naissance, telephone, adresse, sexe` |
-| **consultation** | `consultation/patients.csv` | `patient_code` | `prenom, nom, date_naiss, phone_number, genre` |
-| **imaging** | `imaging/patients.csv` | `id_personne` | `patient_name, dob, tel, sex` |
+| **pharmacy** | `pharmacy/patients.csv` | `client_id` | `nom_complet, naissance, cin, ville_naissance, adresse, sexe` |
+| **consultation** | `consultation/patients.csv` | `patient_code` | `prenom, nom, date_naiss, no_cin, ville_nai, genre` |
+| **imaging** | `imaging/patients.csv` | `id_personne` | `patient_name, dob, cin_number, birth_place, sex` |
 
 L'hétérogénéité est **triple** et volontaire :
 
@@ -50,8 +50,9 @@ L'hétérogénéité est **triple** et volontaire :
    `male`/`female` (consultation), `Homme`/`femme` (imaging)
    [deduplication.md §2] — source des générateurs `SEXE_LABELS` / `GENRE_LABELS` /
    `SEX_LABELS`.
-3. **Formats** : dates `01/02/1934`, `08-06-1943`, `YYYY-MM-DD` ; téléphones
-   `0341234567`, `034 123 4567`, `+261341234567`, ou vides.
+3. **Formats** : dates `01/02/1934`, `08-06-1943`, `YYYY-MM-DD` ; CIN
+   `101 02404 5`, `101024045` (espacé ou compact), ou **absent** (~25 % des
+   patients maîtres) ; ville de naissance en toutes lettres.
 
 Le même patient réel apparaît donc sous des formes différentes, par exemple le cas
 de référence « Jean Rakoto » des trois sources [deduplication.md §7] (chapitre 1).
@@ -64,8 +65,8 @@ L'évaluation objective exige de **connaître la vérité** — impossible avec 
 données. Le générateur
 [`synthetic-patient-generator`](../projet/code-source/evaluation/synthetic-patient-generator/README.md)
 produit des données fictives **et** leur vérité terrain, en 7 étapes
-(déterministe : `RANDOM_SEED = 42`, locale `fr_FR`, préfixes téléphone malgaches
-`032/033/034/038`) :
+(déterministe : `RANDOM_SEED = 42`, locale `fr_FR`, CIN malgache couvert à
+~75 % des maîtres) :
 
 ```mermaid
 flowchart LR
@@ -79,14 +80,16 @@ flowchart LR
 ```
 
 - **Patients maîtres** `master_patients.csv` : 500 identités propres (défaut des
-  évaluateurs `--patients 500 --seed 42`).
+  évaluateurs `--patients 500 --seed 42`), dont ~75 % portent un **CIN**.
 - **Distribution** : probabilités de présence 0.8 / 0.7 / 0.6 par source →
   **1 057 enregistrements** répartis **404 / 353 / 300**
   (`identity_mapping.csv` compté : 500 groupes `GT000001..GT000500`).
 - **Variation engine** : niveaux de difficulté `easy 10 % / medium 30 % / hard 50 %`
   de probabilité par variation ; types débloqués progressivement — easy :
-  casse, espaces, formats date/téléphone ; medium (ajout) : inversion
-  nom/prénom, typo légère ; hard (ajout) : typo, abréviation, valeur manquante.
+  casse, espaces, formats date/CIN ; medium (ajout) : inversion
+  nom/prénom, typo légère ; hard (ajout) : typo, abréviation, valeur manquante
+  (naissance ou ville de naissance — **jamais le CIN**, dont l'absence est une
+  décision de niveau maître, cohérente entre les sources).
 - **Vérité terrain** : `identity_mapping.csv` (colonnes `source, source_patient_id,
   ground_truth_id`) **jamais fournie à l'algorithme**, réservée à l'évaluation
   [deduplication.md — règle métier].
@@ -108,7 +111,7 @@ Transactions adjointes (dataset hard) : 792 achats (pharmacie, 1–3/patient),
 | **Nœud distant MAVIS instable** | source PostgreSQL distante (`mavis_notheme`, 11 tables, tunnel SSH) | répliques locales de dev (`rebuild_mavis_db.py`, 73 090 lignes) ; données finales synthétiques |
 | **Interdiction NLP lourd** | `sentence_transformers` crash sous **Python 3.8** | RapidFuzz + dictionnaire de synonymes (`fhir_synonyms.py`) |
 | **Stockage Spark sur partage vboxsf interdit** | corruption `part-*.snappy.parquet` | warehouse toujours `hdfs://localhost:9000` |
-| **Reproductibilité** | évaluation et dédup déterministes | seed 42, seuil 0.80, pondérations 0.5/0.3/0.2 fixes |
+| **Reproductibilité** | évaluation et dédup déterministes | seed 42, seuil 0.80, pondérations 0.5/0.3/0.1/0.1 fixes |
 | **Données sensibles** | RGPD art. 9 | **synthétiques uniquement** + gouvernance implémentée dans le système |
 
 Environnement de référence : VM `ubuntu/focal64` (Vagrant) — Hadoop 3.3.6, Hive

@@ -28,30 +28,31 @@ L'évaluation compare la déduplication (version Pandas **et** version Spark) au
 
 ## 3. Résultats de référence (moteur porté `engine/`)
 
-Run 2026-09-07 — `evaluate_engine.py --level {easy|medium|hard}` (500 masters par niveau,
+Run 2026-09-08 — `evaluate_engine.py --level {easy|medium|hard}` (500 masters par niveau,
 ~1 000 enregistrements, seed 42), parité **MVP (Pandas) = Spark** vérifiée à chaque niveau :
 
 | Niveau | Masters prédits | TP | FP | FN | Precision | Recall | F1 |
 |---|---|---|---|---|---|---|---|
 | easy | 500 | 727 | 0 | 0 | 1.000 | 1.000 | 1.000 |
-| medium | 500 | 727 | 0 | 0 | 1.000 | 1.000 | 1.000 |
-| hard | 869 | 209 | 0 | 518 | 1.000 | 0.287 | 0.447 |
+| medium | 554 | 643 | 0 | 84 | 1.000 | 0.884 | 0.939 |
+| hard | 804 | 307 | 0 | 420 | 1.000 | 0.422 | 0.594 |
 
 Breakdown `hard` par méthode de match (identique MVP/Spark) :
 
 | Méthode | Precision / Recall / F1 |
 |---|---|
-| exact | 1.000 / 0.737 / 0.848 |
-| probabilistic | 1.000 / 0.667 / 0.800 |
+| exact | 1.000 / 0.854 / 0.921 |
+| probabilistic | 1.000 / 0.533 / 0.696 |
 
-Contribution par source (rappel, hard) : pharmacy 0.299 · consultation 0.286 · imaging 0.276.
+Contribution par source (rappel, hard) : pharmacy 0.422 · consultation 0.422 · imaging 0.423.
 
 Rapport complet : `evaluation/evaluation_truth.md` (regénéré à chaque run).
 
 **Lecture :** l'algorithme **ne fusionne jamais à tort** (Precision 1.000, zéro FP) — propriété
 essentielle pour la donnée de santé ; sur le dataset volontairement dur (50 % de variations), il ne
-reconnaît pas toutes les variantes (Recall 0.287). Les seuils/pondérations sont ajustables pour
-trader précision ↔ rappel selon le besoin métier.
+reconnaît pas toutes les variantes (Recall 0.422). L'introduction de la **clé CIN** (couverture ~75 %)
+a relevé le rappel hard de 0.287 (07/09) à 0.422 sans faux positif. Les seuils/pondérations sont
+ajustables pour trader précision ↔ rappel selon le besoin métier.
 
 ### Référence historique (test_bigdata, 10 669 patients)
 
