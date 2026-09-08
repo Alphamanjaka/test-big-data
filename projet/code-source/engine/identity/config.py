@@ -19,8 +19,6 @@ from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Mapping
 
-import yaml
-
 DEFAULT_THRESHOLD = 0.80
 DEFAULT_WEIGHTS: Mapping[str, float] = {
     "name": 0.5,
@@ -45,7 +43,7 @@ class DedupConfig:
 
 def default_config_path() -> Path:
     """Résout `config/deduplication.yaml` à la racine du dépôt code-source."""
-    return Path(__file__).resolve().parent.parent.parent.parent / "config" / "deduplication.yaml"
+    return Path(__file__).resolve().parent.parent.parent / "config" / "deduplication.yaml"
 
 
 def parse_dedup_config(data: Mapping) -> DedupConfig:
@@ -69,10 +67,11 @@ def load_dedup_config(path: str | Path | None = None) -> DedupConfig:
     """
     resolved = Path(path) if path is not None else default_config_path()
     try:
+        import yaml
         with open(resolved, "r", encoding="utf-8") as handle:
             data = yaml.safe_load(handle) or {}
         return parse_dedup_config(data)
-    except (OSError, yaml.YAMLError, TypeError, ValueError):
+    except (OSError, ImportError, yaml.YAMLError, TypeError, ValueError):
         return DedupConfig(threshold=DEFAULT_THRESHOLD,
                            weights=dict(DEFAULT_WEIGHTS),
                            name_prefix_len=DEFAULT_NAME_PREFIX_LEN)

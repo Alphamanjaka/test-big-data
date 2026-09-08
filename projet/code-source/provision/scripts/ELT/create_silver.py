@@ -107,10 +107,12 @@ def enrichir_dedup_moteur():
     try:
         from engine.identity.canonical import from_dict
         from engine.identity.matcher import deduplicate
+        from engine.identity.config import load_dedup_config
     except ImportError as e:
         logging.warning(f"Moteur engine indisponible ({e}) — enrichissement dédup sauté.")
         return
 
+    dedup_cfg = load_dedup_config()
     colonnes = ["_source_system", "source_patient_id", "name", "birth_date", "cin", "birth_city"]
     presentes = [c for c in colonnes if c in df_patient.columns]
     rows = [r.asDict() for r in df_patient.select(*presentes).collect()]
@@ -133,7 +135,12 @@ def enrichir_dedup_moteur():
         logging.warning("Aucun patient SILVER à analyser — enrichissement dédup sauté.")
         return
 
-    decisions = deduplicate(patients)
+    decisions = deduplicate(
+        patients,
+        probabilistic_threshold=dedup_cfg.threshold,
+        weights=dedup_cfg.weights,
+        name_prefix_len=dedup_cfg.name_prefix_len,
+    )
     dedup_rows = [
         (d.source_system, d.source_patient_id, d.master_patient_id, d.method,
          float(d.score), 1 if d.method != "new_master" else 0)

@@ -170,3 +170,32 @@ niveaux régénérée ; recherche grep des références `phone`/`0.287`/`0.447`/
 
 **Résultat :** rappel hard relevé de 0.287 → **0.422** sans aucun faux positif (P 1.000 intact) grâce à
 la clé CIN. Commits par lots non poussés sur `origin` (en attente d'accord, branche `develop_spark`).
+
+---
+
+## 08/09/2026 — Config YAML des poids / seuil (source de vérité déduplication)
+
+**Contexte :** l'ajout précédent d'un champ (CIN) avait imposé des modifications documentaires répétées
+(11 fichiers docs pour refléter les valeurs). Décision utilisateur : extraire les **paramètres métier**
+hors du code vers un **YAML unique lu réellement par le moteur** (matcher, spark, évaluation, SILVER),
+afin qu'une calibration future = 1 édit de fichier.
+
+| # | Action | Fichiers | Détail |
+|---|---|---|---|
+| 1 | Config YAML créée | `projet/code-source/config/deduplication.yaml` | `threshold: 0.80` ; `weights {name 0.5, birth_date 0.3, cin 0.1, birth_city 0.1}` ; `blocking.name_prefix_len: 4` |
+| 2 | Loader engine | `engine/identity/config.py` | `DedupConfig` + `load_dedup_config()` (cache) ; résolution du YAML relative au dépôt code-source ; **fallback défauts** si fichier absent/illisible/PyYAML absent (aucun crash, comportement inchangé) ; compatible Python 3.8 |
+| 3 | matcher.py | `engine/identity/matcher.py` | `_similarity(..., weights)` ; `_name_prefix(..., prefix_len)` ; `_MasterIndex(prefix_len)` ; `deduplicate(patients, probabilistic_threshold=None, weights, name_prefix_len)` — rétro-compatible (`deduplicate(patients)` et `(patients, 0.80)` valides) |
+| 4 | spark_dedup.py | `engine/identity/spark_dedup.py` | Même threading `threshold/weights/name_prefix_len` ; `_BoundedMasterIndex(prefix_len)` ; partage `_similarity(..., weights)` — **parité préservée** |
+| 5 | Lecture réelle du YAML | `evaluation/evaluate_engine.py`, `provision/scripts/ELT/create_silver.py` | MVP et Spark dédup parametrés par le config chargé ; SILVER garde le fallback ImportError existant (VM sans PyYAML/moteur → mode dégradé) |
+| 6 | Dépendance | `pyproject.toml` | `PyYAML>=6.0,<7.0` ajouté aux `dependencies` |
+| 7 | Tests +3 | `tests/test_matcher.py` | lecture du YAML (valeurs courantes), fallback sur fichier manquant, changement de décision via override `weights` |
+| 8 | Docs | `documents/documentation/deduplication.md`, `ai/dev/deduplication.md` | Poids/seuil référencés **par le YAML** (source de vérité), valeurs courantes affichées pour lecture |
+
+**Vérifications :** `pytest` moteur **15/15 PASS** (matcher 12 + consent 3) + générateur **44/44** ;
+`evaluate_engine.py --level hard` → **parité exacte avec le run précédent** : TP=307 FP=0 FN=420,
+P 1.000 / R 0.422 / F1 0.594, 804 masters, rappel source 0.422/0.422/0.423 (preuve : refactor sans
+changement de comportement) ; `evaluation_truth.md` régénéré (mêmes chiffres).
+
+**Résultat :** la calibration de la déduplication est désormais **déclarative** (1 fichier YAML) — le
+coût d'une future modification de poids/seuil/préfixe est ramené à l'édition du YAML + le tableau de
+référence dans `deduplication.md`, sans toucher au code ni aux chapitres. Commits en attente.

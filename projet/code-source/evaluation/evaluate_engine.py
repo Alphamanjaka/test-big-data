@@ -24,6 +24,7 @@ import pandas as pd
 import engine.identity.matcher as matcher
 import engine.identity.spark_dedup as spark_dedup
 from engine.identity.canonical import map_patient
+from engine.identity.config import load_dedup_config
 
 ROOT = Path(__file__).resolve().parent.parent
 GENERATOR_ROOT = ROOT / "evaluation" / "synthetic-patient-generator"
@@ -33,6 +34,8 @@ COLS = {
     "imaging": ["id_personne", "patient_name", "dob", "cin_number", "birth_place", "sex"],
 }
 SOURCE_ORDER = ["pharmacy", "consultation", "imaging"]
+
+DEDUP_CFG = load_dedup_config()
 
 
 def experiment_dir(level: str) -> Path:
@@ -74,7 +77,12 @@ def predictions_mvp(level: str, only: str | None = None):
     if only == "spark":
         return None
     patients = load_canonical(level)
-    decisions = matcher.deduplicate(patients)
+    decisions = matcher.deduplicate(
+        patients,
+        probabilistic_threshold=DEDUP_CFG.threshold,
+        weights=DEDUP_CFG.weights,
+        name_prefix_len=DEDUP_CFG.name_prefix_len,
+    )
     pred = {(d.source_system, d.source_patient_id): d.master_patient_id for d in decisions}
     methods = {(d.source_system, d.source_patient_id): d.method for d in decisions}
     print(f"[MVP] {len(decisions)} decisions")
@@ -96,7 +104,12 @@ def predictions_spark(level: str, only: str | None = None):
         }
         for p in patients
     ]
-    decisions = spark_dedup.deduplicate(rows)
+    decisions = spark_dedup.deduplicate(
+        rows,
+        probabilistic_threshold=DEDUP_CFG.threshold,
+        weights=DEDUP_CFG.weights,
+        name_prefix_len=DEDUP_CFG.name_prefix_len,
+    )
     pred = {(d["source_system"], d["source_patient_id"]): d["master_patient_id"] for d in decisions}
     methods = {(d["source_system"], d["source_patient_id"]): d["method"] for d in decisions}
     print(f"[Spark] {len(decisions)} decisions")

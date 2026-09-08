@@ -68,7 +68,9 @@ CIN) ; le matching n'est exécuté qu'entre candidats **du même groupe**.
 2. **Probabilistic matching** : lorsque les informations diffèrent légèrement (variations de casse,
    d'ordre, de format), calcul d'un **score de similarité** (RapidFuzz).
 
-**Score pondéré :**
+**Score pondéré :** les poids et le seuil sont la **source de vérité** dans
+[`config/deduplication.yaml`](../../projet/code-source/config/deduplication.yaml), lus par le
+moteur (Pandas et Spark) et l'évaluation. Valeurs courantes :
 
 | Critère | Poids |
 |---|---:|
@@ -77,7 +79,10 @@ CIN) ; le matching n'est exécuté qu'entre candidats **du même groupe**.
 | CIN | 0.10 |
 | Ville de naissance | 0.10 |
 
-**Décision (seuil configurable, valeur retenue 0.80) :**
+Recalibrer (= éditer le YAML) propage le changement partout sans toucher au code :
+`threshold`, `weights.*`, `blocking.name_prefix_len`.
+
+**Décision (seuil configurable via `config/deduplication.yaml`, valeur courante 0.80) :**
 
 ```text
 Score >= 0.80  →  MATCH (fusion automatique)
@@ -121,7 +126,8 @@ Répertoire : [`projet/code-source/engine/`](../../projet/code-source/engine/)
 | Fichier | Rôle |
 |---|---|
 | `identity/canonical.py` | `CanonicalPatient`, standardisation, `matching_key` |
-| `identity/matcher.py` | `_MasterIndex`, `deduplicate()` — exact + probabiliste, seuil 0.80, scores 0.5/0.3/0.1/0.1 |
+| `identity/config.py` | Chargement de `config/deduplication.yaml` (poids, seuil, préfixe) — fallback défauts si absent |
+| `identity/matcher.py` | `_MasterIndex`, `deduplicate()` — exact + probabiliste, seuil/poids depuis la config |
 | `identity/spark_dedup.py` | Version **driver-side** Parquet même logique, `_BoundedMasterIndex` |
 | `identity/__init__.py` | API publique du paquet |
 

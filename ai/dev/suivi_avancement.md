@@ -19,7 +19,7 @@ Phase 6 éval+tests [██████████] 100%   Commit initial git [
 | 1 | Docs consolidées : cahier des charges + manuel conceptuel (7 fichiers thématiques) | ✅ |
 | 2 | `ai/memoire/` + `ai/dev/` (instructions agents fusionnées) | ✅ |
 | 3 | Copies : `provision/`, `front-optional/`, `sql/schema.sql`, dossiers engine/evaluation/tests | ✅ |
-| 4 | Moteur porté `engine/` (identity + governance) + évaluateur adapté + tests 12/12 | ✅ |
+| 4 | Moteur porté `engine/` (identity + governance) + évaluateur adapté + tests 15/15 | ✅ |
 | 5 | Intégration SILVER/GOLD + API : `master_patient_id`, consent GOLD, endpoints gouvernance | ✅ |
 | 6 | Évaluation finale (easy/medium/hard), tests API/parité, commit git initial | ✅ |
 
@@ -46,8 +46,11 @@ Phase 6 éval+tests [██████████] 100%   Commit initial git [
    pytest 9/9 + générateur 44/44 re-vérifiés.
 5. **[Rework CIN + ville]** Rework déduplication **fait** (08/09) — clé CIN (couverture ~75 %) +
    ville de naissance (poids 0.1) remplacent téléphone dans `projet/code-source/` ; weights 0.5/0.3/0.1/0.1 ;
-   **pytest moteur 12/12** (matcher 9) ; évaluation régénérée (hard : R 0.422, F1 0.594) ; docs/mémoire
-   harmonisées. Commits en attente de push (branche `develop_spark`).
+   **pytest moteur 15/15** (matcher 12 incl. config) ; évaluation régénérée (hard : R 0.422, F1 0.594) ;
+   docs/mémoire harmonisées. Commits en attente de push (branche `develop_spark`).
+6. **[Config YAML]** Calibration déduplication **déclarative** (08/09) — `config/deduplication.yaml`
+   (weights, threshold, blocking) lu par matcher/spark/éval/SILVER via `engine/identity/config.py`
+   (fallback défauts) ; une future modification = 1 édit YAML (+ tableau de référence) sans toucher au code.
 
 ## Dettes techniques connues
 
@@ -102,3 +105,8 @@ Phase 6 éval+tests [██████████] 100%   Commit initial git [
   chapitres 01→06, cahier des charges, deduplication.md, evaluation.md, contexte_projet.md, architecture.md,
   deduplication dev harmonisés ; logs.md entrée ajoutée. Outils legacy `rebuild_*.py` et `ELT.before/` non
   modifiés (hors périmètre actif).
+- 08/09 : **Config YAML (source de vérité)** — poids/seuil/préfixe de blocage extraits dans
+  `config/deduplication.yaml`, lus par `engine/identity/config.py` (fallback défauts) ; `matcher.py`,
+  `spark_dedup.py`, `evaluate_engine.py`, `create_silver.py` paramétrés ; `pyproject.toml` + PyYAML ;
+  tests matcher 9→12 (lecture YAML, fallback, override poids) → **pytest 15/15** + générateur 44/44 ;
+  éval hard inchangée (parité)

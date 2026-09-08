@@ -10,13 +10,17 @@ Pipeline :
    que sur les ancres de clusters, d'où la montée en charge.
 
 Sémantique strictement alignée sur engine.identity.matcher.deduplicate :
-exact → probabiliste (seuil 0.80) → new_master.
+exact → probabiliste (seuil défini dans `config/deduplication.yaml`, défaut 0.80)
+→ new_master.
 """
 
 from __future__ import annotations
 
+from typing import Mapping
+
 from engine.identity.matcher import _similarity
 from engine.identity.canonical import _normalized, _cin, _birth_date
+from engine.identity.config import DEFAULT_NAME_PREFIX_LEN, DEFAULT_THRESHOLD, DEFAULT_WEIGHTS
 
 
 def canonical_rows(rows: list[dict]) -> list[dict]:
@@ -52,7 +56,8 @@ def _join_names(row: dict) -> str:
 class _BoundedMasterIndex:
     """Blocage des masters : préfixe nom, date de naissance, CIN."""
 
-    def __init__(self) -> None:
+    def __init__(self, prefix_len: int = DEFAULT_NAME_PREFIX_LEN) -> None:
+        self._prefix_len = prefix_len
         self._masters: list[tuple[int, dict]] = []
         self._by_prefix: dict[str, list[int]] = {}
         self._by_birth: dict[str, list[int]] = {}
@@ -61,7 +66,7 @@ class _BoundedMasterIndex:
     def add(self, master_idx: int, row: dict) -> None:
         self._masters.append((master_idx, row))
         name = row.get("__normalized_name") or ""
-        self._by_prefix.setdefault(name[:4], []).append(master_idx)
+        self._by_prefix.setdefault(name[: self._prefix_len], []).append(master_idx)
         bd = row.get("birth_date")
         birth_key = bd.isoformat() if hasattr(bd, "isoformat") else (bd or "")
         if birth_key:
@@ -77,7 +82,7 @@ class _BoundedMasterIndex:
         cin = row.get("cin") or ""
         said: set[int] = set()
         out: list[int] = []
-        for bucket in (self._by_prefix.get(name[:4], []),
+        for bucket in (self._by_prefix.get(name[: self._prefix_len], []),
                        self._by_birth.get(birth_key, []) if birth_key else [],
                        self._by_cin.get(cin, []) if cin else []):
             for idx in bucket:
@@ -104,12 +109,16 @@ class _BoundedMasterIndex:
         return None
 
 
-def deduplicate(rows: list[dict], probabilistic_threshold: float = 0.80) -> list[dict]:
+def deduplicate(rows: list[dict],
+                probabilistic_threshold: float | None = None,
+                weights: Mapping[str, float] = DEFAULT_WEIGHTS,
+                name_prefix_len: int = DEFAULT_NAME_PREFIX_LEN) -> list[dict]:
     """Résout l'identité sur un jeu de lignes canoniques (par ordre d'ingestion).
 
     Retourne une liste de décisions (dict) :
     master_patient_id, source_system, source_patient_id, method, score, explanation.
     """
+    threshold = DEFAULT_THRESHOLD if probabilistic_threshold is None else probabilistic_threshold
     canon = canonical_rows(rows)
 
     # --- Etape 1 (Spark) : clusters exacts par (naissance, CIN, nom normalisé) ---
@@ -125,7 +134,7 @@ def deduplicate(rows: list[dict], probabilistic_threshold: float = 0.80) -> list
 
     # --- Etape 2 (driver) : greedy probabiliste sur les ancres ---
     masters: list[dict] = []
-    index = _BoundedMasterIndex()
+    index = _BoundedMasterIndex(prefix_len=name_prefix_len)
     decisions: list[dict] = []
 
     def _new_master_id() -> str:
@@ -154,10 +163,10 @@ def deduplicate(rows: list[dict], probabilistic_threshold: float = 0.80) -> list
             best_idx, best_score = None, 0.0
             for midx in index.candidates(anchor):
                 rep = index.representative(midx)
-                score = _similarity(_like(anchor), _like(rep))
+                score = _similarity(_like(anchor), _like(rep), weights)
                 if score > best_score:
                     best_idx, best_score = midx, score
-            if best_idx is not None and best_score >= probabilistic_threshold:
+            if best_idx is not None and best_score >= threshold:
                 master_id = masters[best_idx]["master_patient_id"]
                 method, score, explanation = "probabilistic", round(best_score, 3), \
                     "similarite nom/date/CIN/ville au-dessus du seuil"

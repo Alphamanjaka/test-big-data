@@ -18,8 +18,10 @@ puis probabiliste, master patient, identity map, parité Pandas/Spark.
 ## 3. Matching
 
 - **Clé** : `(nom normalisé, birth_date, cin)`.
-- **Score pondéré** : nom 0.5 · date de naissance 0.3 · CIN 0.1 · ville de naissance 0.1.
-- **Seuil** : 0.80 (`MatchDecision`). Ne jamais fusionner en dessous du seuil (pas de logique arbitraire).
+- **Poids, seuil et préfixe de blocage** : définis dans `config/deduplication.yaml` (source de vérité),
+  chargés par `engine/identity/config.py` (`load_dedup_config`, fallback défauts 0.5/0.3/0.1/0.1,
+  seuil 0.80, préfixe 4). Toute calibration passe par ce fichier — **jamais en dur dans le code**.
+- **Seuil** : `threshold` (défaut 0.80, `MatchDecision`). Ne jamais fusionner en dessous du seuil.
 - **Exact** d'abord (CIN non vide identique / clé identique), **probabiliste** ensuite avec **blocking**
   (`_MasterIndex`, candidats sur préfixe nom/date/CIN) pour éviter l'O(n²).
 - Sorties : `master_patient_id`, `match_method` (exact|probabilistic), `match_score` — toujours explicités.

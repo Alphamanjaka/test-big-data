@@ -7,7 +7,8 @@ Règle de resolution d'identité, sceau explicable :
   (absorbe les inversions prénom/nom) ;
 - batiment 2 : probabiliste sur les candidats d'un index de blocage partageant
   préfixe de nom normalisé, date de naissance ou CIN ; score pondéré
-  nom 0.5 / date 0.3 / CIN 0.1 / ville de naissance 0.1 ; seuil 0.80 ;
+  (poids et seuil définis dans `config/deduplication.yaml`, défauts
+  nom 0.5 / date 0.3 / CIN 0.1 / ville 0.1, seuil 0.80) ;
 - sinon : nouveau master patient (new_master).
 
 Le CIN, quand il est présent (~75 % des patients), est une clé forte : il

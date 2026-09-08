@@ -9,6 +9,7 @@ sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 from engine.identity.canonical import CanonicalPatient, _cin, _text
 from engine.identity.matcher import deduplicate, _similarity
 from engine.identity.spark_dedup import deduplicate as spark_dedup
+from engine.identity.config import DEFAULT_THRESHOLD, DEFAULT_WEIGHTS, load_dedup_config
 
 
 def _patient(source_system, source_patient_id, full_name, birth_date, cin, birth_city, gender="F"):
@@ -112,3 +113,28 @@ def test_no_match_creates_new_master():
     dec = _decisions([p1, p2])
     assert dec[("pharmacy", "PH001")] != dec[("pharmacy", "PH002")]
     assert len({dec[("pharmacy", "PH001")], dec[("pharmacy", "PH002")]}) == 2
+
+
+def test_load_dedup_config_from_yaml():
+    cfg = load_dedup_config()
+    assert cfg.threshold == 0.80
+    assert cfg.name_prefix_len == 4
+    assert dict(cfg.weights) == {"name": 0.5, "birth_date": 0.3, "cin": 0.1, "birth_city": 0.1}
+
+
+def test_load_dedup_config_fallback_on_missing_file():
+    cfg = load_dedup_config("C:/aucun/chemin/deduplication.yaml")
+    assert cfg.threshold == DEFAULT_THRESHOLD
+    assert dict(cfg.weights) == dict(DEFAULT_WEIGHTS)
+
+
+def test_weights_override_changes_decision():
+    p1 = _patient("pharmacy", "PH001", "Jean Rakoto", "1990-05-12", "101024045", "")
+    p2 = _patient("pharmacy", "PH002", "Jean Rakoto", "1990-05-12", "102077713", "")
+    # Défauts : nom 0.5 + date 0.3 = 0.8 -> fusion au seuil.
+    assert _decisions([p1, p2])[("pharmacy", "PH001")] == _decisions([p1, p2])[("pharmacy", "PH002")]
+    # Poids reconfigurés (YAML recommande de les changer ici) : nom 0.4 + date 0.35 = 0.75 -> non fusion.
+    custom_weights = {"name": 0.4, "birth_date": 0.35, "cin": 0.05, "birth_city": 0.2}
+    dec = deduplicate([p1, p2], weights=custom_weights)
+    pairs = {(d.source_system, d.source_patient_id): d.master_patient_id for d in dec}
+    assert pairs[("pharmacy", "PH001")] != pairs[("pharmacy", "PH002")]
