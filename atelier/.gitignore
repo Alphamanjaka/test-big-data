@@ -1,0 +1,45 @@
+# Environnements
+.venv/
+venv/
+__pycache__/
+*.pyc
+.pytest_cache/
+.ipynb_checkpoints/
+
+# Node
+node_modules/
+.next/
+*.tsbuildinfo
+
+# Secrets et config locale
+.env
+.env.local
+provision/config/data_sources.json
+**/provision/config/data_sources.json
+provision/metadata/
+**/provision/metadata/
+*.pem
+*.key
+
+# Données générées et artefacts Big Data
+data/
+projet/code-source/evaluation/ground_truth/
+spark-warehouse/
+metastore_db/
+derby.log
+*.log
+logs/
+provision/logs/
+**/provision/logs/
+provision/scripts/ELT/__pycache__/
+
+# VM / vagrant
+.vagrant/
+mavis_datalake
+mavis_datalake.pub
+
+# Divers
+.DS_Store
+Thumbs.db
+old/
+retour.boky
