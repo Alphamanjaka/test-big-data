@@ -71,6 +71,32 @@ moteur intégré, `test_api.sh`, puis commit git initial.
 
 ---
 
+## 08/09/2026 — Mémoire : chapitres 01→06 rédigés + bibliographie (phase rédaction)
+
+**Contexte :** rédaction du mémoire dans `Mon_Memoire/chapters/` (séquentielle, validation du style
+sur ch.01), sur la base des chiffres harmonisés de `ai/memoire/contexte_projet.md`. Recherche web
+préalable pour référencer Fellegi & Sunter, Elmagarmid, Christen, FHIR, Medallion, RapidFuzz, CNIL/RGPD.
+
+| # | Action | Fichiers | Détail |
+|---|---|---|---|
+| 1 | Harmonisation chiffrée | `ai/memoire/contexte_projet.md`, `documents/cahier_des_charges.md` | Éval 07/09 : P 1.000 / R 0.287 / F1 0.447, exact 1.000/0.737/0.848, probabilistic 1.000/0.667/0.800, rappel par source 0.299/0.286/0.276, TP209/FP0/FN518, 869 masters, 500 groupes, 1 057 enreg. ; run fusion 214/145/69 doc. |
+| 2 | Chapitre 1 rédigé (07/09) | `Mon_Memoire/chapters/01-introduction.md` | Contexte MMT, problématique, objectifs, démarche 3 niveaux (1 Mermaid), périmètre, plan du mémoire |
+| 3 | Chapitre 2 + bibliographie (08/09) | `Mon_Memoire/chapters/02-etat-de-l-art.md`, `references/bibliographie.md` | ER/Record Linkage, similarités (RapidFuzz), blocking, MPI + FHIR, RGPD, HDFS/Spark/Hive, Medallion, positionnement + 1 Mermaid ; réf. [B1..B12] |
+| 4 | Chapitre 3 rédigé | `Mon_Memoire/chapters/03-analyse.md` | Sources + hétérogénéité (colonnes réelles), générateur seed 42 (500 masters, 404/353/300, easy/medium/hard 10/30/50 %), exigences, contraintes VM/MAVIS + 1 Mermaid |
+| 5 | Chapitre 4 rédigé | `Mon_Memoire/chapters/04-conception.md` | Architecture 3 niveaux + 1 Mermaid, `CanonicalPatient`, blocking + exact/probabiliste (0.50/0.30/0.20, seuil 0.80), schéma PG, gouvernance, Medallion |
+| 6 | Chapitre 5 rédigé | `Mon_Memoire/chapters/05-realisation.md` | Générateur, ELT 4 étapes + 1 Mermaid, moteur Pandas/Spark, PG/GOLD, API 11 endpoints + 14/14, incidents (11 614, vboxsf, JAVA_HOME, HS2) |
+| 7 | Chapitre 6 rédigé | `Mon_Memoire/chapters/06-tests.md` | Stratégie + 1 Mermaid, éval ground-truth P/R/F1 (easy/medium/hard), breakdown, parité MVP=Spark, limites (recall hard, GOLD sparse) |
+| 8 | Faits collectés | 2 rapports agents explore | Sources/générateur/contraintes (ch.03) ; moteur/pipeline/schéma/gouvernance/API/incidents (ch.04/05) + doc `evaluation.md` |
+
+**Vérifications :** tous les chiffres cités retrouvés dans le dépôt (`contexte_projet.md`,
+`evaluation_truth.md`, `evaluation.md`, scripts, `schema.sql`) ; gabarit/style aligné sur ch.01 ;
+1 Mermaid par chapitre technique ; liens conceptuels `documents/documentation/*`.
+
+**Résultat :** jalons rédaction 01→06 ✅ + bibliographie (12 réf. vérifiées). Reste : relecture/conversion
+docx par l'utilisateur ; mise à jour `suivi_avancement.md` (commit initial ✅ 2004865).
+
+---
+
 ## 07/09/2026 — Run pipeline vert VM + validation SILVER/GOLD + API 14/14 (Phase 6 / VM)
 
 **Contexte :** exécuter le pipeline réaligné en VM (`datalake_mavis`, sources CSV synthétiques,

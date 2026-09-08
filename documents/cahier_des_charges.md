@@ -187,8 +187,8 @@ raw_patient_record · master_patient (+ gender) · patient_identity_map · conse
 |---|---|---|
 | Pipeline ELT bout en bout | < 30 min, idempotent | Atteint |
 | Précision déduplication | ≥ 0.95 | 1.000 (easy → hard) |
-| Rappel déduplication | diagnostic de l'algo (dataset hard) | 0.253 (hard, 50 % de variations) |
-| F1 déduplication | ≥ 0.80 (easy/medium) | 0.403 (hard) — dataset volontairement dur |
+| Rappel déduplication | diagnostic de l'algo (dataset hard) | 0.287 (hard, 50 % de variations — éval. 07/09/2026, `evaluation_truth.md`) |
+| F1 déduplication | ≥ 0.80 (easy/medium) | 0.447 (hard) — dataset volontairement dur |
 | Normalisation genre | ≥ 95 % | male/female (reste NULL côté MMT_DB selon source) |
 | Tests | ≥ 80 % | tests moteur + consentement + API PASS |
 | Zéro accès non autorisé | 0 violation | audit + RBAC testés |

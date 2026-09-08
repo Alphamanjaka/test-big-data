@@ -33,17 +33,31 @@ Choix de fusion validés : nouveau repo autonome ; docs = un seul set logique
 
 ## Chiffres clés réels (à réutiliser avec mentions)
 
+### Run final fusion `data_lake_final` (07/09/2026, VM datalake_mavis, sources CSV synthétiques)
+
 | Domaine | Donnée vérifiable |
 |---|---|
-| Pipeline | 4 étapes orchestrées ; ~65 680 patients Silver (run 24/08) ; 24 872 doublons détectés (flag) |
+| Pipeline | `run_pipeline.sh` **4/4 vert** : RAW → SILVER → GOLD OK (`provision/logs/elt.log`) |
+| SILVER | `datalake_silver.patient_fhir` **214** lignes (76 pharmacy + 76 consultation + 62 imaging) |
+| Masters | **145** masters distincts ; **69** doublons liés (`is_duplicate`) ; `match_method` exact 69 / new_master 145 ; `match_score` 1.0 |
+| Gouvernance API | `duplicate_rate` **32.24 %**, `mocked: false` (données réelles Hive) |
+| GOLD | `patient_events_gold` **0** ligne (interim patients-only, attendu) ; `patient_consent_gold` **145** |
+| API | `test_api.py` **14/14 PASS** avec `RMA_USE_MOCK=false` ; health `GET /rma/last_sync` 200 |
+| Incident corrigé | explosion 11 614 lignes → cause racine : `patient_uuid` capturé par le mapping FHIR dynamique (colonne id détournée → `source_patient_id` NULL → jointure moteur 76×76) |
+
+### Historique PoC `datalake_mavis` / `test_bigdata` (à dater dans le texte)
+
+| Domaine | Donnée vérifiable |
+|---|---|
+| Pipeline | 4 étapes orchestrées ; ~65 680 patients Silver (run 24/08, PoC datalake_mavis d'origine) ; 24 872 doublons détectés (flag) |
 | Sources ELT | MAVIS (11 tables), MMT_DB (3 tables, base synthétique 60 271 lignes), CLINIQUE SQLite (54 582 lignes) |
 | GOLD | `datalake_gold.patient_events_gold` (17 colonnes, 8 tranches RMA) ; dette : jointures GOLD limitées |
 | Plateforme | 3 sources CSV ; 60 RAW → 36 masters ; 24 fusions exactes ; 60 identity links ; 108 consentements |
 | Dédup | Score nom 0.5 / naissance 0.3 / tél 0.2 ; seuil 0.80 ; blocking ; exact + probabiliste |
-| Évaluation | hard : Precision **1.000**, Recall 0.253, **F1 0.403** ; exact F1 0.855 ; probabilistic F1 0.851 ; 0 FP |
-| Spark | Spark 3.4.2 (VM) / 4.2 local ; dédup Spark **identique** au MVP (18 liens / 11 masters, Jean Rakoto + Nirina) |
-| Tests | moteur 9/9 PASS (matcher 6, consent 3) ; API données 12/12 ; MVP 20 tests + 44 tests générateur |
-| API | Flask 9 endpoints `/rma/*` (+ mocks backend) ; FastAPI lecture seule `/health /metrics /patients /audit /consent` |
+| Évaluation | hard (2026-09-07, `evaluation_truth.md`) : **Precision 1.000, Recall 0.287, F1 0.447** ; exact P/R/F1 1.000/0.737/0.848 ; probabilistic 1.000/0.667/0.800 ; 0 FP ; rappel par source pharmacy 0.299 / consultation 0.286 / imaging 0.276 |
+| Spark | Spark 3.4.2 (VM) / 4.2 local ; dédup Spark **identique** au MVP (JSON `evaluation_truth.md` : modes MVP+Spark, TP=209 FP=0 FN=518, 869 masters prédits, 500 groupes vérité, 1 057 enregistrements) |
+| Tests | moteur 9/9 PASS (matcher 6, consent 3) ; API données **14/14 PASS** ; MVP 20 tests + 44 tests générateur |
+| API | Flask 11 endpoints (9 `/rma/*` + 2 `/api/governance/*`) + mocks backend ; FastAPI lecture seule `/health /metrics /patients /audit /consent` |
 
 ## Pièges / anti-régression à évoquer (preuves de robustesse)
 
@@ -56,4 +70,5 @@ Choix de fusion validés : nouveau repo autonome ; docs = un seul set logique
 ## Reste à faire (à ne pas présenter comme fait)
 
 Export VM `.box`, tests unitaires EI-déployés, Docker/CI, pages governance frontend, enrichissement
-mapping FHIR (liens FK), rapport slides soutenance.
+mapping FHIR (liens FK → `patient_events_gold` vide en interim), alimentation PostgreSQL central
+(`granted`/`purpose` NULL dans `patient_consent_gold`), rapport slides soutenance.
