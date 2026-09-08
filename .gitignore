@@ -15,7 +15,9 @@ node_modules/
 .env
 .env.local
 provision/config/data_sources.json
+**/provision/config/data_sources.json
 provision/metadata/
+**/provision/metadata/
 *.pem
 *.key
 
@@ -28,6 +30,7 @@ derby.log
 *.log
 logs/
 provision/logs/
+**/provision/logs/
 provision/scripts/ELT/__pycache__/
 
 # VM / vagrant

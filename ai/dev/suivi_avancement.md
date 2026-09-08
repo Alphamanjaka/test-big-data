@@ -8,7 +8,7 @@ Sources : `ai_context/suivi_avancement.md` (test_bigdata) + `.ai_context/04_prio
 Phase 0 repo+root [██████████] 100%   Phase 1 docs [██████████] 100%
 Phase 2 ai/       [██████████] 100%   Phase 3 copies [██████████] 100%
 Phase 4 moteur    [██████████] 100%   Phase 5 GOLD+API [██████████] 100%
-Phase 6 éval+tests [████████░░] 80%   Commit initial git [░░░░░░░░░░] 0%
+Phase 6 éval+tests [██████████] 100%   Commit initial git [░░░░░░░░░░] 0%
 ```
 
 ### Phases
@@ -21,7 +21,7 @@ Phase 6 éval+tests [████████░░] 80%   Commit initial git [�
 | 3 | Copies : `provision/`, `front-optional/`, `sql/schema.sql`, dossiers engine/evaluation/tests | ✅ |
 | 4 | Moteur porté `engine/` (identity + governance) + évaluateur adapté + tests 9/9 | ✅ |
 | 5 | Intégration SILVER/GOLD + API : `master_patient_id`, consent GOLD, endpoints gouvernance | ✅ |
-| 6 | Évaluation finale (easy/medium/hard), tests API/parité, commit git initial | ⏳ |
+| 6 | Évaluation finale (easy/medium/hard), tests API/parité, commit git initial | 🟡 (tout OK sauf commit) |
 
 ## Règles de progression
 
@@ -33,10 +33,11 @@ Phase 6 éval+tests [████████░░] 80%   Commit initial git [�
 
 ## Priorités actuelles
 
-1. **[Phase 6]** Évaluation easy/medium/hard + `pytest` 9/9 **fait** ; reste : re-run pipeline VM,
-   `test_api.sh`, commit git initial.
-2. **[Code]** Validation VM : re-run `run_pipeline.sh` bout en bout (moteur intégré dans
-   `create_silver.py`, consent GOLD alimenté) puis `test_api.sh`.
+1. **[Phase 6]** Évaluation easy/medium/hard + `pytest` 9/9 **fait** ; re-run pipeline VM **fait**
+   (4/4 vert, 214 lignes / 145 masters / 69 doublons) ; `test_api.sh` **fait (14/14)** ; reste : **commit git initial**.
+2. **[Code]** Validation VM OK : `run_pipeline.sh` bout en bout (moteur intégré dans
+   `create_silver.py`, consent GOLD 145 lignes) ; API réelle `RMA_USE_MOCK=false` 14/14 PASS ;
+   beeline HS2 instable → validation par scripts Spark (`provision/metadata/check_data.py`).
 3. **[Mémoire]** Rédiger `Mon_Memoire/chapters/` (01→06) en suivant `ai/memoire/`.
 
 ## Dettes techniques connues
@@ -69,3 +70,7 @@ Phase 6 éval+tests [████████░░] 80%   Commit initial git [�
   ajoutés à `hive_api.py` (fallback mock) ; chemins VM passés à `datalake-final`.
 - 07/09 : Phase 6 (partiel) — `pytest` 9/9 PASS ; évaluation easy/medium/hard exécutée (parité MVP=Spark,
   zero FP, hard Recall 0.287 documenté) ; `evaluation.md` mis à jour. Reste : re-run pipeline VM + tests API + commit initial.
+- 07/09 : **Phase 6 VM validée** — cause racine de l'explosion 11 614 lignes corrigée dans `create_silver.py`
+  (`patient_uuid` exclu du mapping dynamique, écritures fiabilisées via tmp+rename) ; `run_pipeline.sh` 4/4 vert
+  (SILVER 214 = 76+76+62, 145 masters, 69 doublons) ; GOLD patients-only (events 0, consent 145) ; API réelle
+  (`RMA_USE_MOCK=false`) **14/14 PASS** ; KPIs gouvernance réels servis hors mock. Reste : **commit git initial**.

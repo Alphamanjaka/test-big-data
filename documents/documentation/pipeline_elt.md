@@ -153,15 +153,38 @@ data_sources.json ─> [Step 1] ─> extract_raw_report.json + data_sources.json
 
 ## Pièges connus (règles anti-régression)
 
-1. **Pas d'`overwrite` dans la boucle par source** — la dernière source écrase les précédentes.
-2. **Warehouse Spark sur HDFS** uniquement (`hdfs://localhost:9000/datalake/{silver|gold}/warehouse`).
-3. `hive.metastore.uris=thrift://localhost:9083` (métastore distante, sinon conflit Derby).
-4. Si une ancienne base GOLD existe en local : `DROP DATABASE datalake_gold CASCADE` avant reconfiguration.
-5. **Interdiction** : `sentence_transformers` (crash Python 3.8).
-6. Mémoire Spark : executor 4g / driver 2g / `shuffle.partitions=8`.
+1. **Pas d'`overwrite` dans la boucle par source** — accumulation par entité puis **une seule écriture**
+   `mode="overwrite"` par table cible (sinon listing périmé overwrite+append dans la même session).
+2. **`patient_uuid` exclu du mapping FHIR dynamique** — `meilleure_colonne_attendue("patient_uuid", …)`
+   peut détourner une colonne ID source (`client_id`/`patient_code`/`patient_name`) → `source_patient_id`
+   NULL → préfixe source seul → jointure moteur en croisement « 76×76 ». Colonnes source renommées
+   **une seule fois** (garde-fou `colonnes_source_utilisees`).
+3. **Pas d'overwrite d'une table en cours de lecture** (`Cannot overwrite table that is also being read`) —
+   écrire l'enrichissement dans `patient_fhir__dedup_tmp` puis `DROP TABLE` + `ALTER TABLE … RENAME TO`.
+4. **Warehouse Spark sur HDFS** uniquement (`hdfs://localhost:9000/datalake/{silver|gold}/warehouse`).
+5. `hive.metastore.uris=thrift://localhost:9083` (métastore distante, sinon conflit Derby).
+6. Si une ancienne base GOLD existe en local : `DROP DATABASE datalake_gold CASCADE` avant reconfiguration.
+7. **Interdiction** : `sentence_transformers` (crash Python 3.8).
+8. Mémoire Spark : executor 4g / driver 2g / `shuffle.partitions=8`.
+
+## Validation VM (interim CSV, 07/09/2026)
+
+`run_pipeline.sh` → **4/4 vert**. Comptages contrôlés par `provision/metadata/check_data.py` (scripts Spark ;
+beeline HS2 instable dans la VM, contourné) :
+
+| Table | Comptage |
+|---|---|
+| `datalake_silver.patient_fhir` | **214** lignes (76 pharmacy + 76 consultation + 62 imaging) |
+| masters distincts | 145 |
+| doublons (`is_duplicate`, méthode `exact`) | 69 |
+| `match_method` | exact 69 / new_master 145 ; `match_score` 1.0 |
+| `datalake_gold.patient_events_gold` | 0 (patients-only, attendu) |
+| `datalake_gold.patient_consent_gold` | 145 |
 
 ## Problèmes connus (dettes qualité)
 
 - Gender NULL pour MMT_DB (gnuhealth_patient sans colonne gender mappée).
-- Encounters/Conditions sans `patient_uuid` : liens FK à enrichir (GOLD limité à 16 lignes en période de test).
+- Encounters/Conditions sans `patient_uuid` : liens FK à enrichir (interim patients-only → `patient_events_gold` vide).
 - Laboratory et Malaria : données uniquement mock (sources hors GOLD).
+- Consentement PostgreSQL non alimenté en interim → `patient_consent_gold` construit depuis les masters SILVER
+  (`granted`/`purpose` NULL) ; endpoints duplicates/consent servis hors mock (`mocked: false`).

@@ -68,3 +68,31 @@ données générées (`synthetic-patient-generator/data/`, `provision/metadata/`
 
 **Résultat :** tests + évaluation OK en local. Reste (Phase 6 / VM) : re-run `run_pipeline.sh` avec le
 moteur intégré, `test_api.sh`, puis commit git initial.
+
+---
+
+## 07/09/2026 — Run pipeline vert VM + validation SILVER/GOLD + API 14/14 (Phase 6 / VM)
+
+**Contexte :** exécuter le pipeline réaligné en VM (`datalake_mavis`, sources CSV synthétiques,
+interim patients-only) — le run précédent produisait **11 614 lignes** (explosion 76×76 dans la
+jointure du moteur) — puis valider les comptages SILVER/GOLD et l'API sur vraies données.
+
+| # | Action | Fichiers | Détail |
+|---|---|---|---|
+| 1 | Cause racine + fix explosion 11614 | `provision/scripts/ELT/create_silver.py` | `patient_uuid` **exclu du mapping FHIR dynamique** (`meilleure_colonne_attendue` le détournait sur la colonne ID → `source_patient_id` renommée/`name` NULL → préfixe concat = `"pharmacy"` → join moteur 76×76) ; garde-fou `colonnes_source_utilisees` (une colonne source renommée une seule fois) |
+| 2 | Écritures SILVER fiabilisées | `create_silver.py` | Accumulation par entité (`accum_par_entite`) + **une seule écriture `mode="overwrite"`** par table cible ; enrichissement moteur via `patient_fhir__dedup_tmp` + `DROP TABLE` + `ALTER TABLE … RENAME TO` (évite `Cannot overwrite table being read`) ; compteurs moteur pré-écriture ; `marquer_doublons_patients` sur l'union toutes sources |
+| 3 | GOLD tolérant (patients-only) | `provision/scripts/ELT/create_gold.py` | `_lire_silver` tolérant + `_vide` (Encounter/Condition/Observation absents) ; `SystemExit(1)` si `patient_fhir` absente ; consent `dropDuplicates(["master_patient_id"])` |
+| 4 | Run pipeline | `provision/scripts/run_pipeline.sh` | 4 étapes vertes : **`✅ Pipeline ELT complet : RAW -> SILVER -> GOLD OK`** (logs `provision/logs/{elt.log, create_gold.log}`) |
+| 5 | Validation Spark | `provision/metadata/check_data.py` + `run_check.sh` | `silver_patient_fhir` **214** (76/76/62), masters 145, doublons 69, méthodes exact 69 / new_master 145, scores 1.0, uuids uniques ; gold patients-only → events 0, consent 145 |
+| 6 | API réelle | `provision/metadata/start_api.sh` | `RMA_USE_MOCK=false` ; health `GET /rma/last_sync` 200 ; `python -m provision.api.test_api` → **14/14 PASS (0 FAIL)** |
+| 7 | KPIs gouvernance réels | `provision/api/hive_api.py` | `duplicates`: exact 69 / new_master 145, taux 32.24 % ; `consent`: 145 patients (`granted` NULL, PostgreSQL non alimenté) — `mocked: false` |
+| 8 | Doc pipeline mise à jour | `documents/documentation/pipeline_elt.md` | Section « Validation VM (interim CSV) » + pièges anti-régression (patient_uuid, overwrite unique, tmp+rename) |
+
+**Vérifications :** pipeline 4/4 vert ; comptages SILVER/GOLD cohérents (214 = 76+76+62, 214 − 69 = 145) ;
+API 14/14 sur données réelles ; `ast.parse` OK avant run. beeline HS2 instable contourné (scripts Spark) ;
+quoting PowerShell → scripts dans `provision/metadata/`.
+
+**Résultat :** jalon Phase 6 VM atteint — pipeline vert + validation + API 14/14. Reste : commit git
+initial (après accord) + suite rédaction du mémoire.
+
+---

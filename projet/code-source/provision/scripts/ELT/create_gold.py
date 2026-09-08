@@ -75,16 +75,32 @@ logging.info(f"✅ Base GOLD {GOLD_HIVE_DB} vérifiée")
 
 # -----------------------------
 # 📥 LECTURE DES TABLES SILVER
+# Tolérance aux entités absentes (mode patients-only) : les tables d'événements
+# manquantes sont remplacées par un DataFrame vide au schéma attendu, afin que
+# le GOLD reste stable (démarrage en douceur du dashboard/API).
 # -----------------------------
-try:
-    df_patient = spark.table(f"{SILVER_HIVE_DB}.patient_fhir")
-    df_encounter = spark.table(f"{SILVER_HIVE_DB}.encounter_fhir")
-    df_condition = spark.table(f"{SILVER_HIVE_DB}.condition_fhir")
-    df_observation = spark.table(f"{SILVER_HIVE_DB}.observation_fhir")
-    logging.info("✅ Tables SILVER chargées")
-except Exception as e:
-    logging.error(f"Erreur lecture tables SILVER : {e}")
-    raise
+from pyspark.sql.types import StructType, StructField
+
+def _lire_silver(table):
+    try:
+        df = spark.table(table)
+        logging.info(f"✅ Table SILVER chargée : {table} ({df.count()} lignes)")
+        return df
+    except Exception as e:
+        logging.warning(f"⚠️ Table SILVER absente ({table}) — remplacée par une table vide. ({e})")
+        return None
+
+def _vide(colonnes):
+    schema = StructType([StructField(c, StringType(), True) for c in colonnes])
+    return spark.createDataFrame([], schema)
+
+df_patient = _lire_silver(f"{SILVER_HIVE_DB}.patient_fhir")
+df_encounter = _lire_silver(f"{SILVER_HIVE_DB}.encounter_fhir")
+df_condition = _lire_silver(f"{SILVER_HIVE_DB}.condition_fhir")
+df_observation = _lire_silver(f"{SILVER_HIVE_DB}.observation_fhir")
+if df_patient is None:
+    logging.error("patient_fhir absente — GOLD impossible.")
+    raise SystemExit(1)
 
 # -----------------------------
 # 🎯 RÉDUCTION AUX COLONNES UTILES
@@ -93,16 +109,22 @@ except Exception as e:
 df_patient = df_patient.select(
     "patient_uuid", "source_patient_id", "name", "gender", "birth_date"
 )
-df_encounter = df_encounter.select(
+df_encounter = (df_encounter if df_encounter is not None else _vide(
+    ["patient_uuid", "encounter_id", "admission_date", "discharge_date", "visit_type"]
+)).select(
     "patient_uuid", "encounter_id", "admission_date", "discharge_date", "visit_type"
 )
-df_condition = df_condition.select(
+df_condition = (df_condition if df_condition is not None else _vide(
+    ["patient_uuid", "diagnosis_code", "category", "diagnosis"]
+)).select(
     F.col("patient_uuid").alias("patient_uuid_cond"),
     "diagnosis_code",
     "category",
     "diagnosis",
 )
-df_observation = df_observation.select(
+df_observation = (df_observation if df_observation is not None else _vide(
+    ["patient_uuid", "mortality", "parity", "gravida", "live_births"]
+)).select(
     F.col("patient_uuid").alias("patient_uuid_obs"),
     "mortality", "parity", "gravida", "live_births",
 )
@@ -189,7 +211,8 @@ def charger_consent_gold():
     """
     df_patient = spark.table(f"{SILVER_HIVE_DB}.patient_fhir").select(
         "patient_uuid", "master_patient_id", "name"
-    ).filter(F.col("master_patient_id").isNotNull())
+    ).filter(F.col("master_patient_id").isNotNull()) \
+     .dropDuplicates(["master_patient_id"])
 
     consent_rows, consent_source = [], ""
     db_url = os.environ.get("DATABASE_URL")

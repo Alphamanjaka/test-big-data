@@ -147,12 +147,22 @@ def enrichir_dedup_moteur():
     df_patient = df_patient.join(df_dedup, on=["_source_system", "source_patient_id"], how="left")
     df_patient = df_patient.withColumn("is_duplicate", F.col("iso_dup") == 1) \
                            .drop("iso_dup")
-    df_patient.write.mode("overwrite").saveAsTable(table_patient)
-
-    nb_doublons = df_patient.filter(F.col("is_duplicate")).count()
+    # Compteurs calculés sur le DataFrame enrichi (avant écriture) : les relectures
+    # de la table après drop/rename sont susceptibles de compter des fichiers
+    # périmés encore dans le cache de listing de la session.
+    nb_total = df_patient.count()
+    nb_doublons = df_patient.filter(F.col("iso_dup") == 1).count()
     nb_masters = df_patient.filter(F.col("master_patient_id").isNotNull()).count()
+
+    # Écriture via table temporaire + rename pour éviter l'erreur Spark
+    # "Cannot overwrite table ... that is also being read from"
+    tmp_table = f"{table_patient}__dedup_tmp"
+    df_patient.write.mode("overwrite").saveAsTable(tmp_table)
+    spark.sql(f"DROP TABLE IF EXISTS {table_patient}")
+    spark.sql(f"ALTER TABLE {tmp_table} RENAME TO {table_patient}")
+
     logging.info(f"🔗 Moteur : {len(patients)} patients analysés, {nb_masters} maîtrisés "
-                 f"({nb_doublons} doublons liés à un master existant).")
+                 f"({nb_doublons} doublons liés à un master existant, total {nb_total}).")
 
 # -----------------------------
 # 🪵 CONFIGURATION DU LOGGING (console + fichier)
@@ -360,7 +370,11 @@ def dynamic_cast(df, entite):
 # -----------------------------
 # Boucle principale sur les sources et entités
 # -----------------------------
-tables_ecrites = set()  # 1re écriture = overwrite (idempotence), suivantes = append (fusion multi-sources)
+# NB : on accumule les DataFrames par entité (plusieurs sources/tables), puis on
+# écrit UNE SEULE fois par table cible. Les écritures overwrite+append répétées
+# sur le même chemin, dans la même session Spark, laissent un listing de fichiers
+# périmé qui gonfle les lectures suivantes du catalogue (observé : 76² lignes).
+accum_par_entite = {}
 
 for source, entites in fhir_mapping.items():
     logging.info(f"--- Source : {source}")
@@ -379,6 +393,11 @@ for source, entites in fhir_mapping.items():
             # Mapping dynamique FHIR → colonne source
             mapping_local = {}
             for champ in champs_fhir:
+                # patient_uuid est TOUJOURS généré (sha2) : ne jamais le mapper
+                # depuis une colonne source (sinon il accapare la colonne id
+                # et source_patient_id/name restent NULL).
+                if champ == "patient_uuid":
+                    continue
                 meilleur = meilleure_colonne_attendue(champ, df.columns)
                 if meilleur:
                     mapping_local[champ] = meilleur
@@ -417,9 +436,13 @@ for source, entites in fhir_mapping.items():
                 existantes = [c for c in colonnes_a_lire if c in df.columns]
                 df_sel = df.select(*existantes)
 
+            # Garde-fou anti-collision : une colonne source n'alimente qu'un
+            # seul champ FHIR (le premier dans l'ordre des champs).
+            colonnes_source_utilisees = set()
             for champ, col_src in mapping_local.items():
-                if col_src in df_sel.columns:
+                if col_src in df_sel.columns and col_src not in colonnes_source_utilisees:
                     df_sel = df_sel.withColumnRenamed(col_src, f"fhir__{champ}")
+                    colonnes_source_utilisees.add(col_src)
             df_sel = df_sel.withColumn("_source_table", F.lit(nom_table))
 
             # Cast dynamique avant union
@@ -470,16 +493,29 @@ for source, entites in fhir_mapping.items():
         if entite == "Patient":
             df_final = marquer_doublons_patients(df_final)
 
-        # Écriture dynamique dans Hive
-        # NB : overwrite au premier passage puis append, sinon chaque source écrase la précédente
-        table_cible = f"{SILVER_HIVE_DB}.{entite.lower()}_fhir"
-        mode = "overwrite" if table_cible not in tables_ecrites else "append"
-        logging.info(f"📤 Écriture dans la table : {table_cible} (mode={mode})")
-        df_final.write.mode(mode).saveAsTable(table_cible)
-        tables_ecrites.add(table_cible)
+        accum_par_entite.setdefault(entite, []).append(df_final)
+
+# -----------------------------
+# 📤 Écriture unique par entité (fusion multi-sources puis 1 saveAsTable)
+# -----------------------------
+for entite, dfs in accum_par_entite.items():
+    df_union = dfs[0]
+    for df_part in dfs[1:]:
+        df_union = df_union.unionByName(df_part, allowMissingColumns=True)
+    df_union = df_union.dropDuplicates()
+
+    # 👥 Les doublons patients sont redétectés sur l'ensemble des sources fusionnées
+    if entite == "Patient":
+        df_final = marquer_doublons_patients(df_union)
+    else:
+        df_final = df_union
+
+    table_cible = f"{SILVER_HIVE_DB}.{entite.lower()}_fhir"
+    logging.info(f"📤 Écriture unique dans la table : {table_cible} (mode=overwrite)")
+    df_final.write.mode("overwrite").saveAsTable(table_cible)
 
 # 🔗 Enrichissement final : master patient explicable (moteur engine)
-if f"{SILVER_HIVE_DB}.patient_fhir" in tables_ecrites:
+if f"{SILVER_HIVE_DB}.patient_fhir" in [f"{SILVER_HIVE_DB}.{e.lower()}_fhir" for e in accum_par_entite]:
     enrichir_dedup_moteur()
 
 update_sync_metadata("SILVER", status="ok")
