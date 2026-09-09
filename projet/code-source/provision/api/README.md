@@ -212,7 +212,7 @@ Sortie :
 ✅ PASS /rma/admissions_summary
 ✅ PASS /rma/top_diagnostics
 ...
-RÉSULTAT : 12/12 PASS — 0 FAIL — 0 SKIP
+RÉSULTAT : 14/14 PASS — 0 FAIL — 0 SKIP
 ```
 
 ---

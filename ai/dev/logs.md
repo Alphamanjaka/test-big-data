@@ -6,6 +6,31 @@ Ne jamais y mettre de données sensibles.
 
 ---
 
+## 09/09/2026 — Regroupement des guides techniques dans `GUIDE/`
+
+**Contexte :** création de guides complets (Vagrant, générateur de données, frontend, backend), avec
+vérification des documents existants et améliorations ciblées. Regroupés dans le nouveau répertoire
+`GUIDE/`.
+
+| # | Action | Fichiers | Détail |
+| - | ------ | -------- | ------ |
+| 1 | Guide Vagrant | `GUIDE/guide-vagrant.md` (nouveau) | Basé sur l'archive `archives/datalake_mavis/demarrage vagrant.md`, adapté au dépôt consolidé : chemins `Mon_Memoire/projet/code-source`, synced folder, VM `/home/vagrant/datalake-final`, `data_sources.example.json`, run de référence 214/145/69, section dépannage |
+| 2 | Guide générateur | `GUIDE/guide-generateur-donnees.md` (nouveau) | Modules réels (`generator.*`), seed/patients, niveaux easy/medium/hard, paramètres `config/settings.py`, `evaluate_engine.py` comme point d'entrée, résultats P/R/F1 de référence |
+| 3 | Guide frontend | `GUIDE/guide-frontend.md` (nouveau) | Next.js : installation, `.env`, Prisma, comptes seed, structure, RBAC, routes RMA, dépannage |
+| 4 | Guide backend | `GUIDE/guide-backend.md` (nouveau) | API Flask : prérequis GOLD/Hive, lancement, `test_startup.sh`, endpoints RMA + gouvernance, flag `RMA_USE_MOCK`, tests, limites |
+| 5 | Index | `GUIDE/README.md` (nouveau) | Index croisé + schéma de flux + table des chemins consolidés + bonnes pratiques transverse |
+| 6 | Améliorations existants | `projet/code-source/provision/api/README.md`, `projet/code-source/evaluation/synthetic-patient-generator/README.md` | API : sortie `12/12` → `14/14` (14 tests réels des endpoints). Générateur : retrait des références inexistantes `main.py` et `pytest.ini`, ajout de `evaluate_engine.py` comme chemin officiel, lien vers `GUIDE/` |
+
+**Vérifications :** comptage réel des tests du générateur (`tests/` = **44 collectés**) ; endpoints API
+(11 `@app.route` + 3 variantes paramétrées = **14 tests**) ; flag `RMA_USE_MOCK` lu dans
+`hive_api.py:55` ; chemins du synced folder croisés avec `Vagrantfile` ; run de référence croisé avec
+`ai/memoire/contexte_projet.md` (214/145/69, total_admissions). Aucune donnée sensible ajoutée.
+
+**Résultat :** 5 fichiers `GUIDE/` créés, 2 README existants corrigés. Guides cohérents avec le dépôt
+consolidé (chemins actuels), réalisé vs simulé distingué.
+
+---
+
 ## 09/09/2026 — Volet académique : harmonisation + rapport + slides + docx
 
 **Contexte :** focus sur le livrable académique (mémoire) après validation de la fusion technique.

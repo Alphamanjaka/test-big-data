@@ -82,6 +82,11 @@ dans `Mon_Memoire` (subtree → `projet/code-source/`, `projet/mvp/`, `archives/
 
 ## Journal
 
+- 09/09 : **Guides techniques** — regroupés dans `GUIDE/` (index + `guide-vagrant.md`,
+  `guide-generateur-donnees.md`, `guide-frontend.md`, `guide-backend.md`), basés sur l'état consolidé
+  du dépôt ; README API (14/14) et README générateur (sans `main.py`/`pytest.ini` inexistants,
+  point d'entrée `evaluate_engine.py`) corrigés ; 44 tests générateur re-comptés.
+
 - 09/09 : **Volet académique** — comptes tests moteur harmonisés **23/23** (matcher 12 · consent 3 ·
   canonique 8, fichiers de test comptés) dans chapitres/contexte/READMEs ; `documents/rapport_stage.md`
   (synthèse MBDS) + `documents/slides_soutenance.md` (esquisse 13 slides) + convertisseur

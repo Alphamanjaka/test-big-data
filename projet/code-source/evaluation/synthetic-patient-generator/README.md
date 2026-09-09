@@ -9,7 +9,6 @@ un algorithme de déduplication / Entity Resolution.
 
 ```
 synthetic-patient-generator/
-├── main.py                        # Point d'entrée unique (pipeline complet)
 ├── generator/
 │   ├── patient_generator.py       # Étape 2 — Patients maîtres / Ground Truth
 │   ├── distribution_engine.py     # Étape 3 — Distribution dans les sources
@@ -27,9 +26,10 @@ synthetic-patient-generator/
 │   ├── raw/                       # Sorties par source (pharmacy/consultation/imaging)
 │   └── experiments/               # Datasets complets easy/medium/hard
 ├── tests/                         # Étape 8 — Tests unitaires + bout-en-bout
-├── pytest.ini
 └── requirements.txt
 ```
+
+> Guide complet d'utilisation : `GUIDE/guide-generateur-donnees.md`.
 
 ## Installation
 
@@ -56,19 +56,22 @@ mêmes données). `--difficulty` / `--variation` accepte : `easy`, `medium`, `ha
 | `python -m generator.identity_mapping --patients 10000 --seed 42` | Génère le fichier de vérité → `data/ground_truth/identity_mapping.csv` |
 | `python -m generator.experiment_builder --patients 10000 --seed 42` | Génère **les 3 datasets complets** (easy/medium/hard) → `data/experiments/{easy,medium,hard}/` |
 
-### Commande unique (pipeline complet en un coup)
+### Chemin officiel : datasets easy/medium/hard via l'évaluateur
+
+L'**évaluateur** (recommandé) génère automatiquement le dataset du niveau s'il est absent, puis calcule
+les métriques vs le Ground Truth. Il sert de point d'entrée « tout-en-un » :
 
 ```bash
-python main.py --patients 10000 --sources 3 --variation medium --output data/experiments/medium
+# Depuis projet/code-source (venv actif)
+python evaluation/evaluate_engine.py --level hard --patients 500 --seed 42
 ```
 
-Fait tout d'un coup (patients → distribution → 3 sources → identity mapping)
-vers le dossier `--output` de ton choix, avec un résumé affiché à la fin.
+> Détails (modules, paramètres, sorties) : `GUIDE/guide-generateur-donnees.md`.
 
 ### Tests
 
 ```bash
-pytest tests/ -v                    # tous les tests + couverture (pytest.ini)
+pytest tests/ -v                    # tous les tests du générateur (44)
 pytest tests/test_setup.py -v       # juste vérifier l'installation
 pytest tests/test_end_to_end.py -v  # juste le test bout-en-bout global
 ```
