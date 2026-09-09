@@ -20,7 +20,7 @@ La validation suit une pyramide : unitaire (générateur et moteur), intégratio
 flowchart TD
     subgraph Unitaire
         G["Générateur : 44 tests<br/>variation, distribution, mapping"]
-        E["Moteur : 12/12<br/>matcher 9 · consent 3"]
+        E["Moteur : 23/23<br/>matcher 12 · consent 3 · canonique 8"]
     end
     subgraph Intégration
         MVP["MVP : 20 tests<br/>pipeline, loader, auth, audit, api"]
@@ -36,7 +36,7 @@ flowchart TD
 | Niveau | Périmètre | Résultat |
 |---|---|---|
 | **Générateur** (7 fichiers de tests) | variation engine, générateurs de sources, distribution, identity mapping, experiment builder | **44 tests PASS** [contexte_projet.md] |
-| **Moteur `engine/`** | `test_matcher.py` (9 cas), `test_consent.py` (3 cas) | **12/12 PASS** [logs.md] |
+| **Moteur `engine/`** | `test_matcher.py` (12 cas), `test_consent.py` (3 cas), `test_deduplication.py` (8 cas canonique) | **23/23 PASS** [logs.md] |
 | **MVP** (`test_bigdata`) | pipeline, loader PostgreSQL, auth, audit, api | **20 tests PASS** [contexte_projet.md] |
 | **API** | `test_api.py` — 14 tests sur données réelles (`RMA_USE_MOCK=false`) | **14/14 PASS** [logs.md] |
 | **Pipeline** | `run_pipeline.sh` RAW → SILVER → GOLD | **4/4 vert** (07/09/2026) |
@@ -123,7 +123,7 @@ Le prototype est évalué sans complaisance [contexte_projet.md — reste à fai
 
 ## Conclusion
 
-La stratégie de test couvre le générateur (44), le moteur (12/12), le MVP (20),
+La stratégie de test couvre le générateur (44), le moteur (23/23), le MVP (20),
 l'API (14/14) et le pipeline (4/4). L'évaluation ground-truth démontre **une règle
 d'or tenue** : zéro fusion à tort (Precision 1.000) sur tous les niveaux, avec une
 parité Pandas/Spark parfaite, et un rappel hard relevé à 0.422 grâce à la clé CIN.

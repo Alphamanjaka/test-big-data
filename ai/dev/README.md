@@ -65,7 +65,7 @@ python -m provision.api.test_api                     # 14/14 PASS attendu
 # venv
 python -m venv .venv
 .venv\Scripts\python -m pip install -e ".[test]"
-.venv\Scripts\python -m pytest -q                    # 15/15 attendu (matcher + consentement)
+.venv\Scripts\python -m pytest -q                    # 23/23 attendu (matcher + consentement + canonique)
 .venv\Scripts\python evaluation\evaluate_engine.py --level hard
 ```
 

@@ -39,7 +39,7 @@ sql/schema.sql      PostgreSQL central
 - Tests : doublons, valeurs nulles, formats hétérogènes, parité Pandas/Spark.
 - Score de matching **toujours explicite** (méthode + score + seuil).
 - Traçabilité conservée : `source → canonique → master patient`.
-- Validation : `pytest` moteur + consentement (15/15 documenté), évaluateur ground-truth, API données
+- Validation : `pytest` moteur + consentement + canonique (23/23 documenté), évaluateur ground-truth, API données
   (14/14 documenté).
 
 ## Pyramide de tests et critères de validation

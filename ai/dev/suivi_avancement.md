@@ -33,21 +33,24 @@ Phase 6 éval+tests [██████████] 100%   Commit initial git [
 
 ## Priorités actuelles
 
-1. **[Phase 6]** Évaluation easy/medium/hard + `pytest` 9/9 **fait** ; re-run pipeline VM **fait**
+1. **[Phase 6]** Évaluation easy/medium/hard + `pytest` moteur **23/23** **fait** ; re-run pipeline VM **fait**
    (4/4 vert, 214 lignes / 145 masters / 69 doublons) ; `test_api.sh` **fait (14/14)** ; **commit git
    initial fait** (`2004865`, 07/09).
 2. **[Code]** Validation VM OK : `run_pipeline.sh` bout en bout (moteur intégré dans
    `create_silver.py`, consent GOLD 145 lignes) ; API réelle `RMA_USE_MOCK=false` 14/14 PASS ;
    beeline HS2 instable → validation par scripts Spark (`provision/metadata/check_data.py`).
 3. **[Mémoire]** Rédaction `Mon_Memoire/chapters/` (01→06) **faite** (08/09) + `references/bibliographie.md`
-   (12 réf. vérifiées) ; reste : relecture/conversion docx par l'utilisateur.
+   (12 réf. vérifiées) ; **rapport de stage** `documents/rapport_stage.md` + **slides**
+   `documents/slides_soutenance.md` + **docx** `documents/memoire_M2_MBDS.docx` **faits** (09/09) ;
+   comptes tests harmonisés (moteur **23/23**). Reste : relecture par l'utilisateur, ajustement slides,
+   mise en page finale du docx.
 4. **[Dépôt unique]** Consolidation **faite** (09/09) — `data_lake_final` + `datalake_mavis` rapatriés
-   dans `Mon_Memoire` (subtree → `projet/code-source/`, `projet/mvp/`, `archives/datalake_mavis/`) ;
-   pytest 9/9 + générateur 44/44 re-vérifiés.
+dans `Mon_Memoire` (subtree → `projet/code-source/`, `projet/mvp/`, `archives/datalake_mavis/`) ;
+    pytest moteur **23/23** + générateur 44/44 re-vérifiés.
 5. **[Rework CIN + ville]** Rework déduplication **fait** (08/09) — clé CIN (couverture ~75 %) +
-   ville de naissance (poids 0.1) remplacent téléphone dans `projet/code-source/` ; weights 0.5/0.3/0.1/0.1 ;
-   **pytest moteur 15/15** (matcher 12 incl. config) ; évaluation régénérée (hard : R 0.422, F1 0.594) ;
-   docs/mémoire harmonisées. Commits en attente de push (branche `develop_spark`).
+    ville de naissance (poids 0.1) remplacent téléphone dans `projet/code-source/` ; weights 0.5/0.3/0.1/0.1 ;
+    **pytest moteur 23/23** (matcher 12 · consent 3 · canonique 8) ; évaluation régénérée (hard : R 0.422, F1 0.594) ;
+    docs/mémoire harmonisées. Commits en attente de push (branche `develop_spark`).
 6. **[Sécurité]** Purge secrets en dur **faite** (08/09) — `mavis_diag.py` supprimé (identifiants SSH),
    mot de passe PG externalisé via `.env` (template `provision/.env.example`), docs trouées
    (placeholders), hook `githooks/pre-commit` actif (bloque secrets/DSN, `core.hooksPath` activé) ;
@@ -79,6 +82,11 @@ Phase 6 éval+tests [██████████] 100%   Commit initial git [
 
 ## Journal
 
+- 09/09 : **Volet académique** — comptes tests moteur harmonisés **23/23** (matcher 12 · consent 3 ·
+  canonique 8, fichiers de test comptés) dans chapitres/contexte/READMEs ; `documents/rapport_stage.md`
+  (synthèse MBDS) + `documents/slides_soutenance.md` (esquisse 13 slides) + convertisseur
+  `scripts/dev/export_memoire_docx.py` → `documents/memoire_M2_MBDS.docx` (6 chapitres, 27 tables,
+  accents UTF-8 validés).
 - 07/09 : démarrage fusion ; Phases 0, 3, 4 terminées (moteur porté + 9/9 tests).
 - 07/09 : Phase 1 docs consolidées rédigées (cahier + 7 thématiques) ; Phase 2 ai/memoire + ai/dev rédigées.
 - 07/09 : guide technique `projet/code-source/README.md` + `pyproject.toml` créés ; journal `ai/dev/logs.md` initialisé.

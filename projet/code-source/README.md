@@ -39,7 +39,7 @@ projet/code-source/
 ```powershell
 python -m venv .venv
 .venv\Scripts\python -m pip install -e ".[test]"
-.venv\Scripts\python -m pytest -q        # 15/15 attendu (matcher + consentement)
+.venv\Scripts\python -m pytest -q        # 23/23 attendu (matcher + consentement + canonique)
 .venv\Scripts\python evaluation\evaluate_engine.py --level hard   # évaluation ground-truth
 ```
 

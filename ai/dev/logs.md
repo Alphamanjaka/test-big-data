@@ -6,6 +6,49 @@ Ne jamais y mettre de données sensibles.
 
 ---
 
+## 09/09/2026 — Volet académique : harmonisation + rapport + slides + docx
+
+**Contexte :** focus sur le livrable académique (mémoire) après validation de la fusion technique.
+Quatre volets exécutés, toutes les données re-vérifiées contre le code.
+
+| # | Action | Fichiers | Détail |
+| - | ------ | -------- | ------ |
+| 1 | Harmonisation comptes tests | `chapters/06-tests.md`, `ai/memoire/contexte_projet.md`, `projet/code-source/README.md`, `ai/dev/README.md`, `ai/dev/methode_codage.md` | Moteur passé de « 12/12 (matcher 9) » / « 15/15 » à **23/23** (matcher 12 + consent 3 + canonique 8, `test_deduplication.py`) — chiffres réels comptés dans les fichiers de test |
+| 2 | Vérification cohérence | `chapters/04-conception.md`, `chapters/05-realisation.md` | Confirmés : weights 0.5/0.3/0.1/0.1, `matching_key=(birth_date,cin,nom)`, run VM 214/145/69, P-R-F1 hard 1.000/0.422/0.594 ; datations chapitres OK |
+| 3 | Rapport de stage | `documents/rapport_stage.md` (nouveau) | Synthèse MBDS : contexte, problématique, démarche 3 niveaux, conception, réalisation chiffrée, évaluation, limites honnêtes, perspectives |
+| 4 | Slides soutenance | `documents/slides_soutenance.md` (nouveau) | Esquisse ~13 slides en 4 parties (métier / technique / démo reproductible / conclusion) avec supports et preuves par slide |
+| 5 | Conversion docx | `projet/code-source/scripts/dev/export_memoire_docx.py` (nouveau) → `documents/memoire_M2_MBDS.docx` | Convertisseur Markdown→docx (python-docx) : titres, tableaux (27), listes, blocs code ; Mermaid conservés en texte ; validé (6 chapitres, accents OK) |
+
+**Vérifications :** comptage réel des tests (`def test_` = matcher 12 · consent 3 · canonique 8 = 23) ;
+lecture intégrity du `.docx` par python-docx (6 titres H1, 27 tables, 37 296 caractères, accents UTF-8
+préservés) ; aucune donnée sensible ajoutée.
+
+**Résultat :** livrables académiques complétés (rapport + slides + docx) ; comptes de tests alignés sur
+le code dans toute la doc. Reste pour l'utilisateur : relecture mémoire, ajustement des slides, mise en
+page finale du `.docx`.
+
+---
+
+## 09/09/2026 — Diagramme de flux : sources génériques + évaluation ground-truth
+
+**Contexte :** mise à jour de `diagramme_flux_donnees.md` (schéma Mermaid du mémoire) pour refléter deux
+écarts entre le plan et l'état réel du code : sources non figées aux trois bases de démo et module
+d'évaluation absent du schéma.
+
+| # | Action | Fichiers | Détail |
+| - | ------ | -------- | ------ |
+| 1 | Sources génériques | `diagramme_flux_donnees.md` | `Base A` / `Base B` / `Base C` au lieu de PostgreSQL MAVIS / MMT_DB / SQLite CLINIQUE (plateforme agnostique, sources configurables) |
+| 2 | Évaluation intégrée | `diagramme_flux_donnees.md` | Sous-graphe `EVAL` : générateur synthétique easy/medium/hard → ground truth → comparateur P/R/F1 → `evaluation_truth.md` ; relié au moteur de déduplication (`evaluate_engine.py`, Spark+MVP) ; ground truth jamais fourni au moteur |
+| 3 | Validation Mermaid | `diagramme_flux_donnees.md` | Re-parsing via harnais jsdom + mermaid → `PARSE_OK` ; indices `linkStyle` recalculés (5 dédup, 9 RBAC, 18 comparaison GT) |
+
+**Vérifications :** `node validate.mjs` sur le bloc mermaid extrait du fichier → `PARSE_OK` ; aucun
+changement de code source ; état Git contrôlé avant modification.
+
+**Résultat :** schéma du mémoire cohérent avec `projet/code-source/evaluation/` (ground truth réservé à
+l'évaluation) et la généricité des sources (AGENTS.md / `data_sources.json`).
+
+---
+
 ## 08/09/2026 — Renforcement des instructions AI
 
 **Contexte :** mise en cohérence des consignes du dépôt avec les règles de projet fournies, sans
