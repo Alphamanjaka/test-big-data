@@ -6,6 +6,24 @@ Ne jamais y mettre de données sensibles.
 
 ---
 
+## 10/09/2026 — Archivage : `provision/scripts/ELT.before/` déplacé vers `archives/elt.before/`
+
+**Contexte :** le dossier `projet/code-source/provision/scripts/ELT.before/` (copie des scripts ELT
+« avant refonte », committée à l'import `8a0a217`, contenant `create_silver_fk.py` et `gen_metadata.py`)
+créait du bruit dans le code actif.
+
+| # | Action | Détail |
+| - | ------ | ------ |
+| 1 | `git mv .../ELT.before → archives/elt.before` | 7 fichiers (7 renames détectés) ; trace historique conservée, hors chemin d'import des modules `provision.scripts.ELT` |
+
+**Vérifications :** `git status` → 7 renommages `R`, aucun import des scripts actifs ne pointe vers
+`ELT.before` ; références historiques (`suivi_avancement.md`, entrées précédentes de `logs.md`,
+`archives/datalake_mavis/LOG.md`) laissées telles quelles (elles décrivent l'état passé).
+
+**Résultat :** code actif nettoyé ; archive conservée. Commit en attente avec le reste des modifications.
+
+---
+
 ## 10/09/2026 — GOLD alimenté par le générateur synthétique (sources CSV + événements)
 
 **Contexte :** `patient_events_gold` vide (0 ligne) : le run ne mappait que `patients → Patient`
