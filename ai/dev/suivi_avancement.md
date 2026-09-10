@@ -128,3 +128,4 @@ dans `Mon_Memoire` (subtree → `projet/code-source/`, `projet/mvp/`, `archives/
   `spark_dedup.py`, `evaluate_engine.py`, `create_silver.py` paramétrés ; `pyproject.toml` + PyYAML ;
   tests matcher 9→12 (lecture YAML, fallback, override poids) → **pytest 15/15** + générateur 44/44 ;
   éval hard inchangée (parité)
+- 10/09 : **Cohérence code/docs + docstrings + FastAPI governance** — corrections incohérences (GOLD 17→18, matching_key, test counts, source_file, match_method, bigdata_concepts) ; docstrings des fonctions complexes (moteur identity, governance, ELT, hive_api) ; retrait sentence-transformers (bootstrap.sh) ; bandeaux DÉPRÉCIÉ (evaluation_truth, test.py, ELT.before) ; FastAPI governance câblée (engine/governance/app.py : /health, /metrics, /patients, /patients/{id}, /audit + consent router, port 8000) ; tests test_governance_api.py (4 tests, pattern FakeCursor) ; docs FastAPI (api.md, architecture.md, cahier §4.4, api/README).

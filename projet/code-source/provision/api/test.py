@@ -1,3 +1,4 @@
+# ⚠️ DÉPRÉCIÉ — script de démonstration, non utilisé par le pipeline actif.
 from flask import Flask
 from pyhive import hive
     

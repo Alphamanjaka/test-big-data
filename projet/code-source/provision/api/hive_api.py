@@ -199,6 +199,7 @@ def top_diagnostics():
 # 3 Diagnostics heatmap (par tranches d'âge)
 @app.route("/rma/diagnostics_heatmap")
 def diagnostics_heatmap():
+    """Heatmap diagnostics par tranches d'âge (agrégation SQL puis partitionnement age).
     start, end = get_default_dates()
     start_date = request.args.get("start", start)
     end_date = request.args.get("end", end)
@@ -383,6 +384,11 @@ def malaria():
 # 9 Gouvernance — indicateurs de déduplication (SILVER patient + moteur)
 @app.route("/api/governance/duplicates")
 def governance_duplicates():
+    """KPIs déduplication : total masters, doublons, taux, répartition par méthode.
+
+    Lecture dans `datalake_silver.patient_fhir` (colonnes master_patient_id,
+    is_duplicate, match_method). Fallback MOCK si Spark/Hive indisponible.
+    """
     try:
         row = spark.sql(f"""
             SELECT
@@ -417,6 +423,12 @@ def governance_duplicates():
 # 10 Gouvernance — consentements purpose-by-purpose (GOLD)
 @app.route("/api/governance/consent")
 def governance_consent():
+    """Liste des consentements GOLD (purpose-by-purpose) avec stats agrégées.
+
+    Lit `datalake_gold.patient_consent_gold`, ajoute total_consents /
+    granted_count / patients en métadonnées de réponse. Fallback MOCK si la
+    table est vide ou indisponible.
+    """
     limit = int(request.args.get("limit", 200))
     try:
         rows = spark.sql(f"""

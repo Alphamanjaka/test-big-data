@@ -29,7 +29,7 @@ projet/code-source/
 │   ├── synthetic-patient-generator/   générateur easy/medium/hard (+ ground truth)
 │   ├── evaluation_truth.py            calcul P/R/F1 + breakdown
 │   └── evaluate_engine.py             évaluateur adapté au moteur engine/
-├── tests/                test_matcher.py (9) · test_consent.py (3)
+├── tests/                test_matcher.py (12) · test_consent.py (3) · test_deduplication.py (8)
 ├── sql/schema.sql        schéma PostgreSQL central (RAW, master, identity map, consent, api_user, audit)
 └── front-optional/       visualisation Next.js (optionnel — ex visualisation_app)
 ```

@@ -162,6 +162,16 @@ Les rapports JSON sont sauvegardés dans `provision/reports/startup_test_*.json`
 
 > `/api/rma/laboratory` et `/api/rma/malaria` retournent des données vides pour l'instant (sources hors GOLD).
 
+### Gouvernance (Flask, dans cette app)
+
+| Méthode | Endpoint                    | Description                                       | Params  |
+| ------- | --------------------------- | ------------------------------------------------- | ------- |
+| GET     | `/api/governance/duplicates` | KPIs déduplication (patients/masters/doublons)    | —       |
+| GET     | `/api/governance/consent`    | Consentements purpose-by-purpose                  | `limit` |
+
+> L'API gouvernance **plateforme** (FastAPI, port 8000, hôte Windows) est documentée dans
+> [`documents/documentation/api.md`](../../documents/documentation/api.md).
+
 ### Paramètres communs
 
 | Param   | Défaut      | Description                       |

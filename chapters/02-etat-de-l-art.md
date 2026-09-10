@@ -187,7 +187,7 @@ la gouvernance [bigdata_concepts.md §3].
 |---|---|---|
 | **RAW** | brute, sans transformation | parquet `/datalake/raw/{source}/{table}` + tables externes |
 | **SILVER** | nettoyée, **normalisée FHIR**, doublons marqués | `datalake_silver.*_fhir` (4 tables) |
-| **GOLD** | agrégats prêts à l'analyse | `datalake_gold.patient_events_gold` (17 colonnes, 8 tranches RMA) |
+| **GOLD** | agrégats prêts à l'analyse | `datalake_gold.patient_events_gold` (18 colonnes, 8 tranches RMA) |
 
 Le pipeline suit la logique **ELT** (extract → load → transform) : l'ingestion
 charge la donnée **telle quelle** dans RAW, la transformation s'applique *a

@@ -244,6 +244,12 @@ def fuzzy_score(a: str, b: str) -> int:
     return 0
 
 def meilleure_colonne_attendue(champ_fhir: str, candidates: List[str]) -> str:
+    """Trouve la colonne source la plus proche d'un champ FHIR attendu.
+
+    Priorités : synonyme exact (SYNONYMES_COURTS), correspondance de nom
+    exacte, puis similarité floue (fuzzy_score >= FUZZY_THRESHOLD). Retourne
+    None si aucune colonne n'atteint le seuil.
+    """
     champ = champ_fhir.lower()
     for syn in SYNONYMES_COURTS.get(champ, []):
         for c in candidates:

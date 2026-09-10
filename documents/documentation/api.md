@@ -56,7 +56,29 @@ Exemple de réponse :
 
 `python -m provision.api.test_api` → **14/14 PASS** attendu.
 
-## 2. API gouvernance — plateforme
+## 2. API gouvernance — FastAPI (`engine/governance/app.py`, port 8000)
+
+```
+Frontend (Next.js:3000)  ou  curl / client
+    ↓ HTTP (Authorization: Bearer <api_key>)
+FastAPI Gouvernance (8000)  ← psycopg → PostgreSQL central (master_patient, consent, access_audit)
+```
+
+Lancement (hôte Windows) : `uvicorn engine.governance.app:app --port 8000`.
+Auth : clés API (Bearer token, SHA-256 côté serveur).
+
+### Endpoints
+
+| Endpoint | Description | Rôle requis |
+|---|---|---|
+| `GET /health` | Liveness probe | — |
+| `GET /metrics` | KPIs déduplication (total, doublons, taux) | admin, analyst |
+| `GET /patients` | Liste master patients | admin, analyst |
+| `GET /patients/{master_patient_id}` | Détail d'un master patient | admin, analyst |
+| `GET /audit` | Journal d'accès (200 dernières lignes) | admin |
+| `GET /consent` | Liste consentements | admin, analyst |
+| `GET /consent/{master_patient_id}` | Consentements d'un patient | admin, analyst |
+| `POST /consent` | Créer un consentement | admin |
 
 API **lecture seule** exposant le PostgreSQL central (master patient, consentement, audit) :
 

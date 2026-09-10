@@ -1,4 +1,5 @@
 import json
+# ⚠️ DÉPRÉCIÉ — ancien pipeline ELT remplacé par les scripts ELT/ actifs.
 import os
 import logging
 from rapidfuzz import fuzz

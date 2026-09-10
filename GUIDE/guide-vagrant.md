@@ -21,6 +21,50 @@ Emplacement : `Mon_Memoire/projet/code-source/provision/` (`Vagrantfile`, `boots
 > les dépendances Python (`pyspark`, `sshtunnel`, `paramiko`, `rapidfuzz`, `flask`, ...), le driver JDBC
 > `postgresql-42.7.3.jar` dans `$SPARK_HOME/jars/`, initialise le Metastore Derby et formate le NameNode.
 
+### Stack complète et flux ELT
+
+```mermaid
+flowchart TB
+    subgraph HOST["Hôte Windows (dev)"]
+        VG["vagrant up / vagrant ssh<br/>bootstrap.sh — provisioning idempotent<br/>(Java 8 · Hadoop 3.3.6 · Hive 3.1.3 · Spark 3.4.2)"]
+        CFG["provision/config/data_sources.json<br/>MAVIS distant + MMT_DB local (non committé)"]
+        PG[("PostgreSQL MMT_DB<br/>Laragon :5432")]
+    end
+
+    subgraph VMX["VM datalake-vm — Ubuntu 20.04 · 8 Go / 4 CPU"]
+        HDFS["Hadoop HDFS<br/>NameNode :9870 · DataNode · SecondaryNameNode"]
+        YARN["YARN :8088<br/>ResourceManager + NodeManager"]
+        SPARK["Spark 3.4.2<br/>pyspark — exécute le pipeline"]
+
+        subgraph HIVE["Hive"]
+            META["Metastore (Derby) :9083<br/>nohup hive --service metastore"]
+            HS2["HiveServer2 :10000<br/>nohup hiveserver2"]
+        end
+
+        subgraph ELT["Pipeline ELT Medallion — run_pipeline.sh"]
+            R1["[1/4] RAW — gen_extract_raw.py<br/>tunnel SSH → MAVIS :8090 + MMT_DB"]
+            R2["[2/4] FHIR Mapping — gen_fhir_mapping.py"]
+            R3["[3/4] SILVER — create_silver.py<br/>FHIR harmonisé + dédup (exact/proba — engine/)"]
+            R4["[4/4] GOLD — create_gold.py<br/>patient_events_gold + patient_consent_gold"]
+        end
+    end
+
+    API["API Flask :5000 — PySpark → Hive<br/>(guide-backend.md)"]
+    FRONT["Frontend Next.js :3000<br/>(guide-frontend.md)"]
+
+    VG --> HDFS
+    VG --> YARN
+    VG --> META --> HS2
+    CFG --> R1
+    PG --> R1
+    SPARK --> R1
+    SPARK --> R2
+    SPARK --> R3
+    SPARK --> R4
+    R1 --> R2 --> R3 --> R4
+    R4 -->|"lecture Spark/Hive"| API --> FRONT
+```
+
 ## 2. Avertissements importants
 
 | Problème | Impact | Contournement |

@@ -103,6 +103,17 @@ LINK_ENTITY_OVERRIDE = {
 # use_id_fallback : autorise le fallback sur la PK `id` pour source_patient_id
 # -----------------------------
 def select_columns(columns, fhir_field_types, link_col=None, use_id_fallback=False):
+    """Associe chaque champ FHIR attendu à la colonne source la plus proche.
+
+    Stratégie dans l'ordre :
+    1. force `link_col` sur la clé étrangère (source_patient_id) si fournie ;
+    2. correspondance exacte (insensible à la casse) ;
+    3. correspondance via FHIR_SYNONYMES ;
+    4. fallback sur la PK 'id/uuid/patient_id' (uniquement pour Patient
+       si use_id_fallback est demandé).
+
+    Retourne la liste de colonnes (doublons supprimés via dict.fromkeys).
+    """
     selected = []
     forced = {"source_patient_id": link_col} if link_col else {}
     for fhir_field in fhir_field_types.keys():

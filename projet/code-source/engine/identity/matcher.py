@@ -39,6 +39,18 @@ class MatchDecision:
 
 def _similarity(left: CanonicalPatient, right: CanonicalPatient,
                 weights: Mapping[str, float] = DEFAULT_WEIGHTS) -> float:
+    """Score pondéré de similarité entre deux patients.
+
+    Scoring exposable (>= 0, <= 1, arrondi à 3 décimales) :
+    - nom : RapidFuzz ratio sur les noms complets en minuscule ;
+    - date de naissance : 0 ou 1 (présence requise des deux côtés) ;
+    - CIN : 0 ou 1, une valeur identique non vide pèse fort ;
+    - ville de naissance : 0 ou 1, uniquement si les deux valeurs existent
+      (jamais bloquant, poids faible).
+
+    Chaque dimension est multipliée par son poids (défauts nom 0.5 /
+    date 0.3 / CIN 0.1 / ville 0.1) puis sommée.
+    """
     name_score = fuzz.ratio(left.full_name.lower(), right.full_name.lower()) / 100.0
     birth_score = float(left.birth_date is not None and left.birth_date == right.birth_date)
     cin_score = float(bool(left.cin) and left.cin == right.cin)
@@ -66,6 +78,7 @@ class _MasterIndex:
         self._by_cin: dict[str, list[int]] = {}
 
     def add(self, index: int, master: CanonicalPatient) -> None:
+        """Indexe un master dans les seaux de blocage (prefix nom, date, CIN)."""
         self._by_prefix.setdefault(_name_prefix(master, self._prefix_len), []).append(index)
         if master.birth_date is not None:
             self._by_birth.setdefault(master.birth_date.isoformat(), []).append(index)
@@ -73,6 +86,7 @@ class _MasterIndex:
             self._by_cin.setdefault(master.cin, []).append(index)
 
     def candidates(self, patient: CanonicalPatient) -> Iterable[int]:
+        """Candidats au matching : union des seaux prefix nom / date / CIN."""
         said: set[int] = set()
         buckets = [self._by_prefix.get(_name_prefix(patient, self._prefix_len), [])]
         if patient.birth_date is not None:
@@ -90,6 +104,20 @@ def deduplicate(patients: list[CanonicalPatient],
                 probabilistic_threshold: float | None = None,
                 weights: Mapping[str, float] = DEFAULT_WEIGHTS,
                 name_prefix_len: int = DEFAULT_NAME_PREFIX_LEN) -> list[MatchDecision]:
+    """Resolution d'identite sequentielle avec regroupement exact puis probabiliste.
+
+    Pour chaque patient, dans l'ordre :
+    1. matching EXACT sur matching_key (birth_date, cin, nom normalise) OU sur
+       la regle complementaire (meme date de naissance + meme CIN non vide) ;
+    2. sinon, meilleur candidat probabiliste parmi les seaux de blocage
+       (prefix nom / date / CIN) dont le score pondere >= seuil ;
+    3. sinon, nouveau master patient.
+
+    Chaque decision porte un libelle d'explication ("sceau explicable") et
+    renvoie l'id du master cree ou reutilise. La liste des masters constitue
+    le master patient index (MPI) de session (approche locale : la variante
+    Spark/greedy est dans `spark_dedup`).
+    """
     threshold = DEFAULT_THRESHOLD if probabilistic_threshold is None else probabilistic_threshold
     masters: list[CanonicalPatient] = []
     master_index = _MasterIndex(prefix_len=name_prefix_len)

@@ -1,4 +1,5 @@
 #!/usr/bin/env python3
+# ⚠️ DÉPRÉCIÉ — ancien pipeline ELT remplacé par les scripts ELT/ actifs.
 # -*- coding: utf-8 -*-
 
 """

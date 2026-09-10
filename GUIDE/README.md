@@ -15,21 +15,31 @@ correspondent au dépôt consolidé `Mon_Memoire/projet/code-source`**.
 
 ## Vue d'ensemble
 
-```
-┌──────────────┐      ┌─────────────────────────────────────────────┐
-│ GUIDE n°2    │      │ GUIDE n°1 (VM Big Data : HDFS/Hive/Spark)   │
-│ Générateur   │ ───▶ │  Pipeline ELT RAW→SILVER→GOLD (run_pipeline)│
-│ patients     │ offre│  └─ GOLD: patient_events_gold, consent_gold │
-└──────────────┘      └──────────────────────┬──────────────────────┘
-                                             │ beeline / Spark
-                          ┌──────────────────▼──────────────────┐
-                          │ GUIDE n°4 — API Flask (port 5000)   │
-                          │ /rma/* · /api/rma/* · gouvernance   │
-                          └──────────────────┬──────────────────┘
-                                             │ HTTP
-                          ┌──────────────────▼──────────────────┐
-                          │ GUIDE n°3 — Frontend Next.js :3000   │
-                          └─────────────────────────────────────┘
+```mermaid
+flowchart TB
+    subgraph SRC["GUIDE n°2 — Générateur de données"]
+        GEN["Patients synthétiques (fictifs)<br/>pharmacy · consultation · imaging<br/>+ ground truth (identity_mapping)"]
+    end
+
+    subgraph VM["GUIDE n°1 — VM Big Data : HDFS / Hive / Spark"]
+        ELT["Pipeline ELT Medallion<br/>RAW → SILVER → GOLD<br/>(run_pipeline.sh)"]
+        DEDUP["Moteur de déduplication<br/>(exact + probabiliste, explicable)"]
+        GOLD[("GOLD : patient_events_gold<br/>patient_consent_gold")]
+    end
+
+    subgraph API["GUIDE n°4 — API Flask :5000"]
+        APIG["/rma/* · /api/rma/*<br/>/api/governance/*"]
+    end
+
+    subgraph FE["GUIDE n°3 — Frontend Next.js :3000"]
+        FRONT["Visualisation + RBAC (NextAuth)<br/>PostgreSQL datalake_user_db"]
+    end
+
+    GEN --> ELT
+    DEDUP -->|"exécuté en SILVER"| ELT
+    ELT --> GOLD
+    GOLD -->|"beeline / Spark"| APIG
+    APIG -->|"HTTP"| FRONT
 ```
 
 ## Emplacement du code consolidé

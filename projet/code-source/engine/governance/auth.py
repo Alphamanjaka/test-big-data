@@ -22,10 +22,16 @@ class UserContext:
 
 
 def _hash_api_key(api_key: str) -> str:
+    """Empreinte SHA-256 de la clé API (jamais stockée en clair)."""
     return hashlib.sha256(api_key.encode()).hexdigest()
 
 
 def _get_user_by_key(api_key: str) -> Optional[UserContext]:
+    """Résout une clé API vers son contexte utilisateur, ou None (invalide/inactif).
+
+    Interroge `api_user(api_key_hash, active)`: la clé brute n'est pas
+    transmise à PostgreSQL, seul son hash l'est.
+    """
     key_hash = _hash_api_key(api_key)
     connection = connection_factory()
     try:
@@ -46,6 +52,11 @@ async def get_current_user(
     request: Request,
     credentials: Annotated[Optional[HTTPAuthorizationCredentials], Security(security)] = None,
 ) -> UserContext:
+    """Dépendance FastAPI : résout le Bearer token (clé API) vers un UserContext.
+
+    401 si aucun token ou si la clé est inconnue/inactive ; le contexte est
+    aussi déposé dans `request.state.user` pour le middleware d'audit.
+    """
     if credentials is None:
         raise HTTPException(status_code=401, detail="Token d'authentification manquant")
     user = _get_user_by_key(credentials.credentials)
@@ -56,6 +67,11 @@ async def get_current_user(
 
 
 def require_role(*allowed_roles: str):
+    """Garde rôle unique (ex. require_role("admin")) ou multi-rôles.
+
+    Construit une dépendance FastAPI à chaîner après get_current_user:
+    renvoie 403 si le rôle de l'utilisateur n'est pas dans la liste.
+    """
     async def role_checker(user: Annotated[UserContext, Depends(get_current_user)]) -> UserContext:
         if user.role not in allowed_roles:
             raise HTTPException(

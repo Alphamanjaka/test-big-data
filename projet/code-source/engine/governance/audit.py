@@ -11,6 +11,12 @@ from engine.governance.database import connection_factory
 
 
 class AuditMiddleware(BaseHTTPMiddleware):
+    """Journalise chaque accès dans `access_audit` (PostgreSQL central), en échec doux.
+
+    Si l'utilisateur est identifié (request.state.user posé par get_current_user),
+    son user_id/username est tracé ; sinon 'anonymous'. Le middleware ne doit
+    jamais bloquer la réponse : toute erreur de traçage est avalée (soft fail).
+    """
     async def dispatch(self, request: Request, call_next) -> Response:
         start_time = time.time()
         response = await call_next(request)

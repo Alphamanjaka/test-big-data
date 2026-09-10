@@ -30,13 +30,13 @@ déduplication :
 
 ```text
 source_system · source_patient_id · first_name · last_name · full_name
-birth_date · cin · birth_city · address · gender
+birth_date · cin · birth_city · address · gender · source_file
 ```
 
 Implémentation : [`engine/identity/canonical.py`](../../projet/code-source/engine/identity/canonical.py)
 — `map_patient()` transforme une ligne source, `CanonicalPatient.from_dict()` reconstruit l'objet.
 Les fonctions `_text`/`_normalized`/`_cin`/`_gender`/`_birth_date` assurent la standardisation, et
-`matching_key` produit la clé de matching `(nom normalisé, birth_date, cin)`.
+`matching_key` produit la clé de matching `(birth_date, cin, nom normalisé)`.
 
 ## 3. Standardisation / nettoyage
 
@@ -137,7 +137,7 @@ Répertoire : [`projet/code-source/engine/`](../../projet/code-source/engine/)
 
 ## 9. Tests
 
-`tests/test_matcher.py` — 9 cas :
+`tests/test_matcher.py` — 12 cas :
 
 1. match exact (clé identique) ;
 2. nom inversé + CIN non vide (exact Naissance+CIN) ;
@@ -147,7 +147,10 @@ Répertoire : [`projet/code-source/engine/`](../../projet/code-source/engine/)
 6. formats de CIN (espacé / compact) normalisés ;
 7. patients distincts → non fusionnés (précision) ;
 8. CIN différents (même nom, même naissance) → non fusionnés ;
-9. parité Pandas / Spark sur le jeu de référence.
+9. parité Pandas / Spark sur le jeu de référence ;
+10. aucun match → nouveau master ;
+11. lecture config YAML (seuil/poids) ;
+12. override des poids modifie la décision.
 
 ## 10. Synchronisation avec la zone SILVER
 

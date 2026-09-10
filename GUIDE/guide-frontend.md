@@ -116,6 +116,36 @@ Utilisateur → Next.js (port 3000) → API Flask (port 5000) → Spark/Hive Dat
                                         └→ PostgreSQL (auth, utilisateurs)
 ```
 
+```mermaid
+flowchart TB
+    U["Utilisateur (navigateur)"]
+
+    subgraph NEXT["Next.js :3000 — front-optional/"]
+        MID["middleware.ts — routes protégées"]
+        SS["Server Components<br/>getServerSession() / redirection"]
+        NC["NextAuth v4 — JWT"]
+        CC["Client Components<br/>filtres (FiltersContext) + graphiques D3"]
+    end
+
+    subgraph PGSQL["PostgreSQL :5432"]
+        DB[("datalake_user_db<br/>Prisma ORM : User / Session /<br/>Account / VerificationToken + RBAC")]
+    end
+
+    subgraph BEND["Backend — API Flask :5000"]
+        RMA["/rma/* · /api/rma/*<br/>/api/governance/*"]
+    end
+
+    subgraph DL["Data Lake"]
+        HIVE2["Spark/Hive"]
+        GOLD2[("GOLD — HDFS<br/>patient_events_gold")]
+    end
+
+    U --> MID --> SS
+    SS --> NC --> DB
+    SS --> CC
+    CC -->|"fetch proxy HTTP"| RMA --> HIVE2 --> GOLD2
+```
+
 ## 8. RBAC
 
 - **NextAuth v4** (JWT) + Prisma adapter.

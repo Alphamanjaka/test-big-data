@@ -1,4 +1,5 @@
 from sshtunnel import SSHTunnelForwarder
+# ⚠️ DÉPRÉCIÉ — ancien pipeline ELT remplacé par les scripts ELT/ actifs.
 import os
 import json
 import socket

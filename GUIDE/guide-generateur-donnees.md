@@ -18,10 +18,27 @@ objectivement le moteur de déduplication.
 
 ### Flux de génération
 
-```
-patient_generator (master patients) → distribution_engine → variation_engine (par niveau)
-       → pharmacy/consultation/imaging generators → identity_mapping (ground truth)
-       → experiment_builder (datasets easy/medium/hard complets)
+```mermaid
+flowchart TB
+    CFG["config/settings.py<br/>seed = 42 · locale fr_FR · 10 000 patients · CIN 75 %"]
+
+    CFG --> MASTERS["patient_generator<br/>master_patients.csv (Ground Truth)"]
+    CFG --> DIST["distribution_engine<br/>distribution_plan.csv (présence 0.8 / 0.7 / 0.6)"]
+
+    MASTERS --> VAR["variation_engine — niveaux de variation<br/>easy 10 % · medium 30 % · hard 50 %"]
+
+    VAR --> PHA["pharmacy_generator<br/>raw/pharmacy/{patients,achats}.csv"]
+    VAR --> CON["consultation_generator<br/>raw/consultation/{patients,consultations}.csv"]
+    VAR --> IMA["imaging_generator<br/>raw/imaging/{patients,examens}.csv"]
+
+    MASTERS --> IDM["identity_mapping (vérité de référence)<br/>identity_mapping.csv — RÉSERVÉ évaluation<br/>jamais fourni à l'algorithme"]
+
+    PHA --> EXP["experiment_builder<br/>data/experiments/{easy,medium,hard}/<br/>3 datasets complets + ground_truth/"]
+    CON --> EXP
+    IMA --> EXP
+    IDM --> EXP
+
+    EXP --> EVAL["evaluate_engine.py<br/>Precision / Recall / F1 par paires<br/>breakdown exact / probabiliste<br/>parité MVP (Pandas) = Spark"]
 ```
 
 ### Règles de confidentialité

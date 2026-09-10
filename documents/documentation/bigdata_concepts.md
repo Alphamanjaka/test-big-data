@@ -56,7 +56,7 @@ RAW (Bronze) → SILVER (Argent) → GOLD (Or)
 |---|---|---|
 | **RAW** | Conserver la donnée brute, inchangée, telle qu'extraite | Parquet HDFS `/datalake/raw/{source}/{table}` + tables Hive externes ; permet traçabilité, rejeu du pipeline, comparaison avant/après |
 | **SILVER** | Données **nettoyées, normalisées, standardisées** ; les doublons sont identifiés | 4 tables Hive harmonisées **FHIR** : `datalake_silver.*_fhir` |
-| **GOLD** | Données **agrégées, prêtes pour l'analyse** | `datalake_gold.patient_events_gold` (17 colonnes, 8 tranches d'âge RMA), consommée par l'API |
+| **GOLD** | Données **agrégées, prêtes pour l'analyse** | `datalake_gold.patient_events_gold` (18 colonnes, 8 tranches d'âge RMA), consommée par l'API |
 
 Bénéfices : séparation claire des états de la donnée, rejeu possible, qualité progressive, et
 **séparation des données** exigée par la gouvernance (brutes / nettoyées / consolidées).
@@ -138,7 +138,7 @@ liens `source_system → source_patient_id → master_patient_id` **traçables**
 | Data Lake | Réserve centralisée de données brutes (type HDFS), schéma-on-read |
 | Warehouse | Données structurées pour l'analyse (Hive) |
 | Medallion | Modélisation en couches RAW/SILVER/GOLD |
-| Blocking | Réduction des comparaisons en groupes de candidats (préfixe nom, année, préfixe tél…) |
+| Blocking | Réduction des comparaisons en groupes de candidats (préfixe nom, année, CIN…) |
 | Master Patient Index (MPI) | Référentiel des identités patients uniques |
 | Entity Resolution | Technique visant à déterminer si deux enregistrements désignent la même entité |
 | Ground Truth | Vérité terrain de référence utilisée en évaluation |

@@ -17,7 +17,7 @@ puis probabiliste, master patient, identity map, parité Pandas/Spark.
 
 ## 3. Matching
 
-- **Clé** : `(nom normalisé, birth_date, cin)`.
+- **Clé** : `(birth_date, cin, nom normalisé)`.
 - **Poids, seuil et préfixe de blocage** : définis dans `config/deduplication.yaml` (source de vérité),
   chargés par `engine/identity/config.py` (`load_dedup_config`, fallback défauts 0.5/0.3/0.1/0.1,
   seuil 0.80, préfixe 4). Toute calibration passe par ce fichier — **jamais en dur dans le code**.
@@ -51,7 +51,7 @@ puis probabiliste, master patient, identity map, parité Pandas/Spark.
 ## 7. Validation
 
 ```powershell
-.venv\Scripts\python -m pytest tests/test_matcher.py -q      # 9 cas
+.venv\Scripts\python -m pytest tests/test_matcher.py -q      # 12 cas
 .venv\Scripts\python evaluation\evaluate_engine.py --level hard
 ```
 

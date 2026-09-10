@@ -1,4 +1,5 @@
 """
+# ⚠️ DÉPRÉCIÉ — utilise patient_platform (absent du repo actif). Utiliser evaluate_engine.py à la place.
 Évaluateur Ground Truth — compare le résultat de la déduplication
 (MVP Pandas N1 et/ou Spark N2) au regroupement de référence
 (identity_mapping.csv) pour un niveau de difficulté donné.

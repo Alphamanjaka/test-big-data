@@ -193,7 +193,6 @@ pip install \
     flask-cors \
     requests \
     pytz \
-    sentence-transformers
 "
 # Activer le venv dans .bashrc pour les sessions interactives
 grep -q "api-venv/bin/activate" /home/vagrant/.bashrc || \

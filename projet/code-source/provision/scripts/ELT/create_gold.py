@@ -82,6 +82,7 @@ logging.info(f"✅ Base GOLD {GOLD_HIVE_DB} vérifiée")
 from pyspark.sql.types import StructType, StructField
 
 def _lire_silver(table):
+    """Lit une table SILVER; retourne None (au lieu de lever) si elle est absente."""
     try:
         df = spark.table(table)
         logging.info(f"✅ Table SILVER chargée : {table} ({df.count()} lignes)")
@@ -91,6 +92,7 @@ def _lire_silver(table):
         return None
 
 def _vide(colonnes):
+    """DataFrame vide au schéma attendu (tolérance entités manquantes/patients-only)."""
     schema = StructType([StructField(c, StringType(), True) for c in colonnes])
     return spark.createDataFrame([], schema)
 

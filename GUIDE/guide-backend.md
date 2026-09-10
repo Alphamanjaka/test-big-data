@@ -15,8 +15,28 @@ API JSON qui expose les données de la couche **GOLD** du Data Lake au frontend 
 
 ### Chaîne d'appel
 
-```
-Frontend (Next.js :3000) → API Flask (:5000) → PySpark → Hive (HiveServer2 :10000) → HDFS GOLD
+```mermaid
+flowchart LR
+    subgraph FRONT["Frontend — Next.js :3000"]
+        UI["Visualisations RMA (D3)"]
+    end
+
+    subgraph API["API Flask :5000 — provision/api/hive_api.py"]
+        ROUTES["Endpoints<br/>/rma/last_sync · /rma/admissions_summary<br/>/api/rma/* · /api/governance/*"]
+        PYSPARK["PySpark — SparkSession<br/>(lecture HDFS/Hive)"]
+        MOCK["mock_data.py<br/>fallback (réponse mocked: true)"]
+    end
+
+    subgraph HADOOP["VM Big Data"]
+        HS2["HiveServer2 :10000"]
+        GOLD[("HDFS — couche GOLD<br/>patient_events_gold · patient_consent_gold")]
+    end
+
+    UI -->|"HTTP :5000 /rma/*"| ROUTES
+    ROUTES -->|"si GOLD vide / indisponible"| MOCK
+    ROUTES -->|"requêtes métier"| PYSPARK
+    PYSPARK -->|"Thrift JDBC"| HS2
+    HS2 -->|"métadonnées / lecture"| GOLD
 ```
 
 ## 2. Prérequis

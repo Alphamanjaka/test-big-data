@@ -29,6 +29,7 @@ gouvernance** (`engine/`, PostgreSQL central).
 | Hive Metastore | 9083 | DISTANTE (bug Derby sinon) |
 | HiveServer2 | 10000 | `beeline -u jdbc:hive2://localhost:10000 -n vagrant` |
 | API Flask | 5000 | `python -m provision.api.hive_api` (CORS localhost:3000) |
+| API Gouvernance FastAPI | 8000 | `uvicorn engine.governance.app:app --port 8000` (hôte Windows) |
 | Frontend Next.js | 3000 | hôte Windows |
 
 **Ordre STRICT** : `start-dfs.sh` → `start-yarn.sh` → metastore → HiveServer2 → jobs Spark/API.
@@ -56,7 +57,7 @@ Config : `provision/config/data_sources.json` (**non committé**, secrets) — t
   - Encounter : patient_uuid, encounter_id, admission_date, discharge_date, create_date, visit_type
   - Condition : patient_uuid, diagnosis, diagnosis_code, category, code, info, name
   - Observation : patient_uuid, mortality, parity, gravida, live_births
-- **GOLD** : `datalake_gold.patient_events_gold` — 17 colonnes (patient_uuid, source_patient_id, name,
+- **GOLD** : `datalake_gold.patient_events_gold` — 18 colonnes (patient_uuid, source_patient_id, name,
   gender, birth_date, age, age_tranche[8 RMA], encounter_id, admission_date, discharge_date, visit_type,
   diagnosis_code, category, diagnosis, mortality, parity, gravida, live_births).
 

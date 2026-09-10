@@ -54,7 +54,13 @@ def _join_names(row: dict) -> str:
 
 
 class _BoundedMasterIndex:
-    """Blocage des masters : préfixe nom, date de naissance, CIN."""
+    """Blocage des masters : préfixe nom, date de naissance, CIN.
+
+    Équivalent Spark-compatible de `matcher._MasterIndex` : même posture
+    (jamais bloquant sur la ville), mais travaillant sur des dict canoniques,
+    borné (pas de suppression) et exposant en plus la règle exacte
+    date_naissance + CIN via `exact_birth_cin`.
+    """
 
     def __init__(self, prefix_len: int = DEFAULT_NAME_PREFIX_LEN) -> None:
         self._prefix_len = prefix_len
@@ -64,6 +70,7 @@ class _BoundedMasterIndex:
         self._by_cin: dict[str, list[int]] = {}
 
     def add(self, master_idx: int, row: dict) -> None:
+        """Indexe un master dans les seaux prefix nom / date / CIN (dict canonique)."""
         self._masters.append((master_idx, row))
         name = row.get("__normalized_name") or ""
         self._by_prefix.setdefault(name[: self._prefix_len], []).append(master_idx)
@@ -95,6 +102,7 @@ class _BoundedMasterIndex:
         return next(rep for i, rep in self._masters if i == master_idx)
 
     def exact_birth_cin(self, row: dict) -> int | None:
+        """Master identique par la règle complémentaire : date de naissance ET CIN non vide."""
         bd = row.get("birth_date")
         birth_key = bd.isoformat() if hasattr(bd, "isoformat") else (bd or "")
         cin = row.get("cin") or ""
@@ -115,8 +123,17 @@ def deduplicate(rows: list[dict],
                 name_prefix_len: int = DEFAULT_NAME_PREFIX_LEN) -> list[dict]:
     """Résout l'identité sur un jeu de lignes canoniques (par ordre d'ingestion).
 
+    Deux étapes, la première parallélisable Spark, la seconde en driver :
+    1. clusters EXACT par (birth_date, CIN, nom normalisé) — un cluster = un
+       master potentiel, une ancre porteuse de la décision ;
+    2. greedy probabiliste de chaque ancre contre les masters (index de blocage
+       prefix nom / date / CIN, seuil configurable, défaut 0.80) ; le reste du
+       cluster hérite de la décision de l'ancre (duplicate exact). Une ancre
+       sans aucune identité exploitable génère un master isolé par ligne.
+
     Retourne une liste de décisions (dict) :
     master_patient_id, source_system, source_patient_id, method, score, explanation.
+    Sémantique alignée sur `matcher.deduplicate` (parité testée).
     """
     threshold = DEFAULT_THRESHOLD if probabilistic_threshold is None else probabilistic_threshold
     canon = canonical_rows(rows)
@@ -193,6 +210,12 @@ def row_fields(row: dict) -> dict:
 
 
 def _like(row: dict):
+    """Adaptateur dict canonique -> objet minimal pour `matcher._similarity`.
+
+    `_similarity` ne lit que full_name, birth_date, cin, birth_city : un objet
+    volant suffit, sans instancier un CanonicalPatient (économie mémoire sur
+    les ancres en driver).
+    """
     class _P:
         def __init__(self, full_name: str, birth_date, cin: str, birth_city: str) -> None:
             self.full_name = full_name

@@ -51,7 +51,7 @@ Choix de fusion validés : nouveau repo autonome ; docs = un seul set logique
 |---|---|
 | Pipeline | 4 étapes orchestrées ; ~65 680 patients Silver (run 24/08, PoC datalake_mavis d'origine) ; 24 872 doublons détectés (flag) |
 | Sources ELT | MAVIS (11 tables), MMT_DB (3 tables, base synthétique 60 271 lignes), CLINIQUE SQLite (54 582 lignes) |
-| GOLD | `datalake_gold.patient_events_gold` (17 colonnes, 8 tranches RMA) ; dette : jointures GOLD limitées |
+| GOLD | `datalake_gold.patient_events_gold` (18 colonnes, 8 tranches RMA) ; dette : jointures GOLD limitées |
 | Plateforme | 3 sources CSV ; 60 RAW → 36 masters ; 24 fusions exactes ; 60 identity links ; 108 consentements |
 | Dédup | Score nom 0.5 / naissance 0.3 / CIN 0.1 / ville de naissance 0.1 ; seuil 0.80 ; blocking ; exact + probabiliste |
 | Évaluation | hard (2026-09-08, `evaluation_truth.md`) : **Precision 1.000, Recall 0.422, F1 0.594** ; exact P/R/F1 1.000/0.854/0.921 ; probabilistic 1.000/0.533/0.696 ; 0 FP ; rappel par source pharmacy 0.422 / consultation 0.422 / imaging 0.423 |

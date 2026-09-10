@@ -20,7 +20,7 @@ dependencies = [
 ]
 
 [project.optional-dependencies]
-test = ["pytest>=7.0"]
+test = ["pytest>=7.0", "httpx>=0.28"]
 spark = ["pyspark>=3.4"]
 
 [tool.setuptools]
