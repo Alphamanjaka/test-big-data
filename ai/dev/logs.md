@@ -6,6 +6,26 @@ Ne jamais y mettre de données sensibles.
 
 ---
 
+## 10/09/2026 — Recension des tables : nouveau doc `documents/documentation/bases_de_donnees.md`
+
+**Contexte :** question utilisateur sur les tables créées en base → inventaire complet des **deux**
+systèmes de stockage (PostgreSQL central vs Hive Medallion), jusqu'ici éparpillé entre `schema.sql`,
+`fhir_entities.json`, `pipeline.yaml` et les scripts.
+
+| # | Action | Détail |
+| - | ------ | ------ |
+| 1 | Créé `documents/documentation/bases_de_donnees.md` | Recension PostgreSQL (9 tables, ER diagram Mermaid, clés/contraintes) + Hive RAW (bases par source, tables actives générateur + options MAVIS/MMT_DB) + SILVER (4 tables `{entity}_fhir`, colonnes, traçabilité, enrichissement master) + GOLD (`patient_events_gold`, `patient_consent_gold`) + synthèse des flux |
+| 2 | `documents/documentation/architecture.md` | Lien §7 + ligne « Pipeline ELT » passée à 5 étapes |
+| 3 | `documents/documentation/pipeline_elt.md` | Étapes renumérotées [0/5]→[4/5] (ajout §0 générateur), orchestration/table utilitaires, dette « events vide » marquée résolue (à revalider VM), section « Voir aussi » |
+
+**Vérifications :** colonnes vérifiées à la source (fhir_entities.json, schema.sql, create_silver.py
+lignes 86-492, create_gold.py lignes 93-231, gen_extract_raw.py lignes 260-561) ; grep du nombre
+d'étapes dans la doc → cohérent (5). Aucun changement de code.
+
+**Résultat :** inventaire unique et à jour du catalogue de tables. Commit en attente.
+
+---
+
 ## 10/09/2026 — Archivage : `provision/scripts/ELT.before/` déplacé vers `archives/elt.before/`
 
 **Contexte :** le dossier `projet/code-source/provision/scripts/ELT.before/` (copie des scripts ELT

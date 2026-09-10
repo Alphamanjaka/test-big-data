@@ -1,4 +1,4 @@
-# Pipeline ELT — fonctionnement complet
+﻿# Pipeline ELT — fonctionnement complet
 
 Le pipeline ELT convertit des données médicales synthétiques issues de **3 sources** (PostgreSQL MAVIS,
 PostgreSQL MMT_DB, SQLite CLINIQUE) en une table analytique **GOLD** prête pour l'API/le dashboard.
@@ -15,7 +15,7 @@ PostgreSQL (MAVIS, MMT_DB) + SQLite (CLINIQUE)
    gen_fhir_mapping.py
 ```
 
-Orchestration : `bash provision/scripts/run_pipeline.sh` (4 étapes séquentielles, arrêt sur erreur).
+Orchestration : `bash provision/scripts/run_pipeline.sh` (5 étapes séquentielles [0/5]→[4/5], arrêt sur erreur).
 Logs : `provision/logs/elt.log`. Suivi : `provision/metadata/sync_metadata.json` (UTC+3).
 
 ## Environnement
@@ -35,21 +35,31 @@ start-dfs.sh; start-yarn.sh      # HDFS puis YARN
 # metastore (9083) + HiveServer2 (10000) lancés par bootstrap.sh
 ```
 
-## Étape 1/4 — Extraction RAW
+## Étape 0/5 — Garantie des données générateur (seed 42)
+
+`bash provision/scripts/ensure_generator_data.sh` — étape intégrée à `run_pipeline.sh`.
+
+Si un fichier CSV des sources manque (`pharmacy/{patients,achats}.csv`, `consultation/{patients,consultations}.csv`,
+`imaging/{patients,examens}.csv`), la source concernée est **régénérée** avec `--seed 42`
+(volume : `GENERATOR_PATIENTS`, défaut 500) → run déterministe et reproductible.
+
+## Étape 1/5 — Extraction RAW
 
 `python3 -m provision.scripts.ELT.gen_extract_raw` — `gen_extract_raw.py`
 
 1. **Connexion** : MAVIS via tunnel SSH (3 tentatives, sshtunnel) puis JDBC ; MMT_DB en JDBC direct ;
-   CLINIQUE via lecture SQLite (`discover_sqlite`). Driver `postgresql-42.7.3.jar`.
-2. **Découverte** (`information_schema`) : tables/views du schéma public, clés étrangères, filtrage des
-   tables reliées par FK à la table principale.
-3. **Extraction parallèle** (4 workers) : lecture JDBC → Parquet HDFS
+   CLINIQUE via lecture SQLite (`discover_sqlite`) ; **sources CSV du générateur** via `discover_csv`
+   (`type: csv`, `dir` résolu par `paths.expand_path`, normalisation des dates en ISO). Driver
+   `postgresql-42.7.3.jar`.
+2. **Découverte** (`information_schema` pour les bases) : tables/views du schéma public, clés étrangères,
+   filtrage des tables reliées par FK à la table principale.
+3. **Extraction parallèle** (4 workers) : lecture JDBC/CSV → Parquet HDFS
    `hdfs://localhost:9000/datalake/raw/{source}/{table}` + table Hive externe `{source}.{table}`
-   (type PostgreSQL via mapping `pg_to_hive`) + collecte du schéma/compte/échantillon.
+   + collecte du schéma/compte/échantillon.
 4. **Sorties** : `provision/metadata/extract_raw_report.json`, rapports par source et échecs ;
    `data_sources.json` mis à jour (`tables_to_detectees`) ; `sync_metadata.json` (RAW, status ok).
 
-## Étape 2/4 — Mapping FHIR
+## Étape 2/5 — Mapping FHIR
 
 `python3 -m provision.scripts.ELT.gen_fhir_mapping` — `gen_fhir_mapping.py`
 
@@ -64,7 +74,7 @@ start-dfs.sh; start-yarn.sh      # HDFS puis YARN
    la table principale sort en premier.
 5. **Sortie** : `provision/metadata/fhir_mapping.json`.
 
-## Étape 3/4 — Transformation SILVER
+## Étape 3/5 — Transformation SILVER
 
 `python3 -m provision.scripts.ELT.create_silver` — `create_silver.py`
 
@@ -96,7 +106,7 @@ start-dfs.sh; start-yarn.sh      # HDFS puis YARN
 | `datalake_silver.condition_fhir` | Diagnostics CIM-10 |
 | `datalake_silver.observation_fhir` | Indicateurs (mortalité, parité, gravida) |
 
-## Étape 4/4 — Table GOLD
+## Étape 4/5 — Table GOLD
 
 `python3 -m provision.scripts.ELT.create_gold` — `create_gold.py`
 
@@ -152,7 +162,8 @@ data_sources.json ─> [Step 1] ─> extract_raw_report.json + data_sources.json
 | `provision/scripts/utils/sync_utils.py` | Gestion de `sync_metadata.json` (timestamps UTC+3) |
 | `provision/config/data_sources.json` | Configuration des sources (non commité) |
 | `provision/db/rebuild_mmt_db.py` | Générateur de données synthétiques pour MMT_DB |
-| `provision/scripts/run_pipeline.sh` | Orchestration 4 étapes + logs |
+| `provision/scripts/run_pipeline.sh` | Orchestration 5 étapes + logs |
+| `provision/scripts/ensure_generator_data.sh` | Étape 0 : régénère les CSV du générateur (seed 42) |
 
 ## Pièges connus (règles anti-régression)
 
@@ -186,8 +197,16 @@ beeline HS2 instable dans la VM, contourné) :
 
 ## Problèmes connus (dettes qualité)
 
-- Gender NULL pour MMT_DB (gnuhealth_patient sans colonne gender mappée).
-- Encounters/Conditions sans `patient_uuid` : liens FK à enrichir (interim patients-only → `patient_events_gold` vide).
+- Gender NULL pour les sources avancées sans colonne `gender` mappée (ex. `gnuhealth_patient`).
+- Encounters/Conditions sans `patient_uuid` : liens FK à enrichir. **Résolu** pour le générateur depuis
+  10/09/2026 : `achats`/`consultations`/`examens → Encounter` avec `fk_to_patient` (`customer_id`,
+  `patient_id`, `patient_code`) déclaré dans `fhir_entities.json` → `patient_events_gold` attendu > 0
+  (à revalider sur VM).
 - Laboratory et Malaria : données uniquement mock (sources hors GOLD).
 - Consentement PostgreSQL non alimenté en interim → `patient_consent_gold` construit depuis les masters SILVER
   (`granted`/`purpose` NULL) ; endpoints duplicates/consent servis hors mock (`mocked: false`).
+
+## Voir aussi
+
+- Recension complète des tables (PostgreSQL + Hive RAW/SILVER/GOLD) :
+  [`bases_de_donnees.md`](bases_de_donnees.md).

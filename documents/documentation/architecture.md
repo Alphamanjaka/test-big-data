@@ -109,7 +109,7 @@ Règles Silver :
 | Composant | Rôle | Fichiers principaux |
 |---|---|---|
 | VM Big Data | Environnement reproductible Hadoop/Hive/Spark | `provision/Vagrantfile`, `provision/bootstrap.sh` |
-| Pipeline ELT | 4 étapes Medallion | `provision/scripts/ELT/gen_extract_raw.py`, `gen_fhir_mapping.py`, `create_silver.py`, `create_gold.py` |
+| Pipeline ELT | 5 étapes (0/5 générateur → 4/5) | `ensure_generator_data.sh`, `provision/scripts/ELT/gen_extract_raw.py`, `gen_fhir_mapping.py`, `create_silver.py`, `create_gold.py` |
 | Utilitaires pipeline | Config + schéma FHIR, synonymes, sync | `provision/scripts/utils/paths.py`, `fhir_schema.py`, `fhir_synonyms.py`, `sync_utils.py` |
 | Configuration pipeline | Chemins, bases Hive, tables, Spark, API (un seul fichier, commité) | `provision/config/pipeline.yaml` |
 | Config FHIR déclarative | Schéma 4 entités + synonymes + mapping table→entité | `provision/config/fhir_entities.json` |
@@ -131,7 +131,8 @@ Règles Silver :
 ## 7. Liens
 
 - Concepts : [`bigdata_concepts.md`](bigdata_concepts.md) — pourquoi HDFS/Hive/Spark.
-- Pipeline : [`pipeline_elt.md`](pipeline_elt.md) — détail des 4 étapes.
+- Bases de données : [`bases_de_donnees.md`](bases_de_donnees.md) — recension complète PostgreSQL + Hive (RAW/SILVER/GOLD).
+- Pipeline : [`pipeline_elt.md`](pipeline_elt.md) — détail des 5 étapes.
 - Déduplication : [`deduplication.md`](deduplication.md).
 - Gouvernance : [`consentement_gouvernance.md`](consentement_gouvernance.md).
 - API : [`api.md`](api.md).
