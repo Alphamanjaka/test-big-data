@@ -17,6 +17,7 @@ from ..utils.sync_utils import update_sync_metadata
 from ..utils.paths import (
     DATASOURCES_PATH, METADATA_DIR, LOG_DIR_EXTRACT,
     hdfs_raw,
+    expand_path,
     SPARK_EXECUTOR_MEMORY, SPARK_DRIVER_MEMORY,
 )
 
@@ -502,7 +503,7 @@ def discover_csv(source, spark, source_index):
     logger.info(f"=== Début de la découverte CSV pour {source_name} ===")
 
     db_cfg = source["db"]
-    base_dir = db_cfg["dir"]
+    base_dir = expand_path(db_cfg["dir"])
     ext = db_cfg.get("ext", "csv")
     tables_info, failed_tables = [], []
 

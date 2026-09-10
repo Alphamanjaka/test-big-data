@@ -8,7 +8,7 @@ correspondent au dépôt consolidé `Mon_Memoire/projet/code-source`**.
 
 | # | Guide | Sujet | Prérequis |
 |---|-------|-------|-----------|
-| 1 | [`guide-vagrant.md`](guide-vagrant.md) | VM Big Data : création, démarrage, (ré)initialisation, pipeline ELT, arrêt | Vagrant + VirtualBox, base MMT_DB (Laragon) |
+| 1 | [`guide-vagrant.md`](guide-vagrant.md) | VM Big Data : création, démarrage, (ré)initialisation, pipeline ELT, arrêt | Vagrant + VirtualBox, données du générateur synthétique |
 | 2 | [`guide-generateur-donnees.md`](guide-generateur-donnees.md) | Générateur de données patients synthétiques (3 sources) + ground truth | Python 3.8+, `faker`/`pandas` |
 | 3 | [`guide-frontend.md`](guide-frontend.md) | Application de visualisation Next.js (optionnelle) | Node.js 18+, backend API allumé |
 | 4 | [`guide-backend.md`](guide-backend.md) | API Flask (port 5000) : endpoints, lancement, tests, gouvernance | Pipeline ELT GOLD + Hive actifs |

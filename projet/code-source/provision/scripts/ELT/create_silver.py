@@ -25,6 +25,7 @@ from ..utils.sync_utils import update_sync_metadata
 from ..utils.paths import (
     METADATA_DIR, LOG_DIR, HIVE_SILVER,
     HDFS_BASE, hdfs_warehouse, FUZZY_THRESHOLD,
+    FHIR_ENTITIES_PATH,
     SPARK_EXECUTOR_MEMORY, SPARK_DRIVER_MEMORY, SPARK_SHUFFLE_PARTITIONS,
 )
 
@@ -40,6 +41,11 @@ except ImportError:
 MAPPING_PATH = os.path.join(METADATA_DIR, "fhir_mapping.json")
 os.makedirs(LOG_DIR, exist_ok=True)
 LOG_FILE = os.path.join(LOG_DIR, "gen_fhir_silver.log")
+
+# Mappings explicites table → entité + FK patient (fhir_entities.json),
+# source de vérité pour le lien patient des entités non-Patient.
+with open(FHIR_ENTITIES_PATH, encoding="utf-8") as _f:
+    TABLE_MAPPINGS = json.load(_f).get("table_mappings", {})
 
 # Dossier des fichiers RAW (si les tables ne sont pas dans Hive)
 RAW_PARQUET_BASE = f"{HDFS_BASE}/raw"
@@ -400,11 +406,12 @@ for source, entites in fhir_mapping.items():
                 if meilleur:
                     mapping_local[champ] = meilleur
 
-            # Lien FK → patient (entités non-Patient) : privilégier la colonne
-            # dédiée (patient_id...) plutôt que la PK `id` de la table, pour que
-            # patient_uuid soit aligné sur celui du Patient (logique GOLD).
+            # Lien FK → patient (entités non-Patient) : en priorité la colonne
+            # explicite fk_to_patient de fhir_entities.json, sinon l'heuristique
+            # (patient_id...) qui ne détecte pas customer_id / patient_code.
             if entite != "Patient":
-                patient_link = meilleure_colonne_patient_id(df)
+                patient_link = (TABLE_MAPPINGS.get(source, {}).get(nom_table, {}).get("fk_to_patient")
+                                or meilleure_colonne_patient_id(df))
                 if patient_link:
                     mapping_local["source_patient_id"] = patient_link
                     logging.info(f"🔗 Lien patient détecté pour {nom_table} : {patient_link}")

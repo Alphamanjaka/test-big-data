@@ -97,6 +97,19 @@ cd F:\MBDS\STAGE\PROJECT\Mon_Memoire\projet\code-source
 source, et vérifie la **parité MVP (Pandas) vs Spark**. Le rapport est écrit dans
 `evaluation/evaluation_truth.md` et affiché en sortie.
 
+### 3.3 Lien avec le pipeline ELT (RAW → GOLD)
+
+Le pipeline du data lake consomme **uniquement** les sorties `data/raw/` (jamais `ground_truth` — la
+référence reste hors du pipeline pour rester une vérité d'évaluation) :
+
+- `provision/config/data_sources.json` déclare les 3 sources CSV du générateur (`type: "csv"`,
+  `dir: "{PROJECT_ROOT}/evaluation/synthetic-patient-generator/data/raw/{source}"`).
+- `run_pipeline.sh` inclut une **étape 0** (`ensure_generator_data.sh`) : si un CSV manque, la source
+  est régénérée avec `--seed 42` (déterministe). Volume par défaut : `GENERATOR_PATIENTS` = 500.
+- Le mapping FHIR (`fhir_entities.json`) associe les tables du générateur aux entités :
+  `patients → Patient`, `achats / consultations / examens → Encounter` (FK patient déclarées).
+- Résultat : même seed ⇒ mêmes CSV ⇒ même RAW ⇒ même SILVER ⇒ même GOLD (reproductible, sans MAVIS).
+
 ## 4. Paramètres centraux
 
 `config/settings.py` :

@@ -6,6 +6,42 @@ Ne jamais y mettre de données sensibles.
 
 ---
 
+## 10/09/2026 — GOLD alimenté par le générateur synthétique (sources CSV + événements)
+
+**Contexte :** `patient_events_gold` vide (0 ligne) : le run ne mappait que `patients → Patient`
+(local `data_sources.json` ne listait que `patients` ; `fhir_entities.json` ne mappait aucune table
+d'événements). Objectif utilisateur : le pipeline consomme **toujours** les données du générateur
+(le générateur produit déjà des tables d'événements avec FK patients : achats, consultations, examens).
+
+| # | Fichier | Modification |
+| - | ------- | ------------ |
+| 1 | `provision/config/fhir_entities.json` | `table_mappings` : `pharmacy.achats`→Encounter (`fk_to_patient=customer_id`), `consultation.consultations`→Encounter (`fk_to_patient=patient_id`), `imaging.examens`→Encounter (`fk_to_patient=patient_code`) ; `synonyms` : `encounter_id`↔[consultation_id, purchase_id, exam_id], `admission_date`↔[consultation_date, purchase_date, exam_date] |
+| 2 | `provision/scripts/utils/paths.py` | Nouveau helper `expand_path(value)` : résout le token `{PROJECT_ROOT}` dans les chemins de config |
+| 3 | `provision/scripts/ELT/gen_extract_raw.py` | `discover_csv` : `base_dir = expand_path(db_cfg["dir"])` → fin des chemins absolus VM en dur |
+| 4 | `provision/scripts/ELT/create_silver.py` | Lien FK patient : priorité `table_mappings[source][table].fk_to_patient` (chargé depuis `fhir_entities.json`) sinon heuristique (`meilleure_colonne_patient_id`) — l'heuristique seule rate `customer_id`/`patient_code` |
+| 5 | `provision/config/data_sources.example.json` | Remplacé par les 3 sources CSV du générateur (`type=csv`, `dir={PROJECT_ROOT}/evaluation/...`, tables patients + événement) |
+| 6 | `provision/config/data_sources.mavis.example.json` | Nouveau : exemples avancés MAVIS + MMT_DB (postgres), documentés comme optionnels |
+| 7 | `provision/config/data_sources.json` | (non committé) mis à jour à l'identique de l'exemple |
+| 8 | `provision/scripts/ensure_generator_data.sh` | Nouveau — étape 0 : vérifie les CSV des 3 sources, régénère avec `--seed 42` (`GENERATOR_PATIENTS`, défaut 500) si un fichier manque |
+| 9 | `provision/scripts/run_pipeline.sh` | Étapes renumérotées [0/5]→[4/5] ; ajout de l'appel `ensure_generator_data.sh` |
+| 10 | `GUIDE/guide-vagrant.md` | Schéma flux (générateur + étapes 0-4/5), §3 (token `{PROJECT_ROOT}`, MAVIS/MMT_DB optionnels), §5 (données générateur auto), §6 (durées), §7 (validation SILVER encounters + GOLD), §7 fichiers, §8 ports, §2 avertissements |
+| 11 | `GUIDE/guide-generateur-donnees.md` | §3.3 « Lien avec le pipeline ELT » : les CSV `data/raw/` sont le point d'entrée du pipeline (jamais `ground_truth`) |
+| 12 | `projet/code-source/README.md` | Structure (5 étapes + mavis example) ; note data_sources = générateur par défaut |
+| 13 | `GUIDE/README.md` | Ligne guide-vagrant mise à jour (générateur au lieu de MMT_DB) |
+
+**Vérifications :** `py_compile` OK (paths, gen_extract_raw, create_silver) ; les 4 JSON valides
+(`fhir_entities.json` : nouvelles tables → Encounter + FK, nouveaux synonymes chargés via `fhir_schema`) ;
+`expand_path` testé (`{PROJECT_ROOT}` → root réel, chemin simple inchangé) ; `bash -n` (Git Bash) OK sur
+les 2 scripts ; `select_columns` (gen_fhir_mapping) simulé : encounter_id/admission_date détectés pour les
+3 tables événements — note : `source_patient_id` est forcé par `create_silver` (FK config), le mapping
+`gen_fhir_mapping` ne contient pas ce champ (FHIR_FIELDS Encounter sans source_patient_id) → cohérent.
+
+**Résultat :** config-only pour les mappings événements + étape 0 déterministe (seed 42). Validation finale
+sur VM : `ensure_generator_data.sh` → `run_pipeline.sh` → attendre `datalake_silver.encounter_fhir > 0` et
+`datalake_gold.patient_events_gold > 0`. Commits : doc sync en attente (9 fichiers), celui-ci à créer.
+
+---
+
 ## 10/09/2026 — Synchronisation de la documentation avec la refonte config (onboarding nouveau dev)
 
 **Contexte :** rendre le dépôt « auto-lançable » par un développeur qui dispose déjà de Vagrant et des

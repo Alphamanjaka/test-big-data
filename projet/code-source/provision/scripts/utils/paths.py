@@ -44,6 +44,12 @@ def hdfs_raw(source, table):
 def hdfs_warehouse(zone):
     return f"{HDFS_NAMENODE}{HDFS_BASE}/{zone}/warehouse"
 
+def expand_path(value):
+    """Résout le token {PROJECT_ROOT} dans un chemin (ex: data_sources.json)."""
+    if isinstance(value, str) and "{PROJECT_ROOT}" in value:
+        return value.replace("{PROJECT_ROOT}", PROJECT_ROOT)
+    return value
+
 # ── Hive DB names ──
 HIVE_SILVER = CFG["hive_dbs"]["silver"]
 HIVE_GOLD = CFG["hive_dbs"]["gold"]

@@ -53,10 +53,10 @@
     "birth_city": ["birth_city", "ville_naissance", "ville_nai", "birth_place", "ville_naiss"],
     "email": ["email", "mail"],
     "diagnosis": ["disease", "pathology", "diagnostic"],
-    "admission_date": ["start_date", "visit_date"],
+    "admission_date": ["start_date", "visit_date", "purchase_date", "consultation_date", "exam_date"],
     "discharge_date": ["end_date", "leave_date"],
     "source_patient_id": ["patient_id", "id_patient", "id", "client_id", "patient_code", "id_personne"],
-    "encounter_id": ["id", "visit_id", "consultation_id"]
+    "encounter_id": ["id", "visit_id", "consultation_id", "purchase_id", "exam_id"]
   },
 
   "table_mappings": {
@@ -77,13 +77,16 @@
       "observations": { "entity": "Observation", "fk_to_patient": "patient_id" }
     },
     "pharmacy": {
-      "patients": { "entity": "Patient", "fk_to_patient": null }
+      "patients": { "entity": "Patient", "fk_to_patient": null },
+      "achats": { "entity": "Encounter", "fk_to_patient": "customer_id" }
     },
     "consultation": {
-      "patients": { "entity": "Patient", "fk_to_patient": null }
+      "patients": { "entity": "Patient", "fk_to_patient": null },
+      "consultations": { "entity": "Encounter", "fk_to_patient": "patient_id" }
     },
     "imaging": {
-      "patients": { "entity": "Patient", "fk_to_patient": null }
+      "patients": { "entity": "Patient", "fk_to_patient": null },
+      "examens": { "entity": "Encounter", "fk_to_patient": "patient_code" }
     }
   }
 }

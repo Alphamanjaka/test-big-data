@@ -27,8 +27,8 @@ Emplacement : `Mon_Memoire/projet/code-source/provision/` (`Vagrantfile`, `boots
 flowchart TB
     subgraph HOST["Hôte Windows (dev)"]
         VG["vagrant up / vagrant ssh<br/>bootstrap.sh — provisioning idempotent<br/>(Java 8 · Hadoop 3.3.6 · Hive 3.1.3 · Spark 3.4.2)"]
-        CFG["provision/config/pipeline.yaml (commité, HDFS/Hive/Spark/API)<br/>+ data_sources.json (MAVIS distant + MMT_DB local, non committé)"]
-        PG[("PostgreSQL MMT_DB<br/>Laragon :5432")]
+        CFG["provision/config/pipeline.yaml (commité, HDFS/Hive/Spark/API)<br/>+ data_sources.json (générateur synthétique, non committé)"]
+        PG[("Générateur synthétique<br/>CSV — evaluation/synthetic-patient-generator<br/>pharmacy · consultation · imaging")]
     end
 
     subgraph VMX["VM datalake-vm — Ubuntu 20.04 · 8 Go / 4 CPU"]
@@ -42,10 +42,11 @@ flowchart TB
         end
 
         subgraph ELT["Pipeline ELT Medallion — run_pipeline.sh"]
-            R1["[1/4] RAW — gen_extract_raw.py<br/>tunnel SSH → MAVIS :8090 + MMT_DB"]
-            R2["[2/4] FHIR Mapping — gen_fhir_mapping.py"]
-            R3["[3/4] SILVER — create_silver.py<br/>FHIR harmonisé + dédup (exact/proba — engine/)"]
-            R4["[4/4] GOLD — create_gold.py<br/>patient_events_gold + patient_consent_gold"]
+            R0["[0/5] Générateur — ensure_generator_data.sh<br/>régénère les CSV (seed 42) s'ils manquent"]
+            R1["[1/5] RAW — gen_extract_raw.py<br/>lit les CSV du générateur (type=csv)"]
+            R2["[2/5] FHIR Mapping — gen_fhir_mapping.py"]
+            R3["[3/5] SILVER — create_silver.py<br/>FHIR harmonisé + dédup (exact/proba — engine/)"]
+            R4["[4/5] GOLD — create_gold.py<br/>patient_events_gold + patient_consent_gold"]
         end
     end
 
@@ -55,13 +56,17 @@ flowchart TB
     VG --> HDFS
     VG --> YARN
     VG --> META --> HS2
-    CFG --> R1
-    PG --> R1
+    CFG --> R0
+    PG --> R0
+    SPARK --> R0
+    R0 --> R1
+    R1 --> R2
+    R2 --> R3
+    R3 --> R4
     SPARK --> R1
     SPARK --> R2
     SPARK --> R3
     SPARK --> R4
-    R1 --> R2 --> R3 --> R4
     R4 -->|"lecture Spark/Hive"| API --> FRONT
 ```
 
@@ -71,7 +76,7 @@ flowchart TB
 |---|---|---|
 | **Stockage NameNode dans `/tmp`** | Tout reboot efface le namespace HDFS | Re-formater le NameNode avant chaque démarrage post-reboot |
 | **Données HDFS perdues après reboot** | RAW/SILVER/GOLD à refaire | Relancer le pipeline complet (`run_pipeline.sh`) |
-| **PostgreSQL MMT_DB sur l'hôte (Windows)** | Pas un service Windows → s'éteint au reboot | Le relancer manuellement (Laragon ou ligne de commande) |
+| **CSV générateur manquants** | Sources du pipeline absentes | L'étape 0 les régénère (seed 42) ; sinon générer sur l'hôte (`guide-generateur-donnees.md`) |
 | **vboxsf ne supporte pas les renames atomiques** | Spark ne peut pas écrire dans le partage | Warehouse Spark **toujours sur HDFS** — ne pas modifier `spark.sql.warehouse.dir` |
 | **`pkill -f` tue la commande SSH elle-même** | Session coupée | `pkill -f 'hive' -u vagrant` (ciblé) |
 
@@ -98,12 +103,15 @@ pyspark --version         # doit afficher Spark 3.4.2
 > ```bash
 > # Sur l'hôte
 > cp provision/config/data_sources.example.json provision/config/data_sources.json
-> # puis renseigner identifiants MAVIS / MMT_DB dans data_sources.json
+> # Pas d'édition requise : sources = CSV du générateur synthétique (seed 42).
+> # Sources avancées MAVIS/MMT_DB : voir config/data_sources.mavis.example.json.
 > ```
 >
 > `pipeline.yaml` (chemins HDFS, bases Hive, tables, mémoire Spark, tranches d'âge, port API) et
 > `fhir_entities.json` (schéma FHIR + synonymes + mapping table→entité) sont **commités** : aucun
 > copie ni édition requise pour un lancement par défaut. Seule `data_sources.json` est à créer.
+> Le chemin `dir` des sources CSV utilise le token `{PROJECT_ROOT}` (résolu par `paths.expand_path`),
+> ex. `{PROJECT_ROOT}/evaluation/synthetic-patient-generator/data/raw/pharmacy`.
 
 ## 4. Démarrage complet (après un reboot de la VM)
 
@@ -144,31 +152,28 @@ jps | grep RunJar     # 2 processus RunJar (metastore + HS2)
 beeline -u jdbc:hive2://localhost:10000 -n vagrant --silent=true -e 'SHOW DATABASES;'
 ```
 
-### Étape 5 — PostgreSQL MMT_DB sur l'hôte Windows
-Base PostgreSQL 18 sous Laragon, **pas un service Windows** :
-```powershell
-# Option A : via Laragon GUI, activer PostgreSQL.
-# Option B : ligne de commande.
-& "C:\laragon\bin\postgresql\postgresql\bin\pg_ctl.exe" -D "C:\laragon\data\postgresql" `
-  -l "C:\laragon\data\postgresql\startup.log" start
-# Vérification (mettre le mot de passe via %PGPASSWORD% ou .env)
-& "C:\laragon\bin\postgresql\postgresql\bin\psql.exe" -U postgres -h 127.0.0.1 -d mmt_db `
-  -tAc "SELECT count(*) FROM gnuhealth_patient;"
-```
+### Étape 5 — Données du générateur synthétique (automatique)
+Le pipeline garantit ses données à l'**étape 0** (`ensure_generator_data.sh`) : si un CSV manque,
+la source concernée est régénérée avec le seed fixe 42 (déterministe).
+- Volume : réglable via `GENERATOR_PATIENTS` (défaut 500 patients maîtres).
+- Sources : `evaluation/synthetic-patient-generator/data/raw/{pharmacy,consultation,imaging}/`.
+- Générateur schématique : `GUIDE/guide-generateur-donnees.md`.
 
-> **MAVIS distante** : le tunnel SSH (`102.16.7.154:8090` → pg 5433 local) est géré automatiquement par
-> `gen_extract_raw.py` via la lib `sshtunnel`. Aucune action manuelle requise.
+> **MMT_DB (PostgreSQL Laragon) et MAVIS (distant)** restent **optionnels** : à activer seulement avec
+> `config/data_sources.mavis.example.json`. Le tunnel SSH MAVIS (`102.16.7.154:8090` → pg 5433 local)
+> est géré par `gen_extract_raw.py` (`sshtunnel`). Sans ces sources, le pipeline tourne sur le générateur seul.
 
 ### Étape 6 — Lancer le pipeline ELT complet
 ```bash
 # Dans la VM
 cd ~/datalake-final
 
-# Option A — mode simple :
+# Option A — mode simple (étape 0 = données générateur intégrées) :
 bash provision/scripts/run_pipeline.sh
 # Option B — arrière-plan :
 nohup bash provision/scripts/run_pipeline.sh > /tmp/pipeline.log 2>&1 &
-# Option C — pas-à-pas avec log :
+# Option C — pas-à-pas avec log (étape 0 automatique incluse) :
+bash provision/scripts/ensure_generator_data.sh
 /home/vagrant/api-venv/bin/python -m provision.scripts.ELT.gen_extract_raw 2>&1 | tee -a provision/logs/elt.log
 /home/vagrant/api-venv/bin/python -m provision.scripts.ELT.gen_fhir_mapping 2>&1 | tee -a provision/logs/elt.log
 /home/vagrant/api-venv/bin/python -m provision.scripts.ELT.create_silver 2>&1 | tee -a provision/logs/elt.log
@@ -176,14 +181,14 @@ nohup bash provision/scripts/run_pipeline.sh > /tmp/pipeline.log 2>&1 &
 ```
 Suivre : `tail -f ~/datalake-final/provision/logs/elt.log`.
 
-**Durées typiques** (VM 8 Go / 4 CPU) :
+**Durées typiques** (VM 8 Go / 4 CPU, 500 patients maîtres) :
 | Étape | Durée approx. |
 |---|---|
-| [1/4] Extraction RAW (MAVIS) | 15–20 min |
-| [1/4] Extraction RAW (MMT_DB) | < 1 min |
-| [2/4] FHIR Mapping | 1–2 min |
-| [3/4] Transformation SILVER | 1–2 min |
-| [4/4] Création GOLD | 5–8 min |
+| [0/5] Données générateur (étape 0) | < 1 min (skip si présentes) |
+| [1/5] Extraction RAW (CSV) | 1–2 min |
+| [2/5] FHIR Mapping | < 1 min |
+| [3/5] Transformation SILVER | 1–2 min |
+| [4/5] Création GOLD | 5–8 min |
 
 > `WARN NativeCodeLoader` / `WARN Utils: hostname resolves to loopback` = **warnings normaux**, pas des erreurs.
 
@@ -191,11 +196,15 @@ Suivre : `tail -f ~/datalake-final/provision/logs/elt.log`.
 ```sql
 -- Via beeline (dans la VM)
 beeline -u jdbc:hive2://localhost:10000 -n vagrant --silent=true --outputformat=tsv2 \
-  -e "SELECT \`_source_table\`, COUNT(*) AS nb FROM datalake_silver.patient_fhir GROUP BY \`_source_table\` ORDER BY nb DESC;"
+  -e "SELECT \`_source_table\`, COUNT(*) AS nb FROM datalake_silver.encounter_fhir GROUP BY \`_source_table\` ORDER BY nb DESC;"
+beeline -u jdbc:hive2://localhost:10000 -n vagrant --silent=true --outputformat=tsv2 \
+  -e "SELECT COUNT(*) AS events FROM datalake_gold.patient_events_gold;"
 ```
-Référence du run consolidé (07/09/2026) : **SILVER = 214 lignes** (76 pharmacy + 76 consultation +
+Référence du run consolidé (07/09/2026) : **SILVER patient = 214 lignes** (76 pharmacy + 76 consultation +
 62 imaging), **145 masters**, **69 doublons** (`is_duplicate`, `match_method=exact`), GOLD
-`patient_consent_gold` = 145 lignes. Métadonnées : `cat provision/metadata/sync_metadata.json`.
+`patient_consent_gold` = 145 lignes. Depuis le branchement des tables d'événements du générateur,
+SILVER contient aussi `encounter_fhir` (achats + consultations + examens) et GOLD alimente
+`patient_events_gold`. Métadonnées : `cat provision/metadata/sync_metadata.json`.
 
 ### Étape 8 — Arrêt propre
 ```bash
@@ -248,12 +257,13 @@ cd ~/datalake-final
 |---|---|
 | `bootstrap.sh` | Installation unique de la stack (idempotent via `~/.provisioned`) |
 | `Vagrantfile` | Définition de la VM + synced folder + ports |
-| `scripts/run_pipeline.sh` | Orchestrateur des 4 étapes ELT (arrêt sur erreur) |
-| `scripts/ELT/gen_extract_raw.py` | Étape 1 : sources → parquet HDFS (tunnel SSH automatique) |
+| `scripts/run_pipeline.sh` | Orchestrateur des 5 étapes ELT (arrêt sur erreur) |
+| `scripts/ensure_generator_data.sh` | Étape 0 : régénère les CSV du générateur (seed 42) si absents |
+| `scripts/ELT/gen_extract_raw.py` | Étape 1 : sources → parquet HDFS (postgres/sqlite/CSV) |
 | `scripts/ELT/gen_fhir_mapping.py` | Étape 2 : colonnes → mapping FHIR |
 | `scripts/ELT/create_silver.py` | Étape 3 : RAW → SILVER (FHIR harmonisé + dédup moteur `engine/`) |
 | `scripts/ELT/create_gold.py` | Étape 4 : SILVER → GOLD (analytique + consentement) |
-| `config/data_sources.json` | Sources (MAVIS distant + MMT_DB local) — **non committé** |
+| `config/data_sources.json` | Sources (générateur synthétique par défaut) — **non committé** |
 | `config/pipeline.yaml` | Configuration pipeline (HDFS, Hive, tables, Spark, API) — **commité**, tunable |
 | `config/fhir_entities.json` | Schéma FHIR + synonymes + mapping table→entité — **commité**, tunable |
 | `api/hive_api.py` | API Flask (voir `guide-backend.md`) |
@@ -268,8 +278,8 @@ cd ~/datalake-final
 | Hive Metastore | 9083 | Thrift metastore (Derby) |
 | HiveServer2 | 10000 | JDBC/Beeline |
 | Flask API | 5000 | API JSON (frontend) |
-| PostgreSQL MMT_DB | 5432 | Base Windows (Laragon) |
-| Tunnel MAVIS | 8090 (distant) | accès PostgreSQL MAVIS distant |
+| PostgreSQL MMT_DB | 5432 | Optionnel (sources avancées — Laragon) |
+| Tunnel MAVIS | 8090 (distant) | Optionnel (sources avancées) |
 
 ## 9. Dépannage rapide
 

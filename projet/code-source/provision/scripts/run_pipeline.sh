@@ -34,16 +34,19 @@ run_step() {
     fi
 }
 
-run_step "[1/4] 🧩 Extraction des données brutes (RAW)" \
+run_step "[0/5] 📦 Garantie des données du générateur (seed 42)" \
+    bash "$SCRIPT_DIR/ensure_generator_data.sh"
+
+run_step "[1/5] 🧩 Extraction des données brutes (RAW)" \
     "$HOME/api-venv/bin/python" -m provision.scripts.ELT.gen_extract_raw
 
-run_step "[2/4] Carte de correspondance tables/colonnes -> FHIR" \
+run_step "[2/5] Carte de correspondance tables/colonnes -> FHIR" \
     "$HOME/api-venv/bin/python" -m provision.scripts.ELT.gen_fhir_mapping
 
-run_step "[3/4] 🧬 Transformation SILVER (FHIR harmonisé)" \
+run_step "[3/5] 🧬 Transformation SILVER (FHIR harmonisé)" \
     "$HOME/api-venv/bin/python" -m provision.scripts.ELT.create_silver
 
-run_step "[4/4] 📊 Création de la couche GOLD (analytique)" \
+run_step "[4/5] 📊 Création de la couche GOLD (analytique)" \
     "$HOME/api-venv/bin/python" -m provision.scripts.ELT.create_gold
 
 END_DATE=$(date '+%Y-%m-%d %H:%M:%S')

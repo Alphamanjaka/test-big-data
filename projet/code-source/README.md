@@ -14,10 +14,11 @@ projet/code-source/
 ├── provision/            VM Big Data + ELT + API Flask
 │   ├── Vagrantfile       VM (ubuntu/focal64, 8 Go, Hadoop/Hive/Spark)
 │   ├── bootstrap.sh      provisioning (Java, Hadoop, Hive, Spark, JDBC, venv)
-│   ├── config/           pipeline.yaml (commité) · fhir_entities.json · data_sources.json (NON COMMITÉ) + data_sources.example.json
+│   ├── config/           pipeline.yaml (commité) · fhir_entities.json · data_sources.json (NON COMMITÉ) + data_sources.example.json / data_sources.mavis.example.json
 │   ├── scripts/ELT/      gen_extract_raw · gen_fhir_mapping · create_silver · create_gold
 │   ├── scripts/utils/    paths.py (config centrale) · fhir_schema · fhir_synonyms · sync_utils
-│   ├── scripts/run_pipeline.sh    orchestration 4 étapes (arrêt sur erreur)
+│   ├── scripts/run_pipeline.sh    orchestration 5 étapes (arrêt sur erreur)
+│   ├── scripts/ensure_generator_data.sh  étape 0 : régénère les CSV du générateur (seed 42)
 │   ├── api/              hive_api.py (Flask, port 5000) · mock_data.py · test_api.py
 │   ├── db/               rebuild_mmt_db.py (base synthétique)
 │   ├── jars/             postgresql-42.7.3.jar
@@ -55,7 +56,9 @@ python -m provision.api.test_api         # 14/14 PASS attendu
 ```
 
 > Préalable : `cp provision/config/data_sources.example.json provision/config/data_sources.json` puis
-> renseigner les identifiants (fichier NON commité). Warehouse Spark = HDFS uniquement.
+> **aucune édition** : les sources sont les CSV du générateur synthétique (`type=csv`, seed 42) ;
+> l'étape 0 de `run_pipeline.sh` les régénère si absents. Sources avancées MAVIS/MMT_DB : utiliser
+> `data_sources.mavis.example.json`. Warehouse Spark = HDFS uniquement.
 >
 > Config pipeline (chemins HDFS, bases Hive, tables cibles, mémoire Spark, tranches d'âge, port API) :
 > `provision/config/pipeline.yaml` (commité). Schéma FHIR + synonymes + mapping table→entité :
