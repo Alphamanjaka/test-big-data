@@ -6,6 +6,26 @@ Ne jamais y mettre de données sensibles.
 
 ---
 
+## 10/09/2026 — Documentation : schémas Mermaid ajoutés (4 documents conceptuels)
+
+**Contexte :** enrichir le manuel conceptuel avec des schémas rendus (GitHub/VS Code) en remplacement
+de chaînes de texte / diagrammes ASCII.
+
+| # | Action | Détail |
+| - | ------ | ------ |
+| 1 | `documents/documentation/evaluation.md` | §1 flowchart générateur → ground truth (jamais fourni à l'algo) → P/R/F1 ; §2 flowchart TP/FP/FN → métriques ; §3 pie chart contribution par source (rappel hard) |
+| 2 | `documents/documentation/deduplication.md` | §1 flowchart chaîne de traitement ; §5 flowchart décision exact → probabiliste → seuil 0.80 ; §6 flowchart identity map → master patient (exemple Jean Rakoto) |
+| 3 | `documents/documentation/architecture.md` | §1 flowchart TB d'ensemble (diagramme ASCII remplacé) : sources → RAW/SILVER/GOLD → moteur → PostgreSQL → API → frontend ; §4 flowchart Medallion avec enrichissement Phase 5 |
+| 4 | `documents/documentation/bigdata_concepts.md` | §1 flowchart progressivité ; §3 flowchart Medallion ; §8 flowchart pivot FHIR (4 entités) ; §9 flowchart Master Data Management / identity map |
+
+**Vérifications :** nombre de blocs ````mermaid` par fichier (2/3/3/4) ; fences ouvertes/fermées
+équilibrées (total pair par fichier : 6/8/16/12) ; BOM UTF-8 éliminé sur `architecture.md` (fichier
+modifié via PowerShell) pour rester cohérent avec les autres fichiers. Aucun changement de code.
+
+**Résultat :** manuel conceptuel illustré. Commit en attente.
+
+---
+
 ## 10/09/2026 — Recension des tables : nouveau doc `documents/documentation/bases_de_donnees.md`
 
 **Contexte :** question utilisateur sur les tables créées en base → inventaire complet des **deux**

@@ -12,6 +12,19 @@ L'évaluation compare la déduplication (version Pandas **et** version Spark) au
 - Pour chaque niveau, un **ground truth** encode quels enregistrements sont en réalité le même patient.
 - L'algorithme **ne reçoit jamais** le ground truth (règle d'explicabilité).
 
+```mermaid
+flowchart LR
+    GEN["Générateur synthétique<br/>--seed 42 (reproductible)"]
+    GEN -->|"pour chaque niveau"| DL["datasets easy / medium / hard"]
+    GEN --> GT[("ground truth<br/>identity_mapping.csv")]
+    DL --> ALGO["Algorithme de déduplication<br/>Pandas + Spark (parité vérifiée)"]
+    GT -.->|"jamais fourni<br/>à l'algorithme"| ALGO
+    ALGO --> PRED["Regroupements prédits"]
+    PRED --> EVAL["Comparaison par paires"]
+    GT --> EVAL
+    EVAL --> MET["Precision · Recall · F1<br/>breakdown exact / probabiliste<br/>+ contribution par source"]
+```
+
 ## 2. Métriques (niveau paire)
 
 | Métrique | Définition | Interprétation |
@@ -25,6 +38,27 @@ L'évaluation compare la déduplication (version Pandas **et** version Spark) au
 
 - **F1 = 1.000** : chaque groupe prédit = groupe vérité (perfect).
 - Pour `hard`, une baisse de F1 est **attendue** : c'est là que l'outil diagnostique les erreurs.
+
+```mermaid
+flowchart TB
+    subgraph VRAI_1["Vérité : même patient"]
+        A["2 enregistrements<br/>(2 sources)"]
+    end
+    A --> P{Déduplication}
+    P -->|"regroupés"| TP["TP — fusion correcte"]
+    P -->|"non regroupés"| FN["FN — fusion manquée"]
+    subgraph VRAI_2["Vérité : patients différents"]
+        B["2 enregistrements<br/>(2 sources)"]
+    end
+    B --> Q{Déduplication}
+    Q -->|"regroupés"| FP["FP — fusion à tort"]
+    Q -->|"non regroupés"| TN["TN — écart correct"]
+
+    TP --> M["Precision = TP/(TP+FP)<br/>Recall = TP/(TP+FN)<br/>F1 = 2·P·R/(P+R)"]
+    FP --> M
+    FN --> M
+    TN --> M
+```
 
 ## 3. Résultats de référence (moteur porté `engine/`)
 
@@ -45,6 +79,13 @@ Breakdown `hard` par méthode de match (identique MVP/Spark) :
 | probabilistic | 1.000 / 0.533 / 0.696 |
 
 Contribution par source (rappel, hard) : pharmacy 0.422 · consultation 0.422 · imaging 0.423.
+
+```mermaid
+pie title Contribution au rappel (niveau hard)
+    "pharmacy" : 42.2
+    "consultation" : 42.2
+    "imaging" : 42.3
+```
 
 Rapport complet : `evaluation/evaluation_truth.md` (regénéré à chaque run).
 

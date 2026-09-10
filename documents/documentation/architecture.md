@@ -9,42 +9,38 @@ données patients synthétiques. Deux voies complémentaires cohabitent :
 2. **Moteur de déduplication** (`engine/`) : canonicalisation + matching exact/probabiliste → master
    patient + identity map → PostgreSQL central → API gouvernance + évaluation ground-truth.
 
-```
-+----------------------------------------------------------------------+
-|                        FRONTEND (optionnel)                          |
-|                     Next.js 15 + D3.js (port 3000)                   |
-+---------------------------------------+------------------------------+
-                                        | HTTP (CORS localhost:3000)
-+---------------------------------------+------------------------------+
-|                     API DONNÉES  · Flask · port 5000                 |
-|            provision/api/hive_api.py (PySpark → Hive GOLD)          |
-|            endpoints /rma/* · /api/rma/* (+ mocks backend)           |
-+---------------------------------------+------------------------------+
-                                        |                                                       
-+---------------------------------------+------------------------------+
-|            PIPELINE ELT BIG DATA · VM (Vagrant Ubuntu 8 Go)          |
-|   RAW (HDFS Parquet + Hive externes) → SILVER (4 tables FHIR)        |
-|   → GOLD (datalake_gold.patient_events_gold)                         |
-|   Hadoop 3.3.6 · Hive 3.1.3 · Spark 3.4.2 · Java 8                   |
-+---------------------------------------+------------------------------+
-                                        |
-+---------------------------------------+------------------------------+
-|                     MOTEUR DE DÉDUPLICATION  engine/                 |
-|   canonical.py → matcher.py (exact+probabiliste, seuil 0.80)         |
-|   spark_dedup.py (driver-side, parité Spark)                         |
-|   → master_patient · patient_identity_map · raw_patient_record       |
-+---------------------------------------+------------------------------+
-                                        |
-+---------------------------------------+------------------------------+
-|                POSTGRESQL CENTRAL (schéma sql/schema.sql)            |
-|   master_patient · patient_identity_map · raw_patient_record         |
-|   consent · api_user · access_audit                                   |
-|   + API gouvernance lecture seule (FastAPI)                          |
-+---------------------------------------+------------------------------+
-                                        |
-                              SOURCES SYNTHÉTIQUES
-                        PostgreSQL (MAVIS, MMT_DB) · SQLite (CLINIQUE)
-                        CSV générés (pharmacy, consultation, imaging)
+```mermaid
+flowchart TB
+    SRC["SOURCES SYNTHÉTIQUES<br/>PostgreSQL (MAVIS · MMT_DB) · SQLite (CLINIQUE)<br/>CSV générés (pharmacy · consultation · imaging)"]
+
+    subgraph VM["PIPELINE ELT BIG DATA · VM (Vagrant Ubuntu 8 Go)"]
+        direction TB
+        RAW["RAW — HDFS Parquet + tables Hive externes<br/>{source}.{table}"]
+        SIL["SILVER — 4 tables FHIR<br/>datalake_silver.{patient,encounter,condition,observation}_fhir"]
+        GOLD["GOLD<br/>datalake_gold.patient_events_gold"]
+        RAW --> SIL --> GOLD
+    end
+
+    subgraph ENG["MOTEUR DE DÉDUPLICATION · engine/"]
+        direction TB
+        CAN["canonical.py → matcher.py<br/>(exact + probabiliste · seuil 0.80)"]
+        SPK["spark_dedup.py (driver-side, parité)"]
+    end
+
+    PG[("POSTGRESQL CENTRAL · sql/schema.sql<br/>master_patient · patient_identity_map · raw_patient_record<br/>consent · api_user · access_audit<br/>+ API gouvernance (FastAPI, lecture seule)")]
+
+    API["API DONNÉES · Flask · port 5000<br/>provision/api/hive_api.py (PySpark → Hive GOLD)<br/>endpoints /rma/* · /api/rma/* (+ mocks backend)"]
+    FRONT["FRONTEND (optionnel) · Next.js 15 + D3.js · port 3000"]
+
+    SRC --> RAW
+    SIL -->|"enrichissement doublons (Phase 5)"| CAN
+    CAN -->|"master_patient + identity map"| PG
+    GOLD -->|"consent (via DATABASE_URL)"| PG
+    GOLD --> API
+    PG -.->|"consent / audit"| API
+    API -->|"HTTP (CORS localhost:3000)"| FRONT
+
+    SPK -.->|"parité résultats"| CAN
 ```
 
 ## 2. Structure du dépôt
@@ -96,6 +92,15 @@ Mon_Memoire/
 | RAW (Bronze) | Données brutes extraites, inchangées, avec `_source_table` | `/datalake/raw/{source}/{table}` Parquet + tables Hive externes `{source}.{table}` |
 | SILVER (Argent) | Nettoyée, normalisée, standardisée FHIR, doublons identifiés | `datalake_silver.{patient,encounter,condition,observation}_fhir` |
 | GOLD (Or) | Agrégée, prête pour l'analyse/API | `datalake_gold.patient_events_gold` |
+
+```mermaid
+flowchart LR
+    S["Sources<br/>CSV générateur · MAVIS · MMT_DB · CLINIQUE"] --> RAW["RAW · Bronze<br/>/datalake/raw/{source}/{table}<br/>Parquet + tables Hive externes"]
+    RAW --> SIL["SILVER · Argent<br/>datalake_silver.*_fhir<br/>nettoyée · FHIR · doublons identifiés"]
+    SIL --> GOLD["GOLD · Or<br/>datalake_gold.patient_events_gold<br/>agrégée · prête analyse"]
+    GOLD --> API2["API Flask · port 5000"]
+    SIL -->|"Phase 5 : master + score"| ENG["Moteur de déduplication"]
+```
 
 Règles Silver :
 - `patient_uuid` = `sha2(concat(source, '|', source_patient_id), 256)` ; `source_patient_id` préfixé (`MAVIS_123`).

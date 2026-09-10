@@ -13,6 +13,20 @@ EXTRACTION → RAW → MAPPING (canonique) → STANDARDISATION → NETTOYAGE
    → IDENTITY MAP → CHARGEMENT PostgreSQL → API / DASHBOARD / ÉVALUATION
 ```
 
+```mermaid
+flowchart LR
+    EX["EXTRACTION"] --> RAW["RAW"]
+    RAW --> CAN["MAPPING canonique"]
+    CAN --> STD["STANDARDISATION"]
+    STD --> NET["NETTOYAGE"]
+    NET --> BLK["BLOCKING"]
+    BLK --> DED["DÉDUPLICATION<br/>exact puis probabiliste"]
+    DED --> MPI["MASTER PATIENT INDEX"]
+    MPI --> IM["IDENTITY MAP"]
+    IM --> PG[("PostgreSQL central")]
+    PG --> OUT["API / DASHBOARD / ÉVALUATION"]
+```
+
 ## 2. Modèle canonique
 
 Chaque source a ses propres noms de colonnes et formats :
@@ -89,6 +103,19 @@ Score >= 0.80  →  MATCH (fusion automatique)
 Score <  0.80  →  pas de fusion (pas de logique arbitraire)
 ```
 
+```mermaid
+flowchart TD
+    CAND["Candidats d'un même groupe<br/>de blocking"] --> EX{"Comparaison exacte<br/>CIN identique · matching_key"}
+    EX -->|"oui"| MATCH["MATCH exact"]
+    EX -->|"non"| PROB["Score probabiliste (RapidFuzz)<br/>nom 0.50 · naissance 0.30 · CIN 0.10 · ville 0.10"]
+    PROB -->|"score >= 0.80"| MATCH2["MATCH"]
+    PROB -->|"score < 0.80"| NOMATCH["Pas de fusion<br/>(nouveau master)"]
+    MATCH --> DED["Master patient unique"]
+    MATCH2 --> DED
+    NOMATCH --> DED
+    DED --> TRACE["Traçabilité : méthode + score<br/>conservés dans patient_identity_map"]
+```
+
 > Pour mémoire, la version pédagogique initiale utilisait : score ≥ 90 % → match auto, 70–90 % →
 > review, < 70 % → no match.
 
@@ -105,6 +132,22 @@ source est relié au master dans `patient_identity_map` avec sa justification :
 
 La table conserve l'origine des données, la traçabilité, les identifiants historiques et les relations
 métier (achats, consultations, examens rattachés au master).
+
+```mermaid
+flowchart LR
+    subgraph SOURCES["Sources"]
+        S1["pharmacy · 15"]
+        S2["consultation · 88"]
+        S3["imaging · IMG-20"]
+    end
+    IM[(patient_identity_map)]
+    M["master_patient · 102<br/>Jean Rakoto"]
+    S1 -->|"exact · 1.000"| IM
+    S2 -->|"probabilistic · 0.950"| IM
+    S3 -->|"probabilistic · 0.920"| IM
+    IM --> M
+    M --> EVENTS["Relations métier rattachées<br/>(achats · consultations · examens)"]
+```
 
 ## 7. Cas de référence — « Jean Rakoto »
 

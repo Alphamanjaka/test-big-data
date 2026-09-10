@@ -17,6 +17,14 @@ hétérogènes. L'approche adoptée est **progressive** :
 5. Ajouter l'architecture Big Data lorsque nécessaire (HDFS + Hive + Spark)
 ```
 
+```mermaid
+flowchart LR
+    P1["1. Résoudre le problème métier"] --> P2["2. MVP<br/>Pandas + PostgreSQL"]
+    P2 --> P3["3. Valider les algorithmes<br/>évaluation ground-truth"]
+    P3 --> P4["4. Passer à l'échelle<br/>PySpark"]
+    P4 --> P5["5. Architecture Big Data<br/>HDFS + Hive + Spark<br/>(uniquement si besoin réel)"]
+```
+
 Chaque technologie n'est introduite **que** lorsqu'un besoin précis apparaît :
 
 | Besoin | Technologie |
@@ -50,6 +58,11 @@ Le modèle **Medallion** organise les données en couches de qualité croissante
 
 ```
 RAW (Bronze) → SILVER (Argent) → GOLD (Or)
+```
+
+```mermaid
+flowchart LR
+    RAW["RAW · Bronze<br/>Brut inchangé<br/>traçabilité · rejeu"] --> SIL["SILVER · Argent<br/>Nettoyé, normalisé, FHIR<br/>doublons identifiés"] --> GOLD["GOLD · Or<br/>Agrégé, prêt analyse<br/>consommé par l'API"]
 ```
 
 | Couche | Rôle | Dans le projet |
@@ -124,12 +137,37 @@ automatique colonnes → FHIR repose sur **RapidFuzz + dictionnaire de synonymes
 4 entités : `Patient`, `Encounter`, `Condition`, `Observation`. Ce choix évite tout modèle NLP lourd
 (`sentence_transformers` interdit : crash Python 3.8).
 
+```mermaid
+flowchart LR
+    PHA["pharmacy · CSV"] --> PIVOT{"Pivot FHIR<br/>RapidFuzz + synonymes<br/>(seuil 60 %)"}
+    CON["consultation · CSV"] --> PIVOT
+    IMA["imaging · CSV"] --> PIVOT
+    MAV["MAVIS · PostgreSQL"] --> PIVOT
+    MMT["MMT_DB · PostgreSQL"] --> PIVOT
+    PIVOT --> PAT["Patient"]
+    PIVOT --> ENC["Encounter"]
+    PIVOT --> CON2["Condition"]
+    PIVOT --> OBS["Observation"]
+    PAT --> SIL2["datalake_silver.{entité}_fhir"]
+    ENC --> SIL2
+    CON2 --> SIL2
+    OBS --> SIL2
+```
+
 ## 9. Data Integration & MDM
 
 Le cœur du projet relève du **Master Data Management** appliqué aux données de santé : construire une
 identité patient **unique** (Master Patient Index) à partir de plusieurs identifiants sources, avec des
 liens `source_system → source_patient_id → master_patient_id` **traçables** et **explicables**
 (voir [`deduplication.md`](deduplication.md)).
+
+```mermaid
+flowchart LR
+    S1["source_system · pharmacy<br/>source_patient_id · 15"] -->IM[("patient_identity_map")]
+    S2["source_system · consultation<br/>source_patient_id · 88"] --> IM
+    S3["source_system · imaging<br/>source_patient_id · IMG-20"] --> IM
+    IM -->|"méthode + score conservés"| M["master_patient_id · 102<br/>Master Patient Index"]
+```
 
 ## 10. Vocabulaire utile
 
