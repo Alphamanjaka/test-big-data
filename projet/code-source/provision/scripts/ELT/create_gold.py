@@ -16,15 +16,14 @@ from pyspark.sql.types import StringType, BooleanType
 from ..utils.sync_utils import update_sync_metadata
 from ..utils.paths import (
     HIVE_SILVER, HIVE_GOLD, GOLD_TABLE, CONSENT_GOLD_TABLE,
-    HDFS_NAMENODE, HDFS_BASE, AGE_TRANCHES,
+    hdfs_warehouse, AGE_TRANCHES,
     LOG_DIR, SPARK_EXECUTOR_MEMORY, SPARK_DRIVER_MEMORY, SPARK_SHUFFLE_PARTITIONS,
 )
 
 # -----------------------------
 # 🔧 CONFIGURATION
 # -----------------------------
-SILVER_HIVE_DB = HIVE_SILVER
-GOLD_HIVE_DB = HIVE_GOLD
+# Bases Hive : HIVE_SILVER / HIVE_GOLD (importées de utils.paths)
 
 # -----------------------------
 # 🔧 LOGGING
@@ -50,15 +49,15 @@ logging.info("✅ Début de create_gold.py")
 # -----------------------------
 spark = SparkSession.builder \
     .appName("create_gold") \
-    .config("spark.sql.warehouse.dir", f"{HDFS_NAMENODE}{HDFS_BASE}/gold/warehouse") \
+    .config("spark.sql.warehouse.dir", hdfs_warehouse("gold")) \
     .config("spark.executor.memory", SPARK_EXECUTOR_MEMORY) \
     .config("spark.driver.memory", SPARK_DRIVER_MEMORY) \
     .config("spark.sql.shuffle.partitions", SPARK_SHUFFLE_PARTITIONS) \
     .enableHiveSupport() \
     .getOrCreate()
 
-spark.sql(f"CREATE DATABASE IF NOT EXISTS {GOLD_HIVE_DB}")
-logging.info(f"✅ Base GOLD {GOLD_HIVE_DB} vérifiée")
+spark.sql(f"CREATE DATABASE IF NOT EXISTS {HIVE_GOLD}")
+logging.info(f"✅ Base GOLD {HIVE_GOLD} vérifiée")
 
 # -----------------------------
 # 📥 LECTURE DES TABLES SILVER
@@ -80,10 +79,10 @@ def _vide(colonnes):
     schema = StructType([StructField(c, StringType(), True) for c in colonnes])
     return spark.createDataFrame([], schema)
 
-df_patient = _lire_silver(f"{SILVER_HIVE_DB}.patient_fhir")
-df_encounter = _lire_silver(f"{SILVER_HIVE_DB}.encounter_fhir")
-df_condition = _lire_silver(f"{SILVER_HIVE_DB}.condition_fhir")
-df_observation = _lire_silver(f"{SILVER_HIVE_DB}.observation_fhir")
+df_patient = _lire_silver(f"{HIVE_SILVER}.patient_fhir")
+df_encounter = _lire_silver(f"{HIVE_SILVER}.encounter_fhir")
+df_condition = _lire_silver(f"{HIVE_SILVER}.condition_fhir")
+df_observation = _lire_silver(f"{HIVE_SILVER}.observation_fhir")
 if df_patient is None:
     logging.error("patient_fhir absente — GOLD impossible.")
     raise SystemExit(1)
@@ -180,7 +179,7 @@ logging.info(f"🎯 Table GOLD créée : {GOLD_TABLE}")
 # -----------------------------
 def charger_consent_gold():
     """Alimente patient_consent_gold à partir du SILVER patient et de PostgreSQL."""
-    df_patient = spark.table(f"{SILVER_HIVE_DB}.patient_fhir").select(
+    df_patient = spark.table(f"{HIVE_SILVER}.patient_fhir").select(
         "patient_uuid", "master_patient_id", "name"
     ).filter(F.col("master_patient_id").isNotNull()) \
      .dropDuplicates(["master_patient_id"])

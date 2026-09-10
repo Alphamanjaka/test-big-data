@@ -7,14 +7,14 @@ Charge pipeline.yaml une seule fois, expose les constantes et helpers.
 Tout script du pipeline importe ses chemins/configs depuis ici.
 
 Usage:
-    from ..utils.paths import CFG, project_root, hive_db, hdfs_path
+    from ..utils.paths import PROJECT_ROOT, HIVE_SILVER, GOLD_TABLE, AGE_TRANCHES, hdfs_raw
 """
 
 import os
 import yaml
 
 # ── PROJECT_ROOT ──
-# Résolu depuis l'arborescence : utils/ → scripts/ → ELT/ → provision/ → project_root
+# Résolu depuis ce fichier : utils/ → ../../.. → racine du projet (code-source / datalake-final)
 # Si pipeline.yaml définit project_root, cette valeur est prioritaire.
 _THIS_DIR = os.path.dirname(os.path.abspath(__file__))
 _DEFAULT_ROOT = os.path.normpath(os.path.join(_THIS_DIR, "..", "..", ".."))
@@ -57,14 +57,6 @@ SILVER_PATIENT_TABLE = CFG["tables"]["silver_patient"]
 SPARK_EXECUTOR_MEMORY = CFG["spark"]["executor_memory"]
 SPARK_DRIVER_MEMORY = CFG["spark"]["driver_memory"]
 SPARK_SHUFFLE_PARTITIONS = CFG["spark"]["shuffle_partitions"]
-
-def spark_defaults():
-    """Retourne un dict de configs Spark à passer à SparkSession.builder."""
-    return {
-        "spark.executor.memory": SPARK_EXECUTOR_MEMORY,
-        "spark.driver.memory": SPARK_DRIVER_MEMORY,
-        "spark.sql.shuffle.partitions": SPARK_SHUFFLE_PARTITIONS,
-    }
 
 # ── GOLD age tranches ──
 AGE_TRANCHES = [

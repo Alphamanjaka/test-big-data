@@ -16,7 +16,7 @@ import uuid
 from ..utils.sync_utils import update_sync_metadata
 from ..utils.paths import (
     DATASOURCES_PATH, METADATA_DIR, LOG_DIR_EXTRACT,
-    HDFS_NAMENODE, HDFS_BASE,
+    hdfs_raw,
     SPARK_EXECUTOR_MEMORY, SPARK_DRIVER_MEMORY,
 )
 
@@ -256,7 +256,7 @@ def discover_postgres(source, spark, source_index):
                 sample_data = [row.asDict() for row in df_data.limit(5).collect()]
 
                 # --- Écriture Parquet ---
-                hdfs_path = f"{HDFS_NAMENODE}{HDFS_BASE}/raw/{source_name}/{table_name}"
+                hdfs_path = hdfs_raw(source_name, table_name)
                 df_data.write.mode("overwrite").parquet(hdfs_path)
                 logger.info(f"[{source_name}] Table {table_name} → {hdfs_path} OK")
 
@@ -360,7 +360,7 @@ def discover_sqlite(source, spark, source_index):
                 rows = cur.fetchall()
                 row_count = len(rows)
 
-                hdfs_path = f"{HDFS_NAMENODE}{HDFS_BASE}/raw/{source_name}/{table_name}"
+                hdfs_path = hdfs_raw(source_name, table_name)
 
                 if rows:
                     # Construire le DataFrame Spark
@@ -546,7 +546,7 @@ def discover_csv(source, spark, source_index):
                         logger.info(f"[{source_name}] Colonne '{col_name}' non reconnue comme date — inchangée")
 
                 row_count = df.count()
-                hdfs_path = f"{HDFS_NAMENODE}{HDFS_BASE}/raw/{source_name}/{table_name}"
+                hdfs_path = hdfs_raw(source_name, table_name)
                 df.write.mode("overwrite").parquet(hdfs_path)
                 logger.info(f"[{source_name}] Table {table_name} → {hdfs_path} OK")
 

@@ -23,8 +23,8 @@ from pyspark.sql.window import Window
 from ..utils.fhir_schema import FHIR_FIELDS, FHIR_SYNONYMS
 from ..utils.sync_utils import update_sync_metadata
 from ..utils.paths import (
-    DATASOURCES_PATH, METADATA_DIR, LOG_DIR, HIVE_SILVER,
-    HDFS_NAMENODE, HDFS_BASE, FUZZY_THRESHOLD,
+    METADATA_DIR, LOG_DIR, HIVE_SILVER,
+    HDFS_BASE, hdfs_warehouse, FUZZY_THRESHOLD,
     SPARK_EXECUTOR_MEMORY, SPARK_DRIVER_MEMORY, SPARK_SHUFFLE_PARTITIONS,
 )
 
@@ -40,9 +40,6 @@ except ImportError:
 MAPPING_PATH = os.path.join(METADATA_DIR, "fhir_mapping.json")
 os.makedirs(LOG_DIR, exist_ok=True)
 LOG_FILE = os.path.join(LOG_DIR, "gen_fhir_silver.log")
-
-# Nom de la base Hive pour la zone Silver
-SILVER_HIVE_DB = HIVE_SILVER
 
 # Dossier des fichiers RAW (si les tables ne sont pas dans Hive)
 RAW_PARQUET_BASE = f"{HDFS_BASE}/raw"
@@ -102,7 +99,7 @@ def enrichir_dedup_moteur():
     Si le moteur n'est pas importable (environnement sans engine), les colonnes
     SILVER brutes (is_duplicate par clé name/birth_date/gender) sont conservées.
     """
-    table_patient = f"{SILVER_HIVE_DB}.patient_fhir"
+    table_patient = f"{HIVE_SILVER}.patient_fhir"
     df_patient = spark.table(table_patient)
     try:
         from engine.identity.canonical import from_dict
@@ -194,14 +191,14 @@ spark = SparkSession.builder \
     .appName("gen_fhir_silver") \
     .config("spark.sql.parquet.binaryAsString", "true") \
     .config("spark.sql.parquet.enableVectorizedReader", "false") \
-    .config("spark.sql.warehouse.dir", f"{HDFS_NAMENODE}{HDFS_BASE}/silver/warehouse") \
+    .config("spark.sql.warehouse.dir", hdfs_warehouse("silver")) \
     .config("spark.executor.memory", SPARK_EXECUTOR_MEMORY) \
     .config("spark.driver.memory", SPARK_DRIVER_MEMORY) \
     .config("spark.sql.shuffle.partitions", SPARK_SHUFFLE_PARTITIONS) \
     .enableHiveSupport() \
     .getOrCreate()
 
-spark.sql(f"CREATE DATABASE IF NOT EXISTS {SILVER_HIVE_DB}")
+spark.sql(f"CREATE DATABASE IF NOT EXISTS {HIVE_SILVER}")
 logging.info("✅ Spark initialisé et base Hive Silver vérifiée")
 
 # -----------------------------
@@ -511,12 +508,12 @@ for entite, dfs in accum_par_entite.items():
     else:
         df_final = df_union
 
-    table_cible = f"{SILVER_HIVE_DB}.{entite.lower()}_fhir"
+    table_cible = f"{HIVE_SILVER}.{entite.lower()}_fhir"
     logging.info(f"📤 Écriture unique dans la table : {table_cible} (mode=overwrite)")
     df_final.write.mode("overwrite").saveAsTable(table_cible)
 
 # 🔗 Enrichissement final : master patient explicable (moteur engine)
-if f"{SILVER_HIVE_DB}.patient_fhir" in [f"{SILVER_HIVE_DB}.{e.lower()}_fhir" for e in accum_par_entite]:
+if f"{HIVE_SILVER}.patient_fhir" in [f"{HIVE_SILVER}.{e.lower()}_fhir" for e in accum_par_entite]:
     enrichir_dedup_moteur()
 
 update_sync_metadata("SILVER", status="ok")

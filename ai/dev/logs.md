@@ -20,7 +20,7 @@ mappings FHIR (schéma + synonymes + table→entité) dans des fichiers uniques.
 | 4 | Mapping sans hardcode | `provision/scripts/ELT/gen_fhir_mapping.py` | Suppression de `LINK_ENTITY_OVERRIDE` (dict Python) → lecture `table_mappings` depuis `fhir_entities.json` |
 | 5 | Suppression `SYNONYMES_COURTS` | `provision/scripts/ELT/create_silver.py` | Les synonymes proviennent de `FHIR_SYNONYMS` (chargé du JSON) ; import centralisé paths |
 | 6 | Config pipeline YAML | `provision/config/pipeline.yaml` (nouveau) | `hdfs`, `hive_dbs`, `tables`, `spark`, `gold.age_tranches`, `silver.fuzzy_threshold`, `api` (CORS/port), `logs` |
-| 7 | Chargeur central | `provision/scripts/utils/paths.py` (nouveau) | `PROJECT_ROOT` résolu dynamiquement (plus de `/home/vagrant/...`), constantes + helpers (`hdfs_raw`, `hdfs_warehouse`, `spark_defaults`) |
+| 7 | Chargeur central | `provision/scripts/utils/paths.py` (nouveau) | `PROJECT_ROOT` résolu dynamiquement (plus de `/home/vagrant/...`), constantes + helpers (`hdfs_raw`, `hdfs_warehouse`) |
 | 8 | `create_gold.py` | `provision/scripts/ELT/create_gold.py` | `AGE_TRANCHES`, noms Hive, warehouse HDFS, config Spark depuis `paths.py` |
 | 9 | `hive_api.py` | `provision/api/hive_api.py` | Noms de tables, `SYNC_METADATA_PATH`, `CORS_ORIGINS`, config Spark depuis `paths.py`. Bug pré-existant corrigé : docstring de `diagnostics_heatmap` non fermée (IndentationError) |
 | 10 | `gen_extract_raw.py` | `provision/scripts/ELT/gen_extract_raw.py` | Chemins logs/metadata/config/HDFS depuis `paths.py` (HDFS namenode centralisé) |
@@ -35,6 +35,34 @@ générée par l'étape RAW sur la VM) — comportement pré-existant, les scrip
 
 **Résultat :** ajouter une table = 1 entrée `table_mappings` + champs dans `fhir_entities.json` + `data_sources.json` ;
 plus besoin de toucher aux scripts Python ni aux chemins absolus. Réalisé (refonte) vs à valider (run VM).
+
+---
+
+## 10/09/2026 — Passe lisibilité post-refonte (suppression indirections et doublons)
+
+**Contexte :** après la refonte config centralisée, relecture dans l'objectif « meilleure lecture du code,
+sans embrouiller ». Règles appliquées : un seul nom par chose, zéro helper inutilisé,
+zéro réaffectation `X = Y`, zéro valeur de config résiduelle en dur.
+
+| # | Action | Fichiers | Détail |
+| - | ------ | -------- | ------ |
+| 1 | Docstrings/commentaires corrigés | `provision/scripts/utils/paths.py` | `Usage:` avec les vrais noms (`PROJECT_ROOT`, `HIVE_SILVER`, `GOLD_TABLE`, `AGE_TRANCHES`, `hdfs_raw`) ; commentaire de résolution chemin exact (utils → ../../..) |
+| 2 | Helper mort supprimé | `provision/scripts/utils/paths.py` | `spark_defaults()` retiré (le style `.config(...)` explicite est plus lisible qu'un dict étalé) |
+| 3 | Helper `hdfs_raw` utilisé | `provision/scripts/ELT/gen_extract_raw.py` | 3 constructions `f"{HDFS_NAMENODE}{HDFS_BASE}/raw/..."` → `hdfs_raw(source_name, table_name)` ; imports `HDFS_NAMENODE`/`HDFS_BASE` retirés |
+| 4 | Helper `hdfs_warehouse` utilisé | `provision/scripts/ELT/create_gold.py`, `provision/scripts/ELT/create_silver.py` | `f"{HDFS_NAMENODE}{HDFS_BASE}/{zone}/warehouse"` → `hdfs_warehouse("gold"/"silver")` |
+| 5 | Doubles noms supprimés | `provision/scripts/ELT/create_gold.py`, `provision/scripts/ELT/create_silver.py` | `SILVER_HIVE_DB = HIVE_SILVER` / `GOLD_HIVE_DB = HIVE_GOLD` supprimés → usage direct de `HIVE_SILVER`/`HIVE_GOLD` |
+| 6 | Import inutilisé retiré | `provision/scripts/ELT/create_silver.py` | `DATASOURCES_PATH` importé mais jamais utilisé |
+| 7 | API branchée sur la config | `provision/api/hive_api.py` | `timedelta(days=365)` → `DEFAULT_DATE_RANGE_DAYS` ; `port=5000` → `FLASK_PORT` ; docstring « Port : 5000 » → référence `pipeline.yaml` |
+
+**Vérifications :** `py_compile` OK sur les 5 fichiers ; greps : plus aucun `SILVER_HIVE_DB`/`GOLD_HIVE_DB`,
+plus aucun `spark_defaults`, plus aucun `days=365`/`port=5000`/`/home/vagrant` résiduel ; chaque import de
+`paths.py` = au moins 2 occurrences (import + usage) ; chargement réel de `paths.py` OK
+(`hdfs_raw`=hdfs://localhost:9000/datalake/raw/..., `hdfs_warehouse("silver")`=.../silver/warehouse,
+FLASK_PORT=5000, DEFAULT_DAYS=365, AGE_TRANCHES chargées). Clés `flask_port`, `default_date_range_days`
+présentes dans `pipeline.yaml`.
+
+**Résultat :** un seul nom par chose, helper déclaré = helper utilisé, zéro hardcodé résiduel côté
+API/ELT. Réalisé ; run VM inchangé (toujours à valider).
 
 ---
 

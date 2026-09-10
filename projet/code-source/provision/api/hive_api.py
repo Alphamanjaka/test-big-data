@@ -7,7 +7,7 @@ hive_api.py — API Flask exposant les données GOLD du Data Lake
 Interroge la table datalake_gold.patient_events_gold via PySpark/Hive
 et renvoie du JSON pour le frontend Next.js.
 
-Port : 5000
+Port : défini par FLASK_PORT (pipeline.yaml → api.flask_port)
 """
 
 import json
@@ -22,6 +22,7 @@ try:
     from ..scripts.utils.paths import (
         GOLD_TABLE, SILVER_PATIENT_TABLE, CONSENT_GOLD_TABLE,
         SYNC_METADATA_PATH, CORS_ORIGINS, SPARK_EXECUTOR_MEMORY, SPARK_DRIVER_MEMORY,
+        FLASK_PORT, DEFAULT_DATE_RANGE_DAYS,
     )
 except ImportError:
     import sys
@@ -29,6 +30,7 @@ except ImportError:
     from utils.paths import (
         GOLD_TABLE, SILVER_PATIENT_TABLE, CONSENT_GOLD_TABLE,
         SYNC_METADATA_PATH, CORS_ORIGINS, SPARK_EXECUTOR_MEMORY, SPARK_DRIVER_MEMORY,
+        FLASK_PORT, DEFAULT_DATE_RANGE_DAYS,
     )
 
 try:
@@ -85,7 +87,7 @@ spark.sparkContext.setLogLevel("ERROR")
 # --- Helpers ---
 def get_default_dates():
     today = datetime.today()
-    start = (today - timedelta(days=365)).strftime("%Y-%m-%d")
+    start = (today - timedelta(days=DEFAULT_DATE_RANGE_DAYS)).strftime("%Y-%m-%d")
     end = today.strftime("%Y-%m-%d")
     return start, end
 
@@ -475,4 +477,4 @@ def governance_consent():
 
 # --- Lancement ---
 if __name__ == "__main__":
-    app.run(host="0.0.0.0", port=5000, debug=True)
+    app.run(host="0.0.0.0", port=FLASK_PORT, debug=True)
