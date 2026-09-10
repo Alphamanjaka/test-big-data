@@ -57,6 +57,8 @@ flowchart TB
 - Données **synthétiques uniquement** ; ne jamais commiter `data/`, `provision/metadata/`,
   `provision/config/data_sources.json`, `.env`.
 - Config ELT non committée : partir de `provision/config/data_sources.example.json` → `data_sources.json`.
+- Config pipeline `provision/config/pipeline.yaml` et FHIR `provision/config/fhir_entities.json` :
+  **commités** et modifiables sans toucher au code (chargés par `scripts/utils/paths.py`).
 - Warehouse Spark = **HDFS uniquement** (jamais vboxsf).
 - Docs complémentaires : `documents/documentation/` (manuel conceptuel), `projet/code-source/README.md`
   (guide technique du code), `ai/dev/pipeline_elt.md`, `ai/dev/architecture.md`.

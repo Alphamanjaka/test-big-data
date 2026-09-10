@@ -14,9 +14,9 @@ projet/code-source/
 ├── provision/            VM Big Data + ELT + API Flask
 │   ├── Vagrantfile       VM (ubuntu/focal64, 8 Go, Hadoop/Hive/Spark)
 │   ├── bootstrap.sh      provisioning (Java, Hadoop, Hive, Spark, JDBC, venv)
-│   ├── config/           data_sources.json (NON COMMITÉ) + data_sources.example.json
+│   ├── config/           pipeline.yaml (commité) · fhir_entities.json · data_sources.json (NON COMMITÉ) + data_sources.example.json
 │   ├── scripts/ELT/      gen_extract_raw · gen_fhir_mapping · create_silver · create_gold
-│   ├── scripts/utils/    fhir_schema · fhir_synonyms · sync_utils
+│   ├── scripts/utils/    paths.py (config centrale) · fhir_schema · fhir_synonyms · sync_utils
 │   ├── scripts/run_pipeline.sh    orchestration 4 étapes (arrêt sur erreur)
 │   ├── api/              hive_api.py (Flask, port 5000) · mock_data.py · test_api.py
 │   ├── db/               rebuild_mmt_db.py (base synthétique)
@@ -56,6 +56,11 @@ python -m provision.api.test_api         # 14/14 PASS attendu
 
 > Préalable : `cp provision/config/data_sources.example.json provision/config/data_sources.json` puis
 > renseigner les identifiants (fichier NON commité). Warehouse Spark = HDFS uniquement.
+>
+> Config pipeline (chemins HDFS, bases Hive, tables cibles, mémoire Spark, tranches d'âge, port API) :
+> `provision/config/pipeline.yaml` (commité). Schéma FHIR + synonymes + mapping table→entité :
+> `provision/config/fhir_entities.json` (commité). Les deux sont chargés par
+> `provision/scripts/utils/paths.py` (résolution dynamique de `PROJECT_ROOT`).
 
 ## PostgreSQL central
 

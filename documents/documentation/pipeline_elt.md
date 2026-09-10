@@ -144,8 +144,11 @@ data_sources.json ─> [Step 1] ─> extract_raw_report.json + data_sources.json
 
 | Fichier | Rôle |
 |---|---|
-| `provision/scripts/utils/fhir_schema.py` | Définition des 4 entités FHIR et leurs types |
-| `provision/scripts/utils/fhir_synonyms.py` | Dictionnaire de synonymes pour le matching colonnes |
+| `provision/config/pipeline.yaml` | Configuration centrale (HDFS, bases Hive, tables, Spark, API) via `utils/paths.py` |
+| `provision/config/fhir_entities.json` | Schéma FHIR + synonymes + mapping table→entité (source de vérité) |
+| `provision/scripts/utils/paths.py` | Charge `pipeline.yaml`, résout `PROJECT_ROOT`, expose constantes + helpers (`hdfs_raw`, `hdfs_warehouse`) |
+| `provision/scripts/utils/fhir_schema.py` | `FHIR_FIELDS`/`FHIR_SYNONYMS` chargés depuis `fhir_entities.json` |
+| `provision/scripts/utils/fhir_synonyms.py` | Ré-export de compatibilité |
 | `provision/scripts/utils/sync_utils.py` | Gestion de `sync_metadata.json` (timestamps UTC+3) |
 | `provision/config/data_sources.json` | Configuration des sources (non commité) |
 | `provision/db/rebuild_mmt_db.py` | Générateur de données synthétiques pour MMT_DB |
@@ -165,7 +168,7 @@ data_sources.json ─> [Step 1] ─> extract_raw_report.json + data_sources.json
 5. `hive.metastore.uris=thrift://localhost:9083` (métastore distante, sinon conflit Derby).
 6. Si une ancienne base GOLD existe en local : `DROP DATABASE datalake_gold CASCADE` avant reconfiguration.
 7. **Interdiction** : `sentence_transformers` (crash Python 3.8).
-8. Mémoire Spark : executor 4g / driver 2g / `shuffle.partitions=8`.
+8. Mémoire Spark : executor 4g / driver 2g / `shuffle.partitions=8` (via `pipeline.yaml`).
 
 ## Validation VM (interim CSV, 07/09/2026)
 

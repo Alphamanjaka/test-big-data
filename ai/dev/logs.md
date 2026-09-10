@@ -6,6 +6,33 @@ Ne jamais y mettre de données sensibles.
 
 ---
 
+## 10/09/2026 — Synchronisation de la documentation avec la refonte config (onboarding nouveau dev)
+
+**Contexte :** rendre le dépôt « auto-lançable » par un développeur qui dispose déjà de Vagrant et des
+librairies Python installées : la doc doit refléter `pipeline.yaml`, `fhir_entities.json` et `paths.py`
+(commés), et la seule config à créer doit rester `data_sources.json`.
+
+| # | Fichier | Modification |
+| - | ------- | ------------ |
+| 1 | `projet/code-source/README.md` | Structure : `config/` = pipeline.yaml + fhir_entities.json (commités) ; `scripts/utils/` += `paths.py`. Note démarrage : pipeline.yaml/fhir_entities.json chargés par `paths.py`, pas besoin de les créer |
+| 2 | `ai/dev/architecture.md` | Répertoires clés : `utils/` += paths.py ; `config/` = commités + non commité |
+| 3 | `documents/documentation/architecture.md` | Ajout lignes « Configuration pipeline » (pipeline.yaml) et « Config FHIR déclarative » (fhir_entities.json) ; utils += paths.py |
+| 4 | `documents/documentation/pipeline_elt.md` | Table utilitaires réécrite (pipeline.yaml, fhir_entities.json, paths.py, fhir_schema depuis JSON) ; piège mémoire → « via pipeline.yaml » |
+| 5 | `ai/dev/pipeline_elt.md` | §4 : valeurs Spark désormais centralisées dans pipeline.yaml via paths.py |
+| 6 | `GUIDE/guide-vagrant.md` | Schéma flux : CFG = pipeline.yaml + data_sources.json ; §3 : seul `data_sources.json` à créer, pipeline.yaml/fhir_entities.json commités ; §7 fichiers : 2 lignes ajoutées |
+| 7 | `GUIDE/README.md` | Bonne pratique : pipeline.yaml + fhir_entities.json commités/modifiables sans toucher au code |
+| 8 | `documents/cahier_des_charges.md` | Risque « Mapping incomplet » : `fhir_synonyms.py` + `TABLE_OVERRIDE` → `fhir_entities.json` (synonyms, table_mappings) |
+
+**Vérifications :** greps doc active (GUIDE/, projet/code-source/, ai/dev/ hors logs) : 0 occurrence de
+`TABLE_OVERRIDE`, `LINK_ENTITY_OVERRIDE`, `SYNONYMES_COURTS`, `spark_defaults`. Seuls les logs d'historique
+les mentionnent (volontaire). `pipeline.yaml`, `fhir_entities.json`, `paths.py` confirmés trackés par git.
+
+**Résultat :** un nouveau développeur (Vagrant + libs Python déjà installés) suit `GUIDE/guide-vagrant.md`
+§3→§6 puis `GUIDE/guide-backend.md` avec une seule config à créer (`data_sources.json`) ; le reste du
+paramétrage vit dans `pipeline.yaml` et `fhir_entities.json` (commités, tunables). Réalisé.
+
+---
+
 ## 10/09/2026 — Refonte config centralisée (pipeline.yaml + paths.py) + entités FHIR déclaratives
 
 **Contexte :** objectif → ajouter une nouvelle table/entité sans "avalanche de fichiers". Consolidation

@@ -47,6 +47,9 @@ Logs : `provision/logs/elt.log` · Suivi : `provision/metadata/sync_metadata.jso
 
 ## 4. Optimisation VM (8 Go) — dans CHAQUE session Spark
 
+> Ces valeurs sont désormais **centralisées** dans `provision/config/pipeline.yaml` (`spark.*`) et lues via
+> `utils/paths.py` : ne plus les dupliquer en dur dans les scripts.
+
 ```python
 .config("spark.executor.memory", "4g")
 .config("spark.driver.memory", "2g")

@@ -72,9 +72,9 @@ raw_patient_record · master_patient (+gender) · patient_identity_map · consen
 ```
 projet/code-source/
 ├── provision/scripts/ELT/    ← gen_extract_raw, gen_fhir_mapping, create_silver, create_gold
-├── provision/scripts/utils/  ← fhir_schema.py, fhir_synonyms.py, sync_utils.py
+├── provision/scripts/utils/  ← paths.py (charge pipeline.yaml) · fhir_schema.py · fhir_synonyms.py · sync_utils.py
 ├── provision/api/            ← hive_api.py, mock_data.py, test_api.py
-├── provision/config/         ← data_sources.json (non committé) + data_sources.example.json
+├── provision/config/         ← pipeline.yaml + fhir_entities.json (commités) · data_sources.json (non committé) + data_sources.example.json
 ├── provision/metadata/       ← artefacts générés (non committés)
 ├── engine/identity/          ← canonical.py, matcher.py, spark_dedup.py
 ├── engine/governance/        ← database.py, auth.py, consent.py, audit.py

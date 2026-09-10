@@ -223,4 +223,4 @@ raw_patient_record · master_patient (+ gender) · patient_identity_map · conse
 | MAVIS distant instable | Blockage pipeline | Sources locales de dev (Laragon, SQLite) |
 | Hétérogénéité des sources | Mapping FHIR | Synonymes + RapidFuzz, liens FK à enrichir |
 | Données sensibles | Confidentialité | Données **synthétiques** uniquement, RBAC + audit + consentement |
-| Mapping incomplet (encounters non reliés aux patients) | GOLD peu alimenté (16 lignes) | Enrichir `fhir_synonyms.py` + `TABLE_OVERRIDE` |
+| Mapping incomplet (encounters non reliés aux patients) | GOLD peu alimenté (16 lignes) | Enrichir `fhir_entities.json` (`synonyms`, `table_mappings` avec FK) |

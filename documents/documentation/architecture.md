@@ -110,7 +110,9 @@ Règles Silver :
 |---|---|---|
 | VM Big Data | Environnement reproductible Hadoop/Hive/Spark | `provision/Vagrantfile`, `provision/bootstrap.sh` |
 | Pipeline ELT | 4 étapes Medallion | `provision/scripts/ELT/gen_extract_raw.py`, `gen_fhir_mapping.py`, `create_silver.py`, `create_gold.py` |
-| Utilitaires pipeline | Schéma FHIR, synonymes, sync | `provision/scripts/utils/fhir_schema.py`, `fhir_synonyms.py`, `sync_utils.py` |
+| Utilitaires pipeline | Config + schéma FHIR, synonymes, sync | `provision/scripts/utils/paths.py`, `fhir_schema.py`, `fhir_synonyms.py`, `sync_utils.py` |
+| Configuration pipeline | Chemins, bases Hive, tables, Spark, API (un seul fichier, commité) | `provision/config/pipeline.yaml` |
+| Config FHIR déclarative | Schéma 4 entités + synonymes + mapping table→entité | `provision/config/fhir_entities.json` |
 | API données | Exposition GOLD | `provision/api/hive_api.py`, `mock_data.py` |
 | Moteur dédup | Canonique, matcher, Spark | `engine/identity/canonical.py`, `matcher.py`, `spark_dedup.py` |
 | Gouvernance moteur | BDD, auth, consent, audit | `engine/governance/database.py`, `auth.py`, `consent.py`, `audit.py` |

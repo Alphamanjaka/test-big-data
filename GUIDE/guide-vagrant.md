@@ -27,7 +27,7 @@ Emplacement : `Mon_Memoire/projet/code-source/provision/` (`Vagrantfile`, `boots
 flowchart TB
     subgraph HOST["Hôte Windows (dev)"]
         VG["vagrant up / vagrant ssh<br/>bootstrap.sh — provisioning idempotent<br/>(Java 8 · Hadoop 3.3.6 · Hive 3.1.3 · Spark 3.4.2)"]
-        CFG["provision/config/data_sources.json<br/>MAVIS distant + MMT_DB local (non committé)"]
+        CFG["provision/config/pipeline.yaml (commité, HDFS/Hive/Spark/API)<br/>+ data_sources.json (MAVIS distant + MMT_DB local, non committé)"]
         PG[("PostgreSQL MMT_DB<br/>Laragon :5432")]
     end
 
@@ -100,6 +100,10 @@ pyspark --version         # doit afficher Spark 3.4.2
 > cp provision/config/data_sources.example.json provision/config/data_sources.json
 > # puis renseigner identifiants MAVIS / MMT_DB dans data_sources.json
 > ```
+>
+> `pipeline.yaml` (chemins HDFS, bases Hive, tables, mémoire Spark, tranches d'âge, port API) et
+> `fhir_entities.json` (schéma FHIR + synonymes + mapping table→entité) sont **commités** : aucun
+> copie ni édition requise pour un lancement par défaut. Seule `data_sources.json` est à créer.
 
 ## 4. Démarrage complet (après un reboot de la VM)
 
@@ -250,6 +254,8 @@ cd ~/datalake-final
 | `scripts/ELT/create_silver.py` | Étape 3 : RAW → SILVER (FHIR harmonisé + dédup moteur `engine/`) |
 | `scripts/ELT/create_gold.py` | Étape 4 : SILVER → GOLD (analytique + consentement) |
 | `config/data_sources.json` | Sources (MAVIS distant + MMT_DB local) — **non committé** |
+| `config/pipeline.yaml` | Configuration pipeline (HDFS, Hive, tables, Spark, API) — **commité**, tunable |
+| `config/fhir_entities.json` | Schéma FHIR + synonymes + mapping table→entité — **commité**, tunable |
 | `api/hive_api.py` | API Flask (voir `guide-backend.md`) |
 | `test_startup.sh` | Health check Vagrant/Hive/API/métadonnées |
 
