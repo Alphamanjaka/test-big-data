@@ -22,6 +22,11 @@ from pyspark.sql.types import StringType, IntegerType, DoubleType, DateType
 from pyspark.sql.window import Window
 from ..utils.fhir_schema import FHIR_FIELDS, FHIR_SYNONYMS
 from ..utils.sync_utils import update_sync_metadata
+from ..utils.paths import (
+    DATASOURCES_PATH, METADATA_DIR, LOG_DIR, HIVE_SILVER,
+    HDFS_NAMENODE, HDFS_BASE, FUZZY_THRESHOLD,
+    SPARK_EXECUTOR_MEMORY, SPARK_DRIVER_MEMORY, SPARK_SHUFFLE_PARTITIONS,
+)
 
 # Optionnel : RapidFuzz pour similarité (libre et open-source)
 try:
@@ -32,20 +37,15 @@ except ImportError:
 # -----------------------------
 # 🔧 CONFIGURATION GLOBALE
 # -----------------------------
-DATASOURCES_PATH = "/home/vagrant/datalake-final/provision/config/data_sources.json"
-MAPPING_PATH = "/home/vagrant/datalake-final/provision/metadata/fhir_mapping.json"
-LOG_DIR = "/home/vagrant/datalake-final/provision/logs"
+MAPPING_PATH = os.path.join(METADATA_DIR, "fhir_mapping.json")
 os.makedirs(LOG_DIR, exist_ok=True)
 LOG_FILE = os.path.join(LOG_DIR, "gen_fhir_silver.log")
 
 # Nom de la base Hive pour la zone Silver
-SILVER_HIVE_DB = "datalake_silver"
+SILVER_HIVE_DB = HIVE_SILVER
 
 # Dossier des fichiers RAW (si les tables ne sont pas dans Hive)
-RAW_PARQUET_BASE = "/datalake/raw"
-
-# Seuil minimal de similarité pour fuzzy matching (0 à 100)
-FUZZY_THRESHOLD = 60
+RAW_PARQUET_BASE = f"{HDFS_BASE}/raw"
 
 # Moteur de déduplication explicable (dossier engine du repo code-source)
 ENGINE_PATH = os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "..", "..", "engine")
@@ -194,10 +194,10 @@ spark = SparkSession.builder \
     .appName("gen_fhir_silver") \
     .config("spark.sql.parquet.binaryAsString", "true") \
     .config("spark.sql.parquet.enableVectorizedReader", "false") \
-    .config("spark.sql.warehouse.dir", "hdfs://localhost:9000/datalake/silver/warehouse") \
-    .config("spark.executor.memory", "4g") \
-    .config("spark.driver.memory", "2g") \
-    .config("spark.sql.shuffle.partitions", "8") \
+    .config("spark.sql.warehouse.dir", f"{HDFS_NAMENODE}{HDFS_BASE}/silver/warehouse") \
+    .config("spark.executor.memory", SPARK_EXECUTOR_MEMORY) \
+    .config("spark.driver.memory", SPARK_DRIVER_MEMORY) \
+    .config("spark.sql.shuffle.partitions", SPARK_SHUFFLE_PARTITIONS) \
     .enableHiveSupport() \
     .getOrCreate()
 

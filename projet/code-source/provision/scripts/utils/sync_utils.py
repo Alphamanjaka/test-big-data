@@ -2,8 +2,7 @@ import json
 import os
 import pytz
 from datetime import datetime
-
-SYNC_METADATA_PATH = "/home/vagrant/datalake-final/provision/metadata/sync_metadata.json"
+from .paths import SYNC_METADATA_PATH
 
 # Assurer que le dossier existe
 os.makedirs(os.path.dirname(SYNC_METADATA_PATH), exist_ok=True)
@@ -26,19 +25,16 @@ def save_sync_metadata(metadata):
 def update_sync_metadata(zone, status="ok"):
     """
     Met à jour la synchro globale d'une zone (RAW, Silver, Gold).
-    
+
     :param zone: "RAW", "Silver" ou "Gold"
     :param status: "ok" ou "error"
     """
     metadata = load_sync_metadata()
-    # Utiliser le fuseau UTC+3
     now = datetime.now(TZ).isoformat()
 
-    # Initialiser si absent
     if zone not in metadata:
         metadata[zone] = {"last_sync": None, "status": "pending"}
 
-    # Mettre à jour
     metadata[zone] = {
         "last_sync": now,
         "status": status

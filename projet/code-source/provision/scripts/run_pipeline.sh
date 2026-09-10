@@ -5,7 +5,9 @@
 # depuis la racine du projet.
 # Chaque étape s'arrête en cas d'erreur (pas de "succès" mensonger).
 
-PROJECT_ROOT="/home/vagrant/datalake-final"
+# PROJECT_ROOT : résolu depuis la position de ce script si non défini
+SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
+PROJECT_ROOT="${PROJECT_ROOT:-$(cd "$SCRIPT_DIR/../.." && pwd)}"
 LOG_DIR="$PROJECT_ROOT/provision/logs"
 mkdir -p "$LOG_DIR"
 LOG_FILE="$LOG_DIR/elt.log"

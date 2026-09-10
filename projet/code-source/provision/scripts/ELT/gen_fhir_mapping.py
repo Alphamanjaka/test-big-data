@@ -6,11 +6,11 @@ import os
 import logging
 from rapidfuzz import fuzz
 from ..utils.fhir_schema import FHIR_FIELDS, FHIR_SYNONYMS
+from ..utils.paths import DATASOURCES_PATH, FHIR_ENTITIES_PATH, LOG_DIR, METADATA_DIR
 
 # -----------------------------
 # Logging
 # -----------------------------
-LOG_DIR = "/home/vagrant/datalake-final/provision/logs"
 os.makedirs(LOG_DIR, exist_ok=True)
 LOG_FILE = os.path.join(LOG_DIR, "generate_fhir_mapping_hybrid.log")
 
@@ -28,11 +28,8 @@ logging.getLogger().addHandler(console)
 # -----------------------------
 # Fichiers
 # -----------------------------
-CONFIG_DIR = "/home/vagrant/datalake-final/provision/config"
-DATASOURCES_PATH = os.path.join(CONFIG_DIR, "data_sources.json")
-FHIR_ENTITIES_PATH = os.path.join(CONFIG_DIR, "fhir_entities.json")
-REPORT_PATH = "/home/vagrant/datalake-final/provision/metadata/extract_raw_report.json"
-OUTPUT_PATH = "/home/vagrant/datalake-final/provision/metadata/fhir_mapping.json"
+REPORT_PATH = os.path.join(METADATA_DIR, "extract_raw_report.json")
+OUTPUT_PATH = os.path.join(METADATA_DIR, "fhir_mapping.json")
 
 # -----------------------------
 # Charger datasources.json
@@ -69,21 +66,9 @@ else:
 
 # -----------------------------
 # Sélection des colonnes avec synonymes
-# link_col : colonne FK vers le patient (forcée sur source_patient_id)
-# use_id_fallback : autorise le fallback sur la PK `id` pour source_patient_id
 # -----------------------------
 def select_columns(columns, fhir_field_types, link_col=None, use_id_fallback=False):
-    """Associe chaque champ FHIR attendu à la colonne source la plus proche.
-
-    Stratégie dans l'ordre :
-    1. force `link_col` sur la clé étrangère (source_patient_id) si fournie ;
-    2. correspondance exacte (insensible à la casse) ;
-    3. correspondance via FHIR_SYNONYMES ;
-    4. fallback sur la PK 'id/uuid/patient_id' (uniquement pour Patient
-       si use_id_fallback est demandé).
-
-    Retourne la liste de colonnes (doublons supprimés via dict.fromkeys).
-    """
+    """Associe chaque champ FHIR attendu à la colonne source la plus proche."""
     selected = []
     forced = {"source_patient_id": link_col} if link_col else {}
     for fhir_field in fhir_field_types.keys():
@@ -93,12 +78,10 @@ def select_columns(columns, fhir_field_types, link_col=None, use_id_fallback=Fal
         found = False
         for col in columns:
             col_name = col["name"].lower()
-            # correspondance exacte
             if col_name == fhir_field.lower():
                 selected.append(col["name"])
                 found = True
                 break
-            # correspondance via synonymes
             elif fhir_field in FHIR_SYNONYMS:
                 for syn in FHIR_SYNONYMS[fhir_field]:
                     if col_name == syn.lower():
@@ -107,7 +90,6 @@ def select_columns(columns, fhir_field_types, link_col=None, use_id_fallback=Fal
                         break
             if found:
                 break
-        # fallback raisonnable sur l'identifiant patient (boîte à outils gratuite)
         if not found and use_id_fallback and fhir_field == "source_patient_id":
             for col in columns:
                 if col["name"].lower() in ("id", "uuid", "patient_id"):
@@ -136,7 +118,6 @@ for source_cfg in datasources:
         table_name = table_entry["table_name"]
         columns = table_entry.get("columns", [])
 
-        # Carte explicite : seules les tables mappées sont traitées
         override = TABLE_MAPPINGS.get(source_name, {}).get(table_name)
         if override is not None:
             entity = override["entity"]

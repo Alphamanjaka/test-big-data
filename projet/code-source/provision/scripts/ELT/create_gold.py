@@ -14,37 +14,24 @@ from pyspark.sql import SparkSession, functions as F
 from pyspark.sql.types import StringType, BooleanType
 
 from ..utils.sync_utils import update_sync_metadata
+from ..utils.paths import (
+    HIVE_SILVER, HIVE_GOLD, GOLD_TABLE, CONSENT_GOLD_TABLE,
+    HDFS_NAMENODE, HDFS_BASE, AGE_TRANCHES,
+    LOG_DIR, SPARK_EXECUTOR_MEMORY, SPARK_DRIVER_MEMORY, SPARK_SHUFFLE_PARTITIONS,
+)
 
 # -----------------------------
 # 🔧 CONFIGURATION
 # -----------------------------
-SILVER_HIVE_DB = "datalake_silver"
-GOLD_HIVE_DB = "datalake_gold"
-GOLD_TABLE = f"{GOLD_HIVE_DB}.patient_events_gold"
-CONSENT_GOLD_TABLE = f"{GOLD_HIVE_DB}.patient_consent_gold"
-
-# Tranches d'âge spécifiques pour le dashboard
-AGE_TRANCHES = [
-    (0, 28/365, "0-28 j"),         # nouveau-nés < 28 jours
-    (29/365, 59/365, "29-59 j"),   # 29-59 jours
-    (2/12, 11/12, "2-11 m"),       # 2-11 mois
-    (1, 4, "1-4 ans"),             # 1-4 ans
-    (5, 14, "5-14 ans"),           # 5-14 ans
-    (15, 24, "15-24 ans"),         # 15-24 ans
-    (25, 59, "25-59 ans"),         # 25-59 ans
-    (60, 120, "60 ans et plus")    # 60 ans et plus
-]
-
-# -----------------------------
-# 🔧 LOGGING (makedirs AVANT basicConfig)
-# -----------------------------
-LOG_DIR = "/home/vagrant/datalake-final/provision/logs"
-os.makedirs(LOG_DIR, exist_ok=True)
-LOG_FILE = os.path.join(LOG_DIR, "create_gold.log")
+SILVER_HIVE_DB = HIVE_SILVER
+GOLD_HIVE_DB = HIVE_GOLD
 
 # -----------------------------
 # 🔧 LOGGING
 # -----------------------------
+os.makedirs(LOG_DIR, exist_ok=True)
+LOG_FILE = os.path.join(LOG_DIR, "create_gold.log")
+
 logging.basicConfig(
     filename=LOG_FILE,
     level=logging.INFO,
@@ -63,10 +50,10 @@ logging.info("✅ Début de create_gold.py")
 # -----------------------------
 spark = SparkSession.builder \
     .appName("create_gold") \
-    .config("spark.sql.warehouse.dir", "hdfs://localhost:9000/datalake/gold/warehouse") \
-    .config("spark.executor.memory", "4g") \
-    .config("spark.driver.memory", "2g") \
-    .config("spark.sql.shuffle.partitions", "8") \
+    .config("spark.sql.warehouse.dir", f"{HDFS_NAMENODE}{HDFS_BASE}/gold/warehouse") \
+    .config("spark.executor.memory", SPARK_EXECUTOR_MEMORY) \
+    .config("spark.driver.memory", SPARK_DRIVER_MEMORY) \
+    .config("spark.sql.shuffle.partitions", SPARK_SHUFFLE_PARTITIONS) \
     .enableHiveSupport() \
     .getOrCreate()
 
@@ -75,14 +62,11 @@ logging.info(f"✅ Base GOLD {GOLD_HIVE_DB} vérifiée")
 
 # -----------------------------
 # 📥 LECTURE DES TABLES SILVER
-# Tolérance aux entités absentes (mode patients-only) : les tables d'événements
-# manquantes sont remplacées par un DataFrame vide au schéma attendu, afin que
-# le GOLD reste stable (démarrage en douceur du dashboard/API).
 # -----------------------------
 from pyspark.sql.types import StructType, StructField
 
 def _lire_silver(table):
-    """Lit une table SILVER; retourne None (au lieu de lever) si elle est absente."""
+    """Lit une table SILVER; retourne None si elle est absente."""
     try:
         df = spark.table(table)
         logging.info(f"✅ Table SILVER chargée : {table} ({df.count()} lignes)")
@@ -92,7 +76,7 @@ def _lire_silver(table):
         return None
 
 def _vide(colonnes):
-    """DataFrame vide au schéma attendu (tolérance entités manquantes/patients-only)."""
+    """DataFrame vide au schéma attendu."""
     schema = StructType([StructField(c, StringType(), True) for c in colonnes])
     return spark.createDataFrame([], schema)
 
@@ -106,7 +90,6 @@ if df_patient is None:
 
 # -----------------------------
 # 🎯 RÉDUCTION AUX COLONNES UTILES
-# (évite AMBIGUOUS_REFERENCE : `name` existe dans Patient ET Condition)
 # -----------------------------
 df_patient = df_patient.select(
     "patient_uuid", "source_patient_id", "name", "gender", "birth_date"
@@ -134,7 +117,6 @@ df_observation = (df_observation if df_observation is not None else _vide(
 # -----------------------------
 # 📅 CALCUL DE L'AGE ET TRANCHE D'AGE
 # -----------------------------
-# Calcul âge en années fractionnaires
 df_patient = df_patient.withColumn(
     "birth_date", F.to_date(F.col("birth_date"))
 )
@@ -142,7 +124,6 @@ df_patient = df_patient.withColumn(
     "age", F.datediff(F.current_date(), F.col("birth_date")) / 365.25
 )
 
-# Fonction pour assigner la tranche d'âge
 def assign_age_tranche(age):
     if age is None:
         return "unknown"
@@ -151,24 +132,17 @@ def assign_age_tranche(age):
             return label
     return "unknown"
 
-# UDF Spark
 udf_age_tranche = F.udf(assign_age_tranche, StringType())
 df_patient = df_patient.withColumn("age_tranche", udf_age_tranche(F.col("age")))
 
 # -----------------------------
 # 🔗 JOINTURES PATIENT ↔ ENTITÉS
 # -----------------------------
-# Convertir dates des encounters
 df_encounter = df_encounter.withColumn("admission_date", F.to_date(F.col("admission_date")))
 df_encounter = df_encounter.withColumn("discharge_date", F.to_date(F.col("discharge_date")))
 
-# Jointure Encounter + Patient
 df_gold = df_encounter.join(df_patient, on="patient_uuid", how="left")
-
-# Jointure Condition + Patient
 df_gold = df_gold.join(df_condition, df_gold.patient_uuid == df_condition.patient_uuid_cond, how="left")
-
-# Jointure Observation + Patient
 df_gold = df_gold.join(df_observation, df_gold.patient_uuid == df_observation.patient_uuid_obs, how="left")
 
 # -----------------------------
@@ -202,15 +176,10 @@ df_gold_final.write.mode("overwrite").saveAsTable(GOLD_TABLE)
 logging.info(f"🎯 Table GOLD créée : {GOLD_TABLE}")
 
 # -----------------------------
-# 🪪 CONSENTEMENT (GOLD) — reflète la gouvernance purpose-by-purpose
+# 🪪 CONSENTEMENT (GOLD)
 # -----------------------------
 def charger_consent_gold():
-    """
-    Alimente patient_consent_gold à partir du SILVER patient (master_patient_id
-    produit par le moteur) et de la table consent du PostgreSQL central
-    (engine/governance). Si le PostgreSQL central n'est pas joignable, la table
-    est créée quand même (schéma stable) afin que l'API bascule proprement.
-    """
+    """Alimente patient_consent_gold à partir du SILVER patient et de PostgreSQL."""
     df_patient = spark.table(f"{SILVER_HIVE_DB}.patient_fhir").select(
         "patient_uuid", "master_patient_id", "name"
     ).filter(F.col("master_patient_id").isNotNull()) \

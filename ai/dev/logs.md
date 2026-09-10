@@ -6,6 +6,38 @@ Ne jamais y mettre de données sensibles.
 
 ---
 
+## 10/09/2026 — Refonte config centralisée (pipeline.yaml + paths.py) + entités FHIR déclaratives
+
+**Contexte :** objectif → ajouter une nouvelle table/entité sans "avalanche de fichiers". Consolidation
+des configs éparpillées (chemins absolus, noms Hive, Spark, CORS, tranches d'âge, seuils) et des
+mappings FHIR (schéma + synonymes + table→entité) dans des fichiers uniques.
+
+| # | Action | Fichiers | Détail |
+| - | ------ | -------- | ------ |
+| 1 | Config FHIR unique | `provision/config/fhir_entities.json` (nouveau) | Schéma (`entities.*.fields`), synonymes (`synonyms`), mapping table→entité (+FK) (`table_mappings`). Source de vérité pour SILVER |
+| 2 | `fhir_schema.py` | `provision/scripts/utils/fhir_schema.py` | `FHIR_FIELDS`/`FHIR_SYNONYMS` désormais chargés depuis `fhir_entities.json` (plus de dict hardcodé) |
+| 3 | `fhir_synonyms.py` | `provision/scripts/utils/fhir_synonyms.py` | Simple ré-export (compatibilité imports) |
+| 4 | Mapping sans hardcode | `provision/scripts/ELT/gen_fhir_mapping.py` | Suppression de `LINK_ENTITY_OVERRIDE` (dict Python) → lecture `table_mappings` depuis `fhir_entities.json` |
+| 5 | Suppression `SYNONYMES_COURTS` | `provision/scripts/ELT/create_silver.py` | Les synonymes proviennent de `FHIR_SYNONYMS` (chargé du JSON) ; import centralisé paths |
+| 6 | Config pipeline YAML | `provision/config/pipeline.yaml` (nouveau) | `hdfs`, `hive_dbs`, `tables`, `spark`, `gold.age_tranches`, `silver.fuzzy_threshold`, `api` (CORS/port), `logs` |
+| 7 | Chargeur central | `provision/scripts/utils/paths.py` (nouveau) | `PROJECT_ROOT` résolu dynamiquement (plus de `/home/vagrant/...`), constantes + helpers (`hdfs_raw`, `hdfs_warehouse`, `spark_defaults`) |
+| 8 | `create_gold.py` | `provision/scripts/ELT/create_gold.py` | `AGE_TRANCHES`, noms Hive, warehouse HDFS, config Spark depuis `paths.py` |
+| 9 | `hive_api.py` | `provision/api/hive_api.py` | Noms de tables, `SYNC_METADATA_PATH`, `CORS_ORIGINS`, config Spark depuis `paths.py`. Bug pré-existant corrigé : docstring de `diagnostics_heatmap` non fermée (IndentationError) |
+| 10 | `gen_extract_raw.py` | `provision/scripts/ELT/gen_extract_raw.py` | Chemins logs/metadata/config/HDFS depuis `paths.py` (HDFS namenode centralisé) |
+| 11 | `sync_utils.py` | `provision/scripts/utils/sync_utils.py` | `SYNC_METADATA_PATH` depuis `paths.py` |
+| 12 | `run_pipeline.sh` | `provision/scripts/run_pipeline.sh` | `PROJECT_ROOT` résolu depuis la position du script (`../..`) ou variable d'environnement |
+
+**Vérifications :** `py_compile` OK sur les 9 fichiers modifiés ; chargement de `paths.py` (PROJECT_ROOT,
+Hive, GOLD, AGE_TRANCHES, hdfs_raw) OK ; `fhir_schema`/`fhir_synonyms` cohérents (4 entités, 11 synonymes).
+Le chemin `run_pipeline.sh → code-source` et le chargement de `pipeline.yaml` ont été testés.
+Le test d'import complet échoue uniquement sur l'absence d'`extract_raw_report.json` (métadonnée d'exécution
+générée par l'étape RAW sur la VM) — comportement pré-existant, les scripts restent exécutés en module.
+
+**Résultat :** ajouter une table = 1 entrée `table_mappings` + champs dans `fhir_entities.json` + `data_sources.json` ;
+plus besoin de toucher aux scripts Python ni aux chemins absolus. Réalisé (refonte) vs à valider (run VM).
+
+---
+
 ## 09/09/2026 — Regroupement des guides techniques dans `GUIDE/`
 
 **Contexte :** création de guides complets (Vagrant, générateur de données, frontend, backend), avec

@@ -14,15 +14,19 @@ from retrying import retry
 import time
 import uuid
 from ..utils.sync_utils import update_sync_metadata
+from ..utils.paths import (
+    DATASOURCES_PATH, METADATA_DIR, LOG_DIR_EXTRACT,
+    HDFS_NAMENODE, HDFS_BASE,
+    SPARK_EXECUTOR_MEMORY, SPARK_DRIVER_MEMORY,
+)
 
 # ============================================================
 # CONFIGURATION DES LOGS
-# ============================================================:
-LOG_DIR = "/home/vagrant/datalake-final/provision/logs/extract"
-os.makedirs(LOG_DIR, exist_ok=True)
+# ============================================================
+os.makedirs(LOG_DIR_EXTRACT, exist_ok=True)
 
 date_str = datetime.datetime.now().strftime("%Y-%m-%d")
-LOG_FILE = os.path.join(LOG_DIR, f"generate_fhir_mapping_{date_str}.log")
+LOG_FILE = os.path.join(LOG_DIR_EXTRACT, f"generate_fhir_mapping_{date_str}.log")
 
 logging.basicConfig(
     filename=LOG_FILE,
@@ -145,10 +149,10 @@ def discover_postgres(source, spark, source_index):
     ssh_cfg = source.get("ssh")
     tables_info, failed_tables = [], []
 
-    source_path = "/home/vagrant/datalake-final/provision/config/data_sources.json"
-    cache_path = f"/home/vagrant/datalake-final/provision/metadata/extract/{source_name}_extract_raw_report.json"
-    failed_tables_path = f"/home/vagrant/datalake-final/provision/metadata/extract/{source_name}_failed_tables.json"
-    os.makedirs(os.path.dirname(cache_path), exist_ok=True)
+    extract_dir = os.path.join(METADATA_DIR, "extract")
+    cache_path = os.path.join(extract_dir, f"{source_name}_extract_raw_report.json")
+    failed_tables_path = os.path.join(extract_dir, f"{source_name}_failed_tables.json")
+    os.makedirs(extract_dir, exist_ok=True)
 
     tunnel = None
     try:
@@ -222,12 +226,12 @@ def discover_postgres(source, spark, source_index):
         logger.info(f"[{source_name}] Tables incluses: {tables_to_include}")
 
         # --- Mise à jour du JSON config ---
-        with open(source_path, "r", encoding="utf-8-sig") as f:
+        with open(DATASOURCES_PATH, "r", encoding="utf-8-sig") as f:
             data_sources = json.load(f)
         for src in data_sources:
             if src.get("name") == source_name:
                 src["tables_to_include"] = list(tables_to_include)
-        with open(source_path, "w") as f:
+        with open(DATASOURCES_PATH, "w") as f:
             json.dump(data_sources, f, indent=2)
 
         # --- Exploration des tables ---
@@ -252,7 +256,7 @@ def discover_postgres(source, spark, source_index):
                 sample_data = [row.asDict() for row in df_data.limit(5).collect()]
 
                 # --- Écriture Parquet ---
-                hdfs_path = f"hdfs://localhost:9000/datalake/raw/{source_name}/{table_name}"
+                hdfs_path = f"{HDFS_NAMENODE}{HDFS_BASE}/raw/{source_name}/{table_name}"
                 df_data.write.mode("overwrite").parquet(hdfs_path)
                 logger.info(f"[{source_name}] Table {table_name} → {hdfs_path} OK")
 
@@ -325,9 +329,10 @@ def discover_sqlite(source, spark, source_index):
     db_path = db_cfg["file"]
     tables_info, failed_tables = [], []
 
-    cache_path = f"/home/vagrant/datalake-final/provision/metadata/extract/{source_name}_extract_raw_report.json"
-    failed_tables_path = f"/home/vagrant/datalake-final/provision/metadata/extract/{source_name}_failed_tables.json"
-    os.makedirs(os.path.dirname(cache_path), exist_ok=True)
+    extract_dir = os.path.join(METADATA_DIR, "extract")
+    cache_path = os.path.join(extract_dir, f"{source_name}_extract_raw_report.json")
+    failed_tables_path = os.path.join(extract_dir, f"{source_name}_failed_tables.json")
+    os.makedirs(extract_dir, exist_ok=True)
 
     main_table = source.get("main_table")
     tables_to_include = set(source.get("tables_to_include") or [])
@@ -355,7 +360,7 @@ def discover_sqlite(source, spark, source_index):
                 rows = cur.fetchall()
                 row_count = len(rows)
 
-                hdfs_path = f"hdfs://localhost:9000/datalake/raw/{source_name}/{table_name}"
+                hdfs_path = f"{HDFS_NAMENODE}{HDFS_BASE}/raw/{source_name}/{table_name}"
 
                 if rows:
                     # Construire le DataFrame Spark
@@ -501,9 +506,10 @@ def discover_csv(source, spark, source_index):
     ext = db_cfg.get("ext", "csv")
     tables_info, failed_tables = [], []
 
-    cache_path = f"/home/vagrant/datalake-final/provision/metadata/extract/{source_name}_extract_raw_report.json"
-    failed_tables_path = f"/home/vagrant/datalake-final/provision/metadata/extract/{source_name}_failed_tables.json"
-    os.makedirs(os.path.dirname(cache_path), exist_ok=True)
+    extract_dir = os.path.join(METADATA_DIR, "extract")
+    cache_path = os.path.join(extract_dir, f"{source_name}_extract_raw_report.json")
+    failed_tables_path = os.path.join(extract_dir, f"{source_name}_failed_tables.json")
+    os.makedirs(extract_dir, exist_ok=True)
 
     main_table = source.get("main_table")
     tables_to_include = set(source.get("tables_to_include") or [])
@@ -540,7 +546,7 @@ def discover_csv(source, spark, source_index):
                         logger.info(f"[{source_name}] Colonne '{col_name}' non reconnue comme date — inchangée")
 
                 row_count = df.count()
-                hdfs_path = f"hdfs://localhost:9000/datalake/raw/{source_name}/{table_name}"
+                hdfs_path = f"{HDFS_NAMENODE}{HDFS_BASE}/raw/{source_name}/{table_name}"
                 df.write.mode("overwrite").parquet(hdfs_path)
                 logger.info(f"[{source_name}] Table {table_name} → {hdfs_path} OK")
 
@@ -592,15 +598,14 @@ def main():
         .config("spark.jars", ",".join([
             "/home/vagrant/spark/jars/postgresql-42.7.3.jar",
         ])) \
-        .config("spark.executor.memory", "4g") \
-        .config("spark.driver.memory", "2g") \
+        .config("spark.executor.memory", SPARK_EXECUTOR_MEMORY) \
+        .config("spark.driver.memory", SPARK_DRIVER_MEMORY) \
         .enableHiveSupport() \
         .getOrCreate()
 
     spark.sparkContext.setLogLevel("ERROR")
 
-    config_path = "/home/vagrant/datalake-final/provision/config/data_sources.json"
-    with open(config_path, encoding="utf-8-sig") as f:
+    with open(DATASOURCES_PATH, encoding="utf-8-sig") as f:
         sources = json.load(f)
 
     extract_raw_report = {}
@@ -627,7 +632,7 @@ def main():
                 extract_raw_report[src["name"]] = [{"error": str(e)}]
                 print(f"❌ Erreur {src['name']}: {str(e)}")
 
-    output = "/home/vagrant/datalake-final/provision/metadata/extract_raw_report.json"
+    output = os.path.join(METADATA_DIR, "extract_raw_report.json")
     with open(output, "w") as f:
         json.dump(extract_raw_report, f, indent=2, default=json_serial)
 

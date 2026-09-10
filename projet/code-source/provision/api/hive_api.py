@@ -19,6 +19,19 @@ from pyspark.sql import SparkSession, functions as F
 from datetime import datetime, timedelta
 
 try:
+    from ..scripts.utils.paths import (
+        GOLD_TABLE, SILVER_PATIENT_TABLE, CONSENT_GOLD_TABLE,
+        SYNC_METADATA_PATH, CORS_ORIGINS, SPARK_EXECUTOR_MEMORY, SPARK_DRIVER_MEMORY,
+    )
+except ImportError:
+    import sys
+    sys.path.insert(0, os.path.join(os.path.dirname(__file__), "..", "scripts"))
+    from utils.paths import (
+        GOLD_TABLE, SILVER_PATIENT_TABLE, CONSENT_GOLD_TABLE,
+        SYNC_METADATA_PATH, CORS_ORIGINS, SPARK_EXECUTOR_MEMORY, SPARK_DRIVER_MEMORY,
+    )
+
+try:
     from .mock_data import (
         MOCK_DIAGNOSTICS_HEATMAP,
         MOCK_MORTALITY,
@@ -47,17 +60,13 @@ except ImportError:
 
 app = Flask(__name__)
 
-# --- Configuration ---
-GOLD_TABLE = "datalake_gold.patient_events_gold"
-SILVER_PATIENT_TABLE = "datalake_silver.patient_fhir"
-CONSENT_GOLD_TABLE = "datalake_gold.patient_consent_gold"
-SYNC_METADATA_PATH = "/home/vagrant/datalake-final/provision/metadata/sync_metadata.json"
+# --- Configuration (chargée depuis pipeline.yaml via paths.py) ---
 USE_MOCK_FALLBACK = os.environ.get("RMA_USE_MOCK", "true").lower() == "true"
 
 # --- CORS ---
 CORS(app, resources={
     r"/*": {
-        "origins": ["http://localhost:3000", "http://192.168.56.1:3000"],
+        "origins": CORS_ORIGINS,
         "methods": ["GET", "POST", "OPTIONS"],
         "allow_headers": ["Content-Type", "Authorization"]
     }
@@ -66,8 +75,8 @@ CORS(app, resources={
 # --- Spark ---
 spark = SparkSession.builder \
     .appName("RMA_API") \
-    .config("spark.executor.memory", "4g") \
-    .config("spark.driver.memory", "2g") \
+    .config("spark.executor.memory", SPARK_EXECUTOR_MEMORY) \
+    .config("spark.driver.memory", SPARK_DRIVER_MEMORY) \
     .enableHiveSupport() \
     .getOrCreate()
 
@@ -199,7 +208,7 @@ def top_diagnostics():
 # 3 Diagnostics heatmap (par tranches d'âge)
 @app.route("/rma/diagnostics_heatmap")
 def diagnostics_heatmap():
-    """Heatmap diagnostics par tranches d'âge (agrégation SQL puis partitionnement age).
+    """Heatmap diagnostics par tranches d'âge (agrégation SQL puis partitionnement age)."""
     start, end = get_default_dates()
     start_date = request.args.get("start", start)
     end_date = request.args.get("end", end)

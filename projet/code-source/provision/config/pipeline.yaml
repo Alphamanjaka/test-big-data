@@ -1,0 +1,56 @@
+# pipeline.yaml — Configuration centralisée du pipeline
+# Tout fichier Python l'importe via utils/paths.py (PROJECT_ROOT dynamique).
+
+# ── Racine du projet (résolue automatiquement si vide) ──
+project_root: ""
+
+# ── HDFS ──
+hdfs:
+  namenode: "hdfs://localhost:9000"
+  base_path: "/datalake"
+
+# ── Bases Hive ──
+hive_dbs:
+  silver: "datalake_silver"
+  gold: "datalake_gold"
+
+# ── Tables cibles ──
+tables:
+  gold: "datalake_gold.patient_events_gold"
+  consent_gold: "datalake_gold.patient_consent_gold"
+  silver_patient: "datalake_silver.patient_fhir"
+
+# ── Config Spark (commune à tous les scripts) ──
+spark:
+  executor_memory: "4g"
+  driver_memory: "2g"
+  shuffle_partitions: "8"
+
+# ── GOLD : tranches d'âge ──
+gold:
+  age_tranches:
+    - [0.0,    0.0767, "0-28 j"]
+    - [0.0795, 0.1616, "29-59 j"]
+    - [0.1667, 0.9167, "2-11 m"]
+    - [1.0,    4.0,    "1-4 ans"]
+    - [5.0,    14.0,   "5-14 ans"]
+    - [15.0,   24.0,   "15-24 ans"]
+    - [25.0,   59.0,   "25-59 ans"]
+    - [60.0,   120.0,  "60 ans et plus"]
+
+# ── SILVER ──
+silver:
+  fuzzy_threshold: 60
+
+# ── API ──
+api:
+  cors_origins:
+    - "http://localhost:3000"
+    - "http://192.168.56.1:3000"
+  flask_port: 5000
+  default_date_range_days: 365
+
+# ── Logs ──
+logs:
+  dir: "provision/logs"
+  extract_subdir: "extract"
