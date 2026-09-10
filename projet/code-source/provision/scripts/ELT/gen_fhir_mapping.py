@@ -5,8 +5,7 @@ import json
 import os
 import logging
 from rapidfuzz import fuzz
-from ..utils.fhir_schema import FHIR_FIELDS
-from ..utils.fhir_synonyms import FHIR_SYNONYMS
+from ..utils.fhir_schema import FHIR_FIELDS, FHIR_SYNONYMS
 
 # -----------------------------
 # Logging
@@ -29,7 +28,9 @@ logging.getLogger().addHandler(console)
 # -----------------------------
 # Fichiers
 # -----------------------------
-DATASOURCES_PATH = "/home/vagrant/datalake-final/provision/config/data_sources.json"
+CONFIG_DIR = "/home/vagrant/datalake-final/provision/config"
+DATASOURCES_PATH = os.path.join(CONFIG_DIR, "data_sources.json")
+FHIR_ENTITIES_PATH = os.path.join(CONFIG_DIR, "fhir_entities.json")
 REPORT_PATH = "/home/vagrant/datalake-final/provision/metadata/extract_raw_report.json"
 OUTPUT_PATH = "/home/vagrant/datalake-final/provision/metadata/fhir_mapping.json"
 
@@ -39,6 +40,14 @@ OUTPUT_PATH = "/home/vagrant/datalake-final/provision/metadata/fhir_mapping.json
 with open(DATASOURCES_PATH, encoding="utf-8-sig") as f:
     datasources = json.load(f)
 logging.info("✅ datasources.json chargé")
+
+# -----------------------------
+# Charger fhir_entities.json (schéma + mappings + synonymes)
+# -----------------------------
+with open(FHIR_ENTITIES_PATH, encoding="utf-8") as f:
+    fhir_entities_cfg = json.load(f)
+TABLE_MAPPINGS = fhir_entities_cfg.get("table_mappings", {})
+logging.info("✅ fhir_entities.json chargé")
 
 # -----------------------------
 # Charger extract_raw_report.json
@@ -57,45 +66,6 @@ if isinstance(report_list, list):
         report[src_name].append(table_entry)
 else:
     report = report_list
-
-# -----------------------------
-# Carte EXPLICITE table -> (entité FHIR, colonne lien patient ou None)
-# Les tables hors carte sont EXCLUES du mapping :
-#   - anti-régression : plus de "patients" parasites (ir_attachment,
-#     product_product, res_users, hr_employee, acs_ethnicity, ...)
-#   - les entités non-Patient doivent exposer une colonne de lien vers
-#     le patient (FK) pour générer un patient_uuid aligné sur le Patient.
-# -----------------------------
-LINK_ENTITY_OVERRIDE = {
-    "MAVIS": {
-        "hms_patient": ("Patient", None),                 # main_table (canonique : id)
-        "res_partner": ("Patient", None),                 # identité (name/gender/birthday/...)
-        "account_move": ("Encounter", "patient_id"),      # visites/factures liées au patient
-        "patient_death_register": ("Observation", "patient_id"),
-    },
-    "MMT_DB": {
-        "gnuhealth_patient": ("Patient", None),           # main_table (canonique : id)
-        "party_party": ("Patient", None),                 # identité (dob/gender/lastname)
-    },
-    "CLINIQUE": {
-        "patients": ("Patient", None),                    # main_table (canonique : id)
-        "visits": ("Encounter", "patient_id"),            # visites liées au patient
-        "diagnoses": ("Condition", "patient_id"),         # diagnostics liés au patient
-        "observations": ("Observation", "patient_id"),    # indicateurs liés au patient
-    },
-    # Sources intérimaires CSV (modèle test_bigdata) : patients uniquement
-    # (les événements achats/consultations/examens resteront en RAW et seront
-    #  mappés plus tard dès que les vraies bases seront connectées).
-    "pharmacy": {
-        "patients": ("Patient", None),                    # identité (client_id → source_patient_id)
-    },
-    "consultation": {
-        "patients": ("Patient", None),                    # identité (patient_code → source_patient_id)
-    },
-    "imaging": {
-        "patients": ("Patient", None),                    # identité (id_personne → source_patient_id)
-    },
-}
 
 # -----------------------------
 # Sélection des colonnes avec synonymes
@@ -167,9 +137,10 @@ for source_cfg in datasources:
         columns = table_entry.get("columns", [])
 
         # Carte explicite : seules les tables mappées sont traitées
-        override = LINK_ENTITY_OVERRIDE.get(source_name, {}).get(table_name)
+        override = TABLE_MAPPINGS.get(source_name, {}).get(table_name)
         if override is not None:
-            entity, link_col = override
+            entity = override["entity"]
+            link_col = override.get("fk_to_patient")
         elif table_name == main_table:
             entity, link_col = "Patient", None
         else:

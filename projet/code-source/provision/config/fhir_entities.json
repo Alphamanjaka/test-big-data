@@ -1,0 +1,89 @@
+{
+  "entities": {
+    "Patient": {
+      "fields": {
+        "patient_uuid": "string",
+        "source_patient_id": "string",
+        "name": "string",
+        "birth_date": "date",
+        "gender": "string",
+        "address": "string",
+        "cin": "string",
+        "birth_city": "string",
+        "email": "string"
+      }
+    },
+    "Encounter": {
+      "fields": {
+        "patient_uuid": "string",
+        "encounter_id": "string",
+        "admission_date": "date",
+        "discharge_date": "date",
+        "create_date": "date",
+        "visit_type": "string"
+      }
+    },
+    "Condition": {
+      "fields": {
+        "patient_uuid": "string",
+        "diagnosis": "string",
+        "diagnosis_code": "string",
+        "category": "string",
+        "code": "string",
+        "info": "string",
+        "name": "string"
+      }
+    },
+    "Observation": {
+      "fields": {
+        "patient_uuid": "string",
+        "mortality": "int",
+        "parity": "int",
+        "gravida": "int",
+        "live_births": "int"
+      }
+    }
+  },
+
+  "synonyms": {
+    "birth_date": ["birth_date", "dob", "birthday", "bdate", "naissance", "date_naiss"],
+    "gender": ["gender", "sex", "sexe", "genre"],
+    "name": ["name", "full_name", "nom_complet", "patient_name", "nom", "prenom"],
+    "cin": ["cin", "no_cin", "cin_number", "numero_cin", "number_cin"],
+    "birth_city": ["birth_city", "ville_naissance", "ville_nai", "birth_place", "ville_naiss"],
+    "email": ["email", "mail"],
+    "diagnosis": ["disease", "pathology", "diagnostic"],
+    "admission_date": ["start_date", "visit_date"],
+    "discharge_date": ["end_date", "leave_date"],
+    "source_patient_id": ["patient_id", "id_patient", "id", "client_id", "patient_code", "id_personne"],
+    "encounter_id": ["id", "visit_id", "consultation_id"]
+  },
+
+  "table_mappings": {
+    "MAVIS": {
+      "hms_patient": { "entity": "Patient", "fk_to_patient": null },
+      "res_partner": { "entity": "Patient", "fk_to_patient": null },
+      "account_move": { "entity": "Encounter", "fk_to_patient": "patient_id" },
+      "patient_death_register": { "entity": "Observation", "fk_to_patient": "patient_id" }
+    },
+    "MMT_DB": {
+      "gnuhealth_patient": { "entity": "Patient", "fk_to_patient": null },
+      "party_party": { "entity": "Patient", "fk_to_patient": null }
+    },
+    "CLINIQUE": {
+      "patients": { "entity": "Patient", "fk_to_patient": null },
+      "visits": { "entity": "Encounter", "fk_to_patient": "patient_id" },
+      "diagnoses": { "entity": "Condition", "fk_to_patient": "patient_id" },
+      "observations": { "entity": "Observation", "fk_to_patient": "patient_id" }
+    },
+    "pharmacy": {
+      "patients": { "entity": "Patient", "fk_to_patient": null }
+    },
+    "consultation": {
+      "patients": { "entity": "Patient", "fk_to_patient": null }
+    },
+    "imaging": {
+      "patients": { "entity": "Patient", "fk_to_patient": null }
+    }
+  }
+}

@@ -20,7 +20,7 @@ from typing import List
 from pyspark.sql import SparkSession, functions as F
 from pyspark.sql.types import StringType, IntegerType, DoubleType, DateType
 from pyspark.sql.window import Window
-from ..utils.fhir_schema import FHIR_FIELDS
+from ..utils.fhir_schema import FHIR_FIELDS, FHIR_SYNONYMS
 from ..utils.sync_utils import update_sync_metadata
 
 # Optionnel : RapidFuzz pour similarité (libre et open-source)
@@ -212,20 +212,6 @@ with open(MAPPING_PATH, encoding="utf-8-sig") as f:
 logging.info("✅ Mapping FHIR chargé")
 
 
-# Quelques synonymes utiles pour les abréviations courtes
-SYNONYMES_COURTS = {
-    "birth_date": ["dob", "bdate", "birthday", "naissance", "date_naiss"],
-    "cin": ["cin", "no_cin", "cin_number", "numero_cin", "number_cin"],
-    "birth_city": ["birth_city", "ville_naissance", "ville_nai", "birth_place", "ville_naiss"],
-    "email": ["mail"],
-    "gender": ["sex", "sexe", "genre"],
-    # nom de préférence : nom complet / nom de famille avant le prénom
-    "name": ["full_name", "nom_complet", "patient_name", "nom", "prenom"],
-    # priorité aux colonnes FK vers le patient : ne jamais confondre avec la PK de la table
-    "source_patient_id": ["patient_id", "id_patient", "id", "client_id", "patient_code", "id_personne"],
-    "encounter_id": ["id", "visit_id", "consultation_id"]
-}
-
 # Champs possibles pour identifiant principal
 CLES_CANDIDATES = ["patient_id", "id", "id_patient", "source_patient_id",
                    "client_id", "patient_code", "id_personne"]
@@ -246,12 +232,12 @@ def fuzzy_score(a: str, b: str) -> int:
 def meilleure_colonne_attendue(champ_fhir: str, candidates: List[str]) -> str:
     """Trouve la colonne source la plus proche d'un champ FHIR attendu.
 
-    Priorités : synonyme exact (SYNONYMES_COURTS), correspondance de nom
+    Priorités : synonyme exact (FHIR_SYNONYMS), correspondance de nom
     exacte, puis similarité floue (fuzzy_score >= FUZZY_THRESHOLD). Retourne
     None si aucune colonne n'atteint le seuil.
     """
     champ = champ_fhir.lower()
-    for syn in SYNONYMES_COURTS.get(champ, []):
+    for syn in FHIR_SYNONYMS.get(champ, []):
         for c in candidates:
             if c.lower() == syn.lower():
                 return c
