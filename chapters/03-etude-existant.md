@@ -85,7 +85,11 @@ flowchart LR
 
 ## 3.2 Les solutions logicielles du domaine
 
-Quatre familles de produits couvrent, partiellement, le besoin. Pour chacune, ce qu'elle apporte
+Quatre familles de produits couvrent, partiellement, le besoin. Trois sigles reviennent
+souvent : le **MPI** (Master Patient Index, un annuaire de patients qui attribue un identifiant
+unique à chaque personne), le **DMP** (Data Management Platform, une plateforme qui pilote la
+qualité des données d'un établissement) et le **MDM** (Master Data Management, la même
+approche appliquée aux données de référence, patients ou non). Pour chacune, ce qu'elle apporte
 et ce qui bloque son adoption dans le contexte du stage :
 
 | Solution | Famille | Apport pour le besoin | Ce qui bloque l'adoption ici |

@@ -9,7 +9,7 @@ purpose-by-purpose, audit d'accès et architecture Big Data.
 
 ```
 Mon_Memoire/
-├── chapters/             # mémoire — chapitres 01 → 08 (rédigés, statut daté)
+├── chapters/             # mémoire — chapitres 01 → 09 (rédigés, statut daté ; 09 = glossaire)
 ├── documents/            # cahier des charges + articles + documentation conceptuelle
 ├── references/           # bibliographie (B1 → B20) et sources citées
 ├── projet/

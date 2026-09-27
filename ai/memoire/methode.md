@@ -9,7 +9,7 @@
 - Conserver un ton pédagogique : expliquer **pourquoi** chaque technologie (voir
   `documents/documentation/bigdata_concepts.md`).
 
-## Structure des chapitres (`Mon_Memoire/chapters/01..08`)
+## Structure des chapitres (`Mon_Memoire/chapters/01..09`)
 
 Rédiger en remplaçant le squelette « Objectif + Notes/TODO » existant :
 
@@ -32,10 +32,16 @@ Rédiger en remplaçant le squelette « Objectif + Notes/TODO » existant :
    exact/probabilistic, par source), limites (recall hard, GOLD sparse).
 8. **08-conclusion** : conclusion générale autonome — réponse à la problématique (tableau
    volet → réalisation → preuve), acquis démontrés, limites assumées, perspectives, bilan.
+9. **09-glossaire** : un mot = une explication en français courant + le renvoi au chapitre qui
+   le détaille ; une table des objets du dépôt (tables, scripts, couches) et leur rôle.
 
 ## Style
 
 - Phrases courtes, français soutenu mais simple.
+- **Chaque terme technique est expliqué en français courant à sa première apparition en prose** :
+  on garde le mot du métier, on ajoute l'explication à côté (« le *metastore*, c'est-à-dire le
+  catalogue qui décrit les tables »). Un terme employé sans définition est un défaut de rédaction.
+- Les définitions détaillées sont dans les chapitres, leur liste dans `chapters/09-glossaire.md`.
 - Tableaux pour synthétiser (concepts, scripts, résultats).
 - Un schéma **par chapitre technique** (Mermaid) représentant l'architecture à chaque niveau.
 - Réutiliser les cartes de vocabulaire (Medallion, MPI, blocking, purpose-by-purpose, golden record).
@@ -50,7 +56,7 @@ Rédiger en remplaçant le squelette « Objectif + Notes/TODO » existant :
 
 - [ ] Objectif posé en ouverture
 - [ ] Au moins un fait vérifiable (chiffre/fichier) par affirmation majeure
-- [ ] Vocabulaire du thème défini
+- [ ] Vocabulaire du thème défini (glossaire à jour si un terme est ajouté)
 - [ ] Lien vers le document conceptuel correspondant
 - [ ] Conclusion + transition vers le chapitre suivant
 

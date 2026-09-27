@@ -64,6 +64,13 @@ dans `Mon_Memoire` (subtree → `projet/code-source/`, `projet/mvp/`, `archives/
    **54/54** (tests sans contournement de l'authentification). Reste : **exécuter** `schema.sql` et
    `seed_governance.py` sur une base réelle (`.env` absent, VM indisponible) pour valider la preuve
    en base — la mécanique est prouvée, la donnée ne l'est pas.
+9. **[Mémoire — lisibilité]** Glossaire **créé** (27/09) : `chapters/09-glossaire.md`, ~60 entrées en
+   français courant + table des objets du dépôt, inclus automatiquement dans le DOCX (9 chapitres,
+   51 tableaux). Six mots-clés données en langage courant dans la section 1.3 ; définitions ajoutées
+   à la première occurrence en prose (`metastore`, `rejeu`, MPI/DMP/MDM, `idempotence`,
+   `purpose-by-purpose`, `schéma-on-read`). Règle actée dans `ai/memoire/methode.md` et
+   `ai/memoire/README.md`. **Aucune perte** de chiffre, identifiant, chemin ou référence vérifiée
+   par comparaison avant/après. Reste : relecture humaine de la nouvelle prose.
 
 ## Dettes techniques connues
 
@@ -160,3 +167,16 @@ dans `Mon_Memoire` (subtree → `projet/code-source/`, `projet/mvp/`, `archives/
   pondérée), **14** (§4.5 contexte local), **15** (§4.6 jalons J1→J5), **19** (§8.1 synthèse des
   arbitrages) ; §2.5 et §5.5 corrigés (les colonnes `data_scope` / `expires_at` annoncées n'existent pas) ;
   comptes de tests harmonisés 23/23 → 54/54. Reste : exécuter `schema.sql` + le seed sur une base réelle.
+- 27/09 : **Correctif BOM** (commit `4d3c417`) puis **glossaire et passe de lisibilité** —
+  `chapters/09-glossaire.md` créé (~60 entrées : données et qualité / architecture Big Data /
+  gouvernance et droit / objets du dépôt), importé automatiquement dans le DOCX (glob `0*.md` de
+  `export_memoire_docx.py`). Le lecteur rencontre désormais le jargon expliqué : six mots-clés
+  en langage courant insérés en §1.3 avant le tableau des objectifs, définitions ajoutées à la
+  première occurrence en prose (`metastore`, `rejeu`, MPI / DMP / MDM, `idempotence`,
+  `purpose-by-purpose`, `schéma-on-read`, `partition`, `volumétrie`). **22 renvois de section du
+  glossaire vérifiés un par un** contre l'inventaire réel (56 sections) : 0 renvoi cassé. Règle
+  actée : tout terme technique doit être défini en français courant à sa première apparition
+  (`ai/memoire/methode.md`, `ai/memoire/README.md`). **Non-régression prouvée** : comparaison
+  avant/après de tous les chiffres, identifiants de code, chemins et références `[B#]` → **0 perte**.
+  Structure : **9 chapitres** à 1 H1, 51 tableaux, fences équilibrées, **20/20** références ;
+  DOCX régénéré = **9 H1**, 51 tableaux, **61 908 caractères** ; `pytest` **54/54**.

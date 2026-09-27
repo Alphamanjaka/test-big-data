@@ -24,6 +24,7 @@
 | `06-realisation.md`   | Réalisation : générateur, pipeline, dédup, PostgreSQL, gouvernance, Spark, Data Lake                    |
 | `07-tests.md`         | Tests & évaluation ground-truth (P/R/F1), difficultés rencontrées                                       |
 | `08-conclusion.md`    | Conclusion générale : réponse à la problématique, limites assumées, perspectives                       |
+| `09-glossaire.md`     | Glossaire : chaque terme technique en français courant + où il est détaillé ; table des objets du dépôt  |
 
 Chaque chapitre commence par un bloc « Objectif » + « Notes / TODO » (squelette existant, à rédiger).
 
@@ -39,7 +40,9 @@ Chaque chapitre commence par un bloc « Objectif » + « Notes / TODO » (squele
 
 1. Le mémoire raconte une **démarche progressive** : problème métier → MVP → validation → Big Data.
 2. Chaque affirmation doit s'appuyer sur un **fait vérifiable** du dépôt (fichier, run, résultat de test).
-3. Utiliser le vocabulaire des concepts (Medallion, MPI, blocking, purpose-by-purpose…).
+3. Utiliser le vocabulaire des concepts (Medallion, MPI, blocking, purpose-by-purpose…) **et le
+   définir en français courant à sa première apparition en prose** ; le glossaire (chapitre 9) en
+   tient la liste. Un terme seul, non défini, est un défaut de rédaction.
 4. Illustrer avec les **chiffres réels** disponibles dans `contexte_projet.md`.
 5. Ne pas prétendre avoir réalisé ce qui est « à rendre » (export VM, soutenance, Docker) — l'honnêteté
    du PoC est une valeur affichée du projet.

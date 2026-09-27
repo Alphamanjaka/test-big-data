@@ -165,8 +165,10 @@ externes par-dessus [bigdata_concepts.md §4].
 Le premier modèle de calcul distribué, **MapReduce**, a été supplanté en pratique
 par **Apache Spark**, qui garde les données **en mémoire** entre les étapes et
 généralise le modèle (RDD/DataFrame) — largement utilisé via son API Python
-**PySpark** [B7]. **Hive** apporte la couche SQL sur le Data Lake : metastore
-(thrift://localhost:9083) et HiveServer2/beeline (port 10000) [B8].
+**PySpark** [B7]. **Hive** apporte la couche SQL sur le Data Lake : son
+**metastore**, le catalogue qui décrit les tables et leurs colonnes
+(thrift://localhost:9083), et HiveServer2/beeline, le service qui reçoit et exécute
+les requêtes SQL (port 10000) [B8].
 
 | Brique | Rôle dans le projet | Fait vérifiable |
 |---|---|---|
@@ -183,9 +185,7 @@ contre ~0.4–4 s pour Spark — l'overhead JVM domine. Spark se justifie sur le
 
 Le **modèle Medallion** (Databricks) organise le lac en **zones de qualité
 croissante** : RAW (brut, inchangé) → SILVER (nettoyé, standardisé, doublons
-identifiés) → GOLD (agrégé, prêt à l'analyse) [B9]. Chaque zone est un état
-distinct de la donnée, ce qui garantit traçabilité, rejeu et séparation exigée par
-la gouvernance [bigdata_concepts.md §3].
+identifiés) → GOLD (agrégé, prêt à l'analyse) [B9].
 
 | Couche | Rôle | Dans le projet |
 |---|---|---|
@@ -193,10 +193,16 @@ la gouvernance [bigdata_concepts.md §3].
 | **SILVER** | nettoyée, **normalisée FHIR**, doublons marqués | `datalake_silver.*_fhir` (4 tables) |
 | **GOLD** | agrégats prêts à l'analyse | `datalake_gold.patient_events_gold` (18 colonnes, 8 tranches RMA) |
 
+Chaque zone est un **état distinct de la donnée**, ce qui apporte trois choses : la
+**traçabilité** (on sait d'où vient chaque valeur), le **rejeu** (relancer un
+traitement depuis une zone propre, sans tout recommencer) et la séparation exigée
+par la gouvernance [bigdata_concepts.md §3].
+
 Le pipeline suit la logique **ELT** (extract → load → transform) : l'ingestion
 charge la donnée **telle quelle** dans RAW, la transformation s'applique *a
-posteriori* dans les zones suivantes — c'est le **schéma-on-read**, caractéristique
-du Data Lake [bigdata_concepts.md §7].
+posteriori* dans les zones suivantes — c'est le **schéma-on-read** (« on décide
+du format au moment de lire »), caractéristique du Data Lake
+[bigdata_concepts.md §7].
 
 ## 2.8 Positionnement de la solution retenue
 

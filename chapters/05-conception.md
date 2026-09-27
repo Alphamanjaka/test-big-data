@@ -168,12 +168,13 @@ identités et de la gouvernance [consentement_gouvernance.md §6] :
 | `raw_patient_record` | historique append-only, jamais exposé | payload `JSONB`, `UNIQUE(source_system, source_patient_id)` |
 | `master_patient` | identité unique | `gender CHECK IN ('M','F','')` |
 | `patient_identity_map` | source → master | `match_method CHECK IN ('new_master','exact','probabilistic')`, `match_score NUMERIC(4,3)`, `explanation` |
-| `consent` | consentement purpose-by-purpose | `purpose` (`CHECK IN ('api_access','research','analytics')`), `granted`, `recorded_at` |
+| `consent` | consentement par finalité (*purpose-by-purpose*) | `purpose` (`CHECK IN ('api_access','research','analytics')`), `granted`, `recorded_at` |
 | `api_user` | utilisateurs machine | `api_key_hash` (SHA-256), `role CHECK ('admin','analyst','viewer')` |
 | `access_audit` | journal de toutes les tentatives | endpoint, status, IP, `purpose`, `refusal_reason`, `accessed_at` |
 | `medicine_purchase` / `patient_consultation` / `imaging_exam` | transactions métier rattachées au master | `payload JSONB`, `UNIQUE(source_system, source_record_id)` |
 
-**Idempotence** : `CREATE TABLE IF NOT EXISTS` pour les tables, `ADD COLUMN IF
+**Idempotence** — relancer le même traitement ne duplique rien et ne casse rien :
+`CREATE TABLE IF NOT EXISTS` pour les tables, `ADD COLUMN IF
 NOT EXISTS` pour les migrations — le pipeline est rejouable [consentement_gouvernance.md §6].
 
 ## 5.5 Gouvernance : RBAC, consentement, audit
@@ -189,7 +190,7 @@ et on **trace** ce qui s'est passé.
   `/patients` et `/patients/{id}`, validé contre une liste fermée
   (`api_access`, `research`, `analytics`) — un code **422** est renvoyé pour une
   finalité inconnue. Le refus par finalité non consentie produit un **403**.
-- **Consentement purpose-by-purpose** : table `consent` liée au master ; la
+- **Consentement par finalité** (*purpose-by-purpose*) : table `consent` liée au master ; la
   décision d'accès ne dépend pas du rôle seul — un utilisateur **autorisé mais
   sans finalité consentie** est refusé. Sur la liste, les patients sans
   consentement sont **retirés** de la réponse, et le nombre d'exclusions est

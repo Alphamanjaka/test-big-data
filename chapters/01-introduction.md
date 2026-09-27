@@ -57,6 +57,18 @@ d'analyse (agrégats faux en présence de doublons) et des failles de confidenti
 
 ## 1.3 Objectifs
 
+Six mots reviennent dans tous les chapitres. Ils sont expliqués ici en français courant ; le
+**glossaire (chapitre 9)** reprend l'ensemble du vocabulaire employé.
+
+| Mot du projet | En clair |
+|---|---|
+| **ELT** | on **charge** d'abord les fichiers tels quels, on **transforme** ensuite — l'inverse d'un ETL classique, où l'on transforme avant d'écrire |
+| **Medallion** | ranger la donnée dans trois zones de qualité croissante : **RAW** (brut, inchangé) → **SILVER** (nettoyé, standardisé) → **GOLD** (prêt à analyser) |
+| **MPI** | l'annuaire qui reconnaît qu'un patient est le même d'un système à l'autre, et lui attribue un identifiant unique |
+| **Déduplication** | rapprocher les fiches identiques dispersées dans plusieurs systèmes, en pouvant **expliquer** chaque fusion |
+| **RBAC** | les droits d'accès sont portés par un **rôle** (`admin`, `analyst`, `viewer`), pas par une personne |
+| **Consentement par finalité** | le patient autorise **un usage précis** (`api_access`, `research`, `analytics`) : c'est le *purpose-by-purpose* |
+
 | # | Objectif | Illustration concrète |
 |---|---|---|
 | 1 | **Centraliser** les données dans une architecture Big Data | pipeline ELT Medallion RAW → SILVER → GOLD [cahier_des_charges.md §4.1] |

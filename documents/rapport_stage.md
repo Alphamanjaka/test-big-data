@@ -4,7 +4,7 @@
 > **Société d'accueil** : Madagascar Medical Technology (MMT)
 > **Thème** : conception d'une plateforme Big Data de gestion et de gouvernance des données patients —
 > nettoyage, déduplication et contrôle d'accès basé sur le consentement du patient.
-> **Statut** : rédigé — synthèse du mémoire (chapitres 01→08), tous les chiffres vérifiables dans le dépôt.
+> **Statut** : rédigé — synthèse du mémoire (chapitres 01→08 + glossaire 09), tous les chiffres vérifiables dans le dépôt.
 
 ---
 

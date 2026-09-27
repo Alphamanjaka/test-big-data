@@ -570,7 +570,7 @@ journalisé) et prouvé par tests. **Limite assumée :** `schema.sql` et `seed_g
 **Constat :** 4 fichiers versionnes du depot principal conservaient un BOM UTF-8 en tete, present
 dans les blobs Git (verifie par git show HEAD:<fichier>) et pas seulement dans la copie de travail.
 Deux impacts measures avant correction :
-- engine/governance/__init__.py : st.parse() en echouait (SyntaxError: invalid non-printable
+- engine/governance/__init__.py : `ast.parse()` en echouait (SyntaxError: invalid non-printable
   character U+FEFF) alors que l'import Python, lui, tolerait le BOM ;
 - documents/documentation/pipeline_elt.md, README.md, projet/mvp/AGENTS.md : le titre de niveau 1
   devenait invisible aux parseurs Markdown naifs (line.startswith('# ')), un commentaire bash d'un
@@ -580,7 +580,7 @@ Deux impacts measures avant correction :
 modification de fin de ligne. git diff --stat = 4 fichiers, 1 ligne chacun.
 
 **Verifications :** scan global du depot principal (extensions .md/.py/.sql/.json/.yaml/.toml/.sh/
-.txt/.cfg/.ini/.example/.csv) = **0 BOM** ; 0 fichier indecodable en UTF-8 ; st.parse() sur
+.txt/.cfg/.ini/.example/.csv) = **0 BOM** ; 0 fichier indecodable en UTF-8 ; `ast.parse()` sur
 __init__.py = OK ; titres H1 de pipeline_elt.md, README.md et mvp/AGENTS.md de nouveau
 detectes ; import engine.governance + engine.governance.app = OK ; pytest
 projet/code-source/tests = **54 passed, 2 warnings in 2.55s**.
@@ -593,3 +593,56 @@ principal, la modifier polluerait son propre historique. Le DOCX n'etait pas imp
 documents/Etat-de-l-art-M2-pro-stage.docx.md reste une **reference non versionnee**, non modifiee.
 Aucun garde-fou ajoute (correction ponctuelle) ; seuil AGENTS.md "fix robustesse" : pas de mise a
 jour de suivi_avancement.md.
+- Note de suivi (27/09, apres coup) : `documents/Etat-de-l-art-M2-pro-stage.docx.md` a ete
+  **versionne par l'utilisateur** (commit `bc6c7f4`) et n'a pas ete modifie par mes commits
+  (`430e9e2`, `4d3c417`) : il reste une reference, simplement desormais suivie par Git.
+
+## 27/09/2026 - Memoire : glossaire (chapitre 9) + passe de lisibilite du vocabulaire
+
+**Constat.** Aucun glossaire n'existait dans le depot (0 fichier glossaire / lexique / vocabulaire).
+La premiere occurrence de la plupart des termes techniques n'etait pas dans une phrase mais dans
+les **tableaux et diagrammes du chapitre 1** (objectifs, plan, Mermaid) : Medallion, ELT,
+RAW/SILVER/GOLD, MPI, MDM, DMP, RBAC, purpose-by-purpose, master patient, identity map. Le
+lecteur rencontrait donc le jargon **avant** toute explication. Analyse de la prose existante :
+26 a 32 mots par phrase en moyenne, style deja conforme a la methode du projet -> passe
+**chirurgicale** et non reecriture massive, le risque de detruire des chiffres verifies etant
+disproportionne.
+
+**Realise.**
+- `chapters/09-glossaire.md` : ~60 entrees en francais courant, sections 9.2 donnees et qualite /
+  9.3 architecture Big Data / 9.4 gouvernance et droit, plus 9.5 les objets du depot (tables
+  `raw_patient_record`, `master_patient`, `patient_identity_map`, `consent`, `api_user`,
+  `access_audit`, les 3 tables metier ; scripts `run_pipeline.sh`, `gen_extract_raw.py`,
+  `gen_fhir_mapping.py`, `create_silver.py`, `create_gold.py`, `hive_api.py`,
+  `seed_governance.py`, `sql/schema.sql` ; couches `engine/identity/*` et `engine/governance/*`).
+  Chaque entree donne le mot, l'explication en francais courant et le renvoi a la section qui
+  detaille le sujet. Inclus automatiquement dans le DOCX (glob `0*.md`).
+- **Chapitre 1** : tableau « En clair » (6 mots-cles : ELT, Medallion, MPI, deduplication, RBAC,
+  consentement par finalite) insere avant le tableau des objectifs.
+- **Definition a la premiere occurrence en prose** : `metastore` (§2.6), `rejeu` et
+  `schema-on-read` (§2.7), MPI / DMP / MDM (§3.2), `idempotence` (§5.4), `purpose-by-purpose`
+  (§5.5). Le vocabulaire technique est **conserve** (regle 3 de `ai/memoire/README.md`) : on ajoute
+  du francais courant a cote du terme, on ne supprime aucun terme.
+- Regles actees : `ai/memoire/methode.md` (definition obligatoire a la premiere occurrence, glossaire
+  au checklist, structure 01..09), `ai/memoire/README.md` (ligne 09 + regle 3 completee),
+  `README.md`, `documents/rapport_stage.md`.
+
+**Verifications.**
+- **Non-regression** : comparaison avant/apres, chapitre par chapitre, de tous les **nombres**,
+  identifiants en code, chemins de fichiers et references `[B#]` -> **0 perte**. Les seuls
+  ajouts : le nombre 9 et 6 jetons de code du nouveau tableau du chapitre 1.
+- **22 renvois de section du glossaire verifies un par un** contre l'inventaire reel des 56
+  sections : 0 renvoi casse. 15 renvois pointant vers la mauvaise section ont ete corriges
+  (ex. `metastore` §5.6 -> §5.1, `partitions` §4.3 -> §4.4, scripts ELT §6.3 -> §6.2,
+  `volumetrie` §4.2 -> §4.5).
+- Chaque terme du glossaire existe dans les chapitres 01-08 (verification par motif) ; les termes
+  absents n'ont pas ete forces (FDR, quasi-identifiant, pseudonymisation), et « faux negatif » est
+  explique dans l'entree « faux positif » puisque le mot n'apparait pas tel quel dans le texte.
+- Structure : **9 chapitres** a 1 H1 chacun, fences equilibrees, **51 tableaux** (45 -> 51),
+  references **20/20** definies et citees, tables du glossaire a 3 colonnes sans separateur interne.
+- `export_memoire_docx.py` : DOCX regenere = **9 H1**, 51 tableaux, **61 908 caracteres**.
+- `pytest projet/code-source/tests` = **54 passed, 2 warnings in 2.33s** (inchange : aucun code
+  de production modifie).
+
+**Limite.** La passe porte sur la prose ; tableaux, chiffres et schemas Mermaid sont restes
+intacts. Relecture humaine de la nouvelle prose recommandee avant impression.
