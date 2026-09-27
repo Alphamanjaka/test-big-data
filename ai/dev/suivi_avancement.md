@@ -122,8 +122,10 @@ dans `Mon_Memoire` (subtree → `projet/code-source/`, `projet/mvp/`, `archives/
 - API Flask du PoC (`provision/api/hive_api.py`) : `/governance/consent` sans authentification,
   nom du patient exposé, `debug=True`, pas de TLS ni de rate limiting. **Hors périmètre** : le
   contrôle de consentement est appliqué à l'API FastAPI de gouvernance.
-- Clés API hachées en SHA-256 **non salées** ; `access_audit` non chiffré au repos ; ni
-  `data_scope` ni `expires_at` sur le consentement.
+- Clés API hachées en SHA-256 **non salées** (`engine/governance/auth.py:26`,
+  `provision/db/seed_governance.py:57`) — **désormais déclarée dans le mémoire** (§ 8.3, glossaire,
+  § 5.5) avec sa cause et sa voie de correction (sel par clé ou `bcrypt`) ; `access_audit` non
+  chiffré au repos ; ni `data_scope` ni `expires_at` sur le consentement.
 - `schema.sql` et `provision/db/seed_governance.py` non exécutés depuis leur dernière modification.
 - Docker/CI, export VM `.box`, tests unitaires ≥80 % (hors moteur).
 - Pages governance/consentements frontend (optionnel).

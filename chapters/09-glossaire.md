@@ -84,7 +84,7 @@ la section 1.3.
 | **RBAC** | Les droits d'accès sont attachés à un rôle (`admin`, `analyst`, `viewer`) et non à une personne : on donne un rôle, pas un nom. | § 2.5, 5.5 |
 | **Rôle** | Le niveau d'autorisation d'un utilisateur : lecture large, lecture restreinte, ou administration. | § 2.5, 5.5 |
 | **Clé d'API** | Un long texte secret présenté par l'application pour prouver qui elle est, à la place d'un mot de passe. | § 2.5, 6.5 |
-| **SHA-256** | L'algorithme de hachage utilisé pour stocker les clés d'API : la base n'en garde que l'empreinte, illisible. | § 2.5, 5.4 |
+| **SHA-256** | L'algorithme de hachage utilisé pour stocker les clés d'API : la base n'en garde que l'empreinte, illisible. Il protège la lecture directe de la table, mais n'est **ni salé ni lent**, donc insuffisant face à une attaque par dictionnaire — dette déclarée en § 8.3. | § 2.5, 5.4 |
 | **Audit d'accès** | Le journal de qui a demandé quoi, quand et avec quelle finalité, y compris les refus. | ch. 1 à 8 |
 | **403** | Le code HTTP renvoyé quand l'accès est refusé : l'utilisateur est connu et autorisé en général, mais la finalité demandée n'est pas consentie. | § 2.5, 5.5 |
 | **API** (*endpoint*) | Un point d'entrée du programme : l'URL appelée, avec sa méthode, qui renvoie une réponse. | § 5.5, 6.5 |

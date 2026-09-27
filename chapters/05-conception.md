@@ -192,7 +192,9 @@ et on **trace** ce qui s'est passé.
 - **Rôles** : `admin` / `analyst` / `viewer` — contrôlés par clé API sur la
   plateforme (et RBAC web optionnel côté frontend) [consentement_gouvernance.md §2].
 - **Clés API** : hachées SHA-256 en base ; la clé en clair n'est jamais stockée ni
-  exposée [consentement_gouvernance.md §5].
+  exposée [consentement_gouvernance.md §5]. Cette empreinte protège la lecture directe
+  de la table, mais le hachage retenu n'est **ni salé ni lent** : c'est une dette
+  déclarée, avec sa cause et sa voie de correction, en § 8.3.
 - **Finalité déclarée** : `purpose` est un **paramètre obligatoire** de
   `/patients` et `/patients/{id}`, validé contre une liste fermée
   (`api_access`, `research`, `analytics`) — un code **422** est renvoyé pour une

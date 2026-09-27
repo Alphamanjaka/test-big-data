@@ -85,6 +85,7 @@ table est la réponse à la question « *qu'avez-vous choisi, et à la place de 
 | **Consentement non alimenté en base centrale** | `patient_consent_gold` : 145 lignes mais `purpose` / `granted` à `NULL` | PostgreSQL central non peuplé pendant le stage. La **mécanique** est démontrée et testée (seed `provision/db/seed_governance.py` fourni, non exécuté faute d'environnement) ; la **donnée** ne l'est pas |
 | **Droit applicable non vérifié localement** | conformité démontrée au RGPD seul | cadre juridique malgache des données de santé non étudié dans le stage (§4.5) |
 | **API Flask de démonstration non sécurisée** | `/governance/consent` sans authentification, `debug=True` | dette connue du PoC ; le contrôle de consentement est implémenté sur l'API **FastAPI** de gouvernance, qui est celle du dépôt consolidé |
+| **Clés d'API hachées sans sel** | `engine/governance/auth.py:26` et `provision/db/seed_governance.py:57` : `hashlib.sha256(...).hexdigest()`, sans sel ni itération | l'empreinte protège la lecture directe de `api_user`, mais une même clé produit toujours la même empreinte : une table de correspondance suffit à la retrouver. Voie de correction : un sel par clé, ou une fonction lente par défaut (`bcrypt`, déjà employée côté frontend pour les mots de passe). Sans effet sur le moteur de déduplication, qui n'utilise pas ces clés |
 | **Endpoints sur données de secours** | `laboratory`, `malaria` | sources métier absentes du run de référence ; indicateur `mocked` exposé dans chaque réponse |
 | **Volume démontré** | quelques centaines de lignes en Silver | la VM 8 Go ne permet pas de charger les volumes réels de l'établissement ; le parcours Big Data est **architecturé et reproductible**, pas passé à l'échelle |
 | **Comparaison de l'existant = documentaire** | aucun produit tiers installé | banc d'essai hors périmètre du stage (ch. 3) |
@@ -127,6 +128,76 @@ l'échelle, et la **règle de gouvernance** qui décide qui peut le lire. La dif
 instructive n'a pas été technique : elle a été **méthodologique** — définir ce qu'on accepte de
 perdre (420 paires manquées) pour ce qu'on refuse de risquer (une fusion de deux patients), et
 pouvoir le démontrer par des chiffres reproductibles.
+
+---
+
+## 8.6 Questions anticipées
+
+Cette section recense les objections les plus probables du jury, avec la réponse **vérifiée** et
+l'endroit du mémoire où elle s'appuie. Elle ne remplace pas le développement : elle indique où le
+chercher.
+
+**1. « Votre précision vaut 1,000 : le moteur ne fusionne-t-il jamais deux patients différents ? »**
+Non sur les trois jeux évalués, et ce n'est pas une garantie. Le générateur dégrade des
+enregistrements existants — casse, espaces, fautes de frappe, changements de format — mais ne crée
+jamais deux personnes distinctes qui se ressemblent : le cas adversariaire des faux positifs n'est
+donc pas sollicité par la vérité terrain. C'est un plancher, pas une borne. § 7.5.
+
+**2. « Un rappel de 0,422 est-il acceptable en santé ? »**
+Sur le jeu « hard » (variations à 50 %), il reste 420 faux négatifs sur 1 057 enregistrements. Le
+seuil 0,80 est conservateur et n'a pas été abaissé sans validation métier : l'abaisser remonte le
+rappel mais réintroduit le risque de fusion de deux patients, que la priorité donnée à la précision
+interdit. Levier identifié : enrichir la clé exacte (adresse), puis calibrer sur la vérité terrain.
+§ 7.2, § 8.4.
+
+**3. « Pourquoi ne pas estimer les poids et le seuil par EM, comme Splink ? »**
+Pour qu'un EM ait un sens, il lui faut des données d'appariement identifiantes ; celles du stage
+sont synthétiques et n'ont pas été appariées par un tiers. Les paramètres seraient donc estimés sur
+des paires que le modèle n'a pas lui-même produites. Le choix retenu — un score pondéré **lisible**
+(0,5 / 0,3 / 0,1 / 0,1, seuil 0,80, déclarés dans un fichier de configuration) — se justifie ligne à
+ligne devant un gestionnaire de données. L'EM reste une perspective, « en complément », avec double
+comptage explicable. § 3.4, § 5.3, § 8.4.
+
+**4. « Une VM de 8 Go suffit-elle pour passer à l'échelle ? »**
+Non. Le run de référence porte quelques centaines de lignes en SILVER : le parcours Big Data est
+**architecturé et reproductible** (HDFS, RAW → SILVER → GOLD), pas passé à l'échelle. Le passage à
+l'échelle suppose le partitionnement du blocking et la consolidation transitive des clusters.
+§ 8.3, § 8.4.
+
+**5. « Le consentement est-il réellement appliqué ? »**
+La règle l'est : `purpose` est obligatoire (422), une finalité non consentie produit un refus (403),
+et chaque accès comme chaque refus est journalisé — 13 cas de test dédiés à l'API de gouvernance.
+La donnée ne l'était pas au moment du run : `patient_consent_gold` compte 145 lignes mais `purpose`
+et `granted` sont à `NULL`, le PostgreSQL central n'ayant pas été peuplé faute d'environnement. La
+distinction entre **mécanique prouvée** et **donnée absente** est maintenue partout. § 6.5, § 7.5.
+
+**6. « Pourquoi une API Flask et une API FastAPI ? »**
+L'API de données (Flask) est une surface de *reporting* sur la zone GOLD, héritée du PoC : elle ne
+filtre rien. Le contrôle par rôle et par consentement est appliqué sur l'API de gouvernance
+(FastAPI), seule à renvoyer 401, 403 et 422. Cette frontière est assumée, bornée et documentée.
+§ 6.5, § 8.3.
+
+**7. « Les clés d'API sont-elles vraiment protégées ? »**
+La clé en clair n'est ni stockée ni exposée : la base n'en conserve qu'une empreinte SHA-256. En
+revanche cette empreinte n'est **ni salée ni lente**, si bien qu'une table de correspondance
+suffirait à retrouver une clé. La dette, sa cause et sa correction (sel par clé, ou fonction lente
+comme `bcrypt` déjà utilisée côté frontend) sont déclarées en § 8.3.
+
+**8. « Les 14 tests de l'API prouvent-ils le contrôle d'accès ? »**
+Non : ils prouvent la joignabilité et les statuts de réponse. Le contrôle d'accès est vérifié
+séparément par les 13 cas de l'API de gouvernance. § 7.4, § 7.5.
+
+**9. « Comment garantissez-vous qu'aucun profil n'a été inventé ? »**
+Le générateur est à racine fixe (`RANDOM_SEED = 42`) et toutes les données sont synthétiques. Aucune
+valeur n'est estimée côté patients : un genre hors liste fermée, un CIN de longueur incohérente ou
+une date illisible laissent le champ vide, et l'enregistrement bascule alors vers la voie
+probabiliste. Un champ douteux ne peut donc pas corrompre une clé de rapprochement exact.
+§ 4.3, § 6.1.
+
+**10. « Pourquoi ne pas tout mettre dans PostgreSQL ? »**
+Parce que les deux magasins n'ont pas le même rôle : HDFS, Hive et Spark portent le lac rejouable et
+les trois zones de qualité, PostgreSQL porte l'état de référence — patients maîtres, consentements,
+journal d'audit, comptes. C'est une séparation de rôles, pas une redondance. § 5.1, § 5.4.
 
 ---
 

@@ -956,5 +956,67 @@ Aucun fichier du memoire, du code ou des figures modifie : ajout documentaire se
 **Reste a faire par l'utilisateur :** repeter a voix haute avec un chronometre, produire la video et
 la slide de repli, convertir le Markdown. Le memoire n'a pas ete touche.
 
+## 27/09/2026 - Memoire : piece liminaire complete (resume, abstract, listes, acronymes) + dette SHA-256 declaree
 
+**Contexte.** L'utilisateur impose le plan des deux rapports de reference (documents/RAPPORT_HASINA_1613.docx,
+documents/Rapport de stage ETU 1156 RAMANANTSAFIDY Jonah Fitia.docx) et demande explicitement la premiere
+page, le resume et la version anglaise. Metadonnees validees par l'utilisateur : soutenance **Octobre 2026**,
+**aucune ligne service**, encadrant professionnel M. Harena Ny Aina Rabemanoela, encadrant pedagogique
+M. RABENANAHARY Rojo, autrice RANOMENJANAHARY Manjaka Alpha. Les RMA du front sont **conserves**
+(decision de l'utilisateur).
 
+**Dette declaree (etape 0).** La documentation evaluait « cles API hachees en SHA-256 » sans dire que le
+hachage n'est ni sale ni lent. Verifie dans le code : engine/governance/auth.py:26 et
+provision/db/seed_governance.py:57 appellent hashlib.sha256(...).hexdigest() sans sel ni iteration.
+Corrige en trois endroits, sans dramatisation ni retrait de l'affirmation vraie (la cle en clair n'est
+jamais stockee) : nouvelle ligne du tableau des limites (§ 8.3) avec la cause et la correction (sel par cle,
+ou crypt deja utilise cote frontend pour les mots de passe) ; glossaire § 9 ; renvoi au § 8.3 en § 5.5.
+
+**Questions anticipees (§ 8.6, nouveau).** 10 objections probables du jury, chacune avec reponse verifiee
+et renvoi de chapitre : precision 1,000 non garante (jeu adverse non sollicite) ; rappel 0,422 assume ;
+absence d'estimation EM (donnees synthetiques non identifiantes, § 3.4) ; VM 8 Go non passable a
+l'echelle ; consentement = mecanique prouvee / donnee absente ; frontieres Flask vs FastAPI ; cles non
+salees ; les 14 tests API ne prouvent pas le controle d'acces (13 cas dedies) ; generation a racine fixe
+RANDOM_SEED = 42 ; separation HDFS/Spark vs PostgreSQL.
+
+**Piece liminaire (etape 1).** scripts/dev/export_memoire_docx.py (461 -> 793 lignes) :
+- dd_cover() reecrite sur le modele de reference : titre, « par », autrice, « Memoire presente » +
+  libelle **exact** du diplome, encadrement, Octobre, 2026, copyright. Plus aucune mention « Master 2
+  MBDS (specialite Big Data) », ni « Session septembre 2026 », ni ligne service.
+- dd_abstract() produit « Resume » + « Mots-cles » (179 mots) et « Abstract » + « Keywords » (145
+  mots), en paragraphes justifies avec retrait de premiere ligne, texte justifie en Times New Roman.
+- collect_captions() + dd_listes() : liste des figures alimentee depuis les legendes des chapitres
+  (8 entrees), jamais recomptee a l'export. **La liste des tableaux n'est pas emise** : aucune legende
+  **Tableau N — ...** n'existe encore (0 trouvee), donc la section est omise plutot qu'affichee vide.
+  Elle apparaitra des l'etape 2 (legendes des tableaux retenus).
+- dd_acronymes() : 27 sigles en tableau a deux colonnes, order par progression du texte.
+- Pagination fidele au modele : piece liminaire en chiffres romains, corps repart a 1, page de garde sans
+  numero, pied « Page X » seul. Verification : les references n'utilisent que PAGE (pas de total), et
+  dd_section recopiant le sectPr, chaque section paysage aurait reinitialise le compteur a 1 --
+  d'ou clear_page_numbering() sur les sections 2..n.
+
+**Trois pieges rencontres et corriges en cours de route.** (1) dd_abstract prenait 	ext[0] comme
+titre, ce qui aurait affiche « R » ; le titre est desormais un parametre. (2) ill_footer remettait
+different_first_page_header_footer a False apres que l'appelant l'ait pose, donc la couverture
+portait un numero ; le choix est desormais laisse a l'appelant. (3) La lecture des legendes de figures
+s'arretait sur l'asterisque d'ouverture et produisait « Figure 1 — Figure 1 — » avec un titre coupe en
+milieu de mot ; le bloc est desormais recolle jusqu'a la **fermeture** du **, le prefixe « Figure N — »
+retire, et la liste tronquee a une virgule ou un point-virgule.
+
+**Preuves.** Export : documents/memoire_M2_MBDS.docx, 9 chapitres, 8 figures, 14 sections, 53 tableaux
+(52 + acronymes), 1 365 Ko. Controle structurel : sectPr des sections 0 et 1 en ordre de schema valide
+(pgNumType present, monotonique), sections 2..13 sans pgNumType (numerotation continue),
+updateFields=true (Word recalcule sommaire et pagination a l'ouverture), pied PAGE seul, page de garde
+sans numero, XML de document.xml / settings.xml / ooter1.xml bien forme, CRC du zip valide.
+Non-regression : pytest projet/code-source/tests = **54 passed**, code de sortie 0. Aucun chiffre
+invente : le resume et l'abstract ne citent que 214 -> 145, 69 doublons, 32,24 %, precision 1,000, rappel
+0,578 / 0,422, 420 faux negatifs.
+
+**Reste a faire (etapes non lancees).** Etape 2 : reduction des tableaux au critere jury + legendes des
+tableaux retenus (la liste des tableaux suivra automatiquement). Etape 3 : 3 pages de front (Doublons,
+Gouvernance, Synthese) **en plus** des RMA, bandeau mocked sur les vues RMA, correction du KPI CPN4
+qui affiche 0 %, puis les deux corrections du memoire qui en dependent (§ 1 L129 : les endpoints /rma/*
+ne sont pas « sur les donnees GOLD » mais avec repli mocked, laboratory et malaria en mock
+inconditionnel ; § 1 L78 et § 4 L27 : le dashboard RMA n'est pas notre livrable). Relecture humaine du
+DOCX dans Word ; toute edition de chapitre decale les lignes de documents/figures/manifest.json a
+mettre a jour apres restructuration.
