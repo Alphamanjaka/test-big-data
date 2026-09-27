@@ -564,3 +564,32 @@ demande explicite.
 **Résultat :** le contrôle de consentement est **effectif** sur l'API de gouvernance (403 + motif
 journalisé) et prouvé par tests. **Limite assumée :** `schema.sql` et `seed_governance.py` n'ont pas pu
 être exécutés (`.env` absent, pas de VM) — la validation en base réelle reste à faire.
+
+## 27/09/2026 - Robustesse : retrait des BOM UTF-8 residuels (seuil : logs seuls)
+
+**Constat :** 4 fichiers versionnes du depot principal conservaient un BOM UTF-8 en tete, present
+dans les blobs Git (verifie par git show HEAD:<fichier>) et pas seulement dans la copie de travail.
+Deux impacts measures avant correction :
+- engine/governance/__init__.py : st.parse() en echouait (SyntaxError: invalid non-printable
+  character U+FEFF) alors que l'import Python, lui, tolerait le BOM ;
+- documents/documentation/pipeline_elt.md, README.md, projet/mvp/AGENTS.md : le titre de niveau 1
+  devenait invisible aux parseurs Markdown naifs (line.startswith('# ')), un commentaire bash d'un
+  bloc de code pouvant alors etre pris pour un titre.
+
+**Correction :** retrait du prefixe EF BB BF au niveau octet uniquement, sans reencodage ni
+modification de fin de ligne. git diff --stat = 4 fichiers, 1 ligne chacun.
+
+**Verifications :** scan global du depot principal (extensions .md/.py/.sql/.json/.yaml/.toml/.sh/
+.txt/.cfg/.ini/.example/.csv) = **0 BOM** ; 0 fichier indecodable en UTF-8 ; st.parse() sur
+__init__.py = OK ; titres H1 de pipeline_elt.md, README.md et mvp/AGENTS.md de nouveau
+detectes ; import engine.governance + engine.governance.app = OK ; pytest
+projet/code-source/tests = **54 passed, 2 warnings in 2.55s**.
+
+**Perimetre volontairement exclu :** projet/mvp/src/patient-data-platform/ (2 fichiers avec BOM)
+est un **depot git imbrique autonome** (.git present) : sa copie de travail n'affecte pas le depot
+principal, la modifier polluerait son propre historique. Le DOCX n'etait pas impacte
+(export_memoire_docx.py ne lit que chapters/0*.md, aucun BOM). Les CRLF des 80 fichiers .md/.py/
+.sql sont un artefact de core.autocrlf=true (blobs en LF) : non modifies. core.autocrlf inchange.
+documents/Etat-de-l-art-M2-pro-stage.docx.md reste une **reference non versionnee**, non modifiee.
+Aucun garde-fou ajoute (correction ponctuelle) ; seuil AGENTS.md "fix robustesse" : pas de mise a
+jour de suivi_avancement.md.

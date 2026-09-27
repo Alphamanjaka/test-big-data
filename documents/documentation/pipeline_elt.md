@@ -1,4 +1,4 @@
-﻿# Pipeline ELT — fonctionnement complet
+# Pipeline ELT — fonctionnement complet
 
 Le pipeline ELT convertit des données médicales synthétiques issues de **3 sources** (PostgreSQL MAVIS,
 PostgreSQL MMT_DB, SQLite CLINIQUE) en une table analytique **GOLD** prête pour l'API/le dashboard.

@@ -1,1 +1,1 @@
-﻿"""Gouvernance : consentement, audit, authentification par cles API."""
+"""Gouvernance : consentement, audit, authentification par cles API."""

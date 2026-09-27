@@ -1,4 +1,4 @@
-﻿# Mon_Memoire — Plateforme de Centralisation et de Gouvernance des Données Patients
+# Mon_Memoire — Plateforme de Centralisation et de Gouvernance des Données Patients
 
 Mémoire de stage (Master 2 — Big Data) et **projet unique consolidé** portant sur la conception et la
 réalisation d'une plateforme de centralisation et de gouvernance de données **patients synthétiques** :
