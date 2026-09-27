@@ -24,7 +24,7 @@
     {
       "number": 3,
       "file": "fig-3.png",
-      "source": "03-etude-existant.md:55",
+      "source": "03-etude-existant.md:98",
       "config": "compact",
       "width_px": 912,
       "height_px": 528,
@@ -64,7 +64,7 @@
     {
       "number": 7,
       "file": "fig-7.png",
-      "source": "06-realisation.md:43",
+      "source": "06-realisation.md:54",
       "config": "serre",
       "width_px": 1146,
       "height_px": 124,

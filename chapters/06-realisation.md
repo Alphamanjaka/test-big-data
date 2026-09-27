@@ -35,6 +35,17 @@ Résultat pour le dataset hard :
 maîtres, stable entre les sources (autoritatif). Le fichier de vérité est **réservé à
 l'évaluation** — jamais fourni à l'algorithme [deduplication.md — règle métier].
 
+Le déterminisme n'est pas un détail d'implémentation : c'est ce qui rend l'évaluation
+**comparable**. Les trois jeux easy / medium / hard sont produits à partir des
+**mêmes 500 maîtres** (`--seed 42`) et ne diffèrent que par le **taux de variation**
+appliqué (10 % / 30 % / 50 %). La dégradation de la qualité est ainsi attribuable à
+un seul facteur, et deux exécutions sont comparables ligne à ligne — condition
+nécessaire pour établir la parité Pandas/Spark (ch. 7) et pour rejouer une
+évaluation après un changement de poids. Les tables de transactions (792 achats,
+519 consultations, 450 examens sur le jeu hard) alimentent les entités FHIR autres
+que `patient` : c'est leur rattachement au patient qui fait la dette
+`patient_events_gold` du chapitre 7.
+
 ## 6.2 Pipeline ELT Medallion en 4 étapes
 
 Orchestration par `run_pipeline.sh` (arrêt sur erreur, logs `elt.log`) : run
@@ -71,6 +82,16 @@ L'étape 3 intègre la **fusion des doublons dans le Data Lake** : le moteur rel
 `master_patient_id`, `match_method`, `match_score` et `is_duplicate` — la fusion
 reste explicable *dans* le lac, pas seulement dans un script séparé.
 
+Le passage **214 → 145** est le contrôle de cohérence le plus utile du run : 214
+enregistrements, 69 doublons liés, 145 masters, et `214 − 69 = 145` se vérifie par un
+simple comptage sur le lac, sans consulter la logique de fusion — c'est la
+correspondance « un master = un enregistrement non dupliqué » qui est testée, pas la
+décision elle-même. Le taux de 32.24 % est ce même rapport exprimé en pourcentage,
+et `patient_consent_gold` aligne **145 lignes sur 145 masters**. Le tableau reste
+néanmoins asymétrique et le dit explicitement : `patient_events_gold` est vide, donc
+la zone GOLD ne certifie pour l'instant que **l'identité**, pas les événements de
+soin rattachés.
+
 ## 6.3 Moteur de déduplication : Pandas et Spark
 
 Le moteur `engine/identity/` est la pièce centrale, deux implantations alignées :
@@ -88,6 +109,18 @@ La **sémantique est strictement alignée** et la **parité est vérifiée** : d
 patients → 11 masters identiques Pandas et Spark, et évaluation ground-truth
 « modes MVP+Spark identiques » (TP=307, FP=0, FN=420 pour les deux)
 [`evaluation_truth.md`] — voir chapitre 7.
+
+Cette parité n'est pas une coïncidence de développement mais une **propriété
+structurelle** : les deux implantations partagent le même `canonical.py`, lisent les
+**mêmes poids et le même seuil** dans `config/deduplication.yaml`, et ne diffèrent que
+par la **stratégie de regroupement**. Le matcher Pandas indexe les masters sur trois
+critères de blocage (préfixe de nom normalisé, date de naissance, CIN) pour borner les
+comparaisons ; l'implantation Spark regroupe d'abord les enregistrements par clé
+exacte (`groupBy`), puis ne compare que les **ancres de clusters** — un choix assumé
+pour la montée en charge, au prix d'une comparaison moins exhaustive. Le protocole de
+test rejoue les deux chemins sur le même jeu et compare les décisions méthode par
+méthode : c'est le seul moyen de détecter une dérive entre les deux
+implémentations, qu'aucune des deux ne peut détecter seule.
 
 ## 6.4 Chargement PostgreSQL et GOLD du consentement
 
@@ -114,6 +147,18 @@ clé hachée SHA-256 + rôles `admin`/`analyst`/`viewer`), `consent.py` (router 
 chaque requête, refus compris). Les **payloads RAW ne sont jamais exposés** par
 l'API — seuls les maîtres consolidés le sont [consentement_gouvernance.md §7].
 
+Il faut distinguer deux couches qui portent le même mot « gouvernance » sans avoir le
+même rôle. L'API **Flask** est une surface de *consommation et de reporting* : ses
+endpoints lisent le GOLD et en rendent des agrégats ; `/api/governance/consent` en
+particulier **liste** les consentements et leurs statistiques, mais **n'impose
+rien** — ni authentification, ni contrôle de finalité. L'API **FastAPI** du moteur est
+le seul point d'**application** de la règle : c'est là que se produisent les 401 (clé
+inconnue), 403 (rôle insuffisant ou finalité non consentie) et 422 (`purpose`
+obligatoire), chacun journalisé par `audit.py`. Cette frontière est assumée et
+documentée : l'API Flask reste une dette — lancée avec `debug=True`, elle rend en outre
+le nom du patient dans sa réponse de consentement — et le contrôle de consentement
+s'applique à l'API de gouvernance, comme le rappelle `ai/dev/suivi_avancement.md`.
+
 ## 6.6 Difficultés rencontrées et résolutions
 
 | Problème réel | Cause | Correctif |
@@ -124,6 +169,19 @@ l'API — seuls les maîtres consolidés le sont [consentement_gouvernance.md §
 | Spark ne démarrait pas | `JAVA_HOME` avec `\bin` en trop | normalisation `_resolve_java_home()` dans `spark/session.py` |
 | HiveServer2/beeline instable sur la VM | service HS2 fragile | validation des comptages par **scripts Spark** (`check_data.py`) |
 | NLP lourd inutilisable | `sentence_transformers` crash Python 3.8 | RapidFuzz + dictionnaire de synonymes (`fhir_synonyms.py`) |
+
+Ces six incidents se répartissent en trois familles, et la famille conditionne le
+correctif. Les **données** (les deux premières lignes) produisent les correctifs les
+plus structurés : ils sont documentés dans `pipeline_elt.md` comme des pièges
+anti-régression, avec le symptôme, la cause et la parade, précisément parce qu'ils
+se reproduisent. L'**infrastructure** (parquet sur partage, démarrage de Spark,
+HiveServer2 instable) impose des choix de configuration qui n'ont pas à être
+justifiés fonction par fonction : la règle retenue est de **contourner** — écrire
+toujours sur HDFS plutôt que sur le partage vboxsf, valider les comptages par scripts
+Spark plutôt que par beeline. L'**outillage** (NLP trop lourd) est le seul cas où le
+correctif change la méthode : l'approche par vecteurs a été abandonnée pour un score
+pondéré et un dictionnaire de synonymes, arbitrage dicté par la contrainte Python
+3.8 et rendu lisible par l'exigence d'explicabilité.
 
 Environnement d'exécution: VM `ubuntu/focal64` 8 Go / 4 cœurs — Hadoop 3.3.6,
 Hive 3.1.3 (métastore distant 9083 pour éviter le conflit Derby), Spark 3.4.2,

@@ -32,6 +32,28 @@ logiciel libre de gestion hospitalière (EMR, HMIS, LIMS, 40 paquets métier) [B
 sur l'ERP Odoo étendu par des applications hospitalières tierces sous licence [B20]. Aucun de ces
 produits n'est conçu pour être le référentiel d'identité transverse de l'établissement.
 
+### Méthode de la capture
+
+L'étude de l'existant repose sur une **capture reproductible**, pas sur une impression : le schéma
+de chaque base a été introspecté puis consigné dans le dépôt
+[`archives/datalake_mavis/LOG.md`](../archives/datalake_mavis/LOG.md), ce qui permet de relire le
+diagnostic sans refaire les relevés. Trois chiffres de cette capture doivent être lus pour ce
+qu'ils établissent — et pour ce qu'ils n'établissent pas.
+
+- **1 260 tables détectées sur le nœud MAVIS, 11 retenues.** La capture mesure l'étendue du
+  problème (un ERP étendu, pas un dossier patient) ; elle ne prétend pas être un inventaire
+  exhaustif, et le sous-ensemble retenu est un **choix** documenté, pas un maximum.
+- **Une jointure vérifiée ligne à ligne** : `hms_patient.partner_id = res_partner.id`
+  rend **9 791 / 9 791** lignes. L'intégrité référentielle existe *à l'intérieur* d'une source ;
+  c'est l'**absence d'équivalent** entre sources qui pose problème.
+- **5 clés étrangères découvertes automatiquement** dans le modèle GNU Health, contre
+  **0 violation** dans CLINIQUE, seule base déjà alignée sur les 4 entités FHIR. L'hétérogénéité
+  n'est donc pas un défaut de qualité des bases : les trois sont cohérentes, mais selon des
+  conventions différentes.
+
+Enfin, le nœud MAVIS étant instable (102.16.7.154), les volumes cités sont ceux de la **réplique
+locale** : ils prouvent l'ordre de grandeur, pas l'état temps réel du serveur de production.
+
 ### Ce que l'existant ne fournit pas
 
 1. **Aucun identifiant patient transversal.** Chaque base a son propre namespace
@@ -51,6 +73,27 @@ produits n'est conçu pour être le référentiel d'identité transverse de l'é
    traçabilité transformation → résultat. L'incident 11 du PoC l'a montré — un `overwrite`
    exécuté dans la boucle par source a laissé `patient_fhir` avec **9 791 patients seulement**
    au lieu de l'union des sources [pipeline_elt.md — pièges anti-régression].
+
+Le point 2 a une conséquence de conception directe : l'hétérogénéité relevée ici a été convertie
+en un **contrat de normalisation explicite** plutôt qu'en un simple constat (ch. 5 et 6). Les
+trois sources synthétiques n'écrivent pas seulement le même champ sous des noms différents
+(`sexe` en pharmacie, `genre` en consultation, `sex` en imagerie) : elles **encodent le genre
+différemment** (`H/F`, `male/female`, `Homme/femme`). Le moteur y répond par des listes fermées,
+dans `engine/identity/canonical.py` :
+
+| Champ | Règle de normalisation appliquée | Comportement en cas d'échec |
+|---|---|---|
+| Genre | liste fermée de 5 libellés masculins et 4 féminins → `M` / `F` | valeur **vide** (jamais devinée) |
+| CIN | seuls les chiffres sont conservés | valeur **vide** si la longueur sort de 6 à 12 chiffres |
+| Date de naissance | ISO (`-` ou `/`) sinon lecture jour-mois-année | **inconnue** (`None`) |
+| Nom | accents, casse et ponctuation supprimés | chaîne vide si le nom est absent |
+
+Une règle gouverne les quatre : **aucune valeur n'est devinée**. Un genre hors liste, un CIN mal
+formé ou une date illisible produisent une valeur vide qui **isole** l'enregistrement sur la clé
+exacte et le renvoie vers la branche probabiliste — un champ douteux ne peut donc pas corrompre un
+rapprochement exact. Ce contrat est testé sur les trois sources synthétiques ; son application aux
+formats MAVIS et CLINIQUE est documentée mais **hors du run de référence**, qui n'exploite que les
+sources CSV (ch. 6).
 
 ```mermaid
 flowchart LR
@@ -125,6 +168,16 @@ l'hébergement interne ne résolvent ni le rapprochement, ni la gouvernance, ni 
 cahier des charges fixe en outre un délai de **4 mois** et un environnement **entièrement
 interne** [cahier_des_charges_stage_M2_MBDS.docx §1 et §3].
 
+Deux précautions de lecture. D'abord, la colonne du projet n'est **pas soumise au même régime de
+preuve** que les six autres : les produits sont jugés sur des capacités *annoncées*, alors que la
+solution du stage est notée `✔ testé` lorsqu'une mesure existe et `✔ conçu` lorsqu'elle n'existe
+pas encore — c'est le cas de la ligne gouvernance, mécaniquement vérifiée par 54 tests mais dont les
+données PostgreSQL n'étaient pas peuplées au run (ch. 7). Ensuite, un `◐` signifie « partiel selon
+la documentation » : il signale une capacité réelle mais non complète dans le contexte du stage,
+et non un doute sur l'existence de la fonction — la nuance est celle de Splink sur l'explicabilité,
+excellent sur le cœur algorithmique mais dont les poids estimés par EM ne sont pas lisibles par un
+data steward.
+
 ## 3.4 Verdict et espace de manœuvre
 
 **Décision.** Le projet ne réinvente pas les concepts : il **réutilise les standards et les
@@ -149,6 +202,15 @@ Trois écarts assumés, justifiés par le besoin et non par la commodité :
   la plateforme, conformément à l'hébergement interne.
 - **Pas de service managé** (à la différence d'Azure HDS) : le Data Lake est interne à la VM
   (Hadoop 3.3.6, Hive 3.1.3, Spark 3.4.2) [Vagrantfile, bootstrap.sh].
+
+Le risque propre à une chaîne sur mesure est la **maintenabilité** : il porte sur le code écrit,
+pas sur le choix des standards. Il a été réduit en rendant les décisions paramétrables plutôt
+qu'encodées dans la logique : poids, seuil et stratégie de blocage sont déclarés dans
+`config/deduplication.yaml` et lus par le matcher, l'implantation Spark, l'évaluation et l'étape
+SILVER. Une évolution du comportement se fait donc par **une** édition de YAML. Cette
+centralisation a un contrepoids assumé : le même fichier alimente l'évaluation, si bien que
+modifier un poids **invalide les métriques publiées** tant que l'évaluation n'a pas été rejouée
+(ch. 7).
 
 > **Limite honnête de l'étude.** Les produits cités sont décrits **d'après leur documentation** et
 > n'ont **pas été installés ni exécutés** : la grille compare des capacités annoncées, non des

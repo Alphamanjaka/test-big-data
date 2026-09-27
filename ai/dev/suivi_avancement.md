@@ -78,8 +78,21 @@ dans `Mon_Memoire` (subtree → `projet/code-source/`, `projet/mvp/`, `archives/
     (champ Word), pagination `Page X / Y` et **bibliographie consolidée** (24 URL). Une figure sur
     deux est placée sur une page paysage dédiée pour que ses libellés restent au moins à 9 pt ;
     seule la figure 6 reste à 5.7 pt (schéma à 12 rangs de nœuds, signalé). **0 perte** de nombre,
-    identifiant, chemin ou référence ; `pytest` **54/54**. Reste : **lot 3** (élargissement des
-    chapitres 6, 7 et 3), relecture dans Word (les champs se remplissent à l'ouverture).
+    identifiant, chemin ou référence ; `pytest` **54/54**. Lot 3 traité au point 11.
+11. **[Mémoire — analyse]** Lot 3 **fait** (27/09) : les trois chapitres les plus courts en prose
+    (3 : 664 mots, 6 : 496, 7 : 607) étaient **tableaux denses, analyse absente**. **1 475 mots de
+    prose** ajoutés (corpus 6 372 → **7 847**), tous les faits étant vérifiés dans le code :
+    ch. 3 (méthode de la capture d'existant, **contrat de normalisation** issu des 3 encodages du
+    genre constatés, lecture de la grille de comparaison, réversibilité par
+    `config/deduplication.yaml` et son contrepoids) ; ch. 6 (le déterminisme comme condition d'une
+    évaluation comparable, lecture de l'entonnoir 214 → 145 vérifiable par comptage, **parité
+    Pandas/Spark structurelle**, distinction **API Flask = reporting / API FastAPI = application de
+    la règle**, 6 incidents regroupés en 3 familles) ; ch. 7 (pyramide = substitut à une CI, les
+    **14/14 de l'API sont un test de fumée** — joignabilité, pas contrôle d'accès —, comptage
+    analytique des paires, et le **zéro faux positif présenté comme un plancher** faute de cas
+    adversariaire dans la vérité terrain). **0 perte** de token de preuve, structure 9 × 1 H1,
+    52 tableaux, 20/20 références, `pytest` **54/54**, DOCX régénéré. Reste : **relecture humaine**
+    et ouverture dans Word (champs du sommaire et de la pagination).
 
 ## Dettes techniques connues
 
@@ -218,5 +231,29 @@ dans `Mon_Memoire` (subtree → `projet/code-source/`, `projet/mvp/`, `archives/
   Preuves : 8 images insérées, 0 résidu de code Mermaid, 10 H1, 51 tableaux, 13 sections,
   **0 perte** de nombre / identifiant / chemin / référence sur 12 fichiers, structure 20/20
   références, `pytest` **54/54**, encodage sans BOM ni caractère de contrôle, aucun secret.
-- 27/09 : **Lot 3 engagé** — élargissement en prose des chapitres les plus courts (6 : 675 mots,
-  7 : 821, 3 : 949). Chaque chiffre écrit doit être revérifié avant d'être ajouté.
+- 27/09 : **Lot 3 — élargissement de la prose des chapitres 3, 6 et 7** — le constat était net :
+  les trois chapitres les plus courts (**6 : 496**, **7 : 607**, **3 : 664** mots de prose)
+  concentraient l'argument dans leurs tableaux. **1 475 mots de prose** ajoutés, tous les faits
+  étant vérifiés dans le code ou dans une sortie de commande (corpus **6 372 → 7 847** mots).
+  Ch. 3 : méthode de la capture d'existant (ce que l'introspection prouve et ne prouve pas),
+  **contrat de normalisation** déduit des 3 encodages du genre réellement émis par les générateurs
+  (listes fermées, CIN rejeté hors 6-12 chiffres, « aucune valeur n'est devinée »), lecture de la
+  grille de comparaison (la colonne du projet n'est pas soumise au même régime de preuve :
+  `testé` vs `conçu`), réversibilité via `config/deduplication.yaml` — avec son contrepoids écrit :
+  le même fichier alimente l'évaluation, donc un changement de poids **invalide les métriques
+  publiées**. Ch. 6 : le déterminisme comme condition d'une évaluation comparable, lecture de
+  l'entonnoir **214 → 145** vérifiable par comptage sur le lac, **parité Pandas/Spark structurelle**
+  (mêmes poids, même seuil, seule la stratégie de regroupement diffère), distinction explicite
+  **API Flask = reporting / API FastAPI = application de la règle** (dette désormais écrite dans le
+  mémoire), 6 incidents regroupés en 3 familles. Ch. 7 : la pyramide comme substitut à une CI,
+  **les 14/14 de l'API sont un test de fumée** (statuts seuls, sans en-tête d'authentification :
+  joignabilité, pas contrôle d'accès), comptage analytique des paires, et **le zéro faux positif
+  présenté comme un plancher** — le générateur ne crée jamais d'homophones quasi identiques, donc
+  le cas adversariaire n'est pas sollicité ; 2 lignes ajoutées au tableau des limites (§7.5).
+  Preuves : **0 perte** de token de preuve (nombres, identifiants, chemins, `[B#]`) sur les
+  3 chapitres, structure 9 × 1 H1, **52 tableaux**, 8 diagrammes, légendes 1..8, **20/20**
+  références, `pytest` **54/54** (code de sortie 0), DOCX régénéré (1 178 paragraphes, 8 images,
+  13 sections A4, 0 résidu Mermaid). Les 8 diagrammes et leurs légendes étant **inchangés**, les PNG
+  n'ont pas été re-rendus ; seuls 2 numéros de ligne du manifeste ont été recorrectés.
+  **Reste : relecture humaine, et ouverture dans Word** (les champs du sommaire et de la pagination
+  se remplissent à la première ouverture).

@@ -751,3 +751,106 @@ et chainage direct sur le lot 3. Identite de l'auteur et des encadrants fournie 
 ouverture (ou clic droit > « Mettre a jour les champs »). La figure 6 reste a 5.7 pt. La validation
 PostgreSQL / VM reste hors de ce lot (`.env` absent).
 
+---
+
+## 27/09/2026 - Memoire : elargissement de la prose des chapitres 3, 6 et 7 (lot 3)
+
+**Contexte.** Apres les lots 1 et 2, le diagnostic sur la prose etait net : les trois chapitres les
+plus courts etaient **tableaux denses, analyse absente**. Les tableaux portaient l'argument, la
+prose se contente de l'annoncer. Cibles : ch. 6 (496 mots), ch. 7 (607), ch. 3 (664) — les trois
+plus courts du corpus.
+
+**Methode retenue :** ajouter de la prose qui **interprete** ce que les tableaux montrent, et non
+de nouveaux tableaux ni de nouvelles affirmations. Regle appliquee sans exception : chaque fait
+ecrit est verifie dans le code ou dans une sortie de commande ; aucune affirmation qui ne puisse
+pas etre rejouee.
+
+**Realise (1 475 mots de prose ajoutes, 6 372 -> 7 847).**
+
+*Chapitre 3 (+545 mots) — du constat a la decision.*
+- **Methode de la capture** : ce que l'introspection prouve et ne prouve pas. 1 260 tables
+  detectees / 11 retenues (l'etendue, pas l'exhaustivite) ; une jointure verifiee ligne a ligne
+  (9 791 / 9 791) qui montre l'integrite **interne** a une source ; 5 cles etrangeres decouvertes
+  automatiquement dans GNU Health et 0 violation dans CLINIQUE, donc l'heterogeneite n'est pas un
+  defaut de qualite ; volumes de MAVIS pris sur la **replique locale** (noeud instable).
+- **Le contrat de normalisation** (nouveau tableau) : l'etude avait constate 3 encodages du genre,
+  le code y repond par des listes fermees — 5 libelles masculins / 4 feminins, CIN reduit aux
+  chiffres et rejete hors 6-12 chiffres, date ISO ou jour-mois-annee, nom sans accents ni
+  ponctuation. Regle commune : **aucune valeur n'est devinee** — un champ douteux devient vide et
+  renvoie l'enregistrement vers la branche probabiliste au lieu de corrompre une cle exacte.
+  Precision d'honnetete : ce contrat est teste sur les 3 sources synthetiques, son application a
+  MAVIS et CLINIQUE est **hors du run de reference** (sources CSV).
+- **Lecture de la grille** : la colonne du projet n'est pas soumise au meme regime de preuve que
+  les 6 produits (`teste` quand une mesure existe, `concu` quand elle n'existe pas — cas de la
+  ligne gouvernance) ; `◐` = partiel selon la documentation, pas doute sur l'existence.
+- **Reversibilite** : la decision sur mesure se paie en maintenabilite, pas en risque
+  algorithmique. Poids, seuil et blocage vivent dans `config/deduplication.yaml`, lu par le matcher,
+  Spark, l'evaluation et SILVER (verifie : imports dans `matcher.py`, `spark_dedup.py`,
+  `evaluate_engine.py`, `create_silver.py`). Contrepoids assume et ecrit : le meme fichier alimente
+  l'evaluation, donc **modifier un poids invalide les metriques publiees** tant qu'elle n'a pas
+  ete rejouee.
+
+*Chapitre 6 (+619 mots) — ce que la realisation prouve.*
+- **Le determinisme comme precondition d'evaluation** : les 3 jeux viennent des **memes 500
+  masters** (`--seed 42`) et ne different que par le taux de variation — la degradation est donc
+  attribuable a un seul facteur, et deux executions sont comparables ligne a ligne. Les tables de
+  transactions alimentent les entites FHIR autres que `patient` : leur rattachement est exactement
+  la dette `patient_events_gold`.
+- **Lecture de l'entonnoir 214 -> 145** : `214 − 69 = 145` se verifie par un **comptage sur le
+  lac**, sans consulter la logique de fusion — c'est la correspondance « un master = un
+  enregistrement non duplique » qui est testee. `patient_consent_gold` aligne 145 lignes sur 145
+  masters ; mais GOLD ne certifie que l'**identite**, pas les evenements de soin.
+- **La parite est structurelle, pas fortuite** : `canonical.py` partage, memes poids et meme seuil
+  lus du YAML ; les implementations ne different que par le **regroupement** (index de blocage
+  Pandas sur 3 criteres : prefixe de nom normalise, naissance, CIN ; Spark : `groupBy` sur la cle
+  exacte puis comparaison des **ancres de clusters** seulement — arbitrage de montee en charge).
+  Seul un protocole qui rejoue les deux chemins detecte une derive entre eux.
+- **Les deux couches de gouvernance** (distinction absente du chapitre) : l'API **Flask** est une
+  surface de *reporting* — `/api/governance/consent` **liste** les consentements et n'impose rien,
+  sans authentification (verifie : aucune logique d'auth dans `hive_api.py`), lancee avec
+  `debug=True` et rendant le nom du patient. L'API **FastAPI** est le seul point d'**application**
+  de la regle (401 / 403 / 422, journalises par `audit.py`). Dette assumee et ecrite.
+- **Les 6 incidents regroupes en 3 familles** : donnees (2 incidents -> documentes comme pieges
+  anti-regression, ils se reproduisent), infrastructure (3 -> on **contourne** : toujours HDFS,
+  validation par scripts Spark et non par beeline), outillage (1 -> le correctif change la methode :
+  vecteurs abandonnes pour score pondere + synonymes).
+
+*Chapitre 7 (+311 mots) — la preuve et ses angles morts.*
+- La pyramide suit le **cout de retour a l'echec** et se substitue a une CI hors perimetre : la
+  preuve est reproductible manuellement (`pytest` / `run_pipeline.sh` / `test_api.py`).
+- **Les 14/14 de l'API sont un test de fumee** : `test_api.py` n'assert que le code de statut et
+  n'envoie aucun en-tete d'authentification — il prouve la **joignabilite** des 11 endpoints, pas le
+  controle d'acces (verifie dans le source). Le controle d'acces est prouve ailleurs, par les 13
+  cas de l'API de gouvernance. Ni l'un ni l'autre ne remplace l'autre.
+- **Mode de calcul des metriques** : comptage **analytique** sur les intersections de groupes, sans
+  generation de paires (evite l'explosion combinatoire) ; meme decompte reutilise pour la
+  decomposition par methode et par source via l'ensemble des paires pertinentes.
+- **Honnetete sur le zero faux positif** : le generateur ne fait que ** degrader** des
+  enregistrements existants (8 variations) et ne cree **jamais** deux personnes distinctes qui se
+  ressemblent ; le cas adversariaire n'est donc pas sollicite par la verite terrain. La precision
+  affichee est un **plancher**, pas une borne.
+- **2 nouvelles lignes dans le tableau des limites (§7.5)** : homophones non sollicites ; controle
+  d'acces de l'API Flask non teste.
+
+**Verifications.**
+- **Non-regression** : chaque token de preuve (nombres, identifiants en backticks, chemins,
+  references `[B#]`) present avant le lot 3 est toujours present -> **0 perte** sur les 3
+  chapitres ; 104 tokens ajoutes, tous traces.
+- Structure : 9 chapitres a 1 H1, **52 tableaux** (51 + le nouveau contrat de normalisation),
+  8 diagrammes, 8 legendes **1..8 sans trou ni doublon**, fences equilibrees, **20/20** references.
+- Encodage : UTF-8 **sans BOM**, 0 caractere de controle, **0 secret** sur les 3 fichiers.
+- `pytest projet/code-source/tests` : **54 tests, 0 echec, 0 erreur, 0 ignore**, code de sortie 0.
+- DOCX regenere : **1 178 paragraphes**, 52 tableaux, **8 images**, 10 H1, 79 H2, 14 H3,
+  **13 sections A4** (7 portrait / 6 paysage), champ TOC + `updateFields`, pied `PAGE`/`NUMPAGES`,
+  **0 residu** de code Mermaid, 24 URL, 74 859 caracteres de texte.
+- **Manifeste** : les 8 blocs Mermaid et leurs 8 legendes sont **inchanges** par rapport au commit
+  (compare fichier par fichier) -> les PNG versionnes restent valides, **aucun re-rendu** (donc
+  aucun bruit binaire). Seuls 2 numeros de ligne avaient derive (figures 3 et 7, dans les chapitres
+  elargis) : corriges dans `manifest.json` avec la fonction du moteur elle-meme, pour obtenir
+  exactement ce qu'il ecrirait aujourd'hui.
+
+**Limites.** La relecture humaine reste a faire (style, transitions, longueur des chapitres) et les
+champs du DOCX se remplissent a l'ouverture dans Word. La figure 6 reste a 5.7 pt. La validation
+PostgreSQL / VM reste hors des trois lots (`.env` absent, Vagrant indisponible).
+
+

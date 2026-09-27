@@ -44,6 +44,20 @@ flowchart TD
 | **API** | `test_api.py` — 14 tests sur données réelles (`RMA_USE_MOCK=false`) | **14/14 PASS** [logs.md] |
 | **Pipeline** | `run_pipeline.sh` RAW → SILVER → GOLD | **4/4 vert** (07/09/2026) |
 
+L'ordre des niveaux n'est pas décoratif : il suit le **coût de retour à l'échec**. Un test
+unitaire échoue en quelques secondes et pointe une ligne de code ; un test de système n'échoue
+qu'après un pipeline complet et demande la VM. La pyramide est ici le substitut d'une intégration
+continue, écartée du périmètre du stage : la preuve est **reproductible manuellement** (`pytest`
+pour le moteur, `run_pipeline.sh` pour le lac, `test_api.py` pour l'API) plutôt que rejouée à
+chaque commit.
+
+Une précision de portée, sur les **14/14 de l'API** : `test_api.py` est un **test de fumée**. Il
+vérifie que chaque endpoint renvoie le code de statut attendu sur données réelles, sans en-tête
+d'authentification — il prouve la **joignabilité** des 11 endpoints et l'absence de régression de
+statut, **pas** le contrôle d'accès. Celui-ci est vérifié ailleurs, par les 13 cas de l'API de
+gouvernance, qui emprunte le chemin d'authentification réel (tableau ci-dessous). Aucun des deux
+niveaux ne se substitue à l'autre.
+
 Les tests du moteur couvrent la sémantique de la dédup : match exact (clé
 identique, formats de CIN normalisés), nom inversé compensé par (naissance + CIN)
 exact, fusion au seuil 0.80 (nom + naissance), faute de frappe compensée par
@@ -105,6 +119,20 @@ Les pondérations et le seuil sont configurables pour trader précision ↔ rapp
 [deduplication.md §5]. L'introduction du **CIN en clé exacte** (couverture ~75 %)
 a relevé le rappel hard de 0.287 (07/09) à **0.422** sans aucun faux positif.
 
+Ces métriques sont calculées **par comptage analytique** sur les intersections de groupes, et non
+en générant toutes les paires : le nombre de paires d'un groupe est obtenu directement, ce qui rend
+l'évaluation applicable à des jeux de l'ordre du millier d'enregistrements sans explosion
+combinatoire. La décomposition par méthode et par source réutilise ce même décompte en ne retenant
+que les paires « pertinentes ».
+
+Un point d'honnêteté sur le **zéro faux positif**. Le générateur ne fait que dégrader des
+enregistrements existants — casse, espaces, inversion, abréviation, faute de frappe, format de CIN
+ou de date, champ manquant — et ne construit **jamais** deux personnes distinctes qui se
+ressemblent. Les collisions de noms survenues fortuitement ont donc été absorbées par le seuil,
+mais le cas adversariaire — un homonyme proche fusionné à tort — n'est **pas sollicité** par la
+vérité terrain. La précision affichée est donc un **plancher**, pas une borne : la confirmer
+exigerait un générateur d'homophones quasi identiques, identifié comme piste au §7.5.
+
 ## 7.3 Breakdown par méthode et par source
 
 Sur le niveau hard, le découpage par technique de match localise la faiblesse
@@ -149,6 +177,8 @@ Le prototype est évalué sans complaisance [contexte_projet.md — reste à fai
 | **`patient_events_gold` vide** | 0 ligne en intermédiaire | jointures FHIR non rattachées (Encounter/Condition sans `patient_uuid`) — enrichissement suspect |
 | **Consentement non alimenté** | `granted`/`purpose` NULL dans GOLD | PostgreSQL central non peuplé en interim ; seed fourni mais non exécuté — la mécanique est démontrée (54/54), pas les données |
 | **Endpoints mock** | `laboratory`, `malaria` sur données de secours | sources métier absentes du run final ; flag `mocked` tracé |
+| **Homophones non sollicités** | précision 1.000, mais aucun cas adversariaire dans la vérité terrain | le générateur dégrade des enregistrements, il n'en crée pas de quasi identiques ; un module « faux jumeaux » renforcerait la preuve |
+| **Contrôle d'accès de l'API Flask non testé** | `test_api.py` contrôle 14 statuts, sans authentification | dette assumée : l'API Flask est une surface de reporting ; le contrôle par rôle et consentement est appliqué et testé sur l'API de gouvernance |
 | **Tests EI-déployés / CI absent** | — | hors périmètre stage (Docker/CI écartés) |
 
 ## Conclusion
