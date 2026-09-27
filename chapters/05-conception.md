@@ -1,17 +1,17 @@
-# Chapitre 4 — Conception
+# Chapitre 5 — Conception et architecture
 
-> **Statut** : rédigé (08/09/2026)
+> **Statut** : rédigé (08/09/2026, actualisé 27/09/2026)
 
 ## Objectif
 
-Concevoir la réponse au besoin analysé au chapitre 3 : architecture en trois
+Concevoir la réponse au besoin analysé au chapitre 4 : architecture en trois
 niveaux (MVP → Spark → Big Data), modèle canonique, algorithmes de déduplication
 explicable (blocking, exact, probabiliste), modèle de données PostgreSQL et
 gouvernance (RBAC, consentement, audit, clés API).
 
 ---
 
-## 4.1 Architecture globale
+## 5.1 Architecture globale
 
 L'architecture suit la démarche progressive du chapitre 1 : chaque niveau réutilise
 la **même logique métier**, seule l'infrastructure d'exécution change.
@@ -50,9 +50,59 @@ Design retenu pour chaque brique [cahier des charges §4] :
 | **Chargement** | PostgreSQL central idempotent (`ON CONFLICT`, `IF NOT EXISTS`) |
 | **Exposition** | API REST + espace de gouvernance |
 
-## 4.2 Modèle canonique et mapping des sources
+### 5.1.1 Chaîne de bout en bout (niveau 3 retenu)
 
-Chaque source possède son vocabulaire (chapitre 3). La conception introduit une
+La conception retenue en production est le **niveau 3** : une seule chaîne, de la source
+hétérogène à l'API gouvernée. Le schéma ci-dessous relie les trois zones Medallion, le moteur de
+déduplication et la gouvernance ; il sert de référence à la réalisation (chapitre 6).
+
+```mermaid
+flowchart LR
+    subgraph SRC["Sources"]
+        S1["pharmacy CSV"] --- S2["consultation CSV"] --- S3["imaging CSV"]
+        S0["MAVIS PG · MMT_DB PG · CLINIQUE SQLite<br/>(sources avancées, optionnelles)"]
+    end
+    RAW["RAW · parquet HDFS<br/>/datalake/raw/{source}/{table}<br/>tables Hive externes STRING"]
+    MAP["gen_fhir_mapping<br/>fhir_mapping.json"]
+    SIL["SILVER · datalake_silver<br/>patient / encounter / condition / observation _fhir"]
+    DED["Moteur engine/identity<br/>exact + probabiliste · seuil 0.80"]
+    GOLD["GOLD · datalake_gold<br/>patient_events_gold · patient_consent_gold"]
+    PG[("PostgreSQL central<br/>master_patient · identity_map<br/>consent · api_user · access_audit")]
+    API["API REST (Flask 5000)<br/>+ gouvernance FastAPI"]
+    S1 & S2 & S3 & S0 --> RAW --> MAP --> SIL --> DED --> GOLD
+    DED --> PG
+    SIL --> PG
+    GOLD --> API
+    PG --> API
+    API -. "RBAC + consentement + audit" .-> AUD[("access_audit")]
+```
+
+Traçabilité de bout en bout : chaque ligne SILVER conserve `_source_system`, `_source_table`,
+`source_patient_id` et `patient_uuid` (`sha2(source|source_patient_id)`) ; chaque fusion porte
+`master_patient_id`, `match_method`, `match_score` et `explanation` [bases_de_donnees.md §3].
+
+### 5.1.2 Composants et ports de la plateforme
+
+L'architecture est déployée sur **une VM unique** (`ubuntu/focal64`, Vagrant, 8 Go / 4 cœurs) ;
+l'ordre de démarrage des services est strict [architecture.md §3] :
+
+| Composant | Rôle | Port / chemin |
+|---|---|---|
+| HDFS NameNode | entrepôt du Data Lake (parquet RAW/SILVER/GOLD) | 9000 — `start-dfs.sh` en premier |
+| YARN | exécution des jobs Spark | 8088 — `start-yarn.sh` ensuite |
+| Hive Metastore | métadonnées des bases `datalake_*` | 9083 (distant, évite le conflit Derby) |
+| HiveServer2 | accès SQL (`beeline`) | 10000 |
+| Moteur `engine/` | déduplication + gouvernance (PostgreSQL) | — |
+| API données (Flask) | exposition de GOLD | 5000 |
+| API gouvernance (FastAPI) | `/health`, `/metrics`, `/patients`, `/audit`, `/consent` | — |
+| Frontend Next.js | visualisation RMA (**optionnel**) | 3000 (hôte Windows) |
+
+> **Ordre strict :** `start-dfs.sh` → `start-yarn.sh` → metastore (9083) → HiveServer2 (10000) →
+> jobs Spark → API. Toute inversion produit des erreurs d'écriture ou de métadonnées (§6.6).
+
+## 5.2 Modèle canonique et mapping des sources
+
+Chaque source possède son vocabulaire (chapitre 4). La conception introduit une
 représentation unique, `CanonicalPatient` [deduplication.md §2] :
 
 ```text
@@ -76,7 +126,7 @@ Le mapping des colonnes source → canonique est **explicite et déterministe**
 La normalisation rend comparable ce que la saisie rendait divergent : les trois
 formes du cas « Jean Rakoto » produisent des valeurs canoniques identiques.
 
-## 4.3 Entity Resolution : blocking et déduplication
+## 5.3 Entity Resolution : blocking et déduplication
 
 **Blocking.** Comparer chaque enregistrement à tous les autres est en O(n²). Le
 concept utilise trois index de candidats : préfixe du nom (4 lettres), date de
@@ -108,7 +158,7 @@ l'union des candidats de ces buckets [deduplication.md §4].
 Le cas de référence est conçu pour être résolu : Jean Rakoto (exact, CIN) et
 Nirina (probabiliste, score 0.8+) [deduplication.md §7].
 
-## 4.4 Modèle de données PostgreSQL et idempotence
+## 5.4 Modèle de données PostgreSQL et idempotence
 
 Le schéma central (`sql/schema.sql`) couvre la traçabilité des données brutes, des
 identités et de la gouvernance [consentement_gouvernance.md §6] :
@@ -126,7 +176,7 @@ identités et de la gouvernance [consentement_gouvernance.md §6] :
 **Idempotence** : `CREATE TABLE IF NOT EXISTS` pour les tables, `ADD COLUMN IF
 NOT EXISTS` pour les migrations — le pipeline est rejouable [consentement_gouvernance.md §6].
 
-## 4.5 Gouvernance : RBAC, consentement, audit
+## 5.5 Gouvernance : RBAC, consentement, audit
 
 - **Rôles** : `admin` / `analyst` / `viewer` — contrôlés par clé API sur la
   plateforme (et RBAC web optionnel côté frontend) [consentement_gouvernance.md §2].
@@ -141,7 +191,7 @@ NOT EXISTS` pour les migrations — le pipeline est rejouable [consentement_gouv
   `method`, `status`, `ip` et durée, **y compris les refus et les appels anonymes**
   [consentement_gouvernance.md §4].
 
-## 4.6 Niveaux 2 et 3 : Spark et Data Lake Medallion
+## 5.6 Niveaux 2 et 3 : Spark et Data Lake Medallion
 
 **Niveau 2 (conception de la parité).** L'algorithme est porté en PySpark sans
 changer sa sémantique : clusters **exacts** construits par `groupBy` de la clé,
@@ -166,8 +216,8 @@ référentiel de rejeu.
 
 La conception fixe un système cohérent : un canonique + deux passes de dédup
 expliquées, un PostgreSQL traçable et une gouvernance par consentement. Le chapitre
-5 restitue l'implémentation effective — les scripts, les résultats réels (214
-lines SILVER, 145 masters, 69 doublons) et les difficultés rencontrées sur la VM.
+6 restitue l'implémentation effective — les scripts, les résultats réels (214
+lignes SILVER, 145 masters, 69 doublons) et les difficultés rencontrées sur la VM.
 
 ### Références
 

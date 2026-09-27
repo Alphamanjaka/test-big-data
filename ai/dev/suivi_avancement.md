@@ -129,3 +129,11 @@ dans `Mon_Memoire` (subtree → `projet/code-source/`, `projet/mvp/`, `archives/
   tests matcher 9→12 (lecture YAML, fallback, override poids) → **pytest 15/15** + générateur 44/44 ;
   éval hard inchangée (parité)
 - 10/09 : **Cohérence code/docs + docstrings + FastAPI governance** — corrections incohérences (GOLD 17→18, matching_key, test counts, source_file, match_method, bigdata_concepts) ; docstrings des fonctions complexes (moteur identity, governance, ELT, hive_api) ; retrait sentence-transformers (bootstrap.sh) ; bandeaux DÉPRÉCIÉ (evaluation_truth, test.py, ELT.before) ; FastAPI governance câblée (engine/governance/app.py : /health, /metrics, /patients, /patients/{id}, /audit + consent router, port 8000) ; tests test_governance_api.py (4 tests, pattern FakeCursor) ; docs FastAPI (api.md, architecture.md, cahier §4.4, api/README).
+- 27/09 : **Mémoire restructurée en 8 chapitres** — les 2 critères non couverts comblés : `chapters/03-etude-existant.md`
+  (systèmes MMT : MAVIS 73 090 l./11 tables, MMT_DB 60 271 l./9 tables, CLINIQUE 54 582 l./4 tables ; grille de
+  comparaison 6 critères ; verdict — étude **documentaire**, aucun produit installé) et `chapters/08-conclusion.md`
+  (réponse à la problématique, limites assumées, perspectives, bilan). Renumérotation 03→07 via `git mv` + renvois ;
+  §1.7 du plan étendu à 8 lignes ; architecture §5.1 renforcée (chaîne bout-en-bout + composants/ports) ;
+  bibliographie `[B13..B20]` ; README / `ai/memoire/*` / rapport / slides synchronisés. Correctif **BOM UTF-8**
+  (PS 5.1 `Set-Content`) qui cassait la détection des titres : DOCX régénéré = **8 H1**, 34 tables, 50 605 caractères.
+  Reste : relecture utilisateur + commit.

@@ -9,7 +9,7 @@
 - Conserver un ton pédagogique : expliquer **pourquoi** chaque technologie (voir
   `documents/documentation/bigdata_concepts.md`).
 
-## Structure des chapitres (`Mon_Memoire/chapters/01..06`)
+## Structure des chapitres (`Mon_Memoire/chapters/01..08`)
 
 Rédiger en remplaçant le squelette « Objectif + Notes/TODO » existant :
 
@@ -17,14 +17,21 @@ Rédiger en remplaçant le squelette « Objectif + Notes/TODO » existant :
    objectifs, démarche 3 niveaux, plan du mémoire.
 2. **02-etat-de-l-art** : FHIR (interopérabilité), Medallion, Entity Resolution / MPI, RapidFuzz,
    consentement (RGPD, données de santé), Hadoop/Hive/Spark, ELT vs ETL.
-3. **03-analyse** : besoin, sources, contraintes (VM 8 Go, MAVIS distant, hétérogénéité), choix
-   (RapidFuzz sans NLP, SPH pivot FHIR, PostgreSQL central).
-4. **04-conception** : architecture 3 niveaux, modèle canonique `CanonicalPatient`, pipeline ETL,
-   scoring/blocking/seuil, schéma SQL, gouvernance (consent, api_user, access_audit).
-5. **05-realisation** : générateur de données + ground-truth, extraction/mapping, déduplication,
-   chargement PG (idempotence), gouvernance + API + dashboard, Spark (parité), Data Lake Medallion.
-6. **06-tests** : tests unitaires et d'intégration, **évaluation ground-truth** (P/R/F1, breakdown
-   exact/probabilistic, par source), difficultés rencontrées, limites (recall hard, GOLD sparse).
+3. **03-etude-existant** : systèmes d'information en place (MAVIS, MMT_DB, CLINIQUE) et leurs
+   limites ; solutions du domaine (MPI/DMP, MDM/ETL, Data Lake santé, open source) ; grille de
+   comparaison sur 6 critères ; verdict et espace de manœuvre. **Étude documentaire** : aucune
+   solution citée n'est installée ni exécutée — le dire explicitement.
+4. **04-analyse** : besoin, sources, contraintes (VM 8 Go, MAVIS distant, hétérogénéité), choix
+   (RapidFuzz sans NLP, pivot FHIR, PostgreSQL central).
+5. **05-conception** : architecture 3 niveaux + chaîne de bout-en-bout (composants, ports), modèle
+   canonique `CanonicalPatient`, pipeline ETL, scoring/blocking/seuil, schéma SQL, gouvernance
+   (consent, api_user, access_audit).
+6. **06-realisation** : générateur + ground-truth, extraction/mapping, déduplication, chargement PG
+   (idempotence), gouvernance + API + dashboard, Spark (parité), Data Lake Medallion, difficultés.
+7. **07-tests** : tests unitaires et d'intégration, **évaluation ground-truth** (P/R/F1, breakdown
+   exact/probabilistic, par source), limites (recall hard, GOLD sparse).
+8. **08-conclusion** : conclusion générale autonome — réponse à la problématique (tableau
+   volet → réalisation → preuve), acquis démontrés, limites assumées, perspectives, bilan.
 
 ## Style
 

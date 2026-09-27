@@ -1,6 +1,6 @@
-# Chapitre 6 — Tests et évaluation
+# Chapitre 7 — Tests et évaluation
 
-> **Statut** : rédigé (08/09/2026)
+> **Statut** : rédigé (08/09/2026, actualisé 27/09/2026)
 
 ## Objectif
 
@@ -11,7 +11,7 @@ d'amélioration.
 
 ---
 
-## 6.1 Stratégie de test
+## 7.1 Stratégie de test
 
 La validation suit une pyramide : unitaire (générateur et moteur), intégration
 (pipeline, base) et système (API).
@@ -47,7 +47,7 @@ exact, fusion au seuil 0.80 (nom + naissance), faute de frappe compensée par
 naissance, ville de naissance qui augmente le score, **non-fusion de patients
 distincts**, et **parité Pandas/Spark** (`test_spark_parity`) [deduplication.md §9].
 
-## 6.2 Évaluation ground-truth
+## 7.2 Évaluation ground-truth
 
 **Principe.** Trois jeux synthétiques easy / medium / hard sont générés à partir
 **des mêmes masters** (`--seed 42`) : seul le **taux de variation** change
@@ -77,7 +77,7 @@ Les pondérations et le seuil sont configurables pour trader précision ↔ rapp
 [deduplication.md §5]. L'introduction du **CIN en clé exacte** (couverture ~75 %)
 a relevé le rappel hard de 0.287 (07/09) à **0.422** sans aucun faux positif.
 
-## 6.3 Breakdown par méthode et par source
+## 7.3 Breakdown par méthode et par source
 
 Sur le niveau hard, le découpage par technique de match localise la faiblesse
 (identique MVP/Spark) [evaluation.md §3] :
@@ -97,7 +97,7 @@ vérité sur 1 057 enregistrements** [evaluation_truth.md]. Référence historiq
 (test_bigdata, 10 669 patients / 5 000 masters) : F1 0.403, zéro FP, là encore
 Pandas = Spark [evaluation.md §3].
 
-## 6.4 Cas de référence et intégrité
+## 7.4 Cas de référence et intégrité
 
 - **Cas « Jean Rakoto »** : démo 18 patients → **11 masters, 18 liens** ; Jean
   Rakoto fusionné par **exact** (CIN), Nirina par **probabilistic** (score
@@ -109,7 +109,7 @@ Pandas = Spark [evaluation.md §3].
 - **Gouvernance API** : `duplicate_rate` = **32.24 %** avec `mocked: false` ;
   `patient_consent_gold` = **145** lignes pour 145 masters.
 
-## 6.5 Limites et dettes identifiées
+## 7.5 Limites et dettes identifiées
 
 Le prototype est évalué sans complaisance [contexte_projet.md — reste à faire] :
 
@@ -131,7 +131,8 @@ Le rappel sur le jeu dur indique précisément où la
 logique pourrait s'enrichir. Avec l'architecture, la réalisation et l'évaluation,
 l'ensemble répond à la problématique du chapitre 1 : centraliser, dédupliquer de
 façon explicable, gouverner par consentement — sur données synthétiques et
-architecture Big Data.
+architecture Big Data. La **conclusion générale** (chapitre 8) reprend ces acquis,
+expose les limites assumées et les perspectives.
 
 ### Références
 

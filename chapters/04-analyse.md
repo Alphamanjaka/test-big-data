@@ -1,6 +1,6 @@
-# Chapitre 3 — Analyse
+# Chapitre 4 — Analyse
 
-> **Statut** : rédigé (08/09/2026)
+> **Statut** : rédigé (08/09/2026, actualisé 27/09/2026)
 
 ## Objectif
 
@@ -8,11 +8,11 @@ Analyser le besoin avant toute conception : sources de données et leur
 hétérogénéité, générateur de données synthétiques avec vérité terrain, exigences
 fonctionnelles et non fonctionnelles, et contraintes techniques (VM 8 Go, nœud
 distant instable, interdiction de NLP lourd). Cette analyse justifie les choix de
-conception du chapitre 4.
+conception du chapitre 5, une fois l'existant examiné au chapitre 3.
 
 ---
 
-## 3.1 Exigences fonctionnelles et non fonctionnelles
+## 4.1 Exigences fonctionnelles et non fonctionnelles
 
 Le cahier des charges fixe six objectifs [cahier_des_charges.md §3], traduits ici
 en exigences vérifiables :
@@ -30,7 +30,7 @@ Exigences non fonctionnelles : données **fictives uniquement** ; pipeline **rej
 et **idempotent** ; dédup **déterministe et reproductible** (seed) ; logique **toujours
 explicable** ; architecture évolutive au volume (Spark) sans changer la sémantique.
 
-## 3.2 Sources de données et hétérogénéité
+## 4.2 Sources de données et hétérogénéité
 
 Trois sources métier, modélisées sur les systèmes réellement rencontrés en
 établissement (consultations, pharmacies, imagerie) [cahier_des_charges.md §1] :
@@ -59,7 +59,7 @@ de référence « Jean Rakoto » des trois sources [deduplication.md §7] (chapi
 Chaque source adjoint ses transactions métier : achats (pharmacy), consultations
 (consultation), examens (imaging).
 
-## 3.3 Générateur de données synthétiques et vérité terrain
+## 4.3 Générateur de données synthétiques et vérité terrain
 
 L'évaluation objective exige de **connaître la vérité** — impossible avec de vraies
 données. Le générateur
@@ -98,12 +98,12 @@ Transactions adjointes (dataset hard) : 792 achats (pharmacie, 1–3/patient),
 519 consultations (1–2/patient), 450 examens imagerie (1–2/patient).
 
 > **Deux usages distincts.** Le dataset **hard** (404/353/300) sert à
-> l'**évaluation** de la dédup (chapitre 6). Le dataset **brut** d'ingestion
+> l'**évaluation** de la dédup (chapitre 7). Le dataset **brut** d'ingestion
 > (76/76/62 enregistrements) alimente le **pipeline ELT** de démonstration :
 > 214 lignes SILVER, 145 masters, 69 doublons — run 07/09/2026
 > [contexte_projet.md].
 
-## 3.4 Contraintes techniques et environnementales
+## 4.4 Contraintes techniques et environnementales
 
 | Contrainte | Nature | Traitement adopté |
 |---|---|---|
@@ -118,12 +118,12 @@ Environnement de référence : VM `ubuntu/focal64` (Vagrant) — Hadoop 3.3.6, H
 3.1.3, Spark 3.4.2, venv Python, ports redirigés (9870 HDFS, 10000 Hive, 5000 API)
 [provision/Vagrantfile].
 
-## 3.5 Synthèse de l'analyse
+## 4.5 Synthèse de l'analyse
 
 L'analyse dégage trois besoins dominants :
 1. **Interpréter des formats divergents** → un modèle canonique + un pivot FHIR.
 2. **Dédupliquer sans vérité** → mesures de similarité + seuil, évaluées sur
-   ground truth (chapitre 2, 4, 6).
+   ground truth (chapitres 2, 5 et 7).
 3. **Pouvoir passer à l'échelle** → choix Spark + Data Lake Medallion.
 
 Sans aspect de l'état de l'art « pour la forme » : chaque technologie répond à un
@@ -132,7 +132,7 @@ besoin identifié ici.
 ## Conclusion et transition
 
 Le besoin est précis : trois sources hétérogènes, des exigences claires et des
-contraintes rebutées une à une. Le chapitre 4 conçoit la réponse : architecture en
+contraintes rebutées une à une. Le chapitre 5 conçoit la réponse : architecture en
 trois niveaux, modèle canonique, algorithmes de déduplication (blocking,
 exact + probabiliste, seuil 0.80), schéma PostgreSQL et gouvernance
 (consentement, audit, clés API).

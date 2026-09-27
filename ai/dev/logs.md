@@ -496,3 +496,34 @@ occurrence** d'identifiants connus et d'affectations de mots de passe littérale
 **Résultat :** dépôt exempt de secrets en dur (chaîne live + archive, placeholders documentés).
 **À faire côté utilisateur :** faire tourner les identifiants du serveur distant (le couple a été
 poussé sur GitHub, même privé) et recréer `projet/code-source/.env` avec `PGPASSWORD`.
+
+## 27/09/2026 - Mémoire : restructuration 01→08, étude de l'existant (ch.3) et conclusion (ch.8)
+
+**Contexte :** le plan du mémoire ne couvrait pas explicitement l'**étude de l'existant** ni la
+**conclusion générale** (critères : plan, introduction, état de l'art, étude de l'existant,
+architecture, conclusion). Décision utilisateur : chapitre 3 dédié, conclusion autonome en ch.8,
+plan étendu en §1.7 uniquement (pas d'ajout de pages liminaires).
+
+| #   | Action                        | Fichiers                                                                                                                                                                                                                              | Détail                                                                                                                                                                                                                                                                  |
+| --- | ----------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| 1   | Renumérotation en 8 chapitres  | `chapters/03-analyse.md`→`04-analyse.md`, `04-conception.md`→`05-conception.md`, `05-realisation.md`→`06-realisation.md`, `06-tests.md`→`07-tests.md`      | `git mv` ; titres, numérotation des sections (3.x→4.x … 6.x→7.x) et renvois internes/externes corrigés dans les 8 chapitres et dans les slides de soutenance                                                                     |
+| 2   | Étude de l'existant rédigée   | `chapters/03-etude-existant.md`                                                                                                                                                                                                         | §3.1 systèmes en place : MAVIS (73 090 lignes réplique, 11 tables retenues, 1 260 tables sur le nœud distant, jointure `hms_patient`↔`res_partner` 9 791/9 791), MMT_DB (60 271 lignes, 9 tables GNU Health), CLINIQUE (54 582 lignes, 4 tables SQLite) ; §3.2 solutions du domaine ; §3.3 grille 6 critères ; §3.4 verdict + 1 Mermaid. **Étude documentaire** : aucun produit installé ni exécuté |
+| 3   | Bibliographie étendue         | `references/bibliographie.md`                                                                                                                                                                                                            | `[B13..B20]` : InterSystems EMPI, Talend MDM, Splink (IJPDS 2022), HAPI FHIR, Azure Health Data Services, Apache Atlas, GNU Health, applications Odoo — URLs vérifiées ; en-tête redaté        |
+| 4   | Plan du mémoire étendu        | `chapters/01-introduction.md`                                                                                                                                                                                                            | §1.7 : une ligne par chapitre (8) + transition explicite vers le ch.8                                                                                                                                                                                                 |
+| 5   | Architecture renforcée       | `chapters/05-conception.md`                                                                                                                                                                                                              | §5.1 : chaîne de bout en bout (sources → RAW → SILVER → dédup → GOLD + PostgreSQL) et tableau des composants/ports (HiveServer2 10001, Spark History/UI, PostgreSQL 5432, Flask 5000, FastAPI 8000)                                 |
+| 6   | Conclusion générale rédigée  | `chapters/08-conclusion.md`                                                                                                                                                                                                              | §8.1 réponse à la problématique (volet → réalisation → preuve), §8.2 ce que le projet démontre, §8.3 limites assumées (rappel 0.422, `patient_events_gold` 0 ligne, `purpose`/`granted` NULL en GOLD, comparaison documentaire), §8.4 perspectives CT/MT/LT, §8.5 bilan de formation |
+| 7   | Synchronisation documentaire | `README.md`, `ai/memoire/README.md`, `ai/memoire/methode.md`, `ai/memoire/contexte_projet.md`, `documents/rapport_stage.md`, `documents/slides_soutenance.md`, `projet/code-source/scripts/dev/export_memoire_docx.py` | Structure 01→08 ; renvois des slides (`05-conception.md` §5.1/§5.3, `06-realisation.md` §6.6, `07-tests.md` §7.2/§7.5) ; chiffres de l'existant ajoutés au contexte projet ; docstring de l'export 01..08                                                  |
+| 8   | Correctif encodage UTF-8      | `chapters/01,02,04,05,06,07`, `documents/rapport_stage.md`, `documents/slides_soutenance.md`                                                                                                                                           | `Set-Content -Encoding UTF8` (PS 5.1) avait préfixé un **BOM** : les titres `# Chapitre N` n'étaient plus reconnus et le DOCX ne contenait que **2 H1 sur 8**. BOM retiré sur les 8 fichiers                     |
+
+**Vérifications :** `export_memoire_docx.py` relancé → **8 H1**, 34 tableaux, 50 605 caractères ; scan
+de tous les `chapters/0*.md` → 0 anomalie (ni caractères CJK, ni `counted`/`treatée`/`rarely`
+résiduels ; les `·` restants sont des séparateurs Mermaid ou de tableaux) ; les 10 renvois
+`chapters/0[3-6]-*.md` subsistants sont **dans l'historique de ce fichier** (non modifiés) ;
+§8.3 « consentement non alimenté » = `purpose`/`granted` NULL, cohérent avec
+`patient_consent_gold` = 145 lignes (`documents/documentation/pipeline_elt.md`, ch.7 §7.5) ;
+faux positif écarté sur `documents/documentation/pipeline_elt.md` (BOM préexistant, fichier non
+modifié par cette session).
+
+**Résultat :** plan 8 chapitres conforme aux 6 critères ; les 2 chapitres manquants sont rédigés et
+le support de soutenance pointe sur les bons fichiers. **Non commité** (validation utilisateur
+attendue).

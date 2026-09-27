@@ -18,10 +18,12 @@
 | --------------------- | ------------------------------------------------------------------------------------------------------- |
 | `01-introduction.md`  | Contexte organisme, problématique, objectifs, périmètre, plan                                           |
 | `02-etat-de-l-art.md` | État de l'art : FHIR, Medallion, MPI/Entity Resolution, consentement (RGPD), Big Data Hadoop/Hive/Spark |
-| `03-analyse.md`       | Analyse du besoin, sources, contraintes, choix de conception                                            |
-| `04-conception.md`    | Architecture (3 niveaux : MVP → Spark → Big Data), modèle canonique, schéma SQL                         |
-| `05-realisation.md`   | Réalisation : générateur, pipeline, dédup, PostgreSQL, gouvernance, Spark, Data Lake                    |
-| `06-tests.md`         | Tests & évaluation ground-truth (P/R/F1), difficultés rencontrées                                       |
+| `03-etude-existant.md` | Systèmes en place à MMT, solutions du domaine (MPI/DMP, MDM, Data Lake santé, open source), grille de comparaison, verdict |
+| `04-analyse.md`       | Analyse du besoin, sources, contraintes, choix de conception                                            |
+| `05-conception.md`    | Architecture (3 niveaux + bout-en-bout, composants/ports), modèle canonique, schéma SQL               |
+| `06-realisation.md`   | Réalisation : générateur, pipeline, dédup, PostgreSQL, gouvernance, Spark, Data Lake                    |
+| `07-tests.md`         | Tests & évaluation ground-truth (P/R/F1), difficultés rencontrées                                       |
+| `08-conclusion.md`    | Conclusion générale : réponse à la problématique, limites assumées, perspectives                       |
 
 Chaque chapitre commence par un bloc « Objectif » + « Notes / TODO » (squelette existant, à rédiger).
 

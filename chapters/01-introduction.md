@@ -1,6 +1,6 @@
 # Chapitre 1 — Introduction
 
-> **Statut** : rédigé (07/09/2026)
+> **Statut** : rédigé (07/09/2026, actualisé 27/09/2026)
 
 ## Objectif
 
@@ -43,7 +43,7 @@ Cette situation pose trois problèmes concrets :
 1. **Dispersion** : les données d'un patient sont réparties entre plusieurs fichiers et bases,
    sans vue globale.
 2. **Hétérogénéité** : identifiants, libellés et formats diffèrent (le genre apparaît tour à tour
-   sous les formes `H/F`, `male/female`, `Homme/femme` selon la source) — voir chapitre 3.
+   sous les formes `H/F`, `male/female`, `Homme/femme` selon la source) — voir chapitre 4.
 3. **Absence de gouvernance** : rien ne garantit qui peut accéder à quelle donnée, pour quelle
    finalité, et dans quelles conditions.
 
@@ -111,7 +111,7 @@ Hors périmètre (assumés comme tels) : frontend Next.js (optionnel), export VM
 
 ## 1.6 Contexte chiffré (repères)
 
-Les principaux chiffres vérifiables, détaillés dans les chapitres 3 à 6, sont :
+Les principaux chiffres vérifiables, détaillés dans les chapitres 4 à 7, sont :
 
 - **Générateur** : 500 patients maîtres, 1 057 enregistrements répartis sur 3 sources
   (pharmacy 404, consultation 353, imaging 300), 3 niveaux de difficulté (easy 10 % / medium 30 % /
@@ -124,17 +124,21 @@ Les principaux chiffres vérifiables, détaillés dans les chapitres 3 à 6, son
 
 ## 1.7 Plan du mémoire
 
-| Chapitre | Contenu |
+| Partie | Contenu |
 |---|---|
 | **2 — État de l'art** | Entity Resolution / Master Patient Index, mesures de similarité, FHIR, architecture Big Data (Medallion, HDFS, Hive, Spark), consentement et RGPD |
-| **3 — Analyse** | sources hétérogènes, générateur de données synthétiques avec vérité terrain, exigences et contraintes |
-| **4 — Conception** | architecture 3 niveaux, modèle canonique, algorithmes de déduplication, schéma PostgreSQL, gouvernance |
-| **5 — Réalisation** | implémentation : générateur, pipeline ELT, moteur (Pandas/Spark), interfaces, Data Lake |
-| **6 — Tests & évaluation** | stratégie de test, évaluation ground-truth, difficultés rencontrées, limites |
+| **3 — Étude de l'existant** | systèmes d'information en place à MMT (MAVIS, MMT_DB, CLINIQUE) et leurs limites ; solutions du domaine (MPI/DMP, MDM, Data Lake santé, open source) ; grille de comparaison et verdict |
+| **4 — Analyse** | sources hétérogènes, générateur de données synthétiques avec vérité terrain, exigences et contraintes |
+| **5 — Conception et architecture** | architecture 3 niveaux et bout-en-bout, modèle canonique, algorithmes de déduplication, schéma PostgreSQL, gouvernance |
+| **6 — Réalisation** | implémentation : générateur, pipeline ELT, moteur (Pandas/Spark), interfaces, Data Lake |
+| **7 — Tests & évaluation** | stratégie de test, évaluation ground-truth, difficultés rencontrées, limites |
+| **Conclusion générale** | réponse à la problématique, limites assumées, perspectives |
 
 ## Conclusion et transition
 
 La problématique posée, les objectifs fixés et la démarche en trois niveaux définissent la feuille
-de route. Il nous faut maintenant situer cette plateforme par rapport aux concepts et standards
-existants : c'est l'objet de l'état de l'art au chapitre 2 (entity resolution, Master Patient Index,
-FHIR, architectures Big Data et cadre du consentement).
+de route. Il faut d'abord situer cette plateforme par rapport aux concepts et standards
+existants : c'est l'objet de l'**état de l'art** (chapitre 2 — entity resolution, Master Patient
+Index, FHIR, architectures Big Data, cadre du consentement), puis examiner **ce qui existe déjà**
+au chapitre 3 — les systèmes de l'établissement et les solutions du marché. Le chapitre 4 analyse
+ensuite le besoin de façon opérationnelle.

@@ -1,6 +1,6 @@
-# Chapitre 5 — Réalisation
+# Chapitre 6 — Réalisation
 
-> **Statut** : rédigé (08/09/2026)
+> **Statut** : rédigé (08/09/2026, actualisé 27/09/2026)
 
 ## Objectif
 
@@ -11,7 +11,7 @@ rencontrées sur la VM et leur résolution.
 
 ---
 
-## 5.1 Générateur de données et vérité terrain
+## 6.1 Générateur de données et vérité terrain
 
 Le générateur
 [`synthetic-patient-generator`](../projet/code-source/evaluation/synthetic-patient-generator)
@@ -35,7 +35,7 @@ Résultat pour le dataset hard :
 maîtres, stable entre les sources (autoritatif). Le fichier de vérité est **réservé à
 l'évaluation** — jamais fourni à l'algorithme [deduplication.md — règle métier].
 
-## 5.2 Pipeline ELT Medallion en 4 étapes
+## 6.2 Pipeline ELT Medallion en 4 étapes
 
 Orchestration par `run_pipeline.sh` (arrêt sur erreur, logs `elt.log`) : run
 **4/4 vert** sur la VM le 07/09/2026 [contexte_projet.md].
@@ -61,14 +61,14 @@ Résultats du run de référence (sources CSV synthétiques, 214 enregistrements
 **69 doublons liés** (`is_duplicate`), tous `match_method = exact` ; `duplicate_rate`
 **32.24 %** ; `patient_consent_gold` = **145** lignes. `patient_events_gold` reste à
 **0 ligne** en intermédiaire (jointures FHIR non rattachées — dette identifiée au
-chapitre 6).
+chapitre 7).
 
 L'étape 3 intègre la **fusion des doublons dans le Data Lake** : le moteur relit
 `patient_fhir`, réapplique `deduplicate()` et enrichit chaque ligne des colonnes
 `master_patient_id`, `match_method`, `match_score` et `is_duplicate` — la fusion
 reste explicable *dans* le lac, pas seulement dans un script séparé.
 
-## 5.3 Moteur de déduplication : Pandas et Spark
+## 6.3 Moteur de déduplication : Pandas et Spark
 
 Le moteur `engine/identity/` est la pièce centrale, deux implantations alignées :
 
@@ -84,9 +84,9 @@ Le moteur `engine/identity/` est la pièce centrale, deux implantations alignée
 La **sémantique est strictement alignée** et la **parité est vérifiée** : démo 18
 patients → 11 masters identiques Pandas et Spark, et évaluation ground-truth
 « modes MVP+Spark identiques » (TP=307, FP=0, FN=420 pour les deux)
-[`evaluation_truth.md`] — voir chapitre 6.
+[`evaluation_truth.md`] — voir chapitre 7.
 
-## 5.4 Chargement PostgreSQL et GOLD du consentement
+## 6.4 Chargement PostgreSQL et GOLD du consentement
 
 - **Chargement central** : le schéma (`sql/schema.sql`) est créé de façon
   **idempotente** (`CREATE TABLE IF NOT EXISTS`, `ADD COLUMN IF NOT EXISTS`,
@@ -96,7 +96,7 @@ patients → 11 masters identiques Pandas et Spark, et évaluation ground-truth
   schéma est créé vide et l'API bascule en mode `mock` — le consentement reste un
   composant formel de l'architecture.
 
-## 5.5 Gouvernance et API
+## 6.5 Gouvernance et API
 
 L'API de données (Flask, port 5000) expose **11 endpoints** — 9 « RMA » (`/rma/*`,
 `/api/rma/*`) + 2 gouvernance (`/api/governance/duplicates`, `/api/governance/consent`)
@@ -111,7 +111,7 @@ clé hachée SHA-256 + rôles `admin`/`analyst`/`viewer`), `consent.py` (router 
 chaque requête, refus compris). Les **payloads RAW ne sont jamais exposés** par
 l'API — seuls les maîtres consolidés le sont [consentement_gouvernance.md §7].
 
-## 5.6 Difficultés rencontrées et résolutions
+## 6.6 Difficultés rencontrées et résolutions
 
 | Problème réel | Cause | Correctif |
 |---|---|---|
@@ -131,7 +131,7 @@ Java 8 ; Spark configuré `executor 4g / driver 2g / shuffle.partitions=8`
 
 La plateforme est réalisée et opérationnelle : 4/4 pipeline vert, dédup enregistrée
 dans le lac, API 14/14, gouvernance mécanisée. Reste à **démontrer la qualité** :
-le chapitre 6 présente la stratégie de test, l'évaluation ground-truth (P/R/F1) et
+le chapitre 7 présente la stratégie de test, l'évaluation ground-truth (P/R/F1) et
 les limites honnêtes du prototype (rappel « hard », GOLD incomplet).
 
 ### Références

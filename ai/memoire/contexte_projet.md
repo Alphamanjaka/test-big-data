@@ -59,6 +59,16 @@ Choix de fusion validés : nouveau repo autonome ; docs = un seul set logique
 | Tests | moteur 23/23 PASS (matcher 12, consent 3, canonique 8) ; API données **14/14 PASS** ; MVP 20 tests + 44 tests générateur |
 | API | Flask 11 endpoints (9 `/rma/*` + 2 `/api/governance/*`) + mocks backend ; FastAPI lecture seule `/health /metrics /patients /audit /consent` |
 
+### Existant à MMT — chiffres de l'étude (chapitre 3)
+
+| Source | Fait vérifiable |
+|---|---|
+| MAVIS (`mavis_notheme`, Odoo/HMS) | 11 tables retenues (`hms_patient`, `res_partner`, …) ; **1 260 tables** détectées sur le nœud distant ; réplique locale **73 090 lignes** ; jointure `hms_patient.partner_id = res_partner.id` **9 791 / 9 791** ; tunnel SSH instable |
+| MMT_DB (GNU Health) | 9 tables, **60 271 lignes** ; 3 extraites (`gnuhealth_patient`, `party_party`, `gnuhealth_family`) ; 5 FK découvertes automatiquement |
+| CLINIQUE (SQLite) | 4 tables (`patients`, `visits`, `diagnoses`, `observations`) ; **54 582 lignes** ; `PRAGMA foreign_key_check` = 0 violation |
+| Sources par défaut | 3 bases Hive synthétiques (pharmacy, consultation, imaging) ; 76/76/62 au run 07/09 |
+| Étude documentaire du marché | InterSystems EMPI, Talend MDM, Splink, HAPI FHIR, Azure Health Data Services, Apache Atlas → `[B13..B18]` ; **aucun produit installé ni exécuté** |
+
 ## Pièges / anti-régression à évoquer (preuves de robustesse)
 
 - `sentence_transformers` interdit (crash Python 3.8) → RapidFuzz + synonymes.

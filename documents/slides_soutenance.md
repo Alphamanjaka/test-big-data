@@ -47,14 +47,14 @@ PROBLÈME MÉTIER → MVP (Pandas+PG) → VALIDATION (ground-truth) → SPARK (p
 - Pipeline Medallion RAW → SILVER → GOLD sur HDFS/Hive/Spark.
 - Moteur de dédup `engine/` (Pandas + Spark) branché en SILVER, master patient + identity map.
 - PostgreSQL central (master, consent, audit, clés API) ; API données + gouvernance.
-- *Support : `diagramme_flux_donnees.md` (schéma Mermaid) ; `chapters/04-conception.md` §4.1.*
+- *Support : `diagramme_flux_donnees.md` (schéma Mermaid) ; `chapters/05-conception.md` §5.1.*
 
 ### S6. Déduplication explicable (MPI) (2 min)
 - **Blocage** (blocking) : 3 index bornés (nom, naissance, CIN).
 - **Exact** (clé partagée / naissance+CIN) puis **probabiliste** (RapidFuzz).
 - Pondérations 0.5/0.3/0.1/0.1 · seuil **0.80**.
 - Décision = `master_patient_id` + `method` + `score` + `explanation` → **jamais de fusion arbitraire**.
-- *Support : `chapters/04-conception.md` §4.3 ; `config/deduplication.yaml`.*
+- *Support : `chapters/05-conception.md` §5.3 ; `config/deduplication.yaml`.*
 
 ### S7. Résultats run de référence (VM) (1 min)
 | Élément | Valeur vérifiée |
@@ -69,12 +69,12 @@ PROBLÈME MÉTIER → MVP (Pandas+PG) → VALIDATION (ground-truth) → SPARK (p
 - 3 jeux easy/medium/hard (500 maîtres, ~1 057 enregistrements, seed 42) ; vérité terrain réservée.
 - **Zéro faux positif** sur tous les niveaux → jamais fusionner à tort (essentiel en santé).
 - Clé CIN : rappel hard **0.287 → 0.422** sans FP. Parité Pandas = Spark parfaite.
-- *Support : `evaluation/evaluation_truth.md` ; tableau `chapters/06-tests.md` §6.2.*
+- *Support : `evaluation/evaluation_truth.md` ; tableau `chapters/07-tests.md` §7.2.*
 
 ### S9. Difficultés réelles et honnêteté (partie du message technique)
 - Incident : SILVER 11 614 lignes (mapping FHIR capturant `patient_uuid`) → corrigé.
 - Dettes assumées : `patient_events_gold` 0 ligne (jointures à enrichir), consentement GOLD à alimenter.
-- *Support : `chapters/05-realisation.md` §5.6 ; `chapters/06-tests.md` §6.5.*
+- *Support : `chapters/06-realisation.md` §6.6 ; `chapters/07-tests.md` §7.5.*
 
 ---
 

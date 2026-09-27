@@ -1,6 +1,6 @@
 # Chapitre 2 — État de l'art
 
-> **Statut** : rédigé (08/09/2026)
+> **Statut** : rédigé (08/09/2026, actualisé 27/09/2026)
 
 ## Objectif
 
@@ -81,7 +81,7 @@ Décision : **score ≥ 0.80 → fusion automatique**, sinon pas de fusion (aucu
 logique arbitraire). Les deux valeurs — pondérations et seuil — sont calibrées sur
 le cas de référence « Jean Rakoto » et vérifiées par évaluation ; sur le jeu de
 difficulté « hard », la similarité seule plafonne le rappel autour de **0.422**
-(F1 0.594, précision 1.000) — voir chapitre 6 [evaluation_truth.md].
+(F1 0.594, précision 1.000) — voir chapitre 7 [evaluation_truth.md].
 
 ## 2.3 Blocking et complexité
 
@@ -206,6 +206,9 @@ Face à cet état de l'art, les choix du projet sont assumés et explicables :
 | **3 niveaux MVP → Spark → Big Data** | Big Data direct | chaque technologie introduite par besoin |
 | **Parité Pandas = Spark vérifiée** | logiques divergentes | démontrer que scale ≠ changement de sémantique |
 
+Cette grille est confrontée aux **produits existants** (MPI/DMP, MDM, plateformes Data Lake
+santé, open source) au chapitre 3.
+
 ## 2.9 Cartographie concept → technologie
 
 ```mermaid
@@ -243,10 +246,11 @@ flowchart RL
 L'état de l'art établit le vocabulaire et les références du mémoire : Entity
 Resolution fondée sur Fellegi–Sunter [B2], similarités RapidFuzz [B4], MPI et FHIR,
 consentement RGPD art. 9 [B10], architecture Big Data Medallion [B9] portée par
-HDFS/Hive/Spark. Chaque concept est **réincarné dans un choix de conception**
-détaillé au chapitre 4. Avant la conception, le chapitre 3 analyse précisément le
-besoin : les sources hétérogènes (pharmacy, consultation, imaging), leur générateur
-avec vérité terrain, et les contraintes réelles (VM 8 Go, nœud distant).
+HDFS/Hive/Spark. Chaque concept est **réincarné dans un choix de conception**,
+détaillé au chapitre 5. Avant la conception, le chapitre 3 examine **ce qui existe
+déjà** — les systèmes de l'établissement et les solutions du marché, comparés sur six
+critères — puis le chapitre 4 analyse le besoin : sources hétérogènes, générateur
+avec vérité terrain, contraintes réelles (VM 8 Go, nœud distant).
 
 ### Références citées
 
