@@ -853,4 +853,64 @@ pas etre rejouee.
 champs du DOCX se remplissent a l'ouverture dans Word. La figure 6 reste a 5.7 pt. La validation
 PostgreSQL / VM reste hors des trois lots (`.env` absent, Vagrant indisponible).
 
+---
+
+## 27/09/2026 - Soutenance : plan de temps refait pour un expose de 20 min, demo en video
+
+**Contexte.** L'utilisateur fixe le format : **20 min d'expose, demonstration comprise**, questions
+sur un creneau separe, et **pas de demonstration en direct** — une video preparee a la maison.
+Question posee : « est-ce que notre avancement couvre ce delai ? ».
+
+**Reponse : le fond couvre, le script de temps non.** Mesures faites sur
+`documents/slides_soutenance.md` :
+- 13 slides pour 20 min : le **nombre** de slides est bien calibre.
+- **658 mots** de texte (hors code et hors lignes « Support ») = **4,4 a 5,1 min** de parole a
+  130-150 mots/min. Les slides sont un squelette : il reste 10 a 14 min a developper a l'oral.
+- Budget ecrit : « 15 min + 10 min questions » = **25 min**, incompatible avec 20 min si les
+  questions sont dans le meme creneau.
+- **Partie B annonce 7 min, or S5 (2) + S6 (2) + S7 (1) + S8 (2) = 7 min deja consommees** ->
+  **S9 n'avait aucun budget**, alors que c'est la slide d'honnetete (difficultes, dettes, nuances).
+
+**Trois defauts reels, corriges.**
+1. **Les 2 premieres commandes de la demo n'existaient pas** : la slide citait
+   `evaluation\evaluate_engine.py` et `provision\scripts\run_pipeline.sh` (verifie `Test-Path` =
+   `False`) ; les vrais chemins portent le prefixe `projet\code-source\`. Elles se seraient
+   arretes sur « No such file or directory » **devant le jury**, en plein budget. Les 4 cibles
+   (2 scripts, `tests/`, interpreteur du venv) sont desormais verifiees `True`.
+2. **Demo budgitee 2 min en live pour 3 commandes**, dont un pipeline Spark en 4 etapes sur une VM
+   indisponible. Reecrite en **storyboard video 4:00** (4 plans : pytest 1:00, evaluation hard
+   1:00, pipeline 1:30, repli 0:30) + **slide de repli obligatoire** (captures datees : `patient_fhir`
+   214 lignes / 145 masters / 69 doublons / 32.24 %, `evaluation_truth.md`, sortie API). La video
+   supprime le point de failure VM du jour J, mais impose de **filmer a la maison, VM allumee**.
+3. **Aucune image sur les slides** alors que les 8 PNG existent depuis le lot 2, et la note de fin
+   (« les schemas peuvent etre exportes en PNG/SVG ») etait **obsolete** : supprimee. 4 figures sont
+   desormais projetees (fig-3 sur S2, fig-1 sur S4, fig-5 sur S5, fig-7 sur S7), 3 en reserve, et
+   **fig-6 volontairement exclue** : a 5,7 pt elle est illisible sur un videoprojecteur (elle reste
+   dans le DOCX en page paysage, et ne passe qu'en pause zoomee dans la video).
+
+**Coherence avec le memoire (indispensable).** S8 disait « zero faux positif sur tous les niveaux »
+et « parite parfaite », alors que le lot 3 presente desormais la precision comme un **plancher**
+(le generateur ne cree pas d'homophones quasi identiques) et la parite comme des **decisions
+identiques sur les jeux testes**. Sans cette correction, le jury pouvait opposer la slide au
+chapitre 7. S9 porte aussi desormais la nuance « les 14/14 sont un test de fumee » et la
+distinction API Flask (reporting) / API FastAPI (application de la regle).
+
+**Nouveau budget, verifie par sommation : 16:00 + 4:00 de marge = 20:00.**
+A 4:00 (S1 0:30, S2 1:15, S3 1:00, S4 1:15) · B 6:00 (S5 1:30, S6 1:30, S7 1:00, S8 1:15,
+**S9 0:45**) · C 4:00 (S10 video) · D 2:00 (S11 1:00, S12 0:45, S13 0:15). Les 13 slides portent
+une duree ; les 4 en-tetes de partie correspondent a la somme de leurs slides.
+
+**Verifications.** 13/13 slides avec duree, somme 16:00, marge 4:00 ; 8 figures referencees et
+toutes presentes ; commandes verifiees `True` ; UTF-8 **sans BOM**, 0 caractere de controle ; aucun
+token de preuve perdu sans justification (les ecarts sont le format de duree `1.5` -> `1:15`, la
+suppression de « 15 min + 10 min questions », et les 2 chemins de commande errones remplaces par
+les bons). Distinction conservee : les *commandes a filmer* sont qualificationes chemin complet,
+les *renvois de support* gardent la forme courte relative a `projet/code-source` (convention
+anterieure du fichier).
+
+**Reste a faire par l'utilisateur :** filmer la video a la maison (VM allumee, `pytest` rejoue juste
+avant pour montrer 54/54, film <= 4 min), construire la slide de repli, et convertir le Markdown
+dans l'outil de presentation. Aucun changement au memoire ni au code.
+
+
 

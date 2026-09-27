@@ -93,6 +93,18 @@ dans `Mon_Memoire` (subtree → `projet/code-source/`, `projet/mvp/`, `archives/
     adversariaire dans la vérité terrain). **0 perte** de token de preuve, structure 9 × 1 H1,
     52 tableaux, 20/20 références, `pytest` **54/54**, DOCX régénéré. Reste : **relecture humaine**
     et ouverture dans Word (champs du sommaire et de la pagination).
+12. **[Soutenance]** Plan de temps refait pour un **exposé de 20 min, démonstration comprise**
+    (27/09) : `documents/slides_soutenance.md` annonçait « 15 min + 10 min questions » (25 min) et
+    n'accordait **aucun budget à S9** (la partie B annonçait 7 min déjà consommées par S5→S8).
+    Nouveau budget **16:00 + 4:00 de marge = 20:00**, vérifié par sommation des 13 slides, S9
+    enfin chiffré (0:45). **Démonstration non live** mais vidéo de 4:00 enregistrée en amont
+    (storyboard en 4 plans + slide de repli obligatoire) : la VM n'est plus un point de failure le
+    jour J. Corrigé au passage : les 2 premières commandes de la démo **n'existaient pas** (préfixe
+    `projet/code-source/` manquant — elles cassaient devant le jury), 4 figures PNG désormais
+    projetées (**`fig-6` exclue** : 5,7 pt illisible au vidéoprojecteur), note obsolète sur
+    l'export des PNG supprimée, S8/S9 **alignés sur le ch. 7** (précision = plancher, parité =
+    décisions identiques sur les jeux testés, 14/14 = test de fumée). Reste : filmer la vidéo,
+    construire la slide de repli, convertir le Markdown dans l'outil de présentation.
 
 ## Dettes techniques connues
 
@@ -257,3 +269,15 @@ dans `Mon_Memoire` (subtree → `projet/code-source/`, `projet/mvp/`, `archives/
   n'ont pas été re-rendus ; seuls 2 numéros de ligne du manifeste ont été recorrectés.
   **Reste : relecture humaine, et ouverture dans Word** (les champs du sommaire et de la pagination
   se remplissent à la première ouverture).
+- 27/09 : **Soutenance — plan de temps refait pour 20 min, démonstration en vidéo** — l'exposé
+  dure 20 min démo comprise et la démonstration n'est **pas** en direct. Constat : les 13 slides
+  étaient bien calibrées en nombre mais le fichier annonçait 25 min (15 + 10 questions), la partie B
+  consommait ses 7 min sans budget pour S9, et surtout les **2 premières commandes de la démo
+  n'existaient pas** (préfixe `projet/code-source/` manquant) — elles se seraient arrêtées net
+  pendant la soutenance. Nouveau budget **16:00 + 4:00 de marge**, S9 chiffré à 0:45, démo
+  transformée en **storyboard vidéo de 4:00** (pytest, évaluation hard, pipeline Medallion,
+  repli) avec slide de repli obligatoire. 4 figures PNG projetées ; **`fig-6` exclue** car
+  illisible à 5,7 pt. S8 et S9 **recorrigés pour coller au chapitre 7** : le zéro faux positif y
+  est présenté comme un plancher (pas de cas adversariaire dans la vérité terrain) et la parité
+  comme l'identité des décisions sur les jeux testés. Reste : filmer la vidéo à la maison (VM
+  allumée), construire la slide de repli, convertir le Markdown dans l'outil de présentation.
