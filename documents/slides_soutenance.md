@@ -33,7 +33,7 @@ Imagerie      → J. RAKOTO
 
 ### S4. Démarche : chaque technologie par besoin (1.5 min)
 ```
-PROBLÈME MÉTIER → MVP (Pandas+PG) → VALIDATION (ground-truth) → SPARK (parité) → BIG DATA MEDALLION
+PROBLÈME MÉTIER → MVP (Pandas+PG) → VALIDATION (ground-truth) → SPARK (parité) → BIG DATA MEDALLION → GOUVERNANCE (consentement + audit)
 ```
 - Pas de « Big Data pour le Big Data » : le besoin précède l'outil.
 - Deux PoC fusionnés en un seul dépôt autonome.

@@ -646,3 +646,57 @@ disproportionne.
 
 **Limite.** La passe porte sur la prose ; tableaux, chiffres et schemas Mermaid sont restes
 intacts. Relecture humaine de la nouvelle prose recommandee avant impression.
+
+## 27/09/2026 - Memoire : correction des 9 incoherences de fond (lot 1)
+
+**Constat.** Audit des 9 chapitres, du DOCX et des documents de soutenance apres le glossaire.
+8 incoherences de fond et 1 defilement de document, sans consequence sur le code. La plus grave :
+la synthese de couverture de l'etat de l'art ne correspondait plus a son propre tableau.
+
+**Realise (9 corrections, aucune reecriture).**
+1. `chapters/02-etat-de-l-art.md` §2.10 : la phrase de synthese annoncait « 6 traites, 8
+   partiels, 5 hors perimetre, 1 optionnel » alors que le tableau 7 lignes plus bas donne
+   **11 traites / 7 partiels / 1 hors perimetre / 1 optionnel** (= 20 axes). Recompte a partir du
+   tableau lui-meme, et les deux axes non traites sont nommes (personas, sobriete). Le resume
+   n'avait pas ete mis a jour lors de l'ajout des axes 0, 6, 14, 15 et 19.
+2. `chapters/02-etat-de-l-art.md` §2.10 : les blocs annonces (« existant, concepts, choix, vie du
+   projet, soutenance ») ne correspondaient pas au tableau (« 1 Existant, 2 Concepts, 3 Choix,
+   4 Soutenance, **5 Methodologie** »). Noms alignes sur le tableau.
+3. `chapters/04-analyse.md` §4.6 : « demarche incrementale en **trois niveaux** » suivi d'un tableau
+   **J1 a J5** -> « en **cinq jalons** ». C'etait la seule occurrence reellement cassee : le mot
+   « trois niveaux » est employees ailleurs avec 3 autres sens (demarche technologique §1.4,
+   architecture technique, niveaux de difficulte easy/medium/hard).
+4. `chapters/04-analyse.md` §4.6 : jalon J5 « structuration en **8 chapitres** » -> « en **9
+   chapitres** (glossaire inclus) ».
+5. `chapters/01-introduction.md` §1.7 : le **plan du memoire** s'arretait a « Conclusion generale »
+   non numerotee et ignorait le glossaire -> lignes **1 a 9** completes, dont
+   « **9 — Glossaire** ».
+6. `chapters/01-introduction.md` §1.4 : le schema Mermaid decrit 5 etapes alors que le tableau n'en
+   comptait que 3 -> ajout d'une ligne « **Transverse** » (validation des algorithmes, puis
+   gouvernance) et d'un paragraphe qui relie explicitement le schema au tableau.
+7. `chapters/01-introduction.md` §1.4 vs §1.5 : le niveau 1 annoncait un « dashboard » que la
+   section perimetre déclarait hors perimetre -> precise « dashboard de demonstration du PoC
+   d'origine », non repris dans le depot consolide.
+8. `chapters/01-introduction.md` §1.5 : l'API de gouvernance n'etait pas nommee -> **FastAPI**,
+   « lecture seule, avec controle de consentement » (elle est comparee a Flask en §2.11).
+9. `projet/code-source/scripts/dev/export_memoire_docx.py` : docstring « `01..08.md` » -> « `01..09.md` ».
+   `documents/slides_soutenance.md` S4 : chaine de demarche completee par
+   « GOUVERNANCE (consentement + audit) », absente alors que le schema §1.4 se termine dessus.
+
+**Verifications.**
+- **Non-regression** : 12 fichiers compares avant/apres sur nombres, references `[B#]`,
+  identifiants de code et chemins -> **0 perte**. Les 3 « pertes » signalees par l'outil sont la
+  correction voulue elle-meme (`chapters/01..08.md` -> `chapters/01..09.md`).
+- Structure inchangee et verifiee : **9 chapitres** a 1 H1, **51 tableaux**, fences equilibrees,
+  references **20/20** definies et citees.
+- `pytest projet/code-source/tests` = **54 passed, 2 warnings in 2.41s**.
+- DOCX regenere = **9 H1**, 51 tableaux, **62 445 caracteres** ; controle des **cellules** de
+  tableau (et non des paragraphes) confirme la presence des lignes « Transverse », « 1 — Introduction »
+  et « 9 — Glossaire », et des phrases corrigees (« traite directement 11 », « en cinq jalons »).
+
+**Reste a faire (lots 2 et 3, non engages).** Rendu des **8 diagrammes Mermaid en images** dans le
+DOCX (aujourd'hui 66 lignes de code brut ; Node 22 + `npx` disponibles) ; page de garde complete,
+table des matieres, pagination ; bibliographie consolidee (`references/bibliographie.md` n'est pas
+exportee : le DOCX ne contient que des formes courtes par chapitre et 0 URL) ; elargissement des
+chapitres les plus courts en prose (6 : 675 mots, 7 : 821, 3 : 949). Ces trois lots demandent un
+arbitrage explicite et modifient l'exporteur, pas seulement les documents.

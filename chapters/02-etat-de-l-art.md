@@ -284,9 +284,10 @@ aucune source n'a été retenue « parce qu'elle est récente », mais « parce 
 permet de justifier un choix ».
 
 **Couverture du plan d'État de l'art.** Le plan comporte 20 axes répartis en cinq
-blocs (existant, concepts, choix, vie du projet, soutenance) ; le mémoire en
-traite directement 6, en traite partiellement 8, laisse 5 hors périmètre et 1
-optionnel non traité.
+blocs (existant, concepts, choix, soutenance, méthodologie) ; le mémoire en
+traite directement 11, en traite partiellement 7, laisse 1 axe hors périmètre
+(les personas : le commanditaire est le public cible, pas l'utilisateur final) et
+1 axe optionnel non traité (sobriété).
 
 | Bloc | Axes | Traitement dans le mémoire |
 |---|---|---|

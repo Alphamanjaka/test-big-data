@@ -157,7 +157,7 @@ projet de ce type :
 
 ## 4.6 Conduite de projet et jalons
 
-Le stage a suivi une **démarche incrémentale en trois niveaux**, chaque niveau
+Le stage a suivi une **démarche incrémentale en cinq jalons**, chaque jalon
 n'étant stabilisé (tests, évaluation) avant d'engager le suivant. Cette
 progression est un choix de gestion du risque autant que de méthode technique.
 
@@ -167,7 +167,7 @@ progression est un choix de gestion du risque autant que de méthode technique.
 | **J2 — Moteur** | canonique + blocking + exact/probabiliste (Pandas) | précision 1.000, parité Pandas = Spark | `engine/identity/`, `evaluation_truth.md` |
 | **J3 — Big Data** | pipeline ELT Medallion RAW → SILVER → GOLD | 4/4 étapes vertes, 214 lignes SILVER, 145 masters, 69 doublons | `run_pipeline.sh`, `elt.log` |
 | **J4 — Gouvernance** | RBAC, clés API, consentement *purpose-by-purpose*, audit, refus 403 journalisé | suite de tests complète verte, dont 403 et 401 vérifiés | `engine/governance/`, `tests/` |
-| **J5 — Mémoire** | structuration en 8 chapitres, état de l'art sourcé, mise en cohérence de la preuve | 20 références citées, aucun chiffre non vérifiable | ce dépôt |
+| **J5 — Mémoire** | structuration en 9 chapitres (glossaire inclus), état de l'art sourcé, mise en cohérence de la preuve | 20 références citées, aucun chiffre non vérifiable | ce dépôt |
 
 **Règles de pilotage appliquées** : ne pas engager une évolution avant que le
 contrôle ciblé du niveau précédent soit vert ; toute décision d'architecture est

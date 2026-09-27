@@ -3,7 +3,7 @@
 Usage :
     python scripts/dev/export_memoire_docx.py [--out documents/memoire_M2_MBDS.docx]
 
-Convertit `chapters/01..08.md` en un unique .docx : titres, paragraphes, listes,
+Convertit `chapters/01..09.md` en un unique .docx : titres, paragraphes, listes,
 tableaux, blocs de code et citations. Les diagrammes Mermaid restent en bloc de code
 (python-docx ne les rend pas en image).
 """

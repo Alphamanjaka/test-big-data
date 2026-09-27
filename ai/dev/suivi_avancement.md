@@ -180,3 +180,17 @@ dans `Mon_Memoire` (subtree → `projet/code-source/`, `projet/mvp/`, `archives/
   avant/après de tous les chiffres, identifiants de code, chemins et références `[B#]` → **0 perte**.
   Structure : **9 chapitres** à 1 H1, 51 tableaux, fences équilibrées, **20/20** références ;
   DOCX régénéré = **9 H1**, 51 tableaux, **61 908 caractères** ; `pytest` **54/54**.
+- 27/09 : **Lot 1 — corrections de fond du mémoire** (9 corrections, sans réécriture) — audit des
+  9 chapitres, du DOCX et des documents de soutenance. La plus grave : la synthèse de couverture de
+  §2.10 annonçait « 6 traités / 8 partiels / 5 hors périmètre / 1 optionnel » alors que son propre
+  tableau donne **11 / 7 / 1 / 1** (= 20 axes) ; les noms de blocs divergeaient aussi du tableau.
+  Corrigé en plus : « trois niveaux » suivi de cinq jalons J1–J5 (§4.6), J5 « 8 chapitres » → 9,
+  **plan du mémoire complété de 1 à 9** (§1.7), schéma à 5 étapes vs tableau à 3 niveaux (§1.4,
+  ligne « Transverse » ajoutée), dashboard du PoC vs hors périmètre (§1.4/§1.5), API de
+  gouvernance nommée **FastAPI** (§1.5), docstring de l'exporteur en `01..09`, et chaîne de
+  démarche des slides complétée par la gouvernance. Preuves : **0 perte** de nombre, identifiant,
+  chemin ou référence sur 12 fichiers ; structure 9 × 1 H1, 51 tableaux, **20/20** références ;
+  `pytest` **54/54** ; DOCX **9 H1**, 51 tableaux, **62 445 caractères**.
+  **Reste (lots 2 et 3, non engagés, à arbitrer)** : rendu des 8 diagrammes Mermaid en images,
+  page de garde / TDM / pagination, bibliographie consolidée dans le DOCX, élargissement des
+  chapitres 6 (675 mots), 7 (821) et 3 (949).

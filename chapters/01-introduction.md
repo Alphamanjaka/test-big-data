@@ -97,9 +97,15 @@ flowchart LR
 
 | Niveau | Contenu | Légitimité |
 |---|---|---|
-| **1 — MVP** | CSV + Pandas + PostgreSQL : extraction, nettoyage, déduplication, master patient, dashboard | résoudre le problème métier d'abord, au plus simple |
+| **1 — MVP** | CSV + Pandas + PostgreSQL : extraction, nettoyage, déduplication, master patient (+ dashboard de démonstration dans le PoC d'origine) | résoudre le problème métier d'abord, au plus simple |
 | **2 — Spark** | PySpark local, résultats **strictement identiques** au MVP (parité vérifiée) | passer à l'échelle sans changer la logique métier |
 | **3 — Big Data** | Data Lake + HDFS + Hive + Spark, pipeline ELT Medallion 4 étapes, API Flask | traiter des volumes réels dans une architecture médicale |
+| **Transverse** | validation des algorithmes (vérité terrain P/R/F1), puis gouvernance (consentement, audit, API) | ne pas passer à l'échelle ni ouvrir les accès avant que la preuve soit verte |
+
+Le schéma ci-dessus détaille ces deux étapes transverses : la **validation des algorithmes**, qui
+conditionne le passage à Spark, et la **gouvernance**, traitée en dernier car elle s'appuie sur
+la zone GOLD. Ce ne sont pas des niveaux de technologie, mais deux moments où l'on s'arrête
+pour vérifier avant d'aller plus loin.
 
 Les deux premiers niveaux proviennent du PoC `test_bigdata`, le troisième du PoC `datalake_mavis`.
 Ce dépôt unique en est la **fusion consolidée** : un seul dépôt, une seule
@@ -116,10 +122,12 @@ Périmètre fonctionnel couvert par ce stage :
   CIN 0.1 / ville de naissance 0.1), implémenté en Pandas **et** en PySpark [cahier_des_charges.md §4.2] ;
 - gouvernance : RBAC, consentement par finalité, audit d'accès, clés API hachées SHA-256
   [cahier_des_charges.md §4.3] ;
-- deux API REST : données (Flask, endpoints `/rma/*`) et gouvernance (lecture seule) ;
+- deux API REST : données (**Flask**, endpoints `/rma/*`, sur les données GOLD) et gouvernance
+  (**FastAPI**, lecture seule, avec contrôle de consentement) ;
 - évaluation de la déduplication sur données synthétiques easy / medium / hard.
 
-Hors périmètre (assumés comme tels) : frontend Next.js (optionnel), export VM `.box`, Docker/CI.
+Hors périmètre (assumés comme tels) : frontend Next.js du PoC (le dashboard de démonstration
+n'a pas été repris dans le dépôt consolidé), export VM `.box`, Docker/CI.
 
 ## 1.6 Contexte chiffré (repères)
 
@@ -138,13 +146,15 @@ Les principaux chiffres vérifiables, détaillés dans les chapitres 4 à 7, son
 
 | Partie | Contenu |
 |---|---|
+| **1 — Introduction** | contexte de l'organisme, problématique, objectifs, démarche, périmètre et repères chiffrés |
 | **2 — État de l'art** | Entity Resolution / Master Patient Index, mesures de similarité, FHIR, architecture Big Data (Medallion, HDFS, Hive, Spark), consentement et RGPD |
 | **3 — Étude de l'existant** | systèmes d'information en place à MMT (MAVIS, MMT_DB, CLINIQUE) et leurs limites ; solutions du domaine (MPI/DMP, MDM, Data Lake santé, open source) ; grille de comparaison et verdict |
 | **4 — Analyse** | sources hétérogènes, générateur de données synthétiques avec vérité terrain, exigences et contraintes |
-| **5 — Conception et architecture** | architecture 3 niveaux et bout-en-bout, modèle canonique, algorithmes de déduplication, schéma PostgreSQL, gouvernance |
+| **5 — Conception et architecture** | architecture technique en trois niveaux et bout-en-bout, modèle canonique, algorithmes de déduplication, schéma PostgreSQL, gouvernance |
 | **6 — Réalisation** | implémentation : générateur, pipeline ELT, moteur (Pandas/Spark), interfaces, Data Lake |
 | **7 — Tests & évaluation** | stratégie de test, évaluation ground-truth, difficultés rencontrées, limites |
-| **Conclusion générale** | réponse à la problématique, limites assumées, perspectives |
+| **8 — Conclusion générale** | réponse à la problématique, arbitrages, limites assumées, perspectives, bilan pour la formation |
+| **9 — Glossaire** | le vocabulaire du projet expliqué en français courant, et les objets du dépôt (tables, scripts, couches) |
 
 ## Conclusion et transition
 
