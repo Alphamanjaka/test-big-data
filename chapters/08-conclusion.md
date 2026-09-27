@@ -24,8 +24,33 @@ La problématique du chapitre 1 était la suivante :
 | **Nettoyer / normaliser** | modèle canonique `CanonicalPatient` + schéma pivot **FHIR** (4 entités) + normalisation de genre, dates, CIN | `datalake_silver.patient_fhir` : **214 lignes** cohérentes (76 + 76 + 62) [run 07/09/2026] |
 | **Dédupliquer** de façon explicable | blocking (3 buckets) + passe **exact** + passe **probabiliste** (RapidFuzz, poids 0.5 / 0.3 / 0.1 / 0.1, seuil 0.80) ; chaque décision porte méthode, score et explication | **145 masters**, **69 doublons** liés, `duplicate_rate` 32.24 % avec `mocked: false` |
 | **Centraliser en conservant la traçabilité** | Medallion **RAW → SILVER → GOLD**, `patient_uuid = sha2(source|source_patient_id)`, colonnes `_source_system` / `_source_table`, `patient_identity_map` | 4/4 étapes vertes ; **214 − 69 = 145** vérifié par comptage sur le lac |
-| **Gouverner par consentement** | **RBAC** (admin / analyst / viewer), clés API **SHA-256**, consentement *purpose-by-purpose* lié au `master_patient_id`, audit de chaque tentative (refus compris) | `patient_consent_gold` = **145 lignes** ; tests moteur 23/23 dont 3 sur le consentement |
+| **Gouverner par consentement** | **RBAC** (admin / analyst / viewer), clés API **SHA-256**, consentement *purpose-by-purpose* lié au `master_patient_id`, **finalité déclarée obligatoire**, refus **403** journalisé avec son motif | `access_audit` : `purpose` + `refusal_reason` ; suite de tests **54/54** dont 401, 403 rôle, 403 consentement et 422 finalité inconnue |
 | **Ne jamais fusionner sans logique explicable** | règle **structurelle** : aucun `master_patient_id` sans `match_method` (`new_master` / `exact` / `probabilistic`) | précision **1.000** et **zéro faux positif** sur easy, medium **et** hard |
+
+### Synthèse des arbitrages
+
+Les choix du projet se lisent comme une suite d'arbitrages, chacun posé sur des
+critères explicites (§2.11) et chacun assorti d'un risque résiduel assumé. Cette
+table est la réponse à la question « *qu'avez-vous choisi, et à la place de quoi ?*
+».
+
+| Décision | Alternative écartée | Critère décisif | Preuve | Risque résiduel |
+|---|---|---|---|---|
+| **RapidFuzz** + dictionnaire de synonymes | `sentence_transformers` | compatibilité Python 3.8 (C1 éliminatoire) | 2.10 vs 5.00 en arbitrage pondéré ; parité Pandas = Spark | rappel limited sur variations fortes (0.422) |
+| **Seuil 0.80**, poids 0.5/0.3/0.1/0.1 | seuil unique 0.90 | en santé, une fusion à tort est plus grave qu'une fusion manquée | précision 1.000 sur les 3 niveaux, 0 FP | 420 faux positifs manqués sur le jeu dur |
+| **CIN dans la clé de blocking** | blocage sur le seul nom | couverture ~75 % des maîtres | rappel hard 0.287 → **0.422** | patients sans CIN : rappel plus faible |
+| **Medallion RAW → SILVER → GOLD** | base unique « wide » | traçabilité et rejeu exigés (F1) | 4/4 étapes vertes, rejeu reproductible | tables GOLD à enrichir (`patient_events_gold` vide) |
+| **PostgreSQL central** | SQLite / MySQL | JSONB, contraintes CHECK, écritures concurrentes | schéma versionné, contraintes `purpose` et `role` | base unique : point de défaillance unique, non traité |
+| **Clé API + 3 rôles** | comptes nominatifs / annuaire | pas d'annuaire d'identité sur place (§4.5) | `api_user`, SHA-256, 401/403 vérifiés | pas de traçabilité nominative individuelle |
+| **Finalité en paramètre de requête** | finalité déduite du rôle | finalité déterminée (art. 5.1.b) | 422 hors liste fermée, 403 sinon | une finalité reste déclarative : elle repose sur l'honnêteté de l'appelant |
+| **FastAPI** | Flask | contrôle de finalité exprimé dans le schéma d'API | 4.65 vs 4.50 | écart faible : choix revisable |
+
+> **Ce que cette synthèse dit du projet.** Aucun arbitrage n'a été fait « par
+> défaut » : chacun a une raison, une preuve et un risque associé. Les deux
+> derniers points sont les plus discutables — la finalité déclarée par l'appelant
+> n'est vérifiable qu'*a posteriori* par l'audit, et l'écart FastAPI/Flask est trop
+> faible pour être une conviction forte. Les assumer explicitement vaut mieux
+> qu'un tableau de décisions toutes presentations comme optimales.
 
 ## 8.2 Ce que le projet démontre
 
@@ -38,8 +63,11 @@ La problématique du chapitre 1 était la suivante :
    « easy / medium » atteint 1.000 / 0.884 sans aucun faux positif. Le rappel dur (0.422) est
    **assumé et expliqué**, pas masqué.
 3. **La gouvernance est dans le système, pas à côté.** Le refus d'accès pour finalité non
-   consentie est **décidé puis journalisé** : la conformité se démontre par l'audit, pas par une
-   intention.
+   consentie est **décidé, opposé et journalisé** : un utilisateur autorisé qui demande une
+   finalité non consentie reçoit un **403**, et l'audit conserve la finalité demandée et le motif
+   du refus. La conformité se démontre par l'audit, pas par une intention. Le comportement est
+   vérifié par des tests qui empruntent le **vrai** chemin d'authentification (clé API → rôle →
+   consentement), et non en court-circuitant la sécurité.
 4. **Le contexte dicte les choix.** VM 8 Go, Python 3.8, nœud distant instable : chaque
    contrainte a été traitée (RapidFuzz au lieu d'un modèle NLP, réplique locale de MAVIS, entrepôt
    Spark toujours sur HDFS) et consignée dans les pièges anti-régression [pipeline_elt.md].
@@ -54,7 +82,9 @@ La problématique du chapitre 1 était la suivante :
 |---|---|---|
 | **Rappel 0.422 sur le jeu « hard »** | 420 faux négatifs sur 1 057 enregistrements | variations à 50 % ; seuil 0.80 conservateur ; le métier n'a pas validé un seuil plus bas |
 | **`patient_events_gold` vide** | 0 ligne en intermédiaire | Encounter / Condition / Observation non rattachées à `patient_uuid` : enrichissement du mapping FHIR restant |
-| **Consentement non alimenté** | `purpose` / `granted` à `NULL` en GOLD | PostgreSQL central non peuplé pendant le stage : la **mécanique** est démontrée (schéma, moteur, tests), pas la **donnée** |
+| **Consentement non alimenté en base centrale** | `patient_consent_gold` : 145 lignes mais `purpose` / `granted` à `NULL` | PostgreSQL central non peuplé pendant le stage. La **mécanique** est démontrée et testée (seed `provision/db/seed_governance.py` fourni, non exécuté faute d'environnement) ; la **donnée** ne l'est pas |
+| **Droit applicable non vérifié localement** | conformité démontrée au RGPD seul | cadre juridique malgache des données de santé non étudié dans le stage (§4.5) |
+| **API Flask de démonstration non sécurisée** | `/governance/consent` sans authentification, `debug=True` | dette connue du PoC ; le contrôle de consentement est implémenté sur l'API **FastAPI** de gouvernance, qui est celle du dépôt consolidé |
 | **Endpoints sur données de secours** | `laboratory`, `malaria` | sources métier absentes du run de référence ; indicateur `mocked` exposé dans chaque réponse |
 | **Volume démontré** | quelques centaines de lignes en Silver | la VM 8 Go ne permet pas de charger les volumes réels de l'établissement ; le parcours Big Data est **architecturé et reproductible**, pas passé à l'échelle |
 | **Comparaison de l'existant = documentaire** | aucun produit tiers installé | banc d'essai hors périmètre du stage (ch. 3) |
@@ -66,7 +96,8 @@ La problématique du chapitre 1 était la suivante :
 
 1. Enrichir le **mapping FHIR** (liens `Encounter` / `Condition` / `Observation` sur
    `patient_uuid`) pour alimenter `patient_events_gold` et valider un `COUNT(*) > 0`.
-2. **Peupler le PostgreSQL central** (consentements, `api_user`) et rejouer l'étape GOLD pour
+2. **Peupler le PostgreSQL central** en exécutant `provision/db/seed_governance.py`
+   (utilisateurs, consentements mixtes accords/refus) et rejouer l'étape GOLD pour
    démontrer le refus par finalité non consentie sur données réelles du dépôt.
 3. **Calibrer le seuil et les poids** sur la vérité terrain existante (rappel contre précision) et
    documenter la courbe de compromis au lieu d'un point unique.

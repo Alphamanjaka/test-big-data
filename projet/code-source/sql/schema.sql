@@ -54,6 +54,17 @@ CREATE TABLE
         recorded_at TIMESTAMPTZ NOT NULL DEFAULT NOW ()
     );
 
+-- Liste fermée des finalités (alignée sur engine.governance.consent.PURPOSES).
+-- Idempotent : on recree la contrainte a chaque rechargement du schema.
+-- Si des lignes hors liste existent deja, la contrainte echoue volontairement :
+-- il faut les purger explicitement plutot que d'accepter des finalites libres.
+ALTER TABLE consent
+    DROP CONSTRAINT IF EXISTS consent_purpose_check;
+
+ALTER TABLE consent
+    ADD CONSTRAINT consent_purpose_check
+    CHECK (purpose IN ('api_access', 'research', 'analytics'));
+
 CREATE TABLE
     IF NOT EXISTS medicine_purchase (
         purchase_id BIGSERIAL PRIMARY KEY,
@@ -106,5 +117,15 @@ CREATE TABLE
         method TEXT NOT NULL,
         response_status INTEGER,
         ip_address TEXT,
+        purpose TEXT,
+        refusal_reason TEXT,
         accessed_at TIMESTAMPTZ DEFAULT NOW ()
     );
+
+-- Idempotence : tables d'audit creees avant le tracage du consentement
+-- (version anterieure du schema) → on ajoute les colonnes sans erreur.
+ALTER TABLE access_audit
+    ADD COLUMN IF NOT EXISTS purpose TEXT;
+
+ALTER TABLE access_audit
+    ADD COLUMN IF NOT EXISTS refusal_reason TEXT;

@@ -59,12 +59,23 @@ dans `Mon_Memoire` (subtree → `projet/code-source/`, `projet/mvp/`, `archives/
 7. **[Config YAML]** Calibration déduplication **déclarative** (08/09) — `config/deduplication.yaml`
    (weights, threshold, blocking) lu par matcher/spark/éval/SILVER via `engine/identity/config.py`
    (fallback défauts) ; une future modification = 1 édit YAML (+ tableau de référence) sans toucher au code.
+8. **[Gouvernance]** Consentement **câblé sur l'API FastAPI** (27/09) — `purpose` obligatoire,
+   refus 403 + `refusal_reason` journalisé, finalités en liste fermée (contrainte SQL), `pytest`
+   **54/54** (tests sans contournement de l'authentification). Reste : **exécuter** `schema.sql` et
+   `seed_governance.py` sur une base réelle (`.env` absent, VM indisponible) pour valider la preuve
+   en base — la mécanique est prouvée, la donnée ne l'est pas.
 
 ## Dettes techniques connues
 
 - Mapping FHIR : relier encounters/conditions/observations aux patients (GOLD ~16 lignes en test).
 - Gender/birth_date NULL côté MMT_DB (âge « unknown »).
 - JWT côté API Flask (RBAC web ≠ API données).
+- API Flask du PoC (`provision/api/hive_api.py`) : `/governance/consent` sans authentification,
+  nom du patient exposé, `debug=True`, pas de TLS ni de rate limiting. **Hors périmètre** : le
+  contrôle de consentement est appliqué à l'API FastAPI de gouvernance.
+- Clés API hachées en SHA-256 **non salées** ; `access_audit` non chiffré au repos ; ni
+  `data_scope` ni `expires_at` sur le consentement.
+- `schema.sql` et `provision/db/seed_governance.py` non exécutés depuis leur dernière modification.
 - Docker/CI, export VM `.box`, tests unitaires ≥80 % (hors moteur).
 - Pages governance/consentements frontend (optionnel).
 
@@ -78,7 +89,7 @@ dans `Mon_Memoire` (subtree → `projet/code-source/`, `projet/mvp/`, `archives/
 | Évaluation         | Ground-truth P/R/F1 documenté (easy/medium/hard)             |
 | Tests              | Moteur + consentement + API PASS                             |
 | Fusion             | Un seul repo autonome, docs sans doublon, commit git initial |
-| Mémoire            | Chapitres 01→06 rédigés                                      |
+| Mémoire            | Chapitres 01→08 rédigés                                      |
 
 ## Journal
 
@@ -137,3 +148,15 @@ dans `Mon_Memoire` (subtree → `projet/code-source/`, `projet/mvp/`, `archives/
   bibliographie `[B13..B20]` ; README / `ai/memoire/*` / rapport / slides synchronisés. Correctif **BOM UTF-8**
   (PS 5.1 `Set-Content`) qui cassait la détection des titres : DOCX régénéré = **8 H1**, 34 tables, 50 605 caractères.
   Reste : relecture utilisateur + commit.
+- 27/09 : **Consentement réellement appliqué + axes d'état de l'art** — commit `fb5582c` (restructuration
+  8 chapitres) validé, puis câblage du contrôle d'accès sur l'API FastAPI : `purpose` obligatoire sur
+  `/patients` et `/patients/{id}`, liste fermée `api_access|research|analytics` (contrainte SQL), refus
+  **403** avec `refusal_reason` persisté dans `access_audit`, **401/403/422** vérifiés. Bug corrigé :
+  `/audit` interrogeait `recorded_at` (colonne inexistante) → `accessed_at`. Seed gouvernance créé
+  (`provision/db/seed_governance.py`, consentements mixtes déterministes, clés générées à l'exécution).
+  Tests réécrits **sans `dependency_overrides`** → **54/54** (12 matcher · 21 consentement · 8 dédup ·
+  13 API) ; sensibilité vérifiée par mutation (retirer `enforce_consent` fait échouer le test de refus).
+  Mémoire : axes **0** (§2.10 veille + couverture des 20 axes), **6** (§2.11 matrice de sélection
+  pondérée), **14** (§4.5 contexte local), **15** (§4.6 jalons J1→J5), **19** (§8.1 synthèse des
+  arbitrages) ; §2.5 et §5.5 corrigés (les colonnes `data_scope` / `expires_at` annoncées n'existent pas) ;
+  comptes de tests harmonisés 23/23 → 54/54. Reste : exécuter `schema.sql` + le seed sur une base réelle.

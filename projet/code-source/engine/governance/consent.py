@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from fastapi import APIRouter, Depends, HTTPException
+from fastapi import APIRouter, Depends, HTTPException, Request
 from pydantic import BaseModel
 from psycopg.rows import dict_row
 
@@ -10,6 +10,12 @@ from engine.governance.auth import UserContext, require_role
 from engine.governance.database import connection_factory
 
 router = APIRouter(prefix="/consent", tags=["consent"])
+
+# Finalités normalisées : liste fermée, alignée sur la contrainte
+# `consent_purpose_check` de sql/schema.sql et sur le jeu de démonstration
+# produit par provision/db/seed_governance.py. Toute autre valeur est
+# rejetée en 422 : une finalité libre rendrait l'audit inexploitable.
+PURPOSES = ("api_access", "research", "analytics")
 
 
 class ConsentCreate(BaseModel):
@@ -92,6 +98,9 @@ def create_consent(
     )
     if patient is None:
         raise HTTPException(status_code=404, detail="Patient master introuvable")
+    # Refus de valider une finalité hors liste fermée : l'API et la contrainte
+    # `consent_purpose_check` doivent accepter exactement le même alphabet.
+    validate_purpose(consent.purpose)
     _execute(
         "INSERT INTO consent (master_patient_id, purpose, granted) VALUES (%s, %s, %s)",
         (consent.master_patient_id, consent.purpose, consent.granted),
@@ -116,3 +125,51 @@ def check_consent(master_patient_id: str, purpose: str) -> bool:
     if row is None:
         return False
     return row["granted"]
+
+
+def validate_purpose(purpose: str) -> str:
+    """Valide une finalité déclarée par l'appelant (422 si hors liste fermée)."""
+    if purpose not in PURPOSES:
+        raise HTTPException(
+            status_code=422,
+            detail=f"Finalite inconnue. Valeurs autorisees: {', '.join(PURPOSES)}",
+        )
+    return purpose
+
+
+def enforce_consent(request: Request, master_patient_id: str, purpose: str) -> str:
+    """Applique le consentement à un patient et materialise le refus (403).
+
+    Refus par defaut : l'absence de ligne de consentement vaut refus. La
+    finalité est deposée dans `request.state.purpose` et le motif dans
+    `request.state.refusal_reason` : AuditMiddleware les relit pour les
+    journaliser dans `access_audit` — la conformite se demontre par l'audit,
+    pas par une intention.
+    """
+    validate_purpose(purpose)
+    request.state.purpose = purpose
+    if check_consent(master_patient_id, purpose):
+        request.state.refusal_reason = None
+        return purpose
+    reason = f"consentement non accorde pour la finalite {purpose}"
+    request.state.refusal_reason = reason
+    raise HTTPException(status_code=403, detail=reason)
+
+
+def consented_master_ids(purpose: str) -> set:
+    """Masters ayant consenti a `purpose`, le dernier avis de chaque patient.
+
+    Un seul aller-retour SQL. `DISTINCT ON` + `ORDER BY recorded_at DESC`
+    applique la meme regle « le dernier avis gagne » que `check_consent`.
+    """
+    validate_purpose(purpose)
+    rows = _query_all(
+        """
+        SELECT DISTINCT ON (master_patient_id) master_patient_id, granted
+        FROM consent
+        WHERE purpose = %s
+        ORDER BY master_patient_id, recorded_at DESC
+        """,
+        (purpose,),
+    )
+    return {row["master_patient_id"] for row in rows if row["granted"]}

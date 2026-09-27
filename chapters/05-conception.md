@@ -168,9 +168,9 @@ identités et de la gouvernance [consentement_gouvernance.md §6] :
 | `raw_patient_record` | historique append-only, jamais exposé | payload `JSONB`, `UNIQUE(source_system, source_patient_id)` |
 | `master_patient` | identité unique | `gender CHECK IN ('M','F','')` |
 | `patient_identity_map` | source → master | `match_method CHECK IN ('new_master','exact','probabilistic')`, `match_score NUMERIC(4,3)`, `explanation` |
-| `consent` | consentement purpose-by-purpose | `purpose`, `granted`, `recorded_at` |
+| `consent` | consentement purpose-by-purpose | `purpose` (`CHECK IN ('api_access','research','analytics')`), `granted`, `recorded_at` |
 | `api_user` | utilisateurs machine | `api_key_hash` (SHA-256), `role CHECK ('admin','analyst','viewer')` |
-| `access_audit` | journal de toutes les tentatives | endpoint, status, IP |
+| `access_audit` | journal de toutes les tentatives | endpoint, status, IP, `purpose`, `refusal_reason`, `accessed_at` |
 | `medicine_purchase` / `patient_consultation` / `imaging_exam` | transactions métier rattachées au master | `payload JSONB`, `UNIQUE(source_system, source_record_id)` |
 
 **Idempotence** : `CREATE TABLE IF NOT EXISTS` pour les tables, `ADD COLUMN IF
@@ -178,18 +178,32 @@ NOT EXISTS` pour les migrations — le pipeline est rejouable [consentement_gouv
 
 ## 5.5 Gouvernance : RBAC, consentement, audit
 
+Trois mécanismes, dans cet ordre : on **qui** demande, on **pourquoi** il demande,
+et on **trace** ce qui s'est passé.
+
 - **Rôles** : `admin` / `analyst` / `viewer` — contrôlés par clé API sur la
   plateforme (et RBAC web optionnel côté frontend) [consentement_gouvernance.md §2].
 - **Clés API** : hachées SHA-256 en base ; la clé en clair n'est jamais stockée ni
   exposée [consentement_gouvernance.md §5].
+- **Finalité déclarée** : `purpose` est un **paramètre obligatoire** de
+  `/patients` et `/patients/{id}`, validé contre une liste fermée
+  (`api_access`, `research`, `analytics`) — un code **422** est renvoyé pour une
+  finalité inconnue. Le refus par finalité non consentie produit un **403**.
 - **Consentement purpose-by-purpose** : table `consent` liée au master ; la
   décision d'accès ne dépend pas du rôle seul — un utilisateur **autorisé mais
-  sans finalité consentie** est refusé (et le refus est audité)
-  [consentement_gouvernance.md §3]. Cette conception matérialise l'article 9 du
-  RGPD (dérogation par consentement explicite) appliqué à des données synthétiques.
+  sans finalité consentie** est refusé. Sur la liste, les patients sans
+  consentement sont **retirés** de la réponse, et le nombre d'exclusions est
+  journalisé : l'endpoint ne peut pas servir par inadvertance un patient non
+  consenti. Cette conception matérialise l'article 9 du RGPD (dérogation par
+  consentement explicite) appliqué à des données synthétiques.
 - **Audit** : middleware journalisant chaque requête avec `user`, `endpoint`,
-  `method`, `status`, `ip` et durée, **y compris les refus et les appels anonymes**
-  [consentement_gouvernance.md §4].
+  `method`, `status`, `ip`, **`purpose`** et **`refusal_reason`**, y compris les
+  refus et les appels anonymes [consentement_gouvernance.md §4]. Le refus est donc
+  *consultable* a posteriori, et pas seulement déductible du code HTTP.
+
+**Ce que la conception ne couvre pas** (assumé, §8.3) : ni `data_scope` (périmètre
+de données), ni durée de validité du consentement, ni chiffrement au repos du
+journal d'audit, ni mesure de temps de traitement persistée.
 
 ## 5.6 Niveaux 2 et 3 : Spark et Data Lake Medallion
 

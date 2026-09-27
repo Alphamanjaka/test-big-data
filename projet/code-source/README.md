@@ -20,7 +20,7 @@ projet/code-source/
 │   ├── scripts/run_pipeline.sh    orchestration 5 étapes (arrêt sur erreur)
 │   ├── scripts/ensure_generator_data.sh  étape 0 : régénère les CSV du générateur (seed 42)
 │   ├── api/              hive_api.py (Flask, port 5000) · mock_data.py · test_api.py
-│   ├── db/               rebuild_mmt_db.py (base synthétique)
+│   ├── db/               rebuild_mmt_db.py (base synthétique) · seed_governance.py (utilisateurs + consentements)
 │   ├── jars/             postgresql-42.7.3.jar
 │   └── test_startup.sh   health check MAVIS/Hive/API/métadonnées
 ├── engine/               moteur de déduplication + gouvernance (Python 3.8+, autonome)
@@ -30,7 +30,7 @@ projet/code-source/
 │   ├── synthetic-patient-generator/   générateur easy/medium/hard (+ ground truth)
 │   ├── evaluation_truth.py            calcul P/R/F1 + breakdown
 │   └── evaluate_engine.py             évaluateur adapté au moteur engine/
-├── tests/                test_matcher.py (12) · test_consent.py (3) · test_deduplication.py (8)
+├── tests/                test_matcher.py (12) · test_consent.py (21) · test_deduplication.py (8) · test_governance_api.py (13)
 ├── sql/schema.sql        schéma PostgreSQL central (RAW, master, identity map, consent, api_user, audit)
 └── front-optional/       visualisation Next.js (optionnel — ex visualisation_app)
 ```
@@ -40,7 +40,7 @@ projet/code-source/
 ```powershell
 python -m venv .venv
 .venv\Scripts\python -m pip install -e ".[test]"
-.venv\Scripts\python -m pytest -q        # 23/23 attendu (matcher + consentement + canonique)
+.venv\Scripts\python -m pytest -q        # 54/54 attendu (matcher + consentement + canonique + API gouvernance)
 .venv\Scripts\python evaluation\evaluate_engine.py --level hard   # évaluation ground-truth
 ```
 
@@ -72,8 +72,19 @@ python -m provision.api.test_api         # 14/14 PASS attendu
 psql -d patient_plateform -f sql/schema.sql
 ```
 
-Tables : `raw_patient_record` · `master_patient` (+gender) · `patient_identity_map` · `consent` ·
-`api_user` (clés SHA-256) · `access_audit`. Idempotent (`ON CONFLICT`, `ADD COLUMN IF NOT EXISTS`).
+Tables : `raw_patient_record` · `master_patient` (+gender) · `patient_identity_map` · `consent`
+(`purpose` en liste fermée : `api_access`, `research`, `analytics`) · `api_user` (clés SHA-256) ·
+`access_audit` (+ `purpose`, `refusal_reason`). Idempotent (`ON CONFLICT`,
+`ADD COLUMN IF NOT EXISTS`, `DROP CONSTRAINT IF EXISTS`).
+
+Jeux de démonstration (utilisateurs + consentements mixtes accords/refus) :
+
+```bash
+.venv\Scripts\python provision\db\seed_governance.py    # lit DATABASE_URL (.env)
+```
+
+Les clés API sont générées à l'exécution et affichées une seule fois : ne pas
+versionner cette sortie.
 
 ## Moteur — API publique
 
@@ -85,6 +96,25 @@ from engine.identity.spark_dedup import deduplicate as s_dedup  # Spark (parité
 
 Chaque décision expose `master_patient_id`, `method` (exact|probabilistic|new_master), `score` et
 `explanation` — logique toujours **explicable**.
+
+## API de gouvernance — contrôle d'accès et consentement
+
+```bash
+uvicorn engine.governance.app:app --port 8000
+curl -H "Authorization: Bearer <clé>" "http://localhost:8000/patients?purpose=research"
+```
+
+`purpose` est **obligatoire** sur `/patients` et `/patients/{id}` :
+
+| Situation | Réponse |
+|---|---|
+| aucun `Authorization` / clé inconnue | **401** |
+| rôle insuffisant | **403** |
+| `purpose` absent ou hors liste fermée | **422** |
+| finalité non consentie | **403**, `refusal_reason` journalisé |
+| `/patients` | seuls les patients consentis sont renvoyés |
+
+Refus par défaut : l'absence de ligne de consentement vaut refus.
 
 ## Règles
 

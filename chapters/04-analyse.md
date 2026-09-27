@@ -6,8 +6,9 @@
 
 Analyser le besoin avant toute conception : sources de données et leur
 hétérogénéité, générateur de données synthétiques avec vérité terrain, exigences
-fonctionnelles et non fonctionnelles, et contraintes techniques (VM 8 Go, nœud
-distant instable, interdiction de NLP lourd). Cette analyse justifie les choix de
+fonctionnelles et non fonctionnelles, contraintes techniques (VM 8 Go, nœud
+distant instable, interdiction de NLP lourd), **contexte local et conditions
+d'applicabilité**, et **conduite de projet**. Cette analyse justifie les choix de
 conception du chapitre 5, une fois l'existant examiné au chapitre 3.
 
 ---
@@ -118,7 +119,72 @@ Environnement de référence : VM `ubuntu/focal64` (Vagrant) — Hadoop 3.3.6, H
 3.1.3, Spark 3.4.2, venv Python, ports redirigés (9870 HDFS, 10000 Hive, 5000 API)
 [provision/Vagrantfile].
 
-## 4.5 Synthèse de l'analyse
+## 4.5 Contexte local et conditions d'applicabilité
+
+Un prototype reproductible sur sa VM ne devient un outil utilisable que si les
+contraintes du terrain ont été regardées. Quatre plans de la réalité malgache
+conditionnent l'applicabilité du projet — et deux d'entre eux n'ont **pas** pu
+être résolus dans le périmètre du stage, ce qui doit être dit.
+
+| Plan de réalité | Observation de terrain | Conséquence sur la solution | État |
+|---|---|---|---|
+| **Données de santé dispersées** | chaque service tient son propre registre (pharmacie, consultation, imagerie), sans identifiant commun | justifie l'Entity Resolution et le MPI : l'identifiant partagé doit être **reconstruit**, pas supposé | traité |
+| **Organisation et rôles** | le service concerned n'a pas de référentiel d'identité ; la clé d'accès est un couple (identifiant fonctionnel, mot de passe) | l'API d'accès a été conçue sur un modèle **clé API + rôle** plutôt que sur des comptes nominatifs, plus simple à configurer sans annuaire | traité |
+| **Infrastructure et connectivité** | réseau intermittent, alimentation non garantie, pas de cluster | conception **mono-nœud** et **rejouable** : un run complet repart de zéro et produit le même résultat (seed fixe) | traité |
+| **Données sensibles, contexte juridique** | cadre juridique national des données de santé **non vérifié** dans ce stage : seul le RGPD et la loi française ont été étudiés (§2.5) | la conformité présentée est **européenne**, à transposer au droit malgache (loi sur les données à caractère personnel, autorité de protection) | **non traité** |
+
+Deux points doivent rester explicites, car ils sont les plus souvent omis dans un
+projet de ce type :
+
+1. **Le droit applicable n'est pas celui du pays de l'établissement.** Le stage
+   s'est appuyé sur le RGPD [B10] et les recommandations CNIL [B11], [B12] parce
+   que ce sont les références accessibles depuis le stage. Elles constituent un
+   **exigendum de conception exigeant** (finalité déterminée, minimisation,
+   traçabilité, consentement explicite) et non une certification de conformité
+   locale. La vérification du droit malgache — et de l'existence d'une autorité
+   de contrôle — reste à faire avant toute mise en production.
+2. **La volumétrie réelle n'a pas été utilisée.** Toutes les données sont
+   synthétiques, générées à l'échelle du prototype (quelques centaines de lignes
+   en SILVER, §4.3). Le dimensionnement réel de l'établissement — volumétrie,
+   cardinalité, taux de doublons observé — est **inconnu** et conditionne le choix
+   du seuil de similarité (§2.2) comme le partitionnement du blocking.
+
+> **Ce que le contexte local change concrètement.** Sans annuaire d'identité, la
+> gestion des accès par clé API avec trois rôles est un compromis pragmatique et
+> non un choix esthétique. Avec un annuaire, elle serait remplacée par du vrai
+> RBAC nominatif ; le travail sur le consentement (§2.5, §5.5) resterait
+> inchangé, car il est indépendant du mode d'authentification.
+
+## 4.6 Conduite de projet et jalons
+
+Le stage a suivi une **démarche incrémentale en trois niveaux**, chaque niveau
+n'étant stabilisé (tests, évaluation) avant d'engager le suivant. Cette
+progression est un choix de gestion du risque autant que de méthode technique.
+
+| Jalon | Contenu | Critère de sortie | Preuve |
+|---|---|---|---|
+| **J1 — Socle** | générateur de données synthétiques + vérité terrain | 44 tests verts, 500 masters, 3 niveaux de difficulté | `evaluation/synthetic-patient-generator/` |
+| **J2 — Moteur** | canonique + blocking + exact/probabiliste (Pandas) | précision 1.000, parité Pandas = Spark | `engine/identity/`, `evaluation_truth.md` |
+| **J3 — Big Data** | pipeline ELT Medallion RAW → SILVER → GOLD | 4/4 étapes vertes, 214 lignes SILVER, 145 masters, 69 doublons | `run_pipeline.sh`, `elt.log` |
+| **J4 — Gouvernance** | RBAC, clés API, consentement *purpose-by-purpose*, audit, refus 403 journalisé | suite de tests complète verte, dont 403 et 401 vérifiés | `engine/governance/`, `tests/` |
+| **J5 — Mémoire** | structuration en 8 chapitres, état de l'art sourcé, mise en cohérence de la preuve | 20 références citées, aucun chiffre non vérifiable | ce dépôt |
+
+**Règles de pilotage appliquées** : ne pas engager une évolution avant que le
+contrôle ciblé du niveau précédent soit vert ; toute décision d'architecture est
+tracée avec sa raison (ce mémoire) ; chaque limite constatée est écrite dans le
+chapitre des limites plutôt que passée sous silence ; les données de test ne sont
+jamais remplacées par des données réelles, y compris quand elles seraient
+plus-commodes à obtenir.
+
+> **Ce que ce découpage a permis, et ce qu'il a coûté.** Il a rendu chaque jalon
+> démontrable indépendamment, donc présentable en soutenance sans dépendre de la
+> disponibilité de la VM. Il a en revanche consume du temps de réintégration
+> entre Pandas et Spark : la parité stricte exigait de porter l'algorithme deux
+> fois, ce qui n'aurait pas été nécessaire si le choix de l'échelle avait été
+> arrêté plus tôt. C'est la principale leçon de conduite de projet tirée du stage
+> (§8.4).
+
+## 4.7 Synthèse de l'analyse
 
 L'analyse dégage trois besoins dominants :
 1. **Interpréter des formats divergents** → un modèle canonique + un pivot FHIR.
@@ -126,16 +192,23 @@ L'analyse dégage trois besoins dominants :
    ground truth (chapitres 2, 5 et 7).
 3. **Pouvoir passer à l'échelle** → choix Spark + Data Lake Medallion.
 
+À ces trois besoins s'ajoutent deux exigences transverses que le contexte local
+rend non négociables : **l'explicabilité** de toute décision (§2.11) et la
+**gouvernance par consentement** (§2.5, §5.5), qui ne peuvent être traitées après
+coup — une fois les données dédupliquées sans elle, la traçabilité du refus est
+perdue.
+
 Sans aspect de l'état de l'art « pour la forme » : chaque technologie répond à un
 besoin identifié ici.
 
 ## Conclusion et transition
 
-Le besoin est précis : trois sources hétérogènes, des exigences claires et des
-contraintes rebutées une à une. Le chapitre 5 conçoit la réponse : architecture en
-trois niveaux, modèle canonique, algorithmes de déduplication (blocking,
-exact + probabiliste, seuil 0.80), schéma PostgreSQL et gouvernance
-(consentement, audit, clés API).
+Le besoin est précis : trois sources hétérogènes, des exigences claires, des
+contraintes rebutées une à une, un contexte local dont on a extrait ce qui change
+la solution, et une conduite de projet en cinq jalons vérifiables. Le chapitre 5
+conçoit la réponse : architecture en trois niveaux, modèle canonique, algorithmes
+de déduplication (blocking, exact + probabiliste, seuil 0.80), schéma PostgreSQL
+et gouvernance (consentement, audit, clés API).
 
 ### Références
 
@@ -144,3 +217,5 @@ exact + probabiliste, seuil 0.80), schéma PostgreSQL et gouvernance
 - `evaluation/synthetic-patient-generator/README.md` et `config/settings.py`.
 - `ai/memoire/contexte_projet.md` (chiffres du run final).
 - `provision/Vagrantfile`, `bootstrap.sh`.
+- `projet/code-source/engine/governance/` (gouvernance, J4).
+- `ai/dev/logs.md`, `ai/dev/suivi_avancement.md` (jalons J1 à J5).

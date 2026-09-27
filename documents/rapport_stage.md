@@ -124,8 +124,9 @@ tort, propriété essentielle en santé. L'introduction de la **clé CIN** (~75 
 le rappel hard de 0.287 (07/09) à **0.422** sans le moindre faux positif. La **parité
 Pandas = Spark** est parfaite à chaque niveau (TP=307, FP=0, FN=420 pour les deux).
 
-**Tests** : moteur **23/23 PASS** (matcher 12 · consent 3 · canonique 8) ; générateur **44/44** ;
-MVP 20 ; API données **14/14 PASS** — soit une pyramide unitaire → intégration → système complète.
+**Tests** : moteur + gouvernance **54/54 PASS** (matcher 12 · consentement 21 · canonique 8 ·
+API gouvernance 13) ; générateur **44/44** ; MVP 20 ; API données **14/14 PASS** — soit une
+pyramide unitaire → intégration → système complète.
 
 ---
 

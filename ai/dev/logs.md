@@ -527,3 +527,40 @@ modifié par cette session).
 **Résultat :** plan 8 chapitres conforme aux 6 critères ; les 2 chapitres manquants sont rédigés et
 le support de soutenance pointe sur les bons fichiers. **Non commité** (validation utilisateur
 attendue).
+
+---
+
+## 27/09/2026 — Commit `fb5582c` puis câblage réel du consentement (FastAPI) + axes d'état de l'art
+
+**Contexte :** l'audit du plan d'état de l'art (20 axes) a révélé que le contrôle de consentement
+était **conçu mais non appliqué** : `check_consent()` n'était appelée par aucun endpoint. Décision
+utilisateur : câbler réellement le consentement, périmètre **FastAPI uniquement** (l'API Flask du PoC
+reste hors périmètre), finalités normalisées `api_access` / `research` / `analytics`, preuve par
+**tests uniquement** (pas de revendication d'exécution VM).
+
+| # | Action | Fichiers | Détail |
+| - | ------ | -------- | ------ |
+| 1 | Contrôle de consentement appliqué | `engine/governance/consent.py` | `PURPOSES` (liste fermée), `validate_purpose()` (422), `enforce_consent()` (403, refus par défaut, motif posé sur `request.state`), `consented_master_ids()` (filtrage liste, `DISTINCT ON` + dernier avis) ; `create_consent()` valide aussi la finalité |
+| 2 | Endpoints câblés | `engine/governance/app.py` | `purpose` **obligatoire** sur `/patients` et `/patients/{id}` ; liste filtrée, refus 403 ; **correction d'un bug** : `/audit` interrogeait `recorded_at`, colonne inexistante → `accessed_at` |
+| 3 | Schéma | `sql/schema.sql` | `consent_purpose_check` (`CHECK` sur la liste fermée, recréé par `DROP CONSTRAINT IF EXISTS`) ; `access_audit` += `purpose`, `refusal_reason` (`ADD COLUMN IF NOT EXISTS`) |
+| 4 | Audit tracé | `engine/governance/audit.py` | persistance de `purpose` et `refusal_reason` ; suppression d'un `duration_ms` calculé mais jamais persisté |
+| 5 | Seed de démonstration | `provision/db/seed_governance.py` (créé) | schéma idempotent + 3 utilisateurs (clés `secrets.token_hex`, jamais en dur) + consentements **mixtes** déterministes (`api_access` 100 %, `research` 70 %, `analytics` 40 %) ; insertion `WHERE NOT EXISTS` — **aucun** `DELETE` de consentement existant |
+| 6 | Tests | `tests/test_governance_api.py`, `tests/test_consent.py` | 13 + 18 cas : 401 (token/clé), 403 rôle, 403 consentement, 422 finalité absente/inconnue, filtrage de liste, régression `accessed_at`, refus par défaut. **Suppression des `dependency_overrides`** : les tests empruntent le vrai chemin `Bearer` → `get_current_user` → `require_role` |
+| 7 | Environnement | `provision/.env.example` | `DATABASE_URL` déclaré (exigé par `engine/governance/database.py`) ; **mojibake d'accents** corrigé dans le fichier |
+| 8 | Mémoire — axes retenus | `chapters/02-etat-de-l-art.md`, `04-analyse.md`, `08-conclusion.md` | axe 0 (§2.10 protocole de veille + tableau de couverture des 20 axes) · axe 6 (§2.11 matrice de sélection pondérée, 3 arbitrages) · axe 14 (§4.5 contexte local, droit non vérifié signalé) · axe 15 (§4.6 jalons J1→J5) · axe 19 (§8.1 synthèse des arbitrages avec risque résiduel) |
+| 9 | Mémoire — corrections de fond | `chapters/02-etat-de-l-art.md` §2.5, `05-conception.md` §5.4/§5.5, `07-tests.md` | l'ancien §2.5 décrivait `data_scope`, validité et `revoked` **inexistants** dans le schéma, et l'audit d'une « durée » non persistée : décrit désormais le comportement réel et nomme les écarts |
+| 10 | Synchronisation | `chapters/07-tests.md`, `08-conclusion.md`, `documents/rapport_stage.md`, `documents/slides_soutenance.md`, `ai/memoire/contexte_projet.md`, `ai/dev/methode_codage.md`, `ai/dev/README.md`, `projet/code-source/README.md`, `documents/documentation/consentement_gouvernance.md` | comptes de tests **23/23 → 54/54** (12 + 21 + 8 + 13) ; doc gouvernance alignée sur le code (codes 401/403/422, colonnes, seed) |
+
+**Vérifications :** `pytest projet/code-source/tests` → **54 passed, 2 warnings in 2.48s** (12 matcher +
+21 consentement + 8 dédup + 13 API gouvernance). **Sensibilité vérifiée par mutation** : neutraliser
+`enforce_consent` dans `app.py` fait **échouer** `test_get_patient_denied_without_consent`
+(returncode 1) — le test prouve le câblage, pas l'implémentation. Scores pondérés de la matrice
+§2.11 **recalculés** (4.80 / 4.35 / 4.25 et 4.65 / 4.50). Scan des caractères CJK sur les 6 fichiers
+Python touchés : 0. Structure du mémoire recontrôlée : 8 chapitres à 1 H1, fences Mermaid équilibrées,
+**45 tableaux** (34 → 45), **20/20 références** définies et citées, aucun renvoi local cassé.
+`export_memoire_docx.py` relancé → **8 H1**, 45 tableaux, **59 586 caractères**. Aucun commit sans
+demande explicite.
+
+**Résultat :** le contrôle de consentement est **effectif** sur l'API de gouvernance (403 + motif
+journalisé) et prouvé par tests. **Limite assumée :** `schema.sql` et `seed_governance.py` n'ont pas pu
+être exécutés (`.env` absent, pas de VM) — la validation en base réelle reste à faire.

@@ -20,7 +20,7 @@ La validation suit une pyramide : unitaire (générateur et moteur), intégratio
 flowchart TD
     subgraph Unitaire
         G["Générateur : 44 tests<br/>variation, distribution, mapping"]
-        E["Moteur : 23/23<br/>matcher 12 · consent 3 · canonique 8"]
+        E["Moteur : 54/54<br/>matcher 12 · consent 21 · canonique 8 · API 13"]
     end
     subgraph Intégration
         MVP["MVP : 20 tests<br/>pipeline, loader, auth, audit, api"]
@@ -36,7 +36,7 @@ flowchart TD
 | Niveau | Périmètre | Résultat |
 |---|---|---|
 | **Générateur** (7 fichiers de tests) | variation engine, générateurs de sources, distribution, identity mapping, experiment builder | **44 tests PASS** [contexte_projet.md] |
-| **Moteur `engine/`** | `test_matcher.py` (12 cas), `test_consent.py` (3 cas), `test_deduplication.py` (8 cas canonique) | **23/23 PASS** [logs.md] |
+| **Moteur `engine/`** | `test_matcher.py` (12 cas), `test_consent.py` (21 cas), `test_deduplication.py` (8 cas canonique), `test_governance_api.py` (13 cas) | **54/54 PASS** (`pytest projet/code-source/tests`, 27/09/2026) |
 | **MVP** (`test_bigdata`) | pipeline, loader PostgreSQL, auth, audit, api | **20 tests PASS** [contexte_projet.md] |
 | **API** | `test_api.py` — 14 tests sur données réelles (`RMA_USE_MOCK=false`) | **14/14 PASS** [logs.md] |
 | **Pipeline** | `run_pipeline.sh` RAW → SILVER → GOLD | **4/4 vert** (07/09/2026) |
@@ -46,6 +46,31 @@ identique, formats de CIN normalisés), nom inversé compensé par (naissance + 
 exact, fusion au seuil 0.80 (nom + naissance), faute de frappe compensée par
 naissance, ville de naissance qui augmente le score, **non-fusion de patients
 distincts**, et **parité Pandas/Spark** (`test_spark_parity`) [deduplication.md §9].
+
+### Couverture du contrôle d'accès et du consentement
+
+Ces 13 cas d'API ne simulent que le transport PostgreSQL : ils empruntent le
+**chemin réel** `Authorization: Bearer <clé>` → résolution de l'utilisateur →
+contrôle du rôle → contrôle du consentement, et **n'overrident jamais la
+dépendance d'authentification**. Ils constituent la preuve du §2.5.
+
+| Cas vérifié | Attendu |
+|---|---|
+| Aucun `Authorization` | **401**, journalisé en `anonymous` |
+| Clé inconnue | **401** (clé invalide) |
+| Rôle `viewer` sur un endpoint `admin` | **403** |
+| `purpose` absent de `/patients` | **422** (finalité obligatoire) |
+| `purpose` hors liste fermée (`marketing`) | **422**, alphabet autorisé listé |
+| Finalité non consentie sur `/patients/{id}` | **403** + `refusal_reason` en audit |
+| Finalité consentie sur `/patients/{id}` | **200**, `refusal_reason` vide |
+| `/patients` avec consentements partiels | seuls les patients consentis sont renvoyés, exclusions comptées |
+| `/audit` | lit `accessed_at` (régression : la requête interrogeait `recorded_at`, inexistant) |
+| Absence de ligne de consentement | refus (fail closed) |
+
+> **Sensibilité des tests.** Le test de refus 403 a été vérifié par *mutation* :
+> neutraliser l'appel au contrôle de consentement fait **échouer** le test. Un
+> test qui passe quelle que soit l'implémentation ne prouverait rien — c'est la
+> raison de cette vérification explicite.
 
 ## 7.2 Évaluation ground-truth
 
@@ -107,7 +132,9 @@ Pandas = Spark [evaluation.md §3].
   `match_score=1.0`) ; **214 − 69 = 145** — la cohérence se vérifie par comptage
   sur le lac [contexte_projet.md].
 - **Gouvernance API** : `duplicate_rate` = **32.24 %** avec `mocked: false` ;
-  `patient_consent_gold` = **145** lignes pour 145 masters.
+  `patient_consent_gold` = **145** lignes pour 145 masters — la table est produite
+  par jointure, mais `purpose` / `granted` y sont à `NULL`, le consentement n'ayant
+  pas été injecté en base au moment du run (cf. §7.5).
 
 ## 7.5 Limites et dettes identifiées
 
@@ -117,25 +144,29 @@ Le prototype est évalué sans complaisance [contexte_projet.md — reste à fai
 |---|---|---|
 | **Recall 0.422 (hard)** | 420 faux négatifs sur 1 057 | variations 50% ; seuil 0.80 conservateur ; abaisser le seuil / enrichir la clé (adresse), si le métier l'accepte |
 | **`patient_events_gold` vide** | 0 ligne en intermédiaire | jointures FHIR non rattachées (Encounter/Condition sans `patient_uuid`) — enrichissement suspect |
-| **Consentement non alimenté** | `granted`/`purpose` NULL dans GOLD | PostgreSQL central non peuplé en interim ; la mécanique est démontrée, pas les données |
+| **Consentement non alimenté** | `granted`/`purpose` NULL dans GOLD | PostgreSQL central non peuplé en interim ; seed fourni mais non exécuté — la mécanique est démontrée (54/54), pas les données |
 | **Endpoints mock** | `laboratory`, `malaria` sur données de secours | sources métier absentes du run final ; flag `mocked` tracé |
 | **Tests EI-déployés / CI absent** | — | hors périmètre stage (Docker/CI écartés) |
 
 ## Conclusion
 
-La stratégie de test couvre le générateur (44), le moteur (23/23), le MVP (20),
-l'API (14/14) et le pipeline (4/4). L'évaluation ground-truth démontre **une règle
-d'or tenue** : zéro fusion à tort (Precision 1.000) sur tous les niveaux, avec une
-parité Pandas/Spark parfaite, et un rappel hard relevé à 0.422 grâce à la clé CIN.
-Le rappel sur le jeu dur indique précisément où la
-logique pourrait s'enrichir. Avec l'architecture, la réalisation et l'évaluation,
-l'ensemble répond à la problématique du chapitre 1 : centraliser, dédupliquer de
-façon explicable, gouverner par consentement — sur données synthétiques et
-architecture Big Data. La **conclusion générale** (chapitre 8) reprend ces acquis,
-expose les limites assumées et les perspectives.
+La stratégie de test couvre le générateur (44), le moteur et la gouvernance
+(54/54), le MVP (20), l'API (14/14) et le pipeline (4/4). L'évaluation
+ground-truth démontre **une règle d'or tenue** : zéro fusion à tort (Precision
+1.000) sur tous les niveaux, avec une parité Pandas/Spark parfaite, et un rappel
+hard relevé à 0.422 grâce à la clé CIN. Le rappel sur le jeu dur indique
+précisément où la logique pourrait s'enrichir. La gouvernance, elle, est vérifiée
+par le comportement observable : 401, 403 (rôle et consentement), 422, et un audit
+contenant la finalité et le motif du refus. Avec l'architecture, la réalisation et
+l'évaluation, l'ensemble répond à la problématique du chapitre 1 : centraliser,
+dédupliquer de façon explicable, gouverner par consentement — sur données
+synthétiques et architecture Big Data. La **conclusion générale** (chapitre 8)
+reprend ces acquis, expose les limites assumées et les perspectives.
 
 ### Références
 
 - `documents/documentation/evaluation.md` et `evaluation/evaluation_truth.md`.
-- `tests/test_matcher.py`, `tests/test_consent.py` (engine) ; `provision/api/test_api.py`.
+- `tests/test_matcher.py`, `tests/test_consent.py`, `tests/test_governance_api.py`
+  (engine) ; `provision/api/test_api.py`.
+- `engine/governance/consent.py`, `engine/governance/audit.py` (comportements vérifiés).
 - `documents/documentation/deduplication.md` §9 ; `ai/memoire/contexte_projet.md`.

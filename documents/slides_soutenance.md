@@ -82,7 +82,7 @@ PROBLÈME MÉTIER → MVP (Pandas+PG) → VALIDATION (ground-truth) → SPARK (p
 
 ### S10. Démo (script type)
 ```
-# 1. Tests moteur (23/23)
+# 1. Tests moteur + gouvernance (54/54)
 .venv\Scripts\python -m pytest -q
 
 # 2. Évaluation hard
@@ -116,7 +116,7 @@ consentement** — sur données synthétiques, architecture Big Data, dépôt un
 ---
 
 ## Note de préparation
-- **Vérifier avant la soutenance** : re-run `pytest` (23/23), `evaluate_engine.py --level hard`,
+- **Vérifier avant la soutenance** : re-run `pytest` (54/54), `evaluate_engine.py --level hard`,
   captures d'écran datées du run VM et de la sortie API — pour que chaque chiffre affiché repose sur
   une preuve (règle AGENTS : ne jamais annoncer un résultat sans preuve).
 - Les schémas Mermaid (`diagramme_flux_donnees.md`, chapitres) peuvent être exportés en PNG/SVG pour

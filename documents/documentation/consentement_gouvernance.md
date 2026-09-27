@@ -38,34 +38,45 @@ PostgreSQL central, et reflétée en **GOLD + API** sur le Data Lake.
 |---|---|
 | `consent_id` | Identifiant du consentement |
 | `master_patient_id` | Patient concerné (via identity map) |
-| `authorized_user_id` / rôle | Qui peut accéder |
-| `purpose` | Finalité : consultation, recherche, statistique… |
-| `data_scope` | Type de données couvertes (medical, labo, pharmacie) |
+| `purpose` | Finalité, **liste fermée** : `api_access`, `research`, `analytics` (contrainte `consent_purpose_check`) |
 | `granted` | Booléen accordé / refusé |
-| `granted_at`, `expires_at` | Durée de validité |
+| `recorded_at` | Horodatage de l'avis ; le **dernier avis** fait foi |
 
 Flux :
 
 ```text
-Demande d'accès → vérification du consentement (valide + granted + périmètre couvert)
-                → AUTORISÉ (accès)   ou   REFUSÉ (access denied, auditée)
+Demande d'accès → finalité déclarée (paramètre `purpose`, obligatoire)
+                → vérification du consentement (dernier avis pour cette finalité)
+                → AUTORISÉ (accès)   ou   REFUSÉ (403 + motif journalisé)
 ```
 
 Le projet veille à démontrer le **consentement selon la finalité** : un accès est refusé si la finalité
-n'est pas consentie, même pour un utilisateur autorisé. Implémentation de référence :
-[`engine/governance/consent.py`](../../projet/code-source/engine/governance/consent.py).
+n'est pas consentie, même pour un utilisateur autorisé. L'absence de ligne vaut **refus**
+(*fail closed*). Implémentation de référence :
+[`engine/governance/consent.py`](../../projet/code-source/engine/governance/consent.py)
+(`PURPOSES`, `validate_purpose`, `check_consent`, `enforce_consent`, `consented_master_ids`).
+
+**Écarts assumés** : ni `data_scope` (périmètre de données), ni `expires_at` (durée de validité), ni
+`authorized_user_id` — le consentement est lié au **patient et à la finalité**, pas à une personne.
+Ces colonnes figurent dans les versions antérieures de ce document ; elles ne sont pas dans le schéma
+livré et ne doivent pas être réintroduites sans conception associée.
 
 ## 4. Audit d'accès
 
 Table `access_audit` — un enregistrement par tentative d'accès :
 
 ```text
-qui (user/api key) · quoi (ressource) · quand (timestamp) · autorisé/refusé · détails
+qui (user/api key) · quoi (ressource) · quand (accessed_at) · autorisé/refusé (response_status)
+· finalité déclarée (purpose) · motif du refus (refusal_reason)
 ```
 
 Toute consultation, extraction ou export est journalisée, y compris les **refus** (traçabilité des
-violations potentielles). Les logs ne doivent **jamais** contenir de données sensibles.
-Implémentation : [`engine/governance/audit.py`](../../projet/code-source/engine/governance/audit.py).
+violations potentielles) : le refus doit être **consultable**, pas seulement déduit du code HTTP. Les
+logs ne doivent **jamais** contenir de données sensibles. Implémentation :
+[`engine/governance/audit.py`](../../projet/code-source/engine/governance/audit.py).
+
+Limites : le journal n'est **pas chiffré au repos** et la durée de traitement n'est pas persistée
+(aucune colonne dédiée).
 
 ## 5. Clés API
 
@@ -85,18 +96,23 @@ api_user                -- utilisateurs machine (clé SHA-256)
 access_audit            -- journal d'accès
 ```
 
-Idempotence : `ON CONFLICT` + `ADD COLUMN IF NOT EXISTS` (rejouable).
+Idempotence : `ON CONFLICT` + `ADD COLUMN IF NOT EXISTS` + `DROP CONSTRAINT IF EXISTS` (rejouable).
 
 ## 7. Endpoints de gouvernance
 
-| Endpoint | Rôle |
-|---|---|
-| `GET /health` | État du service |
-| `GET /metrics` | Indicateurs de gouvernance (source : doublons, qualité données) |
-| `GET /patients` | Données maîtres (jamais les payloads RAW) |
-| `GET /patients/{master_patient_id}` | Détail d'un patient |
-| `GET /audit` | Journal des accès (ADMIN) |
-| `GET /consent` / mutation | Consentements (lecture / mise à jour selon rôle) |
+API FastAPI `engine/governance/app.py` (rôles vérifiés par clé API) :
+
+| Endpoint | Rôle | Particularité |
+|---|---|---|
+| `GET /health` | État du service | pas d'auth |
+| `GET /metrics` | Indicateurs de gouvernance (source : doublons, qualité données) | admin / analyst |
+| `GET /patients` | Données maîtres (jamais les payloads RAW) | `purpose` **obligatoire** ; patients non consentis **retirés** de la réponse |
+| `GET /patients/{master_patient_id}` | Détail d'un patient | `purpose` **obligatoire** ; **403** si finalité non consentie |
+| `GET /audit` | Journal des accès (admin) | inclut `purpose` et `refusal_reason` |
+| `GET /consent` / mutation | Consentements (lecture admin/analyst, écriture admin) | `purpose` validée contre la liste fermée |
+
+Codes de sortie : **401** (token manquant / clé inconnue), **403** (rôle insuffisant ou finalité non
+consentie), **422** (`purpose` absente ou inconnue).
 
 ## 8. Gouvernance vs consentement (Démo)
 
@@ -104,8 +120,15 @@ Démo de référence à présenter :
 
 1. 3 sources, 60 lignes RAW, 36 masters, 24 fusions exactes, 60 identity links, 108 consentements ;
 2. un utilisateur sans rôle requis → **403** ;
-3. un utilisateur autorisé mais **finalité non consentie** → refus audité ;
-4. dashboard : KPIs doublons / qualité / consentements / accès.
+3. un utilisateur autorisé mais **finalité non consentie** → **403** + motif journalisé ;
+4. `GET /patients?purpose=research` → seuls les patients consentis sont listés ;
+5. `GET /audit` → la trace du refus, avec `purpose` et `refusal_reason` ;
+6. dashboard : KPIs doublons / qualité / consentements / accès.
+
+Peut être rejouée sans base grâce à la suite de tests `projet/code-source/tests/test_governance_api.py`
+(13 cas, chemin d'authentification réel, PostgreSQL simulé). Jeu de données :
+`provision/db/seed_governance.py` (consentements mixtes : `api_access` accordé partout,
+`research` à 70 %, `analytics` à 40 %).
 
 ## 9. Différence avec le projet Mavis
 
