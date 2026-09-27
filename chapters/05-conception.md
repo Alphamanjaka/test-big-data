@@ -38,6 +38,10 @@ flowchart TB
     P2 -. "même moteur porté" .-> ENG
 ```
 
+> **Figure 5 — L'architecture en trois niveaux : le MVP Pandas, la parité PySpark
+> vérifiée, puis le Data Lake Medallion RAW → SILVER → GOLD, qui porte le moteur et la
+> gouvernance.**
+
 Design retenu pour chaque brique [cahier des charges §4] :
 
 | Brique | Conception |
@@ -76,6 +80,9 @@ flowchart LR
     PG --> API
     API -. "RBAC + consentement + audit" .-> AUD[("access_audit")]
 ```
+
+> **Figure 6 — Le chemin d'une donnée, de la source à l'API : les trois zones du Data
+> Lake, le moteur de déduplication, la base centrale, et l'audit de chaque accès.**
 
 Traçabilité de bout en bout : chaque ligne SILVER conserve `_source_system`, `_source_table`,
 `source_patient_id` et `patient_uuid` (`sha2(source|source_patient_id)`) ; chaque fusion porte

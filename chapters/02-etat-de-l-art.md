@@ -251,6 +251,9 @@ flowchart RL
     ELT --> SP
 ```
 
+> **Figure 2 — De la théorie à la brique technique : les huit concepts de l'état de l'art
+> et les cinq briques réellement livrées, reliés par neuf correspondances.**
+
 ## 2.10 Méthodologie de la veille et couverture des axes
 
 **Protocole de recherche.** L'état de l'art n'est pas constitué par juxtaposition de

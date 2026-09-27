@@ -71,6 +71,15 @@ dans `Mon_Memoire` (subtree → `projet/code-source/`, `projet/mvp/`, `archives/
    `purpose-by-purpose`, `schéma-on-read`). Règle actée dans `ai/memoire/methode.md` et
    `ai/memoire/README.md`. **Aucune perte** de chiffre, identifiant, chemin ou référence vérifiée
    par comparaison avant/après. Reste : relecture humaine de la nouvelle prose.
+10. **[Mémoire — présentation]** Lot 2 **fait** (27/09) : les **8 diagrammes Mermaid sont rendus en
+    images** (`documents/figures/fig-1..8.png` + `manifest.json`, versionnés, 1,3 Mo) par
+    `scripts/dev/render_mermaid_figures.py` (mermaid-cli local via `npx`, navigateur du poste, rien
+    dans le dépôt). Le DOCX est désormais **A4** avec page de garde (auteur + 2 encadrants), sommaire
+    (champ Word), pagination `Page X / Y` et **bibliographie consolidée** (24 URL). Une figure sur
+    deux est placée sur une page paysage dédiée pour que ses libellés restent au moins à 9 pt ;
+    seule la figure 6 reste à 5.7 pt (schéma à 12 rangs de nœuds, signalé). **0 perte** de nombre,
+    identifiant, chemin ou référence ; `pytest` **54/54**. Reste : **lot 3** (élargissement des
+    chapitres 6, 7 et 3), relecture dans Word (les champs se remplissent à l'ouverture).
 
 ## Dettes techniques connues
 
@@ -194,3 +203,20 @@ dans `Mon_Memoire` (subtree → `projet/code-source/`, `projet/mvp/`, `archives/
   **Reste (lots 2 et 3, non engagés, à arbitrer)** : rendu des 8 diagrammes Mermaid en images,
   page de garde / TDM / pagination, bibliographie consolidée dans le DOCX, élargissement des
   chapitres 6 (675 mots), 7 (821) et 3 (949).
+- 27/09 : **Lot 2 — figures Mermaid rendues et DOCX A4 complet** — les 8 diagrammes des chapitres
+  sont maintenant des **images** dans le DOCX au lieu de 66 lignes de code brut, produites localement
+  par `scripts/dev/render_mermaid_figures.py` (mermaid-cli via `npx`, Chrome du poste, aucun
+  Chromium téléchargé, aucun `node_modules` dans le dépôt). Chaque figure porte une légende
+  numérotée lue depuis le Markdown. Deux défauts réels corrigés au passage : le libellé
+  `extract_raw_report.json` cassait le parseur Mermaid (points en collision avec la syntaxe
+  `-. texte .->`), et **3 figures étaient tronquées** par une fenêtre de rendu trop étroite
+  (largeurs naturelles 1812 / 1606 / 2904 px pour 1600 px disponibles) — le moteur mesure désormais
+  la taille naturelle avant de rendre. Lisibilité mesurée et outillée : 2 figures dans le texte,
+  6 sur page paysage dédiée (libellés ≥ 8.7 pt sauf la figure 6 à 5.7 pt, signalée). Le DOCX passe
+  en **A4** avec page de garde complète (auteur, encadrant professionnel, encadrant pédagogique),
+  sommaire, pagination `Page X / Y` et la bibliographie complète (24 URL, 0 avant).
+  Preuves : 8 images insérées, 0 résidu de code Mermaid, 10 H1, 51 tableaux, 13 sections,
+  **0 perte** de nombre / identifiant / chemin / référence sur 12 fichiers, structure 20/20
+  références, `pytest` **54/54**, encodage sans BOM ni caractère de contrôle, aucun secret.
+- 27/09 : **Lot 3 engagé** — élargissement en prose des chapitres les plus courts (6 : 675 mots,
+  7 : 821, 3 : 949). Chaque chiffre écrit doit être revérifié avant d'être ajouté.

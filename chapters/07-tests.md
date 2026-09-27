@@ -33,6 +33,9 @@ flowchart TD
     E --> EVAL
 ```
 
+> **Figure 8 — La stratégie de test : un socle hors ligne (générateur, moteur), puis le
+> MVP, et enfin la preuve système (API sur données réelles, évaluation ground truth).**
+
 | Niveau | Périmètre | Résultat |
 |---|---|---|
 | **Générateur** (7 fichiers de tests) | variation engine, générateurs de sources, distribution, identity mapping, experiment builder | **44 tests PASS** [contexte_projet.md] |

@@ -80,6 +80,10 @@ flowchart LR
     T -. réservé évaluation .-> E[ne JAMAIS alimenter l'algorithme]
 ```
 
+> **Figure 4 — La chaîne du générateur : 500 patients maîtres, une distribution par
+> défaut, le moteur de variation (easy / medium / hard), puis les trois sources
+> synthétiques. La table de vérité reste hors du champ de l'algorithme.**
+
 - **Patients maîtres** `master_patients.csv` : 500 identités propres (défaut des
   évaluateurs `--patients 500 --seed 42`), dont ~75 % portent un **CIN**.
 - **Distribution** : probabilités de présence 0.8 / 0.7 / 0.6 par source →

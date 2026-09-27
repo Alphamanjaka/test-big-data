@@ -698,5 +698,56 @@ la synthese de couverture de l'etat de l'art ne correspondait plus a son propre 
 DOCX (aujourd'hui 66 lignes de code brut ; Node 22 + `npx` disponibles) ; page de garde complete,
 table des matieres, pagination ; bibliographie consolidee (`references/bibliographie.md` n'est pas
 exportee : le DOCX ne contient que des formes courtes par chapitre et 0 URL) ; elargissement des
-chapitres les plus courts en prose (6 : 675 mots, 7 : 821, 3 : 949). Ces trois lots demandent un
-arbitrage explicite et modifient l'exporteur, pas seulement les documents.
+  chapitres les plus courts en prose (6 : 675 mots, 7 : 821, 3 : 949). Ces trois lots demandent un
+  arbitrage explicite et modifient l'exporteur, pas seulement les documents.
+
+---
+
+## 27/09/2026 - Memoire : figures Mermaid rendues + DOCX A4 complet (lot 2)
+
+**Contexte.** Lot 2 arbitre avec l'utilisateur : rendu **local** des diagrammes (pas de service
+tiers), page de garde complete, sommaire, pagination, bibliographie consolidee, PNG versionnes,
+et chainage direct sur le lot 3. Identite de l'auteur et des encadrants fournie pour la garde.
+
+**Realise.**
+| # | Action | Detail |
+| - | ------ | ------ |
+| 1 | `scripts/dev/render_mermaid_figures.py` (nouveau) | Extrait les 8 blocs `mermaid` des chapitres (source unique de verite), rend un PNG par diagramme via `npx @mermaid-js/mermaid-cli@11`, ecrit `manifest.json` (dimensions + config). Deux commandes, rien dans le depot (`node_modules/` absent). |
+| 2 | `scripts/dev/export_memoire_docx.py` | Blocs `mermaid` -> images ; numerotation lue dans la legende Markdown (pas de compteur, donc pas de derives possibles) ; page de garde ; champ `TOC` + `updateFields` ; pied de page `Page X / Y` ; bibliographie consolidee ; lignes de continuation indentees ; **A4** (le gabarit python-docx sortait en Letter). |
+| 3 | 7 chapitres | Une legende `> **Figure N — ...**` apres chaque diagramme (8 legendes, numerotation 1 a 8 dans l'ordre de lecture). |
+| 4 | `documents/figures/` | `fig-1..8.png` (1,3 Mo) + `manifest.json`, **versionnes** : le DOCX illustre se reconstruit sans Node ni reseau. |
+
+**Trois difficultes trouvees, toutes corrigees ou signalees.**
+1. **Figure 7 ne se rendait pas** : `Lexical error on line 6`. Le libelle d'arete
+   `extract_raw_report.json` contient des points, or le `.` est le delimiteur de la syntaxe
+   `-. texte .->`. Corrige en putsant le libelle entre guillemets, forme deja utilisee par les
+   5 autres aretes en pointilles du depot. Libelle inchange a l'affichage.
+2. **Figures 1, 4 et 6 etaient tronquees** : la fenetre de rendu (1600 px) etait plus etroite que
+   la largeur naturelle des diagrammes (**1812**, **1606**, **2904 px**) — du contenu sortait du
+   cadre. Le moteur mesure d'abord la taille naturelle dans une fenetre large, puis rend le PNG
+   dans cette fenetre. Aucune troncature restante (verifie sur les 8).
+3. **Lisibilite** : a 16 cm de large, les libelles d'un diagramme allonge tombaient a **2.9-6.3 pt**.
+   Deux leviers mesures puis appliques : (a) resserrer les libelles des diagrammes dont le rapport
+   largeur/hauteur depasse 5 ; (b) page paysage dediee si la figure resterait sous **9 pt** dans la
+   colonne. Resultat : 2 figures dans le texte (fig. 2 a 10.0 pt, fig. 8 a 13.0 pt) et 6 en paysage
+   (8.7 a 13.3 pt), **sauf la figure 6 qui reste a 5.7 pt** (12 rangs de noeuds : aucune disposition
+   tient sur une page — deux mises en page « serpentin » testees puis ecartees). Signale, non masque.
+
+**Verifications.**
+- DOCX : **8 images** (`inline_shapes`), **0 residu** de code Mermaid (`flowchart` : 0 occurrence),
+  **10 H1** (9 chapitres + Bibliographie), 79 H2, 51 tableaux, **13 sections A4** (7 portrait /
+  6 paysage), un seul `footer1.xml` (champs `PAGE` + `NUMPAGES`), `updateFields=true`, champ `TOC`
+  present, 24 URL de la bibliographie dans le texte.
+- Couverture : les 3 noms (auteur, encadrant professionnel, encadrant pedagogique) + MMT + session.
+- **Non-regression vs HEAD** : 12 fichiers compares sur nombres, identifiants, chemins, codes et
+  references `[B#]` -> **0 perte**. Les seuls ajouts sont les numeros des 8 legendes.
+- Structure : **9 chapitres** a 1 H1, **51 tableaux**, **8 diagrammes**, **20/20** references.
+- `pytest projet/code-source/tests` : **54 tests, 0 echec, 0 erreur** (XML JUnit, code de sortie 0).
+- Encodage : 10 fichiers UTF-8, **sans BOM**, 0 caractere de controle ; **aucun secret** detecte.
+- DOCX regenere = **104 386 caracteres** (contre 62 445 avant : + bibliographie + legendes,
+  - 66 lignes de code Mermaid).
+
+**Limites.** Le sommaire et la pagination sont des champs Word : ils se remplissent a la premiere
+ouverture (ou clic droit > « Mettre a jour les champs »). La figure 6 reste a 5.7 pt. La validation
+PostgreSQL / VM reste hors de ce lot (`.env` absent).
+

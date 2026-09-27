@@ -83,6 +83,9 @@ flowchart LR
     I4 --> R4
 ```
 
+> **Figure 3 — Trois systèmes isolés, cinq manques, quatre réponses : l'existant à MMT,
+> et le chemin du projet chapitre par chapitre.**
+
 ## 3.2 Les solutions logicielles du domaine
 
 Quatre familles de produits couvrent, partiellement, le besoin. Trois sigles reviennent

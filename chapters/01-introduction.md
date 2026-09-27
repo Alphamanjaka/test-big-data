@@ -95,6 +95,10 @@ flowchart LR
     B --> G[Gouvernance<br/>consentement + audit + API]
 ```
 
+> **Figure 1 — La démarche du projet : six étapes, chacune introduite par un besoin. La
+> validation des algorithmes conditionne le passage à l'échelle, la gouvernance vient
+> s'appuyer sur la zone GOLD.**
+
 | Niveau | Contenu | Légitimité |
 |---|---|---|
 | **1 — MVP** | CSV + Pandas + PostgreSQL : extraction, nettoyage, déduplication, master patient (+ dashboard de démonstration dans le PoC d'origine) | résoudre le problème métier d'abord, au plus simple |

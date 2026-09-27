@@ -46,8 +46,11 @@ flowchart LR
     R --> M[2/4 gen_fhir_mapping<br/>fhir_mapping.json]
     M --> S[3/4 create_silver<br/>4 tables FHIR + dédup moteur]
     S --> G[4/4 create_gold<br/>patient_events_gold + patient_consent_gold]
-    R -. extract_raw_report.json .-> M
+    R -. "extract_raw_report.json" .-> M
 ```
+
+> **Figure 7 — Le pipeline ELT en quatre étapes, de l'extraction RAW au chargement
+> GOLD, piloté par `data_sources.json` et contrôlé par `extract_raw_report.json`.**
 
 | Étape | Script | Sortie réelle |
 |---|---|---|
