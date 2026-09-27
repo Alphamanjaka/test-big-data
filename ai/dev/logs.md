@@ -912,5 +912,49 @@ anterieure du fichier).
 avant pour montrer 54/54, film <= 4 min), construire la slide de repli, et convertir le Markdown
 dans l'outil de presentation. Aucun changement au memoire ni au code.
 
+---
+
+## 27/09/2026 - Soutenance : script de passage oral ecrit, puis debit mesure et corrige
+
+**Contexte.** L'utilisateur accepte le script de passage oral slide par slide, en complement du deck
+(`documents/slides_soutenance.md`, commit `9eccd36`). Le deck dit **quoi** montrer ; il manquait le
+**texte a dire**, et donc la preuve que les 16:00 planifiees sont tenables a l'oral.
+
+**Livrable.** `documents/soutenance_script_oral.md` (nouveau, 378 lignes) : pour chaque slide, la
+duree, le repere `[debut] -> [fin]`, le texte « a dire » en citation, la ligne « a montrer » (y
+compris les figures de reserve), et la transition vers la slide suivante. S'y ajoutent un
+chronometrage (`[4:00]` fin de A, `[10:00]` fin de B, `[14:00]` fin de demo, `[16:00]` fin de D,
+arret a `[20:00]`), un bloc « avant de repeter » (les 3 commandes, les contraintes video, les figures
+projetees / reserve / exclue, et **trois interdictions de parole**), une regle de sacrifice en cas
+de depassement, et le tableau de debit.
+
+**Defaut reel trouve a la premiere mesure : deux slidesWere illisibles a l'oral.** S1 a
+**164 mots/min** et S9 **189 mots/min** (mesure sur le texte « a dire » seul, hors gestes) : un orateur
+neutre ne tient pas 189 mots/min, et S9 est precisement la slide d'honnetete, qui doit etre lisible.
+Ratures : S1 ramenee de 82 a 72 mots, S9 de 142 a 112, S8 de 182 a 169, S13 de 38 a 34 mots. Les
+titres de section du fichier annoncaient des **objectifs** de mots (175, 210...) qui ne
+correspondaient pas au reel : les 13 en-tetes ont ete reecrits avec les valeurs mesurees, et une
+coherence en-tete / tableau est verifiee automatiquement (seul S10 reste avec un format special,
+« narration + video »).
+
+**Debit final mesure : 1 548 mots sur 12:00 de slides de parole, 129 mots/min de moyenne, aucune
+slide au-dessus de 150.** Les trois plus rapides sont S9 (149), S6 (146) et S1 (144) — le detail y
+est porte par la figure ou le tableau projete, pas par la bouche. Avec les 12 transitions (121 mots)
+et la video de 3:30, l'expose court **15:25 sur 16:00** a 140 mots/min, donc 35 s de filet dans le
+plan et 19:25 sur 20:00 en tout. Conclusion inscrite dans le fichier : **ne pas ajouter de texte**
+avant la premiere repetition, le temps disponible se depense en ralentissant.
+
+**Trois familles d artefacts de redaction eliminees** avant mesure : un mot colle (« DataLakeMedallion », « deuxProofs of Concept »), des caracteres chinois inseres dans une phrase francaise (« Pour [caractere] cet objectif », « l architecture qui [caractere] cette... »), et des mots anglais residuels (« they re », « improvement »). Controles : 0 caractere CJK residuel, 0 mot anglais residuel dans la prose, UTF-8 **sans BOM**, 0 caractere de controle.
+
+**Coherence deck / script verifiee : 0 divergence de duree sur 13 slides** (le script reprend les
+durees du deck au mot pres), les 7 figures citees existent, MPI est nomme en S6 comme dans le deck.
+Chiffres cles presents : 214, 145, 69, 32,24, 11 614, 0,422, 9 791, 54.
+
+**Non-regression.** `pytest projet/code-source/tests` : **54 passed in 2.39s**, code de sortie 0.
+Aucun fichier du memoire, du code ou des figures modifie : ajout documentaire seul.
+
+**Reste a faire par l'utilisateur :** repeter a voix haute avec un chronometre, produire la video et
+la slide de repli, convertir le Markdown. Le memoire n'a pas ete touche.
+
 
 

@@ -103,8 +103,16 @@ dans `Mon_Memoire` (subtree → `projet/code-source/`, `projet/mvp/`, `archives/
     `projet/code-source/` manquant — elles cassaient devant le jury), 4 figures PNG désormais
     projetées (**`fig-6` exclue** : 5,7 pt illisible au vidéoprojecteur), note obsolète sur
     l'export des PNG supprimée, S8/S9 **alignés sur le ch. 7** (précision = plancher, parité =
-    décisions identiques sur les jeux testés, 14/14 = test de fumée). Reste : filmer la vidéo,
-    construire la slide de repli, convertir le Markdown dans l'outil de présentation.
+    décisions identiques sur les jeux testés, 14/14 = test de fumée).
+12b. **[Soutenance]** **Script de passage oral** écrit et **débit mesuré** (27/09) :
+    `documents/soutenance_script_oral.md` donne le texte à dire slide par slide (1 548 mots
+    mesurés, transitions et « à montrer » inclus), avec chrono, règle de sacrifice en cas de
+    dépassement, et une liste de **trois interdictions de parole**. Deux slides étaient
+    réellement illisibles à l'oral (S1 à 164 et S9 à 189 mots/min) : texte ramené à un
+    maximum de 150 mots/min, le détail restant porté par les figures et les tableaux projetés.
+    Total = **15:25 sur 16:00** à 140 mots/min, vidéo comprise.
+    Reste : répéter à voix haute avec chronomètre, filmer la vidéo, construire la slide de
+    repli, convertir le Markdown dans l'outil de présentation.
 
 ## Dettes techniques connues
 
