@@ -39,8 +39,8 @@ Imagerie      → J. RAKOTO
 - Chaque base est **intègre avec elle-même** (jointure MAVIS vérifiée 9 791 / 9 791) : le problème
   n'est pas la qualité, c'est l'absence d'équivalent **entre** les bases.
 - Conséquences : dossier éclaté, agrégats faux, accès non maîtrisés.
-- **Image à projeter : `figures/fig-3.png`** — trois systèmes isolés, cinq manques, quatre réponses.
-- *Support : `chapters/01-introduction.md` §1.2, `chapters/03-etude-existant.md` §3.1 ; preuve = enregistrements du générateur synthétique.*
+- **Image à projeter : `figures/fig-1.png`** — trois systèmes isolés, cinq manques, quatre réponses.
+- *Support : `chapters/01-presentation-stage.md` §1.2.1, `chapters/03-existant-solution.md` §3.1 ; preuve = enregistrements du générateur synthétique.*
 
 ### S3. La promesse de la plateforme (1:00)
 1. **Centraliser** dans un Data Lake (zones RAW → SILVER → GOLD).
@@ -55,8 +55,8 @@ PROBLÈME MÉTIER → MVP (Pandas+PG) → VALIDATION (ground-truth) → SPARK (p
 ```
 - Pas de « Big Data pour le Big Data » : le besoin précède l'outil.
 - Deux PoC fusionnés en un seul dépôt autonome.
-- **Image à projeter : `figures/fig-1.png`** — la démarche en six étapes.
-- *Support : `chapters/01-introduction.md` §1.4.*
+- **Image à projeter : `figures/fig-2.png`** — la démarche en six étapes.
+- *Support : `chapters/03-existant-solution.md` §3.3.*
 
 ---
 
@@ -66,8 +66,8 @@ PROBLÈME MÉTIER → MVP (Pandas+PG) → VALIDATION (ground-truth) → SPARK (p
 - Pipeline Medallion RAW → SILVER → GOLD sur HDFS/Hive/Spark.
 - Moteur de dédup `engine/` (Pandas + Spark) branché en SILVER, master patient + identity map.
 - PostgreSQL central (master, consent, audit, clés API) ; API données + gouvernance.
-- **Image à projeter : `figures/fig-5.png`** — l'architecture en trois niveaux.
-- *Support : `chapters/05-conception.md` §5.1 ; `diagramme_flux_donnees.md` ; `figures/fig-6.png` en réserve pour les questions.*
+- **Image à projeter : `figures/fig-4.png`** — l'architecture en trois niveaux.
+- *Support : `chapters/06-architecture.md` §6.1 ; `diagramme_flux_donnees.md` ; `figures/fig-5.png` en réserve pour les questions.*
 
 ### S6. Déduplication explicable (MPI) (1:30)
 - **Blocage** (blocking) : 3 index bornés (préfixe de nom, naissance, CIN).
@@ -76,8 +76,8 @@ PROBLÈME MÉTIER → MVP (Pandas+PG) → VALIDATION (ground-truth) → SPARK (p
 - **Aucune valeur n'est devinée** : un genre hors liste ou un CIN mal formé reste vide et renvoie
   l'enregistrement vers la branche probabiliste — un champ douteux ne peut pas corrompre une clé exacte.
 - Décision = `master_patient_id` + `method` + `score` + `explanation` → **jamais de fusion arbitraire**.
-- *Support : `chapters/05-conception.md` §5.3 ; `config/deduplication.yaml` ; `engine/identity/canonical.py`.*
-- *Image de réserve pour les questions : `figures/fig-2.png`.*
+- *Support : `chapters/07-conception.md` §7.2.3 ; `config/deduplication.yaml` ; `engine/identity/canonical.py`.*
+- *Image de réserve pour les questions : `figures/fig-6.png`.*
 
 ### S7. Résultats du run de référence (VM) (1:00)
 | Élément | Valeur vérifiée |
@@ -96,7 +96,7 @@ PROBLÈME MÉTIER → MVP (Pandas+PG) → VALIDATION (ground-truth) → SPARK (p
   identiques, le cas adversariaire n'est pas sollicité.
 - Clé CIN : rappel hard **0.287 → 0.422**, toujours sans faux positif. Rappeler = 0.884 (medium).
 - Parité : **décisions identiques** Pandas = Spark sur les jeux testés (TP=307, FP=0, FN=420).
-- *Support : `evaluation/evaluation_truth.md` ; `chapters/07-tests.md` §7.2-7.3.*
+- *Support : `evaluation/evaluation_truth.md` ; `chapters/08-tests.md` §8.5.*
 - *Image de réserve : `figures/fig-8.png` — la stratégie de test.*
 
 ### S9. Difficultés réelles et honnêteté (0:45)
@@ -108,7 +108,7 @@ PROBLÈME MÉTIER → MVP (Pandas+PG) → VALIDATION (ground-truth) → SPARK (p
   gouvernance.
 - Les 14/14 de l'API sont un **test de fumée** (statuts) : la joignabilité est prouvée, le contrôle
   d'accès est prouvé par 13 cas dédiés.
-- *Support : `chapters/06-realisation.md` §6.5-6.6 ; `chapters/07-tests.md` §7.1 et §7.5.*
+- *Support : `chapters/07-conception.md` §7.3.5-7.3.6 ; `chapters/08-tests.md` §8.1 et §8.6.*
 
 ---
 
@@ -158,12 +158,12 @@ consentement** — sur données synthétiques, architecture Big Data, dépôt un
 
 | Figure | Slide | Contenu | Décision |
 |---|---|---|---|
-| `figures/fig-3.png` | S2 | trois systèmes isolés, cinq manques | **projeté** — le meilleur visuel « problème » |
-| `figures/fig-1.png` | S4 | la démarche en six étapes | **projeté** |
-| `figures/fig-5.png` | S5 | l'architecture en trois niveaux | **projeté** |
+| `figures/fig-1.png` | S2 | trois systèmes isolés, cinq manques | **projeté** — le meilleur visuel « problème » |
+| `figures/fig-2.png` | S4 | la démarche en six étapes | **projeté** |
+| `figures/fig-4.png` | S5 | l'architecture en trois niveaux | **projeté** |
 | `figures/fig-7.png` | S7 | le pipeline ELT en quatre étapes | **projeté** |
-| `figures/fig-6.png` | — | le chemin d'une donnée | **exclu** : à 5,7 pt même en page paysage, illisible sur un vidéoprojecteur. Reste dans le mémoire, et ne passe qu'en pause zoomée dans la vidéo. |
-| `figures/fig-2.png`, `figures/fig-4.png`, `figures/fig-8.png` | — | état de l'art, générateur, stratégie de test | **réserves** pour les questions du jury |
+| `figures/fig-5.png` | — | le chemin d'une donnée | **exclu** : à 5,7 pt même en page paysage, illisible sur un vidéoprojecteur. Reste dans le mémoire, et ne passe qu'en pause zoomée dans la vidéo. |
+| `figures/fig-6.png`, `figures/fig-3.png`, `figures/fig-8.png` | — | état de l'art, générateur, stratégie de test | **réserves** pour les questions du jury |
 
 ## Note de préparation
 
@@ -176,6 +176,6 @@ consentement** — sur données synthétiques, architecture Big Data, dépôt un
 - [ ] **Ne pas projeter la figure 6** (5,7 pt) ; la réserver à une pause zoomée dans la vidéo.
 - [ ] Chaque chiffre affiché doit reposer sur une **preuve** (règle AGENTS : ne jamais annoncer un
       résultat sans preuve) — les supports de chaque slide donnent le fichier vérifiable.
-- [ ] Les chiffres de S7, S8 et S9 sont alignés sur `chapters/06-realisation.md` et
-      `chapters/07-tests.md` : toute modification du mémoire avant la soutenance doit être
+- [ ] Les chiffres de S7, S8 et S9 sont alignés sur `chapters/07-conception.md` et
+      `chapters/08-tests.md` : toute modification du mémoire avant la soutenance doit être
       répercutée ici.

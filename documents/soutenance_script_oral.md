@@ -25,8 +25,8 @@ bash projet/code-source/provision/scripts/run_pipeline.sh
 pas filmer le poste actuel. Prévoir une capture d'écran pour chaque commande. Tester la lecture sur
 le poste de soutenance avant le jour J.
 
-**Figures** : projetées `fig-3` (S2), `fig-1` (S4), `fig-5` (S5), `fig-7` (S7) ; en réserve `fig-2`,
-`fig-4`, `fig-8` ; **jamais projetée** `fig-6` (5,7 pt, illisible en projection).
+**Figures** : projetées `fig-1` (S2), `fig-2` (S4), `fig-4` (S5), `fig-7` (S7) ; en réserve `fig-6`,
+`fig-3`, `fig-8` ; **jamais projetée** `fig-5` (5,7 pt, illisible en projection).
 
 **Trois choses à ne pas dire** : que PostgreSQL a été validé en conditions réelles (le `.env` n'a
 pas été fourni) ; que les 14 tests API prouvent le contrôle d'accès (ils prouvent la joignabilité) ;
@@ -78,7 +78,7 @@ que le pipeline a été exécuté sur ce poste (il ne l'est pas).
 > trois systèmes isolés, les cinq manques que j'ai identifiés, et les quatre réponses que le projet
 > apporte.
 
-**À montrer** — `figures/fig-3.png` : pointer successivement les 3 systèmes, les 5 manques, les
+**À montrer** — `figures/fig-1.png` : pointer successivement les 3 systèmes, les 5 manques, les
 4 réponses.
 
 → « Ces cinq manques, ce sont exactement les trois engagements de la plateforme. »
@@ -127,7 +127,7 @@ que le pipeline a été exécuté sur ce poste (il ne l'est pas).
 >
 > J'ai aussi fusionné deux proofs of concept préexistants en un dépôt unique et autonome.
 
-**À montrer** — `figures/fig-1.png`, suivre la chaîne de gauche à droite.
+**À montrer** — `figures/fig-2.png`, suivre la chaîne de gauche à droite.
 
 → « Voyons maintenant l'architecture qui organise ces six étapes. »
 
@@ -154,7 +154,7 @@ Another garbled fragment. Must rewrite cleanly.
 > Je souligne un point : les poids et le seuil sont **déclarés en YAML, pas écrits dans le code**.
 > Modifier le comportement de la déduplication se fait par une seule édition de fichier.
 
-**À montrer** — `figures/fig-5.png` : les trois niveaux. *Réserve : `fig-6.png` pour les questions.*
+**À montrer** — `figures/fig-4.png` : les trois niveaux. *Réserve : `fig-5.png` pour les questions.*
 
 → « Le cœur du projet, c'est la déduplication. »
 
@@ -183,7 +183,7 @@ Another garbled fragment. Must rewrite cleanly.
 > Chaque décision sort avec quatre éléments : l'identifiant du patient maître, la méthode, le score
 > et l'explication. C'est ce qui permet à un gestionnaire de données de contester une fusion.
 
-**À montrer** — les 3 critères de blocage et les poids. *Réserve : `fig-2.png`.*
+**À montrer** — les 3 critères de blocage et les poids. *Réserve : `fig-6.png`.*
 
 → « Sur cette base, voici ce que le pipeline a réellement produit. »
 
@@ -318,7 +318,7 @@ commenter au moment des plans 2 et 3.
 > Le quatrième est l'échelle : conteneurisation, intégration continue, export de la VM. Aucun n'est
 > dans le périmètre de ce stage.
 
-**À montrer** — les 4 puces. *Support : `chapters/08-conclusion.md`.*
+**À montrer** — les 4 puces. *Support : `chapters/09-conclusion.md`.*
 
 → « Je vous remercie. »
 

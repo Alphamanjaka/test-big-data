@@ -384,7 +384,7 @@ def build():
             (0, "**Absence de gouvernance** : pas de consentement par finalité, pas d'audit d'accès."),
             (0, "Enjeu sécurité : les données de santé imposent **traçabilité** et **refus possible**."),
         ],
-        fig="fig-3.png", fig_x=Inches(8.1), fig_y=Inches(1.9), fig_h=Inches(4.3),
+        fig="fig-1.png", fig_x=Inches(8.1), fig_y=Inches(1.9), fig_h=Inches(4.3),
     )
 
     content(
@@ -514,7 +514,7 @@ def build():
             (0, "**API de reporting** Flask `/api/governance/*` (déduplication, consentement) ; "
                 "frontend DataViz optionnel."),
         ],
-        fig="fig-5.png", fig_x=Inches(8.0), fig_y=Inches(1.9), fig_h=Inches(4.3),
+        fig="fig-4.png", fig_x=Inches(8.0), fig_y=Inches(1.9), fig_h=Inches(4.3),
     )
 
     content(
