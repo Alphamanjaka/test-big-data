@@ -1,12 +1,5 @@
 # Annexes
 
-> Ces annexes ne reproduisent pas le code : elles disent **où il se trouve** et **ce qu'il
-> prouve**. Tous les chemins sont relatifs à `projet/code-source/`, sauf mention contraire.
-> Le code est dans le dépôt Git, avec son historique ; le recopier ici le ferait figer dans
-> une version, alors que c'est justement l'historique qui constitue la preuve de la démarche.
-> Chaque annexe renvoie au chapitre qui explique la chose, pour que le lecteur puisse choisir
-> entre lire la théorie et lire le code.
-
 ## Annexe A — Le pipeline ELT : exécution, étapes et journaux
 
 Le pipeline est piloté par un seul script, `provision/scripts/run_pipeline.sh`, qui enchaîne
@@ -24,8 +17,6 @@ exécution, le nombre de lignes lues, écrites et écartées, et la durée de ch
 lui qui permet de comparer deux exécutions sans les rejouer. Il n'est pas versionné, puisqu'il
 est produit à chaque passage.
 
-*À lire avec* : le § 7.3.2, qui décrit la réalisation, et le § 7.2.2 pour l'idempotence.
-
 ## Annexe B — La structure de la base centrale
 
 Le schéma complet de la base PostgreSQL de gouvernance est dans `sql/schema.sql`, écrit pour
@@ -42,8 +33,6 @@ Deux choix de ce schéma sont discutés ailleurs et ne sont pas repris ici : le 
 matérialisé par l'absence de ligne dans `consent`, et le fait que `patient_identity_map` porte
 le score et la méthode, sans quoi une fusion serait inexplicable.
 
-*À lire avec* : le § 7.2.2, qui conçoit le modèle, et le § 7.2.3 pour la gouvernance.
-
 ## Annexe C — Le moteur de rapprochement
 
 Le moteur tient dans trois fichiers de `engine/identity/`. `canonical.py` définit le modèle
@@ -54,14 +43,10 @@ puis rapprochement probabiliste pondéré par champ, au-dessus du seuil de 0,80.
 `spark_dedup.py` est le même algorithme réécrit pour Spark, dont la parité stricte avec la
 version Pandas est l'un des résultats vérifiés du projet.
 
-C'est la duplication volontaire de cet algorithme qui est le point d'attention du jury :
-elle n'est pas un défaut de conception mais le prix d'un choix fait tard, celui de devoir
+Cette duplication volontaire de l'algorithme n'est pas un défaut de conception mais le prix d'un choix fait tard, celui de devoir
 comparer deux implémentations plutôt que de décider plus tôt de l'échelle. Cette décision et
 son coût sont discutés au § 7.2.3 et retenus comme leçon de conduite de projet au § 4.3 et
 dans la conclusion générale.
-
-*À lire avec* : le § 7.2.3 pour l'algorithme et ses paramètres, le chapitre 8 pour la
-parité et les mesures de qualité.
 
 ## Annexe D — L'API de gouvernance
 
@@ -72,12 +57,9 @@ accès, avec le refus par défaut. `audit.py` journalise chaque appel, y compris
 `app.py` expose l'API : la liste des patients, le détail d'un patient et la consultation de
 l'audit.
 
-Le point à retenir n'est pas la forme de l'API, mais le fait qu'un refus renvoie un **403** et
+Un refus renvoie un **403** et
 non une réponse muette ou une liste réduite, et que ce refus est journalisé comme un accès
 accordé. C'est cette propriété qui rend la gouvernance vérifiable par un tiers.
-
-*À lire avec* : le § 2.1.6 pour le cadre de référence, le § 7.2.3 pour la conception, le
-§ 7.3.5 pour la réalisation, le § 5.3.2 pour la liste des points d'entrée.
 
 ## Annexe E — L'API des indicateurs du warehouse et les vues de gouvernance
 
@@ -93,8 +75,6 @@ Cette partie du projet est **optionnelle** dans le cahier des charges. Elle est 
 comme une démonstration de ce que la zone SILVER/GOLD sait exposer, et non comme un résultat de
 production.
 
-*À lire avec* : le § 5.3 et le § 5.1.4, cas d'utilisation CU6.
-
 ## Annexe F — La génération des données synthétiques et la vérité terrain
 
 Le générateur se trouve dans `evaluation/synthetic-patient-generator/`. Il produit les
@@ -106,17 +86,13 @@ chiffres, pas une qualité.
 
 Aucune donnée réelle de patient n'est utilisée dans ce projet, y compris lorsqu'elle serait
 plus simple à obtenir. C'est une contrainte du commanditaire, mais c'est aussi ce qui rend
-le travail reproductible et partageable : le jeu complet se régénère chez le lecteur en une
+le travail reproductible et partageable : le jeu complet se régénère en une
 commande.
-
-*À lire avec* : le § 5.1.5, qui explique le générateur et la vérité terrain, et le § 8.5
-pour les mesures de qualité calculées sur cette référence.
 
 ## Annexe G — Questions anticipées du jury
 
 Cette annexe recense les objections les plus probables du jury, avec la réponse **vérifiée** et
-l'endroit du mémoire où elle s'appuie. Elle ne remplace pas le développement : elle indique où le
-chercher.
+l'endroit du mémoire où elle s'appuie.
 
 **1. « Votre précision vaut 1,000 : le moteur ne fusionne-t-il jamais deux patients différents ? »**
 Non sur les trois jeux évalués, et ce n'est pas une garantie. Le générateur dégrade des

@@ -33,7 +33,8 @@ La structure détaillée (fichier → sections) est dans `ai/memoire/README.md`.
 - **Chaque terme technique est expliqué en français courant à sa première apparition en prose** :
   on garde le mot du métier, on ajoute l'explication à côté (« le *metastore*, c'est-à-dire le
   catalogue qui décrit les tables »). Un terme employé sans définition est un défaut de rédaction.
-- Les définitions détaillées sont dans les chapitres, leur liste dans `chapters/glossaire.md`.
+- Les définitions détaillées sont dans les chapitres ; `chapters/glossaire.md` ne reprend que les
+  termes clés (une table terme / définition).
 - Tableaux pour synthétiser (concepts, scripts, résultats).
 - Un schéma **par chapitre technique** (Mermaid) représentant l'architecture à chaque niveau.
 - Réutiliser les cartes de vocabulaire (Medallion, MPI, blocking, purpose-by-purpose, golden record).
@@ -46,9 +47,9 @@ La structure détaillée (fichier → sections) est dans `ai/memoire/README.md`.
 
 ## Alphabet de checklist par chapitre
 
-- [ ] Objectif posé en ouverture
+- [ ] Ouverture directe sur le contenu (pas de bloc « Objectif » ni de consigne)
 - [ ] Au moins un fait vérifiable (chiffre/fichier) par affirmation majeure
-- [ ] Vocabulaire du thème défini (glossaire à jour si un terme est ajouté)
+- [ ] Vocabulaire du thème défini à sa première apparition (glossaire à jour si un terme clé est ajouté)
 - [ ] Lien vers le document conceptuel correspondant
 - [ ] Conclusion + transition vers le chapitre suivant
 

@@ -1504,4 +1504,112 @@ cité comme preuve par le mémoire (captures de schémas §3.1.2, dates du Gantt
 **Vérifications.** Aucun code n'importait depuis `archives/` ; plus aucun renvoi vivant vers `archives/`
 hors traces historiques ; DOCX **non régénéré** (fichier ouvert dans Word).
 
-**Reste :** régénérer le DOCX après fermeture de Word ; commit en attente de validation.
+**Reste :** logos de la page de garde (ajout manuel) ; commit en attente de validation.
+
+## 28/09/2026 — Mémoire : section « Les objets du dépôt » remplacée par un schéma entité-relation
+
+**Contexte :** demande utilisateur de retirer ou d'améliorer la section « Les objets du dépôt » du
+glossaire (inventaire de tables et de scripts, sans intérêt pour le jury), ou de la remplacer par des
+schémas.
+
+| # | Action | Détail |
+| - | ------ | ------ |
+| 1 | Glossaire | section « Les objets du dépôt » supprimée ; remplacée par un renvoi vers §7.2.1 (structure du code), §7.2.2 (Figure 7) et §7.2.3 (Figure 8) |
+| 2 | Nouvelle Figure 7 (§7.2.2) | diagramme entité-relation Mermaid des 9 tables de `sql/schema.sql` : `master_patient` au centre, clés étrangères en trait plein, lien logique `raw_patient_record` ↔ `patient_identity_map` en pointillé, `api_user` → `access_audit` ; disposition `direction LR` (1re version horizontale 2931 px illisible, refaite) |
+| 3 | Renumérotation | pipeline ELT 7 → 8, stratégie de test 8 → 9 ; `slides_soutenance.md` et `soutenance_script_oral.md` alignés (fig-7 → fig-8, fig-8 → fig-9) ; le générateur du deck (fig-1, fig-4) n'est pas concerné |
+
+**Vérifications.** Rendu 9/9 figures OK (Figure 7 : 1518 x 1007 px, page paysage à l'export) ;
+figures 1 → 9 et tableaux 1 → 48 sans trou ; DOCX régénéré (9 figures, 48 tableaux listés).
+Attention : la régénération réécrit la page de garde (logos placés à la main perdus s'ils l'étaient).
+
+**Reste :** commit en attente de validation.
+
+## 28/09/2026 — Mémoire : glossaire court (section « Le vocabulaire du projet » retirée)
+
+**Contexte :** demande utilisateur de retirer la section « Le vocabulaire du projet » ; choix : un
+glossaire court, « le mémoire ne doit pas être un guide de lecture ».
+
+| # | Action | Détail |
+| - | ------ | ------ |
+| 1 | `chapters/glossaire.md` réécrit | une seule table terme / définition de 17 termes clés (Big Data, Data Lake, Medallion, ELT, HDFS, Hive, Spark, FHIR, déduplication, blocking, score et seuil, master patient, identity map, vérité terrain, P/R/F1, consentement par finalité, RBAC et audit) ; supprimés : mode d'emploi, colonnes Domaine et renvois, table des ~60 entrées, renvoi vers les objets du dépôt |
+| 2 | Renvois | introduction (phrase courte), §1.2.2 (plus de renvoi au glossaire) ; consignes `ai/memoire/README.md` et `methode.md` (glossaire = termes clés ; pas de guide de lecture) |
+
+**Vérifications.** Export DOCX de contrôle (copie scratchpad) : glossaire réduit à la table, aucun
+« Comment lire » ni « Où c'est détaillé ». `documents/memoire_M2_MBDS.docx` **non régénéré**
+volontairement (logos de page de garde placés à la main par l'utilisateur).
+
+**Reste :** régénérer le DOCX quand l'utilisateur le décide ; commit en attente de validation.
+
+## 28/09/2026 — Mémoire : phrases de consigne retirées des chapitres
+
+**Contexte :** remarque utilisateur : chaque section du mémoire contenait une ou plusieurs phrases
+d'instruction (consignes de rédaction restées dans le texte).
+
+| # | Action | Détail |
+| - | ------ | ------ |
+| 1 | Blocs « Objectif » | retirés des 10 fichiers de corps (`## Objectif` + consigne « Présenter… / Décrire… » + séparateur `---`) ; au ch. 2, l'encadré « Portée de l'étude » (contenu) est conservé |
+| 2 | Consignes internes | citations `[AGENTS.md]` retirées (§1.2.2, encadré ch. 2, §7.2.1) ; méta-phrases reformulées : « Cette section présente… » (§2.1), « ce qui doit être dit » et « doivent rester explicites » (§4.2) |
+| 3 | Conservé | transitions de prose (« le tableau ci-dessous… »), encadrés de limites, conclusions de chapitre |
+| 4 | Consignes | `ai/memoire/README.md` et `methode.md` : plus de bloc « Objectif » ni de consigne dans le texte |
+
+**Vérifications.** Aucun `## Objectif` ni `AGENTS.md` restant dans `chapters/0*.md` ; export DOCX de
+contrôle (scratchpad) : 0 paragraphe « Objectif », 0 mention d'AGENTS.md, 9 figures et 48 tableaux
+listés. `documents/memoire_M2_MBDS.docx` non régénéré (logos de page de garde placés à la main).
+
+**Reste :** régénérer le DOCX quand l'utilisateur le décide ; commit en attente de validation.
+
+## 28/09/2026 — Mémoire : phrases adressées au lecteur retirées (sommaire, annexes)
+
+**Contexte :** l'utilisateur refuse les phrases d'aide à la lecture dans le mémoire (exemple : « Si le
+sommaire reste vide : clic droit dessus puis « Mettre à jour les champs » »).
+
+| # | Action | Détail |
+| - | ------ | ------ |
+| 1 | Exporteur | `add_toc()` : note d'aide sous le sommaire supprimée (le champ TOC et `updateFields` restent) |
+| 2 | `references/annexes.md` | introduction « comment lire les annexes » supprimée ; 6 lignes « *À lire avec* » supprimées ; annexe G : « elle ne remplace pas le développement : elle indique où le chercher » supprimé ; reformulations : « point d'attention du jury » (C), « le point à retenir » (D), « chez le lecteur » (F) |
+| 3 | Chapitres 2 et 3 | renvois « Voir `references/bibliographie.md` » supprimés |
+
+**Vérifications.** Export DOCX de contrôle (scratchpad) : aucune occurrence de « clic droit »,
+« Mettre à jour les champs », « À lire avec », « le lecteur », « references/bibliographie ».
+`documents/memoire_M2_MBDS.docx` non régénéré (logos placés à la main).
+
+**Constat hors demande (non traité) :** l'exporteur crée un paragraphe par ligne Markdown (lignes
+coupées), laisse les liens `[texte](chemin)` et l'italique `*…*` en brut, et ne rend pas un gras qui
+court sur deux lignes.
+
+**Reste :** régénérer le DOCX quand l'utilisateur le décide ; commit en attente de validation.
+
+## 28/09/2026 — Mémoire : exporteur DOCX corrigé (paragraphes, liens, italique) + glossaire en liste
+
+**Contexte :** demande utilisateur « corrige tout » (défauts de rendu relevés dans le DOCX) et glossaire
+réduit à une simple liste terme / signification, sans définition du glossaire ni mode d'emploi.
+
+| # | Action | Détail |
+| - | ------ | ------ |
+| 1 | `merge_lines()` (nouveau) | recolle les lignes coupées du Markdown en paragraphes logiques (texte, suites d'éléments de liste, citations) ; blocs de code, tableaux, titres, séparateurs intacts. Effet : ~1 180 → 801 paragraphes, plus de phrases coupées en fin de ligne ; le gras sur deux lignes est désormais rendu |
+| 2 | `add_runs()` réécrit | gras, *italique*, `code` et liens `[texte](chemin)` (seul le texte est gardé), imbrication gras/italique/code |
+| 3 | Paragraphes de texte | justifiés, comme dans les rapports de référence |
+| 4 | `chapters/glossaire.md` | table → liste `**terme** : signification` (17 termes) ; 3 doubles « : » reformulés |
+| 5 | Tableau 46 (conclusion) | `sha2(source|source_patient_id)` coupait la cellule sur le `|` → reformulé |
+
+**Vérifications.** Export de contrôle (scratchpad) : 0 occurrence de `**`, `` ` ``, `](` ou d'italique
+brut dans les paragraphes et les cellules ; 9 figures et 48 tableaux listés ; `py_compile` OK.
+`documents/memoire_M2_MBDS.docx` régénéré ensuite (28/09/2026 14:56) après fermeture de Word : 0 markup brut.
+
+**Reste :** logos de la page de garde (ajout manuel) ; commit en attente de validation.
+
+## 28/09/2026 — Mémoire : liste des acronymes fusionnée dans le glossaire
+
+**Contexte :** l'utilisateur veut retirer ou remplacer la liste des acronymes (recouvrement avec le
+glossaire : HDFS, FHIR, ELT, MPI, RBAC). Choix : fusionner dans une seule section « Glossaire ».
+
+| # | Action | Détail |
+| - | ------ | ------ |
+| 1 | `chapters/glossaire.md` | liste alphabétique unique de 42 entrées : 17 termes + 30 sigles (5 doublons fusionnés), forme « **sigle (développé)** : signification » ; RBAC développé ; MBDS = Mobiquité (aligné sur la page de garde) |
+| 2 | Exporteur | page « Acronymes » supprimée (`ACRONYMES`, `add_acronymes()`, appel et compteur retirés) ; le glossaire suit les listes des tableaux et figures |
+| 3 | Consignes | `ai/memoire/README.md` : glossaire = termes et sigles, plus de liste d'acronymes séparée |
+
+**Vérifications.** Export de contrôle (scratchpad) : pas de page « Acronymes », glossaire de 42 entrées,
+0 markup brut ; `py_compile` OK. `documents/memoire_M2_MBDS.docx` **non régénéré** : ouvert dans Word.
+
+**Reste :** régénérer le DOCX (avant l'ajout manuel des logos) ; commit en attente de validation.

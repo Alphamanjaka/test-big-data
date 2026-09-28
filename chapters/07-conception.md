@@ -1,14 +1,5 @@
 # Chapitre 7 — Conception du logiciel
 
-## Objectif
-
-Présenter le logiciel vu par le développeur : la plate-forme technique et les choix qui l'ont
-fixée, la structure du code, le modèle de données, les composants (déduplication, gouvernance,
-parité Spark), le déploiement, puis la réalisation effective de chaque étape et les difficultés
-rencontrées.
-
----
-
 ## 7.1 Plate-forme technique
 
 Chaque concept de l'état de l'art (chapitre 2) est porté par une brique technique précise.
@@ -98,7 +89,7 @@ pour l'interface optionnelle (Tableau 17, § 4.1.4).
 ### 7.2.1 Vue statique : structure du projet
 
 Le code consolidé vit dans `projet/code-source/`. Son découpage suit la séparation exigée par le
-projet entre ingestion, normalisation, déduplication, gouvernance et exposition [AGENTS.md] :
+projet entre ingestion, normalisation, déduplication, gouvernance et exposition :
 
 ```text
 projet/code-source/
@@ -157,7 +148,74 @@ La normalisation rend comparable ce que la saisie rendait divergent : les trois
 formes du cas « Jean Rakoto » produisent des valeurs canoniques identiques.
 
 **La base centrale PostgreSQL.** Le schéma central (`sql/schema.sql`) couvre la traçabilité des
-données brutes, des identités et de la gouvernance [consentement_gouvernance.md §6] :
+données brutes, des identités et de la gouvernance [consentement_gouvernance.md §6]. Tout
+converge vers `master_patient` : chaque fiche d'origine, chaque consentement et chaque
+événement métier s'y rattache par clé étrangère.
+
+```mermaid
+erDiagram
+    direction LR
+    RAW_PATIENT_RECORD ||..|| PATIENT_IDENTITY_MAP : "meme source"
+    PATIENT_IDENTITY_MAP }|--|| MASTER_PATIENT : "regroupe"
+    MASTER_PATIENT ||--o{ CONSENT : "par finalite"
+    MASTER_PATIENT ||--o{ MEDICINE_PURCHASE : "achats"
+    MASTER_PATIENT ||--o{ PATIENT_CONSULTATION : "consultations"
+    MASTER_PATIENT ||--o{ IMAGING_EXAM : "examens"
+    API_USER ||--o{ ACCESS_AUDIT : "journalise"
+    RAW_PATIENT_RECORD {
+        text source_system
+        text source_patient_id
+        jsonb payload
+    }
+    PATIENT_IDENTITY_MAP {
+        text master_patient_id FK
+        text source_patient_id
+        text match_method
+        numeric match_score
+        text explanation
+    }
+    MASTER_PATIENT {
+        text master_patient_id PK
+        text full_name
+        date birth_date
+        text cin
+        text gender
+    }
+    CONSENT {
+        text master_patient_id FK
+        text purpose
+        boolean granted
+    }
+    MEDICINE_PURCHASE {
+        text master_patient_id FK
+        jsonb payload
+    }
+    PATIENT_CONSULTATION {
+        text master_patient_id FK
+        jsonb payload
+    }
+    IMAGING_EXAM {
+        text master_patient_id FK
+        jsonb payload
+    }
+    API_USER {
+        int user_id PK
+        text api_key_hash
+        text role
+    }
+    ACCESS_AUDIT {
+        int user_id FK
+        text endpoint
+        text purpose
+        text refusal_reason
+    }
+```
+
+> **Figure 7 — Le modèle de la base centrale : neuf tables organisées autour du patient
+> maître. Trait plein : clé étrangère ; pointillé : lien par source et identifiant d'origine.**
+
+Le tableau ci-dessous précise le rôle de chaque table et les contraintes qui rendent l'écriture
+idempotente :
 
 **Tableau 36 — Les tables du modèle central PostgreSQL, leur rôle et les clés qui rendent l'écriture idempotente.**
 
@@ -336,7 +394,7 @@ flowchart LR
     R -. "extract_raw_report.json" .-> M
 ```
 
-> **Figure 7 — Le pipeline ELT en cinq étapes, de la préparation des sources au
+> **Figure 8 — Le pipeline ELT en cinq étapes, de la préparation des sources au
 > chargement GOLD, piloté par `data_sources.json` et contrôlé par `extract_raw_report.json`.**
 > L'étape 1/5 est préparatoire : si les fichiers de démonstration existent déjà,
 > elle ne ré-écrit rien (idempotence).

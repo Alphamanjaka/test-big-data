@@ -32,15 +32,16 @@ Le mémoire suit le **plan imposé par le master MBDS** (modèle des rapports de
 | `07-conception.md`          | 7.1 Plate-forme technique ; 7.2 Code (structure, données, composants, déploiement) ; 7.3 Réalisation des étapes et difficultés |
 | `08-tests.md`               | 8.1 Stratégie ; 8.2 Unitaires ; 8.3 Intégration ; 8.4 Fonctionnels ; 8.5 Évaluation ground-truth ; 8.6 Limites |
 | `09-conclusion.md`          | Conclusion générale : bilan, difficultés, limites, apports personnels, perspectives                   |
-| `glossaire.md`              | Pièce liminaire (insérée après les acronymes) : chaque terme en français courant + où il est détaillé  |
+| `glossaire.md`              | Pièce liminaire (insérée après les listes) : liste alphabétique unique des termes clés **et des sigles** (sigle + développé : signification) ; il n'y a plus de liste d'acronymes séparée |
 
 Les annexes (A à G, dont G = questions anticipées du jury) sont dans `references/annexes.md`.
 L'exporteur `projet/code-source/scripts/dev/export_memoire_docx.py` assemble le corps à partir de
 `chapters/0*.md` : un nouveau fichier de corps doit respecter ce motif, une pièce liminaire ne
 doit pas le respecter.
 
-Chaque chapitre commence par un bloc « Objectif ». Le statut de rédaction ne figure pas dans les
-chapitres (il s'imprimerait dans le DOCX) : il est tenu dans `ai/dev/logs.md`.
+Les chapitres n'ont ni bloc « Objectif » ni statut de rédaction : ils commencent directement
+par leur contenu (le suivi est tenu dans `ai/dev/logs.md`). Aucune phrase de consigne interne
+(« présenter… », renvoi à `AGENTS.md`) ne doit figurer dans le texte.
 
 ## Sources de référence (à citer / aligner)
 
@@ -56,8 +57,9 @@ chapitres (il s'imprimerait dans le DOCX) : il est tenu dans `ai/dev/logs.md`.
 1. Le mémoire raconte une **démarche progressive** : problème métier → MVP → validation → Big Data.
 2. Chaque affirmation doit s'appuyer sur un **fait vérifiable** du dépôt (fichier, run, résultat de test).
 3. Utiliser le vocabulaire des concepts (Medallion, MPI, blocking, purpose-by-purpose…) **et le
-   définir en français courant à sa première apparition en prose** ; le glossaire (chapitre 9) en
-   tient la liste. Un terme seul, non défini, est un défaut de rédaction.
+   définir en français courant à sa première apparition en prose** ; le glossaire liminaire ne
+   reprend que les termes clés. Un terme seul, non défini, est un défaut de rédaction. Le mémoire
+   n'est pas un guide de lecture : pas de mode d'emploi ni d'inventaire de fichiers.
 4. Illustrer avec les **chiffres réels** disponibles dans `contexte_projet.md`.
 5. Ne pas prétendre avoir réalisé ce qui est « à rendre » (export VM, soutenance, Docker) — l'honnêteté
    du PoC est une valeur affichée du projet.

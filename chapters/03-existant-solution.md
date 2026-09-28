@@ -1,13 +1,5 @@
 # Chapitre 3 — Étude de l'existant et solution envisagée
 
-## Objectif
-
-Décrire les systèmes d'information en place à MMT, d'abord tels que l'utilisateur les voit,
-puis tels que le développeur les trouve ; en faire la critique ; présenter la solution
-envisagée et fixer les objectifs principaux et les livrables du stage.
-
----
-
 ## 3.1 Description de l'existant
 
 ### 3.1.1 Vision utilisateur (description externe)
@@ -301,7 +293,7 @@ méthode, rôles, contraintes, planning et budget.
 
 ### Références citées
 
-- [B19] GNU Health. [B20] Odoo, applications hospitalières — voir `references/bibliographie.md`.
+- [B19] GNU Health. [B20] Odoo, applications hospitalières.
 - `documents/journal_poc_datalake_mavis.md` (captures de schéma, incidents) ;
   `documents/documentation/bases_de_donnees.md` (recension des couches) ;
   `documents/documentation/architecture.md` (services, ports) ;

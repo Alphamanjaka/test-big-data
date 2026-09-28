@@ -86,7 +86,7 @@ PROBLÈME MÉTIER → MVP (Pandas+PG) → VALIDATION (ground-truth) → SPARK (p
 | SILVER `patient_fhir` | 214 lignes (76+76+62) |
 | Masters / doublons | 145 / 69 (exact) · duplicate_rate 32.24 % |
 | API données | 3/3 PASS |
-- **Image à projeter : `figures/fig-7.png`** — le pipeline ELT en quatre étapes.
+- **Image à projeter : `figures/fig-8.png`** — le pipeline ELT en quatre étapes.
 - *Support : `ai/memoire/contexte_projet.md` ; logs `elt.log` ; `test_api.py`.*
 
 ### S8. Évaluation ground-truth (1:15)
@@ -97,7 +97,7 @@ PROBLÈME MÉTIER → MVP (Pandas+PG) → VALIDATION (ground-truth) → SPARK (p
 - Clé CIN : rappel hard **0.287 → 0.422**, toujours sans faux positif. Rappeler = 0.884 (medium).
 - Parité : **décisions identiques** Pandas = Spark sur les jeux testés (TP=307, FP=0, FN=420).
 - *Support : `evaluation/evaluation_truth.md` ; `chapters/08-tests.md` §8.5.*
-- *Image de réserve : `figures/fig-8.png` — la stratégie de test.*
+- *Image de réserve : `figures/fig-9.png` — la stratégie de test.*
 
 ### S9. Difficultés réelles et honnêteté (0:45)
 - Incident : SILVER 11 614 lignes (mapping FHIR capturant `patient_uuid`) → corrigé et documenté
@@ -161,9 +161,9 @@ consentement** — sur données synthétiques, architecture Big Data, dépôt un
 | `figures/fig-1.png` | S2 | trois systèmes isolés, cinq manques | **projeté** — le meilleur visuel « problème » |
 | `figures/fig-2.png` | S4 | la démarche en six étapes | **projeté** |
 | `figures/fig-4.png` | S5 | l'architecture en trois niveaux | **projeté** |
-| `figures/fig-7.png` | S7 | le pipeline ELT en quatre étapes | **projeté** |
+| `figures/fig-8.png` | S7 | le pipeline ELT en quatre étapes | **projeté** |
 | `figures/fig-5.png` | — | le chemin d'une donnée | **exclu** : à 5,7 pt même en page paysage, illisible sur un vidéoprojecteur. Reste dans le mémoire, et ne passe qu'en pause zoomée dans la vidéo. |
-| `figures/fig-6.png`, `figures/fig-3.png`, `figures/fig-8.png` | — | état de l'art, générateur, stratégie de test | **réserves** pour les questions du jury |
+| `figures/fig-6.png`, `figures/fig-3.png`, `figures/fig-9.png` | — | état de l'art, générateur, stratégie de test | **réserves** pour les questions du jury |
 
 ## Note de préparation
 

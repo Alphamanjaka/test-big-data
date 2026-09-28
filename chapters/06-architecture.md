@@ -1,13 +1,5 @@
 # Chapitre 6 — Architecture du système
 
-## Objectif
-
-Présenter l'architecture qui porte les exigences du chapitre 5 : l'**architecture logicielle**
-(les niveaux, les briques et le chemin d'une donnée) puis l'**architecture technique** (les
-composants déployés sur la VM, leurs ports et leur ordre de démarrage).
-
----
-
 ## 6.1 Architecture logicielle
 
 ### 6.1.1 Une architecture en trois niveaux

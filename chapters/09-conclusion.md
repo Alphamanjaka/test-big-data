@@ -1,14 +1,5 @@
 # Conclusion générale
 
-## Objectif
-
-Conclure le mémoire : rappeler ce qui a été **conçu et réalisé**, vérifier la **réponse à la
-problématique** posée en introduction, revenir sur les **difficultés** rencontrées, exposer sans
-complaisance les **limites** du prototype, dire ce que le stage m'a **apporté** et formuler les
-**perspectives**. Cette conclusion est autonome : elle peut être lue seule.
-
----
-
 ## Bilan : réponse à la problématique
 
 La problématique posée en introduction était la suivante :
@@ -24,7 +15,7 @@ La problématique posée en introduction était la suivante :
 | **Intégrer** des sources hétérogènes | couche d'extraction abstraite (CSV, PostgreSQL, SQLite) → zone **RAW** en parquet HDFS, tables Hive externes, typage `STRING` assumé | 3 sources actives + 3 sources avancées (MAVIS 11 tables, MMT_DB 9 tables, CLINIQUE 4 tables) capturées [§ 3.1.2] |
 | **Nettoyer / normaliser** | modèle canonique `CanonicalPatient` + schéma pivot **FHIR** (4 entités) + normalisation de genre, dates, CIN | `datalake_silver.patient_fhir` : **214 lignes** cohérentes (76 + 76 + 62) [run 07/09/2026] |
 | **Dédupliquer** de façon explicable | blocking (3 buckets) + passe **exact** + passe **probabiliste** (RapidFuzz, poids 0.5 / 0.3 / 0.1 / 0.1, seuil 0.80) ; chaque décision porte méthode, score et explication | **145 masters**, **69 doublons** liés, `duplicate_rate` 32.24 % avec `mocked: false` |
-| **Centraliser en conservant la traçabilité** | Medallion **RAW → SILVER → GOLD**, `patient_uuid = sha2(source|source_patient_id)`, colonnes `_source_system` / `_source_table`, `patient_identity_map` ; orchestration reprise (`pipeline_state.json`) et incrémentale (watermark) | 4/4 au run de référence (07/09), 5 étapes d'orchestration ; **214 − 69 = 145** vérifié par comptage sur le lac |
+| **Centraliser en conservant la traçabilité** | Medallion **RAW → SILVER → GOLD**, `patient_uuid` (empreinte SHA-2 de la source et de l'identifiant d'origine), colonnes `_source_system` / `_source_table`, `patient_identity_map` ; orchestration reprise (`pipeline_state.json`) et incrémentale (watermark) | 4/4 au run de référence (07/09), 5 étapes d'orchestration ; **214 − 69 = 145** vérifié par comptage sur le lac |
 | **Gouverner par consentement** | **RBAC** (admin / analyst / viewer), clés API **SHA-256**, consentement *purpose-by-purpose* lié au `master_patient_id`, **finalité déclarée obligatoire**, refus **403** journalisé avec son motif | `access_audit` : `purpose` + `refusal_reason` ; suite de tests **102/102** (57 moteur, 45 planification et reprise), dont 401, 403 rôle, 403 consentement et 422 finalité inconnue |
 | **Ne jamais fusionner sans logique explicable** | règle **structurelle** : aucun `master_patient_id` sans `match_method` (`new_master` / `exact` / `probabilistic`) | précision **1.000** et **zéro faux positif** sur easy, medium **et** hard |
 

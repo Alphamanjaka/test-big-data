@@ -1,13 +1,5 @@
 # Chapitre 4 — Démarche projet
 
-## Objectif
-
-Décrire comment le projet a été conduit : les principes retenus (activités d'ingénierie,
-méthode de gestion de projet, rôles, outils, gestion de configuration), les contraintes et les
-risques, la démarche effectivement mise en œuvre avec son planning, et le budget.
-
----
-
 ## 4.1 Principes
 
 ### 4.1.1 Activités d'ingénierie logicielle
@@ -150,8 +142,8 @@ Environnement de référence : VM `ubuntu/focal64` (Vagrant) — Hadoop 3.3.6, H
 
 **Contexte local et conditions d'applicabilité.** Un prototype reproductible sur sa VM ne
 devient un outil utilisable que si les contraintes du terrain ont été regardées. Quatre plans
-de la réalité malgache conditionnent l'applicabilité du projet — et l'un d'entre eux n'a
-**pas** pu être résolu dans le périmètre du stage, ce qui doit être dit.
+de la réalité malgache conditionnent l'applicabilité du projet ; l'un d'entre eux n'a **pas**
+pu être résolu dans le périmètre du stage.
 
 **Tableau 19 — Les quatre plans de réalité du contexte local, et ce que chacun change à la solution ; le dernier reste non traité.**
 
@@ -162,8 +154,7 @@ de la réalité malgache conditionnent l'applicabilité du projet — et l'un d'
 | **Infrastructure et connectivité** | réseau intermittent, alimentation non garantie, pas de cluster | conception **mono-nœud** et **rejouable** : un run complet repart de zéro et produit le même résultat (seed fixe) | traité |
 | **Données sensibles, contexte juridique** | cadre juridique national des données de santé **non vérifié** dans ce stage : seul le RGPD et la loi française ont été étudiés (§ 2.1.6) | la conformité présentée est **européenne**, à transposer au droit malgache (loi sur les données à caractère personnel, autorité de protection) | **non traité** |
 
-Deux points doivent rester explicites, car ils sont les plus souvent omis dans un
-projet de ce type :
+Deux points restent ouverts :
 
 1. **Le droit applicable n'est pas celui du pays de l'établissement.** Le stage
    s'est appuyé sur le RGPD [B10] et les recommandations CNIL [B11], [B12] parce

@@ -1,12 +1,5 @@
 # Introduction générale
 
-## Objectif
-
-Situer le domaine du stage, dire pourquoi ce sujet a été choisi, préciser la mission confiée,
-poser la problématique et annoncer le plan du mémoire.
-
----
-
 ## Contexte général
 
 Comme la plupart des organisations de santé, un établissement fait coexister **plusieurs
@@ -74,6 +67,5 @@ Le mémoire suit le plan de référence du master MBDS.
 | **8 — Tests du système** | stratégie de test, tests unitaires, d'intégration et fonctionnels, évaluation sur vérité terrain |
 | **Conclusion générale** | bilan, difficultés, limites, apports personnels, perspectives |
 
-Les pièces liminaires comprennent un **glossaire**, qui explique en français courant chaque
-terme technique employé. La bibliographie et les **annexes** (A à G) suivent la conclusion,
-comme dans les rapports de référence.
+Les pièces liminaires comprennent un **glossaire** des termes clés. La bibliographie et les
+**annexes** (A à G) suivent la conclusion.

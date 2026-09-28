@@ -1,27 +1,13 @@
 # Chapitre 2 — État de l'art
 
-## Objectif
-
-Établir les notions de référence du sujet — Entity Resolution et Record Linkage, mesures de
-similarité, blocking, Master Patient Index (MPI) et interopérabilité FHIR, cadre juridique du
-consentement, architectures Big Data et Data Lake Medallion — puis en déduire des **critères de
-comparaison**, étudier les **solutions existantes** au regard de ces critères, les comparer dans
-un tableau de synthèse et situer la **pertinence** du projet. Chaque concept est relié au rôle
-qu'il joue dans le projet, conformément au document conceptuel
-[`bigdata_concepts.md`](../documents/documentation/bigdata_concepts.md).
-
 > **Portée de l'étude.** Aucun des produits comparés n'a été déployé sur la VM ni mesuré : la
 > comparaison s'appuie sur leur **documentation**. Les capacités citées sont donc des
-> **capacités annoncées**, jamais des résultats obtenus [AGENTS.md — règle d'honnêteté des
-> livrables].
-
----
+> **capacités annoncées**, jamais des résultats obtenus.
 
 ## 2.1 Notions de référence et critères de comparaison
 
 Les critères de comparaison ne se choisissent pas au hasard : ils découlent des notions du
-domaine. Cette section présente la méthode de veille, puis les sept notions de référence, et
-en déduit les six critères appliqués aux solutions existantes.
+domaine.
 
 ### 2.1.1 Méthode de la veille
 
@@ -417,6 +403,3 @@ développeur — puis la solution envisagée.
 [B13] InterSystems EMPI / IRIS for Health (PIX, PDQ).
 [B14] Talend MDM, *Integrated Matching*. [B15] Splink (Fellegi-Sunter, EM).
 [B16] HAPI FHIR. [B17] Azure Health Data Services. [B18] Apache Atlas.
-
-Voir `references/bibliographie.md` (numérotation complète, URLs et
-protocole de veille).

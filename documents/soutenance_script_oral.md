@@ -25,8 +25,8 @@ bash projet/code-source/provision/scripts/run_pipeline.sh
 pas filmer le poste actuel. Prévoir une capture d'écran pour chaque commande. Tester la lecture sur
 le poste de soutenance avant le jour J.
 
-**Figures** : projetées `fig-1` (S2), `fig-2` (S4), `fig-4` (S5), `fig-7` (S7) ; en réserve `fig-6`,
-`fig-3`, `fig-8` ; **jamais projetée** `fig-5` (5,7 pt, illisible en projection).
+**Figures** : projetées `fig-1` (S2), `fig-2` (S4), `fig-4` (S5), `fig-8` (S7) ; en réserve `fig-6`,
+`fig-3`, `fig-9` ; **jamais projetée** `fig-5` (5,7 pt, illisible en projection).
 
 **Trois choses à ne pas dire** : que PostgreSQL a été validé en conditions réelles (le `.env` n'a
 pas été fourni) ; que les 14 tests API prouvent le contrôle d'accès (ils prouvent la joignabilité) ;
@@ -205,7 +205,7 @@ Another garbled fragment. Must rewrite cleanly.
 >
 > L'API répond sur 14 tests sur données réelles, sans données de secours.
 
-**À montrer** — `figures/fig-7.png` : les 4 étapes, puis le tableau de compteurs.
+**À montrer** — `figures/fig-8.png` : les 4 étapes, puis le tableau de compteurs.
 
 → « Est-ce que ces 145 patients maîtres sont les bons ? C'est la question suivante. »
 
@@ -231,7 +231,7 @@ Another garbled fragment. Must rewrite cleanly.
 > sans faux positif. Et les deux implantations, Pandas et Spark, prennent des **décisions
 > identiques** sur les jeux testés.
 
-**À montrer** — le tableau de métriques. *Réserve : `fig-8.png`.*
+**À montrer** — le tableau de métriques. *Réserve : `fig-9.png`.*
 
 → « Venons-en aux points que je n'ai pas résolus. »
 

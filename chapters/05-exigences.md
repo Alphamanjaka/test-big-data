@@ -1,14 +1,5 @@
 # Chapitre 5 — Exigences réalisées
 
-## Objectif
-
-Présenter ce que la plateforme fait, vu par l'utilisateur : les exigences fonctionnelles,
-organisées selon les étapes du pipeline et illustrées par des cas d'utilisation ; les exigences
-non fonctionnelles (utilisabilité, performance, scalabilité, sécurité, maintenance) ; et les
-interfaces, côté écran comme côté systèmes.
-
----
-
 ## 5.1 Exigences fonctionnelles
 
 Le cahier des charges fixe six objectifs [cahier_des_charges.md §3], traduits ici

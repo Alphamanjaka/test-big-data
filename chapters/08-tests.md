@@ -1,14 +1,5 @@
 # Chapitre 8 — Tests du système
 
-## Objectif
-
-Présenter la stratégie de test du projet, puis les tests unitaires, d'intégration et
-fonctionnels, l'évaluation ground-truth de la déduplication (précision / rappel / F1, par
-méthode et par source), la vérification de la parité MVP/Spark, et enfin les limites honnêtes
-du prototype.
-
----
-
 ## 8.1 Stratégie de test
 
 La validation suit une pyramide : unitaire (générateur et moteur), intégration
@@ -31,7 +22,7 @@ flowchart TD
     E --> EVAL
 ```
 
-> **Figure 8 — La stratégie de test : un socle hors ligne (générateur, moteur), puis le
+> **Figure 9 — La stratégie de test : un socle hors ligne (générateur, moteur), puis le
 > MVP, et enfin la preuve système (API de gouvernance sur données réelles, évaluation ground truth).**
 
 **Tableau 43 — Les niveaux de test, leur périmètre et le résultat obtenu ; les 3 tests de l'API Flask ne prouvent que la joignabilité.**

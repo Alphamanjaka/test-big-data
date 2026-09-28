@@ -1,12 +1,5 @@
 # Chapitre 1 — Présentation du stage
 
-## Objectif
-
-Présenter l'entreprise d'accueil, puis le sujet du stage : son contexte métier, ses objectifs,
-ses enjeux et les risques qu'il doit maîtriser.
-
----
-
 ## 1.1 Présentation de l'entreprise
 
 La société **Madagascar Medical Technology (MMT)** a été créée en 2009 afin de répondre aux
@@ -56,8 +49,7 @@ Cette situation pose trois problèmes concrets :
 
 ### 1.2.2 Objectifs
 
-Six mots reviennent dans tous les chapitres. Ils sont expliqués ici en français courant ; le
-**glossaire** des pièces liminaires reprend l'ensemble du vocabulaire employé.
+Six mots reviennent dans tous les chapitres :
 
 - **ELT** : on **charge** d'abord les fichiers tels quels, on **transforme** ensuite — l'inverse
   d'un ETL classique, où l'on transforme avant d'écrire.
@@ -84,7 +76,7 @@ Six mots reviennent dans tous les chapitres. Ils sont expliqués ici en françai
 | 6 | **Évaluer** la déduplication | vérité terrain (ground truth), précision / rappel / F1 [cahier_des_charges.md §4.4 / §8] |
 
 Les données manipulées sont **exclusivement synthétiques** : la confidentialité est un actif du
-projet, pas un obstacle de démonstration [AGENTS.md].
+projet, pas un obstacle de démonstration.
 
 ### 1.2.3 Enjeux et risques
 

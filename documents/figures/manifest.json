@@ -4,7 +4,7 @@
     {
       "number": 1,
       "file": "fig-1.png",
-      "source": "03-existant-solution.md:127",
+      "source": "03-existant-solution.md:125",
       "config": "compact",
       "width_px": 912,
       "height_px": 528,
@@ -14,7 +14,7 @@
     {
       "number": 2,
       "file": "fig-2.png",
-      "source": "03-existant-solution.md:172",
+      "source": "03-existant-solution.md:170",
       "config": "serre",
       "width_px": 1185,
       "height_px": 124,
@@ -24,7 +24,7 @@
     {
       "number": 3,
       "file": "fig-3.png",
-      "source": "05-exigences.md:137",
+      "source": "05-exigences.md:135",
       "config": "compact",
       "width_px": 1426,
       "height_px": 338,
@@ -34,7 +34,7 @@
     {
       "number": 4,
       "file": "fig-4.png",
-      "source": "06-architecture.md:20",
+      "source": "06-architecture.md:18",
       "config": "compact",
       "width_px": 1068,
       "height_px": 733,
@@ -44,7 +44,7 @@
     {
       "number": 5,
       "file": "fig-5.png",
-      "source": "06-architecture.md:66",
+      "source": "06-architecture.md:64",
       "config": "serre",
       "width_px": 2114,
       "height_px": 343,
@@ -54,7 +54,7 @@
     {
       "number": 6,
       "file": "fig-6.png",
-      "source": "07-conception.md:19",
+      "source": "07-conception.md:17",
       "config": "compact",
       "width_px": 600,
       "height_px": 822,
@@ -64,7 +64,17 @@
     {
       "number": 7,
       "file": "fig-7.png",
-      "source": "07-conception.md:331",
+      "source": "07-conception.md:164",
+      "config": "compact",
+      "width_px": 1518,
+      "height_px": 1007,
+      "pt_portrait_16cm": 4.8,
+      "pt_paysage_26cm": 8.0
+    },
+    {
+      "number": 8,
+      "file": "fig-8.png",
+      "source": "07-conception.md:396",
       "config": "serre",
       "width_px": 1361,
       "height_px": 148,
@@ -72,9 +82,9 @@
       "pt_paysage_26cm": 8.9
     },
     {
-      "number": 8,
-      "file": "fig-8.png",
-      "source": "08-tests.md:19",
+      "number": 9,
+      "file": "fig-9.png",
+      "source": "08-tests.md:17",
       "config": "compact",
       "width_px": 560,
       "height_px": 752,

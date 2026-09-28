@@ -6,7 +6,7 @@ Usage :
 
 Convertit `chapters/00..09.md` (introduction générale, chapitres 1 à 8, conclusion générale,
 selon le plan MBDS) en un unique .docx A4 : pièce liminaire (page de garde, remerciements,
-résumé, abstract, sommaire, listes des tableaux et figures, acronymes, glossaire), titres,
+résumé, abstract, sommaire, listes des tableaux et figures, glossaire avec les sigles), titres,
 paragraphes, listes, tableaux, blocs de code, citations, bibliographie et pagination.
 La pièce liminaire est numérotée en chiffres romains et le corps repart à 1, comme dans le
 modèle de l'établissement. Les listes des tableaux et des figures sont recopiées
@@ -128,60 +128,73 @@ KEYWORDS = (
     "Master Patient Index, Consent, Governance, GDPR"
 )
 
-# Acronymes réellement employés dans les chapitres, avec leur développé. L'ordre suit la
-# progression du texte (socle technique, puis santé, puis concepts étudiés).
-ACRONYMES = [
-    ("API", "Application Programming Interface — interface de programmation d'applications"),
-    ("CI", "Continuous Integration — intégration continue"),
-    ("CIN", "Carte d'Identité Nationale (Madagascar)"),
-    ("CNIL", "Commission Nationale de l'Informatique et des Libertés"),
-    ("CU", "Cas d'Utilisation"),
-    ("DMP", "Data Management Platform — plateforme de gestion des données de référence"),
-    ("ELT", "Extract, Load, Transform — extraction, chargement, transformation"),
-    ("EM", "Expectation-Maximisation — algorithme d'estimation de paramètres"),
-    ("EMPI", "Enterprise Master Patient Index — référentiel d'identité d'entreprise"),
-    ("ER", "Entity Resolution — résolution d'entités, rapprochement d'enregistrements"),
-    ("ETL", "Extract, Transform, Load — extraction, transformation, chargement"),
-    ("ETP", "Équivalent Temps Plein — unité de charge de travail"),
-    ("FHIR", "Fast Healthcare Interoperability Resources — format d'échange de données de santé"),
-    ("FN", "Faux Négatif — paire de patients identiques non détectée"),
-    ("FP", "Faux Positif — paire de patients différents fusionnés à tort"),
-    ("HDFS", "Hadoop Distributed File System — système de fichiers distribué"),
-    ("JWT", "JSON Web Token — jeton d'authentification"),
-    ("MAVIS", "système d'information métier de l'établissement, répliqué localement pour le PoC"),
-    ("MBDS", "Mobilité, Bases de Données et Intégration de Systèmes — spécialité du Master 2"),
-    ("MDM", "Master Data Management — gestion des données de référence"),
-    ("MMT", "Madagascar Medical Technology — établissement d'accueil du stage"),
-    ("MPI", "Master Patient Index — index maître des patients"),
-    ("MVP", "Minimum Viable Product — produit viable minimal"),
-    ("NLP", "Natural Language Processing — traitement automatique du langage"),
-    ("PoC", "Proof of Concept — prototype de démonstration"),
-    ("REST", "Representational State Transfer — style d'architecture d'API"),
-    ("RGPD", "Règlement Général sur la Protection des Données"),
-    ("SHA-256", "Secure Hash Algorithm 256 bits — empreinte de hachage"),
-    ("SQL", "Structured Query Language — langage de requête"),
-    ("VM", "Machine Virtuelle"),
-]
+INLINE_RE = re.compile(
+    r"(\*\*.+?\*\*"                      # **gras**
+    r"|`[^`]*`"                          # `code`
+    r"|\[[^\]]+\]\([^)]+\)"              # [texte](lien) : seul le texte est gardé
+    r"|(?<![\w*])\*(?![\s*])[^*]+?(?<!\s)\*(?![\w*]))"  # *italique*
+)
 
 
-def add_runs(paragraph, text: str) -> None:
-    """Applique **gras** et `code` inline dans un paragraphe."""
-    pattern = re.compile(r"(\*\*.*?\*\*|`[^`]*`)")
+def add_runs(paragraph, text: str, bold: bool = False, italic: bool = False) -> None:
+    """Applique **gras**, *italique*, `code` et [liens](…) en ligne dans un paragraphe."""
     pos = 0
-    for match in pattern.finditer(text):
+    for match in INLINE_RE.finditer(text):
         if match.start() > pos:
-            paragraph.add_run(text[pos : match.start()])
+            run = paragraph.add_run(text[pos : match.start()])
+            run.bold, run.italic = bold or None, italic or None
         token = match.group(1)
         if token.startswith("**"):
-            run = paragraph.add_run(token[2:-2])
-            run.bold = True
-        else:
+            add_runs(paragraph, token[2:-2], True, italic)
+        elif token.startswith("`"):
             run = paragraph.add_run(token[1:-1])
             run.font.name = "Consolas"
             run.font.size = Pt(9)
+            run.bold, run.italic = bold or None, italic or None
+        elif token.startswith("["):
+            add_runs(paragraph, token[1 : token.index("](")], bold, italic)
+        else:
+            add_runs(paragraph, token[1:-1], bold, True)
         pos = match.end()
     if pos < len(text):
-        paragraph.add_run(text[pos:])
+        run = paragraph.add_run(text[pos:])
+        run.bold, run.italic = bold or None, italic or None
+
+
+def merge_lines(lines: list[str]) -> list[str]:
+    """Recolle les lignes coupées du Markdown en paragraphes logiques.
+
+    Le Markdown est écrit avec des retours à la ligne tous les ~100 caractères ; sans ce
+    recollage, chaque ligne deviendrait un paragraphe Word distinct. Sont recollées : une ligne
+    de texte à la suite d'un paragraphe, d'un élément de liste ou d'une citation, et la suite
+    d'une citation (`> `). Blocs de code, tableaux, titres et séparateurs restent intacts.
+    """
+    out: list[str] = []
+    in_fence = False
+    for raw in lines:
+        stripped = raw.strip()
+        if stripped.startswith("```"):
+            in_fence = not in_fence
+            out.append(raw)
+            continue
+        if in_fence or not stripped:
+            out.append(raw)
+            continue
+        prev = out[-1].strip() if out else ""
+        joinable_prev = bool(prev) and not prev.startswith(("#", "|", "```", "---")) and prev != ">"
+        is_block_start = (
+            stripped.startswith(("#", "|", "- ", "---", "```"))
+            or re.match(r"^\d+\.\s+", stripped)
+            or stripped == ">"
+        )
+        if stripped.startswith("> ") and prev.startswith("> ") and joinable_prev:
+            out[-1] = out[-1].rstrip() + " " + stripped[2:]
+            continue
+        if not is_block_start and not stripped.startswith(">") and joinable_prev:
+            out[-1] = out[-1].rstrip() + " " + stripped
+            continue
+        out.append(raw)
+    return out
 
 
 def parse_table(lines: list[str]) -> str:
@@ -302,7 +315,7 @@ def add_figure(doc: Document, number: int, caption: str, entry) -> None:
 
 def add_markdown(doc: Document, md: str, manifest: dict, figure_number: int = 0) -> int:
     """Convertit du Markdown en Word. Retourne le prochain numéro de figure."""
-    lines = md.splitlines()
+    lines = merge_lines(md.splitlines())
     i = 0
     n = len(lines)
     while i < n:
@@ -409,6 +422,7 @@ def add_markdown(doc: Document, md: str, manifest: dict, figure_number: int = 0)
             pass
         else:
             p = doc.add_paragraph()
+            p.alignment = WD_ALIGN_PARAGRAPH.JUSTIFY
             add_runs(p, stripped)
         i += 1
     return figure_number
@@ -480,7 +494,7 @@ def add_cover(doc: Document) -> None:
 
 
 def add_liminaire_title(doc: Document, text: str) -> None:
-    """Titre d'une section liminaire (résumé, abstract, listes, acronymes)."""
+    """Titre d'une section liminaire (résumé, abstract, listes)."""
     paragraph = doc.add_paragraph()
     paragraph.alignment = WD_ALIGN_PARAGRAPH.CENTER
     run = paragraph.add_run(text)
@@ -513,25 +527,6 @@ def add_abstract(doc: Document, title: str, text: str, keywords_label: str,
     lead.font.size = Pt(12)
     body = paragraph.add_run(keywords)
     body.font.size = Pt(12)
-    doc.add_page_break()
-
-
-def add_acronymes(doc: Document) -> None:
-    """Liste des acronymes en tableau à deux colonnes, comme dans le modèle de référence."""
-    add_liminaire_title(doc, "Acronymes")
-    table = doc.add_table(rows=0, cols=2)
-    table.style = "Table Grid"
-    table.alignment = WD_TABLE_ALIGNMENT.CENTER
-    for sigle, developpe in ACRONYMES:
-        cells = table.add_row().cells
-        for cell, text, bold in [
-            (cells[0], sigle, True),
-            (cells[1], developpe, False),
-        ]:
-            paragraph = cell.paragraphs[0]
-            run = paragraph.add_run(text)
-            run.bold = bold
-            run.font.size = Pt(10)
     doc.add_page_break()
 
 
@@ -638,14 +633,6 @@ def add_toc(doc: Document) -> None:
     run.font.size = Pt(16)
     toc = doc.add_paragraph()
     add_field(toc, 'TOC \\o "1-2" \\h \\z \\u')
-    doc.add_paragraph()
-    p = doc.add_paragraph()
-    p.alignment = WD_ALIGN_PARAGRAPH.CENTER
-    run = p.add_run(
-        "Si le sommaire reste vide : clic droit dessus puis « Mettre à jour les champs »."
-    )
-    run.italic = True
-    run.font.size = Pt(9)
     doc.add_page_break()
 
 
@@ -758,7 +745,6 @@ def build(out_path: Path) -> None:
     add_toc(doc)
     figure_captions, table_captions = collect_captions()
     add_listes(doc, figure_captions, table_captions)
-    add_acronymes(doc)
     add_liminaire_markdown(doc, GLOSSAIRE, manifest)
 
     body = doc.add_section(WD_SECTION.NEW_PAGE)
@@ -803,8 +789,8 @@ def build(out_path: Path) -> None:
         )
     )
     print(
-        "Résumé : {0} mots · Abstract : {1} mots · Acronymes : {2}".format(
-            len(RESUME.split()), len(ABSTRACT.split()), len(ACRONYMES)
+        "Résumé : {0} mots · Abstract : {1} mots".format(
+            len(RESUME.split()), len(ABSTRACT.split())
         )
     )
 
