@@ -1414,3 +1414,54 @@ demande d'une lecture visuelle « d'un coup d'œil » et de contenus de dashboar
 `/pipeline`), accueil `/synthese` inchangé, polling 10 s désactivable.
 
 **Reste :** commit en attente de validation utilisateur.
+
+## 28/09/2026 — Mémoire : restructuration selon le plan MBDS (rapports de référence Hasina / Jonah)
+
+**Contexte :** analyse des rapports de référence `documents/RAPPORT_HASINA_1613.docx` et
+`documents/Rapport de stage ETU 1156 … .docx` fournie par l'utilisateur ; décision : réorganiser
+`chapters/` selon le plan MBDS (rendu final `documents/memoire_M2_MBDS.docx`). Informations
+fournies par l'utilisateur : présentation MMT (2009, Siemens Healthineers, département R&D 2024),
+dates du stage 06/07/2026 → 06/10/2026, motivation personnelle, budget en hypothèses structuré
+humain / matériel-logiciel / total, périmètre non déployé.
+
+| # | Action | Détail |
+| - | ------ | ------ |
+| 1 | Nouveaux fichiers de corps | `00-introduction` (générale, non numérotée : contexte, motivation, mission, problématique, plan) ; `01-presentation-stage` ; `02-etat-de-l-art` (2.1 notions + critères, 2.2 solutions, 2.3 comparatif, 2.4 pertinence — ex-ch.3 §3.2-3.4 intégré) ; `03-existant-solution` ; `04-demarche-projet` ; `05-exigences` (exigences par étapes du pipeline + CU1-CU8, ENF par qualité, interfaces IHM/API) ; `06-architecture` ; `07-conception` (plate-forme, structure du code, données, composants, déploiement, réalisation des étapes) ; `08-tests` ; `09-conclusion` (générale, non numérotée) |
+| 2 | Liminaires | `remerciements.md` (brouillon à personnaliser) et `glossaire.md` hors du motif `0*.md` ; exporteur : insertion après la page de garde / après les acronymes ; acronymes + CU, ETP, JWT, PoC |
+| 3 | Anciens fichiers supprimés | `01-introduction`, `03-etude-existant`, `04-analyse`, `05-conception`, `06-realisation`, `07-tests`, `08-conclusion`, `09-glossaire` (contenu repris, disponible dans `HEAD` = `830c231`) |
+| 4 | Contenus neufs | activités d'ingénierie, méthode, outils (§4.1) ; risques projet (Tableau 20, cahier §11) ; Gantt par quinzaine (Tableau 22 : périodes sans trace avant le 23/08 figurées comme telles) ; budget 3 mois (Tableaux 23-25 : 3 450 000 Ar d'hypothèses, 0 Ar réel) + `documents/budget.md` ; vision utilisateur de l'existant (§3.1.1) ; livrables et état (Tableau 15) ; ENF (Tableau 28) ; pages IHM (Tableau 29, vérifiées dans `front-optional/src/app`) ; points d'entrée FastAPI avec rôles (Tableau 30, vérifiés dans `app.py`/`consent.py`) ; structure du code (§7.2.1) ; déploiement (§7.2.4) ; difficultés et apports personnels en conclusion |
+| 5 | Corrections de fond | limite « endpoints `laboratory`/`malaria` » retirée (Flask n'a plus que 2 routes depuis le retrait du RMA) ; « 14 statuts » → 3 cas (`test_api.py`) ; « 420 faux positifs manqués » → faux négatifs ; ligne « Absents du périmètre » corrigée (frontend réalisé partiellement) |
+| 6 | Annexes | renvois réaffectés ; **Annexe G** = questions anticipées (ex-§8.6) |
+| 7 | Figures | renumérotées dans l'ordre de lecture (ancien→nouveau 1→2, 2→6, 3→1, 4→3, 5→4, 6→5, 7, 8) ; rendu relancé (8/8 OK, manifeste régénéré) ; `slides_soutenance.md`, `soutenance_script_oral.md`, `build_soutenance_pptx.py` réalignés |
+| 8 | Consignes | `ai/memoire/README.md`, `methode.md`, `README.md`, `references/bibliographie.md` |
+
+**Vérifications.** Contrôle scripté : 10 fichiers de corps × 1 H1, fences équilibrées, aucun `####`,
+**48 tableaux numérotés 1→48 sans trou**, **8 figures 1→8**, aucun renvoi `§` interne orphelin.
+Export DOCX (copie scratchpad) : H1 = Remerciements, Glossaire, Introduction générale, Chapitres
+1-8, Conclusion générale, Bibliographie, Annexes ; 50 tableaux (48 + acronymes + glossaire),
+8 images, 48 tableaux et 8 figures listés.
+
+**Reste :** `documents/memoire_M2_MBDS.docx` **non régénéré** (fichier verrouillé, ouvert dans Word)
+— relancer `python projet/code-source/scripts/dev/export_memoire_docx.py` après fermeture ;
+remerciements à personnaliser ; périodes du Gantt avant le 23/08 à confirmer par l'utilisateur ;
+écart à signaler : le cahier des charges docx cite « 4 mois » (§2.3) contre 3 mois réels ; captures
+d'écran IHM absentes ; commit en attente de validation.
+
+## 28/09/2026 — Mémoire : durée 4 mois, Gantt enrichi, nettoyage de `chapters/`, DOCX régénéré
+
+**Contexte :** précisions de l'utilisateur sur la restructuration MBDS : stage de **4 mois** (début
+juillet → fin octobre 2026) ; avant le 23/08, phase d'analyse **itérative** (discussions avec le chef,
+compréhension du sujet, analyse de l'existant, documentation, état de l'art ≥ 3 semaines, problèmes et
+contraintes réels), activités revenant en boucle ; captures IHM fournies par l'utilisateur plus tard.
+
+| # | Action | Détail |
+| - | ------ | ------ |
+| 1 | Durée | intro « du 6 juillet à fin octobre 2026 », §4.3 et §4.4 ; l'écart avec « 4 mois » du cahier des charges (§2.3) disparaît |
+| 2 | Gantt (Tableau 22) | 8 quinzaines jusqu'au 31/10 ; phases Cadrage / Existant et contraintes / Documentation et état de l'art / Développement / Tests / Rédaction / Finalisation ; □ = **déclaré** par le stagiaire sans trace datée, ■ = daté dans les journaux, ○ = prévu ; paragraphe sur l'analyse itérative en boucle |
+| 3 | Budget | 4 mois : humain 4 600 000 Ar (hypothèses), matériel/logiciel 0 Ar, total 4 600 000 Ar (§4.4 + `documents/budget.md`) |
+| 4 | Nettoyage `chapters/` | le répertoire ne contient que les 12 fichiers du plan ; lignes « > **Statut** » retirées des 10 fichiers de corps (elles s'imprimaient dans le DOCX) ; convention mise à jour dans `ai/memoire/README.md` |
+
+**Vérifications.** `export_memoire_docx.py` → `documents/memoire_M2_MBDS.docx` écrit : H1 conformes au
+plan MBDS, 50 tableaux (48 légendés + acronymes + glossaire), 8 images, 0 occurrence « Statut ».
+
+**Reste :** captures d'écran IHM (§5.3.1, fournies par l'utilisateur) ; commit en attente de validation.

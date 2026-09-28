@@ -4,27 +4,7 @@
     {
       "number": 1,
       "file": "fig-1.png",
-      "source": "01-introduction.md:95",
-      "config": "serre",
-      "width_px": 1185,
-      "height_px": 124,
-      "pt_portrait_16cm": 6.1,
-      "pt_paysage_26cm": 10.2
-    },
-    {
-      "number": 2,
-      "file": "fig-2.png",
-      "source": "02-etat-de-l-art.md:227",
-      "config": "compact",
-      "width_px": 600,
-      "height_px": 822,
-      "pt_portrait_16cm": 12.1,
-      "pt_paysage_26cm": 20.2
-    },
-    {
-      "number": 3,
-      "file": "fig-3.png",
-      "source": "03-etude-existant.md:102",
+      "source": "03-existant-solution.md:127",
       "config": "compact",
       "width_px": 912,
       "height_px": 528,
@@ -32,9 +12,19 @@
       "pt_paysage_26cm": 13.3
     },
     {
-      "number": 4,
-      "file": "fig-4.png",
-      "source": "04-analyse.md:76",
+      "number": 2,
+      "file": "fig-2.png",
+      "source": "03-existant-solution.md:172",
+      "config": "serre",
+      "width_px": 1185,
+      "height_px": 124,
+      "pt_portrait_16cm": 6.1,
+      "pt_paysage_26cm": 10.2
+    },
+    {
+      "number": 3,
+      "file": "fig-3.png",
+      "source": "05-exigences.md:137",
       "config": "compact",
       "width_px": 1426,
       "height_px": 338,
@@ -42,9 +32,9 @@
       "pt_paysage_26cm": 8.5
     },
     {
-      "number": 5,
-      "file": "fig-5.png",
-      "source": "05-conception.md:19",
+      "number": 4,
+      "file": "fig-4.png",
+      "source": "06-architecture.md:20",
       "config": "compact",
       "width_px": 1068,
       "height_px": 733,
@@ -52,9 +42,9 @@
       "pt_paysage_26cm": 11.3
     },
     {
-      "number": 6,
-      "file": "fig-6.png",
-      "source": "05-conception.md:65",
+      "number": 5,
+      "file": "fig-5.png",
+      "source": "06-architecture.md:66",
       "config": "serre",
       "width_px": 2114,
       "height_px": 343,
@@ -62,22 +52,32 @@
       "pt_paysage_26cm": 5.7
     },
     {
+      "number": 6,
+      "file": "fig-6.png",
+      "source": "07-conception.md:19",
+      "config": "compact",
+      "width_px": 600,
+      "height_px": 822,
+      "pt_portrait_16cm": 12.1,
+      "pt_paysage_26cm": 20.2
+    },
+    {
       "number": 7,
       "file": "fig-7.png",
-      "source": "06-realisation.md:56",
+      "source": "07-conception.md:331",
       "config": "serre",
-      "width_px": 1146,
-      "height_px": 124,
-      "pt_portrait_16cm": 6.3,
-      "pt_paysage_26cm": 10.6
+      "width_px": 1361,
+      "height_px": 148,
+      "pt_portrait_16cm": 5.3,
+      "pt_paysage_26cm": 8.9
     },
     {
       "number": 8,
       "file": "fig-8.png",
-      "source": "07-tests.md:19",
+      "source": "08-tests.md:19",
       "config": "compact",
       "width_px": 560,
-      "height_px": 608,
+      "height_px": 752,
       "pt_portrait_16cm": 13.0,
       "pt_paysage_26cm": 21.6
     }

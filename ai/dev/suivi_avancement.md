@@ -144,6 +144,16 @@ dans `Mon_Memoire` (subtree → `projet/code-source/`, `projet/mvp/`, `archives/
     (menu « Tableau de bord », icône Gauge, ADMIN + MEDECIN). **Preuves :** `tsc --noEmit` exit 0,
     `npm run build` exit 0 (route `/dashboard` 7.13 kB) ; pytest inchangé 102/102 ; aucune
     dépendance ajoutée. Reste : commit (après relecture).
+16. **[Mémoire — plan MBDS]** Mémoire **restructuré selon le plan imposé** (28/09), calqué sur les
+    rapports de référence : introduction générale, chapitres 1-8 (présentation du stage, état de
+    l'art, existant et solution, démarche projet, exigences, architecture, conception, tests),
+    conclusion générale ; remerciements et glossaire en liminaires ; annexe G (questions
+    anticipées). Ajouts : présentation MMT, motivation, Gantt (dates tracées seulement), budget
+    3 mois humain / matériel-logiciel / total (`documents/budget.md`), ENF, interfaces IHM/API.
+    **Preuves :** 48 tableaux et 8 figures numérotés sans trou, aucun renvoi orphelin, export DOCX
+    de contrôle OK (plan MBDS, 50 tableaux, 8 images). Reste : régénérer
+    `documents/memoire_M2_MBDS.docx` (verrouillé par Word), personnaliser les remerciements,
+    confirmer les périodes non tracées du Gantt, commit.
 
 ## Dettes techniques connues
 

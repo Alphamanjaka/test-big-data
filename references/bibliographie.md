@@ -45,7 +45,7 @@
 - **[B12]** CNIL — « RGPD et professionnels de santé libéraux : ce que vous devez
   savoir ». https://www.cnil.fr/fr/rgpd-et-professionnels-de-sante-liberaux-ce-que-vous-devez-savoir
 
-## Solutions existantes (étude de l'existant, chapitre 3)
+## Solutions existantes (état de l'art, § 2.2 à 2.4)
 
 > Étude **documentaire** : aucun de ces produits n'a été installé ni exécuté dans le projet. Les
 > capacités citées sont celles **annoncées** par leur documentation. Sources vérifiées le 27/09/2026.

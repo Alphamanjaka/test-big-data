@@ -4,8 +4,9 @@ Usage :
     python scripts/dev/render_mermaid_figures.py     # une fois : produit les PNG
     python scripts/dev/export_memoire_docx.py [--out documents/memoire_M2_MBDS.docx]
 
-Convertit `chapters/01..09.md` en un unique .docx A4 : pièce liminaire (page de garde,
-résumé, abstract, sommaire, listes des tableaux et figures, acronymes), titres,
+Convertit `chapters/00..09.md` (introduction générale, chapitres 1 à 8, conclusion générale,
+selon le plan MBDS) en un unique .docx A4 : pièce liminaire (page de garde, remerciements,
+résumé, abstract, sommaire, listes des tableaux et figures, acronymes, glossaire), titres,
 paragraphes, listes, tableaux, blocs de code, citations, bibliographie et pagination.
 La pièce liminaire est numérotée en chiffres romains et le corps repart à 1, comme dans le
 modèle de l'établissement. Les listes des tableaux et des figures sont recopiées
@@ -49,6 +50,9 @@ FIGURES_DIR = ROOT / "documents" / "figures"
 MANIFEST = FIGURES_DIR / "manifest.json"
 BIBLIOGRAPHY = ROOT / "references" / "bibliographie.md"
 ANNEXES = ROOT / "references" / "annexes.md"
+# Pièces liminaires rédigées en Markdown : hors du motif `0*.md`, donc hors du corps.
+REMERCIEMENTS = CHAPTERS_DIR / "remerciements.md"
+GLOSSAIRE = CHAPTERS_DIR / "glossaire.md"
 
 # Page de garde : métadonnées du mémoire (à modifier ici, en un seul endroit).
 # Le libellé du diplôme reprend celui de la page de garde de référence, à l'identique :
@@ -131,16 +135,19 @@ ACRONYMES = [
     ("CI", "Continuous Integration — intégration continue"),
     ("CIN", "Carte d'Identité Nationale (Madagascar)"),
     ("CNIL", "Commission Nationale de l'Informatique et des Libertés"),
+    ("CU", "Cas d'Utilisation"),
     ("DMP", "Data Management Platform — plateforme de gestion des données de référence"),
     ("ELT", "Extract, Load, Transform — extraction, chargement, transformation"),
     ("EM", "Expectation-Maximisation — algorithme d'estimation de paramètres"),
     ("EMPI", "Enterprise Master Patient Index — référentiel d'identité d'entreprise"),
     ("ER", "Entity Resolution — résolution d'entités, rapprochement d'enregistrements"),
     ("ETL", "Extract, Transform, Load — extraction, transformation, chargement"),
+    ("ETP", "Équivalent Temps Plein — unité de charge de travail"),
     ("FHIR", "Fast Healthcare Interoperability Resources — format d'échange de données de santé"),
     ("FN", "Faux Négatif — paire de patients identiques non détectée"),
     ("FP", "Faux Positif — paire de patients différents fusionnés à tort"),
     ("HDFS", "Hadoop Distributed File System — système de fichiers distribué"),
+    ("JWT", "JSON Web Token — jeton d'authentification"),
     ("MAVIS", "système d'information métier de l'établissement, répliqué localement pour le PoC"),
     ("MBDS", "Mobilité, Bases de Données et Intégration de Systèmes — spécialité du Master 2"),
     ("MDM", "Master Data Management — gestion des données de référence"),
@@ -148,6 +155,7 @@ ACRONYMES = [
     ("MPI", "Master Patient Index — index maître des patients"),
     ("MVP", "Minimum Viable Product — produit viable minimal"),
     ("NLP", "Natural Language Processing — traitement automatique du langage"),
+    ("PoC", "Proof of Concept — prototype de démonstration"),
     ("REST", "Representational State Transfer — style d'architecture d'API"),
     ("RGPD", "Règlement Général sur la Protection des Données"),
     ("SHA-256", "Secure Hash Algorithm 256 bits — empreinte de hachage"),
@@ -527,6 +535,18 @@ def add_acronymes(doc: Document) -> None:
     doc.add_page_break()
 
 
+def add_liminaire_markdown(doc: Document, path: Path, manifest: dict) -> None:
+    """Pièce liminaire rédigée en Markdown (remerciements, glossaire), suivie d'un saut de page.
+
+    Un fichier absent produit un avertissement, pas une page vide.
+    """
+    if not path.exists():
+        print("  [avertissement] pièce liminaire absente : {0}".format(path))
+        return
+    add_markdown(doc, path.read_text(encoding="utf-8"), manifest)
+    doc.add_page_break()
+
+
 def add_listes(doc: Document, figure_captions, table_captions) -> None:
     """Liste des tableaux puis liste des figures.
 
@@ -732,12 +752,14 @@ def build(out_path: Path) -> None:
 
     # --- Pièce liminaire : numérotation romaine, corps en chiffres arabes ---
     add_cover(doc)
+    add_liminaire_markdown(doc, REMERCIEMENTS, manifest)
     add_abstract(doc, "Résumé", RESUME, "Mots-clés", MOTS_CLES)
     add_abstract(doc, "Abstract", ABSTRACT, "Keywords", KEYWORDS)
     add_toc(doc)
     figure_captions, table_captions = collect_captions()
     add_listes(doc, figure_captions, table_captions)
     add_acronymes(doc)
+    add_liminaire_markdown(doc, GLOSSAIRE, manifest)
 
     body = doc.add_section(WD_SECTION.NEW_PAGE)
     set_page(body, landscape=False)

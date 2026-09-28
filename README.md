@@ -9,7 +9,7 @@ purpose-by-purpose, audit d'accès et architecture Big Data.
 
 ```
 Mon_Memoire/
-├── chapters/             # mémoire — chapitres 01 → 09 (rédigés, statut daté ; 09 = glossaire)
+├── chapters/             # mémoire, plan MBDS — 00 introduction, 01 → 08 chapitres, 09 conclusion (+ liminaires)
 ├── documents/            # cahier des charges + articles + documentation conceptuelle
 ├── references/           # bibliographie (B1 → B20) et sources citées
 ├── projet/
@@ -26,7 +26,9 @@ Mon_Memoire/
 
 ## Documents clés
 
-- Mémoire : `chapters/01-introduction.md` → `08-conclusion.md` (consignes : `ai/memoire/`).
+- Mémoire : `chapters/00-introduction.md` → `09-conclusion.md`, plus `remerciements.md` et
+  `glossaire.md` en pièces liminaires ; rendu Word `documents/memoire_M2_MBDS.docx`
+  (consignes : `ai/memoire/`).
 - Cahier des charges : `documents/cahier_des_charges.md`.
 - Code : `projet/code-source/README.md` (démarrage moteur/tests, démarrage VM Big Data).
 

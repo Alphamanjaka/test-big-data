@@ -9,31 +9,23 @@
 - Conserver un ton pédagogique : expliquer **pourquoi** chaque technologie (voir
   `documents/documentation/bigdata_concepts.md`).
 
-## Structure des chapitres (`Mon_Memoire/chapters/01..09`)
+## Structure des chapitres (plan MBDS, `Mon_Memoire/chapters/00..09`)
 
-Rédiger en remplaçant le squelette « Objectif + Notes/TODO » existant :
+La structure détaillée (fichier → sections) est dans `ai/memoire/README.md`. Règles propres au plan :
 
-1. **01-introduction** : contexte organisme, problématique (données dispersées, doublons, identité),
-   objectifs, démarche 3 niveaux, plan du mémoire.
-2. **02-etat-de-l-art** : FHIR (interopérabilité), Medallion, Entity Resolution / MPI, RapidFuzz,
-   consentement (RGPD, données de santé), Hadoop/Hive/Spark, ELT vs ETL.
-3. **03-etude-existant** : systèmes d'information en place (MAVIS, MMT_DB, CLINIQUE) et leurs
-   limites ; solutions du domaine (MPI/DMP, MDM/ETL, Data Lake santé, open source) ; grille de
-   comparaison sur 6 critères ; verdict et espace de manœuvre. **Étude documentaire** : aucune
-   solution citée n'est installée ni exécutée — le dire explicitement.
-4. **04-analyse** : besoin, sources, contraintes (VM 8 Go, MAVIS distant, hétérogénéité), choix
-   (RapidFuzz sans NLP, pivot FHIR, PostgreSQL central).
-5. **05-conception** : architecture 3 niveaux + chaîne de bout-en-bout (composants, ports), modèle
-   canonique `CanonicalPatient`, pipeline ETL, scoring/blocking/seuil, schéma SQL, gouvernance
-   (consent, api_user, access_audit).
-6. **06-realisation** : générateur + ground-truth, extraction/mapping, déduplication, chargement PG
-   (idempotence), gouvernance + API + dashboard, Spark (parité), Data Lake Medallion, difficultés.
-7. **07-tests** : tests unitaires et d'intégration, **évaluation ground-truth** (P/R/F1, breakdown
-   exact/probabilistic, par source), limites (recall hard, GOLD sparse).
-8. **08-conclusion** : conclusion générale autonome — réponse à la problématique (tableau
-   volet → réalisation → preuve), acquis démontrés, limites assumées, perspectives, bilan.
-9. **09-glossaire** : un mot = une explication en français courant + le renvoi au chapitre qui
-   le détaille ; une table des objets du dépôt (tables, scripts, couches) et leur rôle.
+1. **Introduction et conclusion générales ne sont pas numérotées** ; les chapitres 1 à 8 le sont,
+   et leurs sections suivent la numérotation MBDS (1.1, 1.2, 2.1…). Un renvoi vers la conclusion
+   s'écrit « conclusion générale », pas « § 9.x ».
+2. **État de l'art (ch. 2)** : notions de référence → critères → étude de chaque solution →
+   tableau comparatif → pertinence du projet. **Étude documentaire** : aucune solution citée n'est
+   installée ni exécutée — le dire explicitement.
+3. **Exigences (ch. 5)** : organisées par **étapes du pipeline** (intégration, déduplication,
+   gouvernance, exploitation), chaque étape illustrée par ses cas d'utilisation.
+4. **Planning (§ 4.3)** : ne dater que ce que les journaux datent ; une période sans trace est
+   figurée comme telle, jamais reconstituée.
+5. **Budget (§ 4.4)** : coûts humains (hypothèses étiquetées), coûts matériels et logiciels
+   (réels), total ; source détaillée `documents/budget.md`.
+6. Titres limités à trois niveaux (`#`, `##`, `###`) : l'exporteur ne rend pas `####`.
 
 ## Style
 
@@ -41,7 +33,7 @@ Rédiger en remplaçant le squelette « Objectif + Notes/TODO » existant :
 - **Chaque terme technique est expliqué en français courant à sa première apparition en prose** :
   on garde le mot du métier, on ajoute l'explication à côté (« le *metastore*, c'est-à-dire le
   catalogue qui décrit les tables »). Un terme employé sans définition est un défaut de rédaction.
-- Les définitions détaillées sont dans les chapitres, leur liste dans `chapters/09-glossaire.md`.
+- Les définitions détaillées sont dans les chapitres, leur liste dans `chapters/glossaire.md`.
 - Tableaux pour synthétiser (concepts, scripts, résultats).
 - Un schéma **par chapitre technique** (Mermaid) représentant l'architecture à chaque niveau.
 - Réutiliser les cartes de vocabulaire (Medallion, MPI, blocking, purpose-by-purpose, golden record).

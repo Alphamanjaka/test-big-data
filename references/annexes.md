@@ -24,7 +24,7 @@ exécution, le nombre de lignes lues, écrites et écartées, et la durée de ch
 lui qui permet de comparer deux exécutions sans les rejouer. Il n'est pas versionné, puisqu'il
 est produit à chaque passage.
 
-*À lire avec* : le chapitre 6, qui décrit la réalisation, et le § 5.4 pour l'idempotence.
+*À lire avec* : le § 7.3.2, qui décrit la réalisation, et le § 7.2.2 pour l'idempotence.
 
 ## Annexe B — La structure de la base centrale
 
@@ -42,7 +42,7 @@ Deux choix de ce schéma sont discutés ailleurs et ne sont pas repris ici : le 
 matérialisé par l'absence de ligne dans `consent`, et le fait que `patient_identity_map` porte
 le score et la méthode, sans quoi une fusion serait inexplicable.
 
-*À lire avec* : le chapitre 5, qui conçoit le modèle, et le § 5.5 pour la gouvernance.
+*À lire avec* : le § 7.2.2, qui conçoit le modèle, et le § 7.2.3 pour la gouvernance.
 
 ## Annexe C — Le moteur de rapprochement
 
@@ -57,10 +57,10 @@ version Pandas est l'un des résultats vérifiés du projet.
 C'est la duplication volontaire de cet algorithme qui est le point d'attention du jury :
 elle n'est pas un défaut de conception mais le prix d'un choix fait tard, celui de devoir
 comparer deux implémentations plutôt que de décider plus tôt de l'échelle. Cette décision et
-son coût sont discutés au § 5.6 et retenus comme limite et comme leçon de conduite de projet au
-§ 8.4.
+son coût sont discutés au § 7.2.3 et retenus comme leçon de conduite de projet au § 4.3 et
+dans la conclusion générale.
 
-*À lire avec* : le chapitre 5 pour l'algorithme et ses paramètres, le chapitre 7 pour la
+*À lire avec* : le § 7.2.3 pour l'algorithme et ses paramètres, le chapitre 8 pour la
 parité et les mesures de qualité.
 
 ## Annexe D — L'API de gouvernance
@@ -73,11 +73,11 @@ accès, avec le refus par défaut. `audit.py` journalise chaque appel, y compris
 l'audit.
 
 Le point à retenir n'est pas la forme de l'API, mais le fait qu'un refus renvoie un **403** et
-non une réponseMUETTE ou une liste réduite, et que ce refus est journalisé comme un accès
+non une réponse muette ou une liste réduite, et que ce refus est journalisé comme un accès
 accordé. C'est cette propriété qui rend la gouvernance vérifiable par un tiers.
 
-*À lire avec* : le § 2.5 pour le cadre de référence, le § 5.5 pour la conception, le § 6.5
-pour la réalisation.
+*À lire avec* : le § 2.1.6 pour le cadre de référence, le § 7.2.3 pour la conception, le
+§ 7.3.5 pour la réalisation, le § 5.3.2 pour la liste des points d'entrée.
 
 ## Annexe E — L'API des indicateurs du warehouse et les vues de gouvernance
 
@@ -93,7 +93,7 @@ Cette partie du projet est **optionnelle** dans le cahier des charges. Elle est 
 comme une démonstration de ce que la zone SILVER/GOLD sait exposer, et non comme un résultat de
 production.
 
-*À lire avec* : le § 6.5 et le § 4.8, cas d'utilisation CU6.
+*À lire avec* : le § 5.3 et le § 5.1.4, cas d'utilisation CU6.
 
 ## Annexe F — La génération des données synthétiques et la vérité terrain
 
@@ -109,5 +109,74 @@ plus simple à obtenir. C'est une contrainte du commanditaire, mais c'est aussi 
 le travail reproductible et partageable : le jeu complet se régénère chez le lecteur en une
 commande.
 
-*À lire avec* : le § 4.3, qui explique le générateur et la vérité terrain, et le chapitre 7
+*À lire avec* : le § 5.1.5, qui explique le générateur et la vérité terrain, et le § 8.5
 pour les mesures de qualité calculées sur cette référence.
+
+## Annexe G — Questions anticipées du jury
+
+Cette annexe recense les objections les plus probables du jury, avec la réponse **vérifiée** et
+l'endroit du mémoire où elle s'appuie. Elle ne remplace pas le développement : elle indique où le
+chercher.
+
+**1. « Votre précision vaut 1,000 : le moteur ne fusionne-t-il jamais deux patients différents ? »**
+Non sur les trois jeux évalués, et ce n'est pas une garantie. Le générateur dégrade des
+enregistrements existants — casse, espaces, fautes de frappe, changements de format — mais ne crée
+jamais deux personnes distinctes qui se ressemblent : le cas adversariaire des faux positifs n'est
+donc pas sollicité par la vérité terrain. C'est un plancher, pas une borne. § 8.6.
+
+**2. « Un rappel de 0,422 est-il acceptable en santé ? »**
+Sur le jeu « hard » (variations à 50 %), il reste 420 faux négatifs sur 1 057 enregistrements. Le
+seuil 0,80 est conservateur et n'a pas été abaissé sans validation métier : l'abaisser remonte le
+rappel mais réintroduit le risque de fusion de deux patients, que la priorité donnée à la précision
+interdit. Levier identifié : enrichir la clé exacte (adresse), puis calibrer sur la vérité terrain.
+§ 8.5, conclusion générale (perspectives).
+
+**3. « Pourquoi ne pas estimer les poids et le seuil par EM, comme Splink ? »**
+Pour qu'un EM ait un sens, il lui faut des données d'appariement identifiantes ; celles du stage
+sont synthétiques et n'ont pas été appariées par un tiers. Les paramètres seraient donc estimés sur
+des paires que le modèle n'a pas lui-même produites. Le choix retenu — un score pondéré **lisible**
+(0,5 / 0,3 / 0,1 / 0,1, seuil 0,80, déclarés dans un fichier de configuration) — se justifie ligne à
+ligne devant un gestionnaire de données. L'EM reste une perspective, « en complément », avec double
+comptage explicable. § 2.4, § 7.2.3, conclusion générale (perspectives).
+
+**4. « Une VM de 8 Go suffit-elle pour passer à l'échelle ? »**
+Non. Le run de référence porte quelques centaines de lignes en SILVER : le parcours Big Data est
+**architecturé et reproductible** (HDFS, RAW → SILVER → GOLD), pas passé à l'échelle. Le passage à
+l'échelle suppose le partitionnement du blocking et la consolidation transitive des clusters.
+Conclusion générale (limites, perspectives).
+
+**5. « Le consentement est-il réellement appliqué ? »**
+La règle l'est : `purpose` est obligatoire (422), une finalité non consentie produit un refus (403),
+et chaque accès comme chaque refus est journalisé — 13 cas de test dédiés à l'API de gouvernance.
+La donnée ne l'était pas au moment du run : `patient_consent_gold` compte 145 lignes mais `purpose`
+et `granted` sont à `NULL`, le PostgreSQL central n'ayant pas été peuplé faute d'environnement. La
+distinction entre **mécanique prouvée** et **donnée absente** est maintenue partout. § 7.3.5, § 8.6.
+
+**6. « Pourquoi une API Flask et une API FastAPI ? »**
+L'API de données (Flask) est une surface de *reporting* sur la zone GOLD, héritée du PoC : elle ne
+filtre rien. Le contrôle par rôle et par consentement est appliqué sur l'API de gouvernance
+(FastAPI), seule à renvoyer 401, 403 et 422. Cette frontière est assumée, bornée et documentée.
+§ 7.3.5, conclusion générale (limites).
+
+**7. « Les clés d'API sont-elles vraiment protégées ? »**
+La clé en clair n'est ni stockée ni exposée : la base n'en conserve qu'une empreinte SHA-256. En
+revanche cette empreinte n'est **ni salée ni lente**, si bien qu'une table de correspondance
+suffirait à retrouver une clé. La dette, sa cause et sa correction (sel par clé, ou fonction lente
+comme `bcrypt` déjà utilisée côté frontend) sont déclarées dans les limites de la conclusion
+générale.
+
+**8. « Les 3 tests de l'API Flask prouvent-ils le contrôle d'accès ? »**
+Non : ils prouvent la joignabilité et les statuts de réponse. Le contrôle d'accès est vérifié
+séparément par les 13 cas de l'API de gouvernance. § 8.4, § 8.6.
+
+**9. « Comment garantissez-vous qu'aucun profil n'a été inventé ? »**
+Le générateur est à racine fixe (`RANDOM_SEED = 42`) et toutes les données sont synthétiques. Aucune
+valeur n'est estimée côté patients : un genre hors liste fermée, un CIN de longueur incohérente ou
+une date illisible laissent le champ vide, et l'enregistrement bascule alors vers la voie
+probabiliste. Un champ douteux ne peut donc pas corrompre une clé de rapprochement exact.
+§ 5.1.5, § 7.3.1.
+
+**10. « Pourquoi ne pas tout mettre dans PostgreSQL ? »**
+Parce que les deux magasins n'ont pas le même rôle : HDFS, Hive et Spark portent le lac rejouable et
+les trois zones de qualité, PostgreSQL porte l'état de référence — patients maîtres, consentements,
+journal d'audit, comptes. C'est une séparation de rôles, pas une redondance. § 6.1.2, § 7.2.2.

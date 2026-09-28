@@ -1,17 +1,15 @@
-# Chapitre 7 — Tests et évaluation
-
-> **Statut** : rédigé (08/09/2026, actualisé 28/09/2026)
+# Chapitre 8 — Tests du système
 
 ## Objectif
 
-Présenter la stratégie de test du projet, l'évaluation ground-truth de la
-déduplication (précision / rappel / F1, par méthode et par source), la vérification
-de la parité MVP/Spark, puis les limites honnêtes du prototype et les pistes
-d'amélioration.
+Présenter la stratégie de test du projet, puis les tests unitaires, d'intégration et
+fonctionnels, l'évaluation ground-truth de la déduplication (précision / rappel / F1, par
+méthode et par source), la vérification de la parité MVP/Spark, et enfin les limites honnêtes
+du prototype.
 
 ---
 
-## 7.1 Stratégie de test
+## 8.1 Stratégie de test
 
 La validation suit une pyramide : unitaire (générateur et moteur), intégration
 (pipeline, base) et système (API).
@@ -36,7 +34,7 @@ flowchart TD
 > **Figure 8 — La stratégie de test : un socle hors ligne (générateur, moteur), puis le
 > MVP, et enfin la preuve système (API de gouvernance sur données réelles, évaluation ground truth).**
 
-**Tableau 31 — Les cinq niveaux de test, leur périmètre et le résultat obtenu ; les 3 tests de l'API ne prouvent que la joignabilité.**
+**Tableau 43 — Les niveaux de test, leur périmètre et le résultat obtenu ; les 3 tests de l'API Flask ne prouvent que la joignabilité.**
 
 | Niveau | Périmètre | Résultat |
 |---|---|---|
@@ -55,30 +53,53 @@ pour le moteur, `run_pipeline.sh` pour le lac, `test_api.py` pour l'API) plutôt
 chaque commit.
 
 La suite complète (`pytest projet/code-source/tests`) passe à **102/102** (57 moteur +
-45 planification/reprise), zéro échec — le chiffre reporté dans le chapitre 8 et les slides.
+45 planification/reprise), zéro échec — le chiffre reporté dans la conclusion générale et les
+slides.
 
-Une précision de portée, sur les **3/3 de l'API** : `test_api.py` est un **test de fumée**. Il
-vérifie que chaque endpoint renvoie le code de statut attendu sur données réelles, sans en-tête
+## 8.2 Tests unitaires
+
+**Générateur.** Sept fichiers de tests couvrent le moteur de variation, les générateurs de
+sources, la distribution, l'identity mapping et la construction des jeux easy / medium / hard :
+**44 tests PASS**.
+
+**Moteur.** Les tests du moteur couvrent la sémantique de la dédup : match exact (clé
+identique, formats de CIN normalisés), nom inversé compensé par (naissance + CIN)
+exact, fusion au seuil 0.80 (nom + naissance), faute de frappe compensée par
+naissance, ville de naissance qui augmente le score, **non-fusion de patients
+distincts**, et **parité Pandas/Spark** (`test_spark_parity`) [deduplication.md §9].
+
+**Planification et reprise.** Quatre fichiers vérifient la mécanique d'exploitation hors VM :
+calcul des échéances `daily` / `weekly` / `monthly` (`test_schedule_logic.py`, 22 cas),
+empreintes et décision de saut (`test_watermark.py`, 10 cas), état et reprise d'un run
+(`test_pipeline_state.py`, 5 cas), API de planification (`test_pipeline_api.py`, 8 cas) :
+**45/45 PASS**.
+
+## 8.3 Tests d'intégration
+
+**MVP.** Les 20 tests du MVP (`test_bigdata`) enchaînent les composants : pipeline, chargement
+PostgreSQL, authentification, audit et API — **20 tests PASS**.
+
+**Pipeline complet.** Le run de référence du 07/09/2026 exécute `run_pipeline.sh` de bout en
+bout sur la VM, RAW → SILVER → GOLD : **4/4 vert**, 214 lignes SILVER, 145 masters, 69 doublons
+(§ 7.3.2). L'orchestration compte désormais cinq étapes ; la cinquième, préparatoire, et la
+planification n'ont **pas encore été rejouées** sur la VM (§ 8.6).
+
+## 8.4 Tests fonctionnels
+
+**L'API des indicateurs (Flask).** `test_api.py` est un **test de fumée**. Il vérifie que chaque
+endpoint renvoie le code de statut attendu sur données réelles, sans en-tête
 d'authentification — il prouve la **joignabilité** des 2 endpoints de gouvernance du backend
 Flask (`/api/governance/duplicates` et `/api/governance/consent`) et l'absence de régression de
 statut, **pas** le contrôle d'accès. Celui-ci est vérifié ailleurs, par les 16 cas de l'API de
 gouvernance, qui emprunte le chemin d'authentification réel (tableau ci-dessous). Aucun des deux
 niveaux ne se substitue à l'autre.
 
-Les tests du moteur couvrent la sémantique de la dédup : match exact (clé
-identique, formats de CIN normalisés), nom inversé compensé par (naissance + CIN)
-exact, fusion au seuil 0.80 (nom + naissance), faute de frappe compensée par
-naissance, ville de naissance qui augmente le score, **non-fusion de patients
-distincts**, et **parité Pandas/Spark** (`test_spark_parity`) [deduplication.md §9].
+**Le contrôle d'accès et le consentement (FastAPI).** Les 16 cas d'API ne simulent que le
+transport PostgreSQL : ils empruntent le **chemin réel** `Authorization: Bearer <clé>` →
+résolution de l'utilisateur → contrôle du rôle → contrôle du consentement, et **n'overrident
+jamais la dépendance d'authentification**. Ils constituent la preuve du § 2.1.6.
 
-### Couverture du contrôle d'accès et du consentement
-
-Ces 16 cas d'API ne simulent que le transport PostgreSQL : ils empruntent le
-**chemin réel** `Authorization: Bearer <clé>` → résolution de l'utilisateur →
-contrôle du rôle → contrôle du consentement, et **n'overrident jamais la
-dépendance d'authentification**. Ils constituent la preuve du §2.5.
-
-**Tableau 32 — Les treize cas de contrôle d'accès et de consultation vérifiés sur le chemin réel, et le code ou le comportement attendu.**
+**Tableau 44 — Les treize cas de contrôle d'accès et de consultation vérifiés sur le chemin réel, et le code ou le comportement attendu.**
 
 | Cas vérifié | Attendu |
 |---|---|
@@ -101,7 +122,9 @@ dépendance d'authentification**. Ils constituent la preuve du §2.5.
 > test qui passe quelle que soit l'implémentation ne prouverait rien — c'est la
 > raison de cette vérification explicite.
 
-## 7.2 Évaluation ground-truth
+## 8.5 Évaluation sur vérité terrain
+
+### 8.5.1 Principe et résultats
 
 **Principe.** Trois jeux synthétiques easy / medium / hard sont générés à partir
 **des mêmes masters** (`--seed 42`) : seul le **taux de variation** change
@@ -119,7 +142,7 @@ compromis global des deux.
 **Résultats de référence** (run 08/09/2026, 500 masters par niveau, ~1 000
 enregistrements, parité MVP = Spark vérifiée à chaque niveau) [evaluation.md §3] :
 
-**Tableau 33 — Les résultats de l'évaluation ground-truth sur les trois niveaux de variation.**
+**Tableau 45 — Les résultats de l'évaluation ground-truth sur les trois niveaux de variation.**
 
 | Niveau | Masters prédits | TP | FP | FN | Precision | Recall | F1 |
 |---|---|---|---|---|---|---|---|
@@ -146,9 +169,9 @@ ou de date, champ manquant — et ne construit **jamais** deux personnes distinc
 ressemblent. Les collisions de noms survenues fortuitement ont donc été absorbées par le seuil,
 mais le cas adversariaire — un homonyme proche fusionné à tort — n'est **pas sollicité** par la
 vérité terrain. La précision affichée est donc un **plancher**, pas une borne : la confirmer
-exigerait un générateur d'homophones quasi identiques, identifié comme piste au §7.5.
+exigerait un générateur d'homophones quasi identiques, identifié comme piste au § 8.6.
 
-## 7.3 Breakdown par méthode et par source
+### 8.5.2 Décomposition par méthode et par source
 
 Le découpage par technique de match localise la faiblesse : sur le niveau hard, la
 méthode **exacte** atteint 1.000 / 0.854 / 0.921 (précision / rappel / F1) contre
@@ -166,7 +189,7 @@ vérité sur 1 057 enregistrements** [evaluation_truth.md]. Référence historiq
 (test_bigdata, 10 669 patients / 5 000 masters) : F1 0.403, zéro FP, là encore
 Pandas = Spark [evaluation.md §3].
 
-## 7.4 Cas de référence et intégrité
+### 8.5.3 Cas de référence et intégrité
 
 - **Cas « Jean Rakoto »** : démo 18 patients → **11 masters, 18 liens** ; Jean
   Rakoto fusionné par **exact** (CIN), Nirina par **probabilistic** (score
@@ -178,22 +201,21 @@ Pandas = Spark [evaluation.md §3].
 - **Gouvernance API** : `duplicate_rate` = **32.24 %** avec `mocked: false` ;
   `patient_consent_gold` = **145** lignes pour 145 masters — la table est produite
   par jointure, mais `purpose` / `granted` y sont à `NULL`, le consentement n'ayant
-  pas été injecté en base au moment du run (cf. §7.5).
+  pas été injecté en base au moment du run (cf. § 8.6).
 
-## 7.5 Limites et dettes identifiées
+## 8.6 Limites et dettes identifiées
 
 Le prototype est évalué sans complaisance [contexte_projet.md — reste à faire].
-Huit limites ont été relevées, toutes reprises et documentées au § 8.3 : le **rappel
+Sept limites ont été relevées, toutes reprises dans la conclusion générale : le **rappel
 de 0.422** sur le jeu « hard » (420 faux négatifs ; à corriger en abaissant le seuil ou
 en enrichissant la clé avec l'adresse, si le métier l'accepte) ; **`patient_events_gold`
 vide**, les Encounter et Condition n'étant pas rattachées à un `patient_uuid`, donc un
 enrichissement du mapping FHIR à prévoir ; le **consentement non alimenté** en base
 centrale (`purpose` et `granted` à `NULL`), le seed étant fourni mais non exécuté, la
-mécanique étant prouvée et la donnée absente ; les **endpoints `laboratory` et
-`malaria`** sur données de secours, le flag `mocked` étant tracé ; l'absence de
+mécanique étant prouvée et la donnée absente ; l'absence de
 **cas adversariaire d'homophones**, qui fait de la précision 1.000 un plancher et non
 une borne ; le **contrôle d'accès de l'API Flask non testé**, `test_api.py` ne
-contrôlant que 14 statuts sans authentification, dette assumée puisque le contrôle par
+contrôlant que 3 statuts sans authentification, dette assumée puisque le contrôle par
 rôle et par consentement est appliqué et testé sur l'API de gouvernance ; l'absence de
 **tests EI-déployés et d'intégration continue**, hors périmètre du stage ; enfin la
 **re-validation sur VM de l'ingestion incrémentale et de la planification cron**,
@@ -213,11 +235,8 @@ ground-truth démontre **une règle d'or tenue** : zéro fusion à tort (Precisi
 hard relevé à 0.422 grâce à la clé CIN. Le rappel sur le jeu dur indique
 précisément où la logique pourrait s'enrichir. La gouvernance, elle, est vérifiée
 par le comportement observable : 401, 403 (rôle et consentement), 422, et un audit
-contenant la finalité et le motif du refus. Avec l'architecture, la réalisation et
-l'évaluation, l'ensemble répond à la problématique du chapitre 1 : centraliser,
-dédupliquer de façon explicable, gouverner par consentement — sur données
-synthétiques et architecture Big Data. La **conclusion générale** (chapitre 8)
-reprend ces acquis, expose les limites assumées et les perspectives.
+contenant la finalité et le motif du refus. La **conclusion générale** reprend ces
+acquis, expose les limites assumées et les perspectives.
 
 ### Références
 
