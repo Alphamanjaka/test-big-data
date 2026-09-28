@@ -1291,3 +1291,31 @@ conservees).
 
 **Reste :** regeneration du DOCX (`export_memoire_docx.py`) a executer, relecture humaine dans Word,
 `documents/slide_soudenance/` (2 PPTX) non suivi, commit en attente de validation utilisateur.
+
+---
+
+## 28/09/2026 — Deck de soutenance PowerPoint 21 slides (charte MMT)
+
+**Contexte :** l'utilisateur dispose de `documents/slide_soutenance/V2soutenance_m2_hasina.pptx`
+(7,1 Mo, 21 slides — presentation Ingenosya « Mapping Intelligente » utilisee comme gabarit de
+structure) et demande un deck pour le projet patients, calque sur cette structure, avec contenu du
+projet et personnalisation charte. Charte choisie par l'utilisateur : logo = placeholder texte «
+MMT », auteur = RANOMENJANAHARY M. Alpha, couleurs « bleu sante » (PRIMARY #106D8E, SECOND #2FA8B5,
+GOLD #E8A82E, DARK #0B2E4F, BG #F0F6F9).
+
+| # | Action | Détail |
+| - | ------ | ------ |
+| 1 | Design du fichier de référence | `sldSz` 16:9 (14 630 400 × 8 229 600 EMU), polices Calibri/Aptos, accent #4472C4 (non repris), footer répété par slide ; aucun logo MMT dans le dépôt → placeholder textuel choisi |
+| 2 | Dépendance dev | `python-pptx` 1.0.2 installé dans le venv racine uniquement (hors deps du projet, Python 3.8 préservé) ; PIL déjà présent (transitivement) pour le calcul des ratios d'images |
+| 3 | Script générateur | `projet/code-source/scripts/dev/build_soutenance_pptx.py` (nouveau) : 21 slides alignées 1:1 sur le gabarit (cover, contenu, sommaire, tableaux, cards, `code_card`, figures `fig-3.png` slide 4 et `fig-5.png` slide 13, footer auteur/MMT) ; première version produite remaniée pour coller au gabarit (suppression de 4 diviseurs de section) |
+| 4 | Sortie | `documents/slide_soutenance/V2soutenance_m2_mmt_alpha.pptx` régénéré |
+
+**Vérifications.** extraction de la génération : `Slides : 21` ; relecture du PPTX par python-pptx :
+21 slides titrées conformes au plan (1 cover, CONTEXTE/QUESTION/PROBLÉMATIQUE/OBJECTIFS/SOMMAIRE,
+3× ÉTAT DE L'ART, 3× ÉTUDE DE L'EXISTANT, SOLUTION, FONCTIONNALITÉS, 3× CAS D'UTILISATION,
+DÉMONSTRATION, PERSPECTIVES, CONCLUSION, MERCI) ; 2 images intégrées (slides 4 et 13) ; accents
+français corrects (le fichier source a été réécrit en UTF-8 après une corruption d'encodage liée à
+un `Set-Content -Encoding UTF8` PowerShell — ne plus éditer ce script via PowerShell).
+
+**Reste :** relecture humaine dans PowerPoint (débordements, rendu des images) ; script + sortie non
+suivis (commit en attente de validation utilisateur).
