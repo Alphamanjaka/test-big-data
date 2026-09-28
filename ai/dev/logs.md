@@ -1319,3 +1319,21 @@ un `Set-Content -Encoding UTF8` PowerShell — ne plus éditer ce script via Pow
 
 **Reste :** relecture humaine dans PowerPoint (débordements, rendu des images) ; script + sortie non
 suivis (commit en attente de validation utilisateur).
+
+---
+
+## 28/09/2026 — État d'avancement rédigé pour le supérieur
+
+**Contexte :** à la demande de l'utilisateur, une synthèse d'avancement destinée à son supérieur,
+rédigée en langage courant (peu de jargon), à partir du cahier des charges, de
+`ai/dev/suivi_avancement.md` et de `ai/dev/logs.md`.
+
+| # | Action | Détail |
+| - | ------ | ------ |
+| 1 | Nouveau document | `documents/etat_avancement_superieur.md` : approche générale (MVP puis passage à l'échelle), avancement des 6 objectifs du cahier, fiabilité (tests 54/54, API 3/3, générateur 44/44), livrables, mémoire/soutenance, points d'attention restants, verdict global, ordre de priorité des actions restantes |
+
+**Vérifications :** synthèse alignée sur les chiffres réels du suivi (214 → 145 masters, 69 doublons,
+32 %, précision sans faux positif, rappel hard 0.422, tests 54/54, API 3/3, 44/44, 9 chapitres, 37
+tableaux, deck 21 slides). Aucune modification de code.
+
+**Reste :** rien.
