@@ -20,6 +20,16 @@ from ..utils.paths import (
     expand_path,
     SPARK_EXECUTOR_MEMORY, SPARK_DRIVER_MEMORY,
 )
+from ..utils.watermark import (
+    file_signature, should_extract, remember, report_from_watermark,
+    load as load_watermark, save as save_watermark,
+)
+
+# Mode d'ingestion demandé par le pipeline (run_pipeline.sh exporte
+# PIPELINE_MODE) : full (rechargement, comportement historique par défaut),
+# resume (incrémental par empreinte), since (ré-extraction forcée à partir
+# d'une date). En cas d'exécution directe, full par défaut.
+PIPELINE_MODE = os.environ.get("PIPELINE_MODE", "full")
 
 # ============================================================
 # CONFIGURATION DES LOGS
@@ -142,7 +152,8 @@ def create_ssh_tunnel(ssh_config, remote_host="localhost", remote_port=5432, loc
 # DISCOVER POSTGRESQL
 # ============================================================
 @retry(stop_max_attempt_number=3, wait_fixed=5000)
-def discover_postgres(source, spark, source_index):
+def discover_postgres(source, spark, source_index, watermark):
+    """Extrait les tables PostgreSQL vers RAW/Hive (toujours en full)."""
     source_name = source["name"]
     logger.info(f"=== Début de la découverte pour {source_name} ===")
 
@@ -311,12 +322,12 @@ def discover_postgres(source, spark, source_index):
         json.dump(failed_tables, f, indent=2, default=json_serial)
 
     logger.info(f"[{source_name}] Terminé: {len(tables_info)} tables, {len(failed_tables)} échecs")
-    return tables_info
+    return tables_info, []
 
 # ============================================================
 # DISCOVER SQLITE (source locale "CLINIQUE")
 # ============================================================
-def discover_sqlite(source, spark, source_index):
+def discover_sqlite(source, spark, source_index, watermark):
     """Extrait une base SQLite (fichier local, source type='sqlite') vers RAW/Hive.
 
     Lit le fichier .db via sqlite3 (stdlib), construit un DataFrame Spark et
@@ -459,7 +470,7 @@ def discover_sqlite(source, spark, source_index):
         json.dump(failed_tables, f, indent=2, default=json_serial)
 
     logger.info(f"[{source_name}] Terminé: {len(tables_info)} tables, {len(failed_tables)} échecs")
-    return tables_info
+    return tables_info, []
 
 # ============================================================
 # DISCOVER CSV (sources intérimaires type='csv', modèle test_bigdata)
@@ -491,13 +502,16 @@ def _detect_date_format(df, col_name):
             best_count, best_fmt = cnt, fmt
     return best_fmt if best_count > 0 else None
 
-def discover_csv(source, spark, source_index):
+def discover_csv(source, spark, source_index, watermark):
     """Extrait des fichiers CSV (source type='csv') vers RAW/Hive.
 
-    Lit chaque table {table}.csv du dossier {dir}, normalise les éventuelles
-    colonnes date (naissance/date_naiss/dob/...) en ISO yyyy-MM-dd, écrit le
-    Parquet sur HDFS + crée la table Hive externe (même format de rapport
-    que discover_postgres / discover_sqlite).
+    Ingestion incrémentale par empreinte : chaque table {table}.csv du dossier
+    {dir} est comparée au watermark (signature sha256 + taille). Si la table est
+    inchangée et que le mode d'ingestion est incrémental (`resume`), elle est
+    SAUTÉE : ni lecture, ni HDFS, ni réécriture — sa fiche de rapport est
+    reconstruite depuis le watermark pour ne jamais casser les étapes aval.
+    La ré-extraction est forcée par les modes `full` (défaut, historique) et
+    `since`, ou par `ingest.mode: full` sur la source.
     """
     source_name = source["name"]
     logger.info(f"=== Début de la découverte CSV pour {source_name} ===")
@@ -505,7 +519,8 @@ def discover_csv(source, spark, source_index):
     db_cfg = source["db"]
     base_dir = expand_path(db_cfg["dir"])
     ext = db_cfg.get("ext", "csv")
-    tables_info, failed_tables = [], []
+    tables_info, failed_tables, decisions = [], [], []
+    config_mode = (source.get("ingest") or {}).get("mode", "signature")
 
     extract_dir = os.path.join(METADATA_DIR, "extract")
     cache_path = os.path.join(extract_dir, f"{source_name}_extract_raw_report.json")
@@ -527,6 +542,33 @@ def discover_csv(source, spark, source_index):
                 failed_tables.append({"table_name": table_name, "error": f"Fichier introuvable: {file_path}"})
                 logger.error(f"[{source_name}] Fichier introuvable: {file_path}")
                 continue
+
+            # Ingestion incrémentale : empreinte du fichier d'entrée.
+            sig = file_signature(file_path)
+            extract, reason = should_extract(
+                watermark, source_name, table_name, sig, PIPELINE_MODE, config_mode
+            )
+            decisions.append({
+                "source": source_name,
+                "table": table_name,
+                "signature": sig,
+                "extract": extract,
+                "reason": reason,
+            })
+            if not extract:
+                entry = report_from_watermark(watermark, source_name, table_name)
+                if entry:
+                    tables_info.append(entry)
+                    logger.info(
+                        f"[{source_name}] Table {table_name} inchangée "
+                        f"(empreinte identique) — SAUTÉE, rapport reconstruit"
+                    )
+                    continue
+                logger.warning(
+                    f"[{source_name}] Empreinte inchangée mais sans état mémorisé "
+                    f"— ré-extraction de sécurité de {table_name}"
+                )
+
             try:
                 logger.info(f"[{source_name}] Extraction table {table_name}")
                 df = spark.read.option("header", True).option("inferSchema", False).csv(file_path)
@@ -571,6 +613,7 @@ def discover_csv(source, spark, source_index):
                     "row_count": row_count,
                     "sample_data": sample_data,
                     "hdfs_path": hdfs_path,
+                    "signature": sig["signature"],
                 })
             except Exception as e:
                 failed_tables.append({"table_name": table_name, "error": str(e)})
@@ -586,7 +629,7 @@ def discover_csv(source, spark, source_index):
         json.dump(failed_tables, f, indent=2, default=json_serial)
 
     logger.info(f"[{source_name}] Terminé: {len(tables_info)} tables, {len(failed_tables)} échecs")
-    return tables_info
+    return tables_info, decisions
 
 # ============================================================
 # MAIN PIPELINE
@@ -610,14 +653,16 @@ def main():
         sources = json.load(f)
 
     extract_raw_report = {}
+    watermark = load_watermark()
+    batch_id = datetime.datetime.now().strftime("%Y%m%d_%H%M%S")
 
     def dispatcher(src, index):
         stype = src.get("type")
         if stype == "sqlite":
-            return discover_sqlite(src, spark, index)
+            return discover_sqlite(src, spark, index, watermark)
         if stype == "csv":
-            return discover_csv(src, spark, index)
-        return discover_postgres(src, spark, index)
+            return discover_csv(src, spark, index, watermark)
+        return discover_postgres(src, spark, index, watermark)
 
     with ThreadPoolExecutor(max_workers=4) as executor:
         futures = {
@@ -627,11 +672,38 @@ def main():
         for future in as_completed(futures):
             src = futures[future]
             try:
-                extract_raw_report[src["name"]] = future.result()
+                tables_info, decisions = future.result()
+                extract_raw_report[src["name"]] = tables_info
+                # Mémorisation de l'ingestion : seules les tables réellement
+                # extraites mettent à jour leur empreinte.
+                for decision in decisions:
+                    if decision.get("extract"):
+                        entry = next(
+                            (
+                                t for t in tables_info
+                                if t.get("table_name") == decision["table"]
+                                and "error" not in t
+                            ),
+                            None,
+                        )
+                        if entry is not None:
+                            remember(
+                                watermark,
+                                decision["source"],
+                                decision["table"],
+                                decision["signature"],
+                                row_count=entry.get("row_count"),
+                                columns=entry.get("columns"),
+                                sample_data=entry.get("sample_data"),
+                                hdfs_path=entry.get("hdfs_path"),
+                                batch_id=batch_id,
+                            )
                 print(f"✅ {src['name']} traité avec succès")
             except Exception as e:
                 extract_raw_report[src["name"]] = [{"error": str(e)}]
                 print(f"❌ Erreur {src['name']}: {str(e)}")
+
+    save_watermark(watermark)
 
     output = os.path.join(METADATA_DIR, "extract_raw_report.json")
     with open(output, "w") as f:
@@ -639,7 +711,19 @@ def main():
 
     elapsed = round(time.time() - start, 2)
     update_sync_metadata("RAW", status="ok")
-    print(f"\n✅ Pipeline terminé en {elapsed}s — Rapport: {output}")
+
+    skipped = sum(
+        1
+        for tables in extract_raw_report.values()
+        for t in tables
+        if t.get("skipped")
+    )
+    print(f"✅ Pipeline terminé en {elapsed}s — Rapport: {output} "
+          f"(tables sautées non retraitées: {skipped})")
+    logger.info(
+        f"Pipeline terminé en {elapsed}s — tables sautées non retraitées: {skipped} "
+        f"(mode d'ingestion: {PIPELINE_MODE})"
+    )
     spark.stop()
 
 if __name__ == "__main__":

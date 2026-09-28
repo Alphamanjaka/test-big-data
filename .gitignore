@@ -17,6 +17,8 @@ node_modules/
 .env.local
 provision/config/data_sources.json
 **/provision/config/data_sources.json
+provision/config/schedule.yaml
+**/provision/config/schedule.yaml
 provision/metadata/
 **/provision/metadata/
 *.pem

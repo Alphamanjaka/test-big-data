@@ -1337,3 +1337,36 @@ rédigée en langage courant (peu de jargon), à partir du cahier des charges, d
 tableaux, deck 21 slides). Aucune modification de code.
 
 **Reste :** rien.
+
+---
+
+## 28/09/2026 — ELT : planification automatique + ingestion incrémentale (scheduler, watermark, API, front)
+
+**Contexte :** automatiser les relances du pipeline ELT (le cahier des charges exige de ne pas
+retraiter les données inchangées en boucle) : planification cron quotidienne/hebdo/mensuelle à heure
+fixe, reprise après échec, incrémental par empreinte, pilotage via API + page web.
+
+| # | Action | Détail |
+| - | ------ | ------ |
+| 1 | Logique planification pure | `provision/scripts/utils/schedule_logic.py` : validation (`frequency` daily/weekly/monthly, `time` HH:MM, `day_of_week` 0=lundi, `day_of_month` borné, `resume.mode` auto/since/full), calcul des échéances, `should_launch`, `build_run_flags` (→ `--resume`/`--since`/`--full`) |
+| 2 | État de reprise | `provision/scripts/utils/pipeline_state.py` : `pipeline_state.json` (run_id, status running/ok/failed, mode, depuis quelle étape, début/fin) + CLI `begin/step/finish/show/resume_start` ; statut `running` = verrou anti-double-lancement |
+| 3 | Watermark anti-retraitement | `provision/scripts/utils/watermark.py` : `file_signature` (sha256+taille+mtime), `should_extract` (priorité : `ingest.mode` source `full` > mode pipeline `full`/`since` > empreinte), `remember` (cap 50 lots), `report_from_watermark` |
+| 4 | Scheduler cron | `provision/scripts/scheduler/scheduler.py` (+`install_cron.sh`) : vérification chaque minute, mini-lecteur YAML (pas de PyYAML dans `api-venv`), état `scheduler_runs.json`, lancement `run_pipeline.sh` en `start_new_session` (POSIX) ; plan désactivé par défaut |
+| 5 | Orchestrateur | `provision/scripts/run_pipeline.sh` réécrit : modes `--resume` / `--full` / `--since` / `--from` / `--dry-run` ; parse le nom de l'étape pour `--from` ; exporte `PIPELINE_MODE`, `INGEST_SINCE`, `PIPELINE_RUN_ID` |
+| 6 | Extraction incrémentale | `ELT/gen_extract_raw.py` : `PIPELINE_MODE` (défaut `full`), skip des tables CSV inchangées, rapport reconstruit via `report_from_watermark` (aval inchangé), `watermark.json` chargé/sauvegardé, compteur skipped en fin de run ; docstring orphelin cassant le `py_compile` corrigé |
+| 7 | API gouvernance | `engine/governance/pipeline.py` (lecture/écriture `schedule.yaml`, statut pipeline) + `app.py` : `GET/PUT /pipeline/schedule` (écriture admin, 422 si invalide), `GET /pipeline/status` ; CORS `allow_methods` étendu à PUT |
+| 8 | Frontend | `src/app/pipeline/` (page + client), `src/lib/api.ts` (GOVERNANCE_API_URL/KEY, types, fetchGovernance), `src/middleware.ts` (+`/pipeline`), `src/components/Sidebar.tsx` (menu « Pipeline ELT ») ; édition admin uniquement |
+| 9 | Config | `provision/config/schedule.example.yaml` (committé) ; `schedule.yaml` runtime ajouté au `.gitignore` ; `data_sources.example.json` documente `"ingest": {"mode": "signature"}` |
+| 10 | Tests | `tests/test_schedule_logic.py`, `test_watermark.py`, `test_pipeline_state.py`, `test_pipeline_api.py` (fixtures FakeCursor/FakeConnection, auth patchée, chemins surchargés en env) |
+| 11 | Docs | `documents/cahier_des_charges.md` §4.1 (incrémental + planification), §4.4 (endpoints) ; `GUIDE/guide-vagrant.md` (drapeaux, §6bis cron, fichiers clés), `guide-backend.md` (API :8000 + modes de reprise), `guide-frontend.md` (page `/pipeline`, env) ; `ai/dev/suivi_avancement.md` point 13 |
+
+**Vérifications.** `bash -n` → `run_pipeline.sh` OK, `install_cron.sh` OK (git-bash hôte) ; dry-run
+hôte (git-bash, `PIPELINE_PYTHON` = python) → plans corrects pour full / resume / from=create_silver /
+since+resume ; `python -m provision.scripts.scheduler.scheduler --dry-run` et `--status` OK ;
+`py_compile` OK sur les 6 modules ; pytest ciblés **37 passed** (schedule_logic/watermark/state) et
+**8 passed** (pipeline_api) ; **suite complète verte (~99 tests, 0 échec, deprecation warnings
+seulement)**. Sémantique fixée pendant le dev : `--resume` ne continue qu'un run **échoué** (repère
+la 1ʳᵉ étape non-ok), sinon nouveau run incrémental.
+
+**Reste :** validation VM réelle (cron minute + run incrémental après reboot NameNode) ; commit en
+attente de validation utilisateur.

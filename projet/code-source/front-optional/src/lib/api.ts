@@ -114,3 +114,87 @@ export async function getConsent(limit = 200): Promise<ConsentResult> {
   };
   return { ...resultOf<ConsentRow[]>(env), stats };
 }
+
+// ------------------------------------------------------------
+// Endpoints planification / pipeline (API gouvernance FastAPI :8000)
+// ------------------------------------------------------------
+
+/** URL de l'API gouvernance (FastAPI) — surridable via .env. */
+export const GOVERNANCE_API_URL =
+  process.env.NEXT_PUBLIC_GOVERNANCE_API_URL || "http://localhost:8000";
+
+/** Clé API de démonstration (surridable via .env) pour la page /pipeline. */
+const GOVERNANCE_API_KEY =
+  process.env.NEXT_PUBLIC_GOVERNANCE_API_KEY || "";
+
+export type ScheduleFrequency = "daily" | "weekly" | "monthly";
+export type ResumeMode = "auto" | "since" | "full";
+
+export interface PipelineSchedule {
+  enabled: boolean;
+  frequency: ScheduleFrequency;
+  time: string;
+  day_of_week: number;
+  day_of_month: number;
+  resume: { mode: ResumeMode; since: string | null };
+}
+
+export interface PipelineStatus {
+  schedule: PipelineSchedule;
+  schedule_error: string | null;
+  next_run: string;
+  run_flags: string[];
+  pipeline: {
+    status?: string;
+    run_id?: string;
+    mode?: string;
+    steps?: Record<string, string>;
+    [key: string]: unknown;
+  };
+  scheduler: {
+    last_launched_slot?: string | null;
+    last_launch_at?: string | null;
+    runs: { at: string; slot: string; flags: string[]; pid: number }[];
+  };
+  zones: Record<string, unknown>;
+  sources: Record<string, { tables: number; last_extracted_at: string | null }>;
+}
+
+/** Fetch de l'API gouvernance FastAPI (page /pipeline), avec Bearer si une clé est définie. */
+async function fetchGovernance(
+  path: string,
+  init: RequestInit = {}
+): Promise<Response> {
+  const headers: Record<string, string> = {
+    "Content-Type": "application/json",
+    ...(init.headers as Record<string, string>),
+  };
+  if (GOVERNANCE_API_KEY) {
+    headers["Authorization"] = `Bearer ${GOVERNANCE_API_KEY}`;
+  }
+  return fetch(`${GOVERNANCE_API_URL}${path}`, {
+    ...init,
+    headers,
+    cache: "no-store",
+  });
+}
+
+export async function getPipelineStatus(): Promise<PipelineStatus> {
+  const res = await fetchGovernance("/pipeline/status");
+  if (!res.ok) throw new Error(`/pipeline/status → HTTP ${res.status}`);
+  return (await res.json()) as PipelineStatus;
+}
+
+export async function putPipelineSchedule(
+  schedule: PipelineSchedule
+): Promise<PipelineSchedule> {
+  const res = await fetchGovernance("/pipeline/schedule", {
+    method: "PUT",
+    body: JSON.stringify(schedule),
+  });
+  if (!res.ok) {
+    const detail = (await res.json().catch(() => null))?.detail;
+    throw new Error(detail ? `HTTP ${res.status} — ${detail}` : `HTTP ${res.status}`);
+  }
+  return (await res.json()) as PipelineSchedule;
+}

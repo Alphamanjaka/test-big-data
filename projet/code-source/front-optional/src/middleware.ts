@@ -7,6 +7,7 @@ const AUTHENTICATED_ROUTES = [
   /^\/doublons(\/|$)/,
   /^\/gouvernance(\/|$)/,
   /^\/synthese(\/|$)/,
+  /^\/pipeline(\/|$)/,
   /^\/users(\/|$)/,
 ]
 
@@ -42,6 +43,7 @@ export const config = {
     "/doublons/:path*",
     "/gouvernance/:path*",
     "/synthese/:path*",
+    "/pipeline/:path*",
     "/users/:path*",
   ],
 }

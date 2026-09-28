@@ -167,7 +167,37 @@ provision/api/
 | Pas de cache | chaque requête interroge Hive | Basse |
 | Pas de validation paramètres | invalides → 500 | Basse |
 
-## 10. Dépannage rapide
+## 11. Planification et état du pipeline (API gouvernance, port 8000)
+
+En plus de l'API Flask (`:5000`), le moteur expose une **API de gouvernance FastAPI** sur le port
+**8000** (`uvicorn engine.governance.app:app --port 8000`). Elle porte l'authentification RBAC par
+clé API (`Authorization: Bearer <clé>` → `api_user`) et journalise tous les accès dans `access_audit`.
+
+Endpoints planification (fichier partagé `provision/config/schedule.yaml`, lu aussi par le cron VM) :
+
+| Endpoint | Accès | Rôle |
+|---|---|---|
+| `GET /pipeline/schedule` | admin / analyst | Planification courante (`enabled`, `frequency`, `time`, `resume.mode`) |
+| `PUT /pipeline/schedule` | **admin** | Écrit la planification (validation stricte, 422 si invalide) — journalisé |
+| `GET /pipeline/status` | admin / analyst | Plan + prochain run, état du dernier run, sources suivies (watermark), zones Medallion |
+
+```bash
+# Exemples (hôte)
+curl -H "Authorization: Bearer <cle>" http://localhost:8000/pipeline/schedule
+curl -X PUT -H "Authorization: Bearer <cle>" -H "Content-Type: application/json" \
+     -d '{"enabled":true,"frequency":"daily","time":"03:00","resume":{"mode":"auto"}}' \
+     http://localhost:8000/pipeline/schedule
+curl -H "Authorization: Bearer <cle>" http://localhost:8000/pipeline/status
+```
+
+Sémantique du mode de reprise `resume.mode` :
+- `auto` (recommandé) : reprend un run échoué sinon nouveau run **incrémental** — les tables CSV
+  inchangées sont **sautées** grâce aux empreintes de `provision/metadata/watermark.json`
+  (anti-retraitement en boucle) ;
+- `since` : ré-extraction forcée à partir d'une date (`resume.since` au format `YYYY-MM-DD`) ;
+- `full` : purge + ré-extraction de tout.
+
+## 12. Dépannage rapide
 
 | Symptôme | Cause probable | Correctif |
 |---|---|---|
@@ -176,8 +206,10 @@ provision/api/
 | `/api/governance/duplicates` vide | SILVER/moteur non exécuté | lancer le pipeline (étape 3/4) |
 | Port 5000 occupé | autre service | `vagrant halt` / port conflictuel → changer de port forward ou tuer le process |
 | Python 3.8 des dépendances | libs sorties de compatibilité | respecter RapidFuzz (pas de NLP lourd) `[AGENTS.md]` |
+| `PUT /pipeline/schedule` → 403 | rôle non-admin | utiliser une clé `api_user` au rôle `admin` |
+| `PUT /pipeline/schedule` → 422 | config invalide | vérifier `frequency`/`time`/`resume.mode`/`since` (message détaillé dans le corps) |
 
-## 11. Suite logique
+## 13. Suite logique
 
 - Consommation par le front : **`GUIDE/guide-frontend.md`**.
 - Détail du moteur/gouvernance : `documents/documentation/api.md`, `documents/documentation/consentement_gouvernance.md`.

@@ -181,6 +181,19 @@ bash provision/scripts/ensure_generator_data.sh
 ```
 Suivre : `tail -f ~/datalake-final/provision/logs/elt.log`.
 
+**Drapeaux de reprise (run_pipeline.sh)** :
+| Drapeau | Effet |
+|---|---|
+| *(aucun)* | Rechargement complet (comportement historique) |
+| `--resume` | Reprend un run échoué à la 1ʳᵉ étape non terminée, sinon nouveau run **incrémental** (sources CSV inchangées **non ré-extraites**, cf. watermark) |
+| `--full` | Purge + ré-extraction de tout |
+| `--since YYYY-MM-DD` | Ré-extraction forcée à partir d'une date (nouvelle arrivée de données) |
+| `--from <étape>` | Repart d'une étape nommée (`ensure_generator_data`, `gen_extract_raw`, `gen_fhir_mapping`, `create_silver`, `create_gold`) |
+| `--dry-run` | Affiche le plan sans rien exécuter (aucun fichier d'état) |
+
+L'état de chaque run est persisté dans `provision/metadata/pipeline_state.json` (non committé) :
+`status=running` bloque tout double lancement (cron comme reprise manuelle).
+
 **Durées typiques** (VM 8 Go / 4 CPU, 500 patients maîtres) :
 | Étape | Durée approx. |
 |---|---|
@@ -191,6 +204,50 @@ Suivre : `tail -f ~/datalake-final/provision/logs/elt.log`.
 | [4/5] Création GOLD | 5–8 min |
 
 > `WARN NativeCodeLoader` / `WARN Utils: hostname resolves to loopback` = **warnings normaux**, pas des erreurs.
+
+### Étape 6bis — Planification automatique (cron VM, optionnel)
+
+Le pipeline peut tourner tout seul à **heure fixe** (quotidien/hebdo/mensuel) via une
+vérification cron **chaque minute** (le déclenchement réel est décidé par le planificateur).
+
+```bash
+# Dans la VM (une seule fois, après que l'api-venv existe)
+bash provision/scripts/scheduler/install_cron.sh
+# → ajoute : * * * * * cd ~/datalake-final && $PYTHON -m provision.scripts.scheduler.scheduler --check
+```
+
+Configuration de la planification — fichier **non committé** `provision/config/schedule.yaml` :
+```bash
+# Sur l'hôte (ou directement sur la VM via le partage) :
+cd ~/datalake-final
+cp provision/config/schedule.example.yaml provision/config/schedule.yaml
+```
+Exemple (`schedule.yaml`) — heure dans le **fuseau de la VM (UTC+3)** :
+```yaml
+enabled: true
+frequency: daily        # daily | weekly | monthly
+time: "03:00"
+day_of_week: 0          # 0=lundi .. 6=dimanche (si weekly)
+day_of_month: 1         # 1..31 (si monthly, borné au dernier jour)
+resume:
+  mode: auto            # auto | since | full
+  since: null           # date "YYYY-MM-DD" si mode: since
+```
+
+Semantics du mode `auto` : la phase d'extraction **ne rejoue pas les tables inchangées**
+(empreinte sha256 + taille conservées dans `provision/metadata/watermark.json`) ; un run
+précédent **échoué** est repris à la première étape non terminée (`pipeline_state.json`).
+
+Diagnostic :
+```bash
+cd ~/datalake-final
+/home/vagrant/api-venv/bin/python -m provision.scripts.scheduler.scheduler --status      # plan + état
+/home/vagrant/api-venv/bin/python -m provision.scripts.scheduler.scheduler --dry-run    # simulation
+tail -f provision/logs/scheduler.log          # trace des vérifications minute
+```
+
+> La planification se règle aussi depuis l'interface : page **Pipeline ELT** du frontend
+> (API gouvernance `:8000`, endpoint `GET/PUT /pipeline/schedule`) — voir `guide-frontend.md`.
 
 ### Étape 7 — Valider les résultats
 ```sql
@@ -257,8 +314,13 @@ cd ~/datalake-final
 |---|---|
 | `bootstrap.sh` | Installation unique de la stack (idempotent via `~/.provisioned`) |
 | `Vagrantfile` | Définition de la VM + synced folder + ports |
-| `scripts/run_pipeline.sh` | Orchestrateur des 5 étapes ELT (arrêt sur erreur) |
+| `scripts/run_pipeline.sh` | Orchestrateur des 5 étapes ELT (arrêt sur erreur, reprise `--resume`) |
 | `scripts/ensure_generator_data.sh` | Étape 0 : régénère les CSV du générateur (seed 42) si absents |
+| `scripts/scheduler/install_cron.sh` | Pose le cron VM (vérification minute de la planification) |
+| `scripts/scheduler/scheduler.py` | Planificateur : décide du lancement selon `schedule.yaml` |
+| `scripts/utils/pipeline_state.py` | État de reprise du run (`pipeline_state.json`) |
+| `scripts/utils/watermark.py` | Empreintes d'ingestion (`watermark.json`, anti-retraitement) |
+| `config/schedule.example.yaml` | Template de la planification (→ `schedule.yaml`, **non committé**) |
 | `scripts/ELT/gen_extract_raw.py` | Étape 1 : sources → parquet HDFS (postgres/sqlite/CSV) |
 | `scripts/ELT/gen_fhir_mapping.py` | Étape 2 : colonnes → mapping FHIR |
 | `scripts/ELT/create_silver.py` | Étape 3 : RAW → SILVER (FHIR harmonisé + dédup moteur `engine/`) |

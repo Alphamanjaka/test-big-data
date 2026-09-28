@@ -2,6 +2,9 @@
   {
     "name": "pharmacy",
     "type": "csv",
+    "ingest": {
+      "mode": "signature"
+    },
     "db": {
       "dir": "{PROJECT_ROOT}/evaluation/synthetic-patient-generator/data/raw/pharmacy"
     },
@@ -11,6 +14,9 @@
   {
     "name": "consultation",
     "type": "csv",
+    "ingest": {
+      "mode": "signature"
+    },
     "db": {
       "dir": "{PROJECT_ROOT}/evaluation/synthetic-patient-generator/data/raw/consultation"
     },
@@ -20,6 +26,9 @@
   {
     "name": "imaging",
     "type": "csv",
+    "ingest": {
+      "mode": "signature"
+    },
     "db": {
       "dir": "{PROJECT_ROOT}/evaluation/synthetic-patient-generator/data/raw/imaging"
     },

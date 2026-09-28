@@ -6,6 +6,9 @@ Endpoints :
 - GET /patients       — liste masters (admin/analyst), filtrée par consentement
 - GET /patients/{id}  — détail master (admin/analyst), 403 sans consentement
 - GET /audit          — journal d'accès (admin uniquement)
+- GET /pipeline/schedule — planification ELT (admin/analyst)
+- PUT /pipeline/schedule — écriture de la planification (admin uniquement)
+- GET /pipeline/status   — état du pipeline (admin/analyst)
 - /consent/*          — monté depuis engine.governance.consent.router
 
 Les endpoints `/patients*` exigent le paramètre `purpose` (finalité déclarée par
@@ -21,6 +24,7 @@ from __future__ import annotations
 from fastapi import FastAPI, HTTPException, Depends, Query, Request
 from starlette.middleware.cors import CORSMiddleware
 
+from engine.governance import pipeline as pipeline_status
 from engine.governance.audit import AuditMiddleware
 from engine.governance.auth import UserContext, require_role
 from engine.governance.consent import (
@@ -37,7 +41,7 @@ app.add_middleware(
     CORSMiddleware,
     allow_origins=["http://localhost:3000", "http://localhost:8000",
                    "http://192.168.56.1:3000"],
-    allow_methods=["GET", "POST"],
+    allow_methods=["GET", "POST", "PUT"],
     allow_headers=["Authorization", "Content-Type"],
 )
 app.add_middleware(AuditMiddleware)
@@ -130,6 +134,34 @@ def get_patient(
                     "is_duplicate": row[2]}
     finally:
         conn.close()
+
+
+@app.get("/pipeline/schedule")
+def get_pipeline_schedule(
+    user: UserContext = Depends(require_role("admin", "analyst")),
+):
+    """Planification ELT courante (fichier partagé lu aussi par le cron VM)."""
+    return pipeline_status.load_schedule()
+
+
+@app.put("/pipeline/schedule")
+def put_pipeline_schedule(
+    payload: dict,
+    user: UserContext = Depends(require_role("admin")),
+):
+    """Écrit la planification ELT (admin) — journalisé par AuditMiddleware."""
+    try:
+        return pipeline_status.save_schedule(payload)
+    except ValueError as exc:
+        raise HTTPException(status_code=422, detail=str(exc))
+
+
+@app.get("/pipeline/status")
+def pipeline_status_endpoint(
+    user: UserContext = Depends(require_role("admin", "analyst")),
+):
+    """État du pipeline : plan, prochain run, sources suivies, zones."""
+    return pipeline_status.read_status()
 
 
 @app.get("/audit")

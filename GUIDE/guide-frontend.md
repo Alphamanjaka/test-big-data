@@ -36,6 +36,8 @@ npm install
 
 # 2. Variables d'environnement — créer `.env` à la racine :
 #    NEXT_PUBLIC_SERVER_URL=http://localhost:5000
+#    NEXT_PUBLIC_GOVERNANCE_API_URL=http://localhost:8000
+#    NEXT_PUBLIC_GOVERNANCE_API_KEY=<clé api_user au rôle admin/analyst>
 #    DATABASE_URL="postgresql://postgres:<PASSWORD>@localhost:5432/datalake_user_db?schema=public"
 #    NEXTAUTH_SECRET=<64 hex aléatoires>
 #    NEXTAUTH_URL=http://localhost:3000
@@ -144,8 +146,9 @@ flowchart TB
 
 - **NextAuth v4** (JWT) + Prisma adapter.
 - Deux rôles : `ADMIN` et `MEDECIN` (définition dans `src/lib/rbac.ts`).
-- Middleware protégeant `/settings`, `/synthese`, `/doublons`, `/gouvernance`.
-- Routes `/users/*` réservées au rôle `ADMIN`.
+- Middleware protégeant `/settings`, `/synthese`, `/doublons`, `/gouvernance`, `/pipeline`.
+- Routes `/users/*` réservées au rôle `ADMIN`. L'édition de la planification (`/pipeline`) est
+  réservée au rôle `ADMIN` (lecture ouverte à tout utilisateur connecté).
 
 ## 9. Pages
 
@@ -155,6 +158,7 @@ flowchart TB
 | `/synthese` | Synthèse : déduplication + consentement + chaîne RAW/SILVER/GOLD | `/api/governance/duplicates`, `/api/governance/consent` |
 | `/doublons` | KPIs de déduplication (masters, doublons, taux, méthodes) | `/api/governance/duplicates` |
 | `/gouvernance` | Consentements purpose-by-purpose + filtre par finalité | `/api/governance/consent` |
+| `/pipeline` | **Pipeline ELT** : planification (fréquence/heure, mode de reprise), état du dernier run, sources suivies | API gouvernance `:8000` — `GET/PUT /pipeline/schedule`, `GET /pipeline/status` |
 | `/settings` | Paramètres du compte | — |
 | `/users` | Gestion des utilisateurs (admin) | `/api/users` |
 
@@ -169,6 +173,7 @@ Chaque page affiche un bandeau « Données de démonstration » dès que le back
 | Erreur Prisma `database does not exist` | base `datalake_user_db` absente | démarrer PostgreSQL puis `npx prisma migrate dev --name init` |
 | KPIs « n/d » + bandeau démo | endpoint backend indisponible / fallback mock | lancer le pipeline SILVER/GOLD (voir `guide-vagrant.md`) |
 | Erreur de connexion backend | API Flask éteinte | lancer l'API (voir `guide-backend.md`) |
+| Page `/pipeline` en erreur | API gouvernance `:8000` éteinte ou mauvaise clé | lancer `uvicorn engine.governance.app:app` ; vérifier `NEXT_PUBLIC_GOVERNANCE_API_URL/KEY` dans `.env` |
 | Auth échoue / 401 | état de session invalide | re-seed : `npx prisma db seed` (comptes par défaut) |
 
 ## 11. Suite logique

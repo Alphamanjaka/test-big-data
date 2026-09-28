@@ -1,0 +1,37 @@
+# =====================================================================
+# Planification du pipeline ELT — TEMPLATE
+# ---------------------------------------------------------------------
+# Copier ce fichier vers `schedule.yaml` (le fichier runtime n'est JAMAIS
+# versionné) : cp schedule.example.yaml schedule.yaml
+#
+# Le cron VM (`provision/scripts/scheduler/install_cron.sh`) vérifie chaque
+# minute si une échéance est atteinte. L'heure est exprimée dans le fuseau
+# de la VM (Indian/Antananarivo, UTC+3).
+# =====================================================================
+
+# Activer (true) ou désactiver (false) la planification automatique.
+enabled: false
+
+# Fréquence d'exécution : daily | weekly | monthly
+frequency: daily
+
+# Heure du lancement (HH:MM, fuseau VM).
+time: "03:00"
+
+# Jour de la semaine si frequency=weekly (0=lundi .. 6=dimanche, norme ISO).
+day_of_week: 0
+
+# Jour du mois si frequency=monthly (1..31, borné au dernier jour du mois).
+day_of_month: 1
+
+# Mode de reprise appliqué à chaque lancement planifié :
+#   auto  -> reprend les étapes d'un run précédent échoué, sinon nouveau run
+#           incrémental (les tables sources inchangées ne sont PAS ré-extraites) ;
+#   full  -> recharge tout (purge + ré-extraction de toutes les tables) ;
+#   since -> re-extraction forcée à partir d'une date (pas de comparaison
+#           d'empreinte pour la phase d'extraction), ex. new data arrivée.
+# Le mode `auto` est recommandé : la boucle anti-retraitement repose sur
+# l'empreinte des fichiers d'entrée conservée dans provision/metadata/watermark.json.
+resume:
+  mode: auto
+  since: null

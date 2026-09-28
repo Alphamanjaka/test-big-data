@@ -113,6 +113,17 @@ dans `Mon_Memoire` (subtree → `projet/code-source/`, `projet/mvp/`, `archives/
     Total = **15:25 sur 16:00** à 140 mots/min, vidéo comprise.
     Reste : répéter à voix haute avec chronomètre, filmer la vidéo, construire la slide de
     repli, convertir le Markdown dans l'outil de présentation.
+13. **[ELT — automatisation]** Planification automatique + ingestion incrémentale **implémentée et
+    testée** (28/09) — scheduler cron (daily/weekly/monthly, heure fixe, `schedule.yaml` gitignoré,
+    template `schedule.example.yaml` committé), `run_pipeline.sh` multi-mode
+    (`--resume/--full/--since/--from/--dry-run`) avec état de reprise `pipeline_state.json`,
+    watermark anti-retraitement `watermark.json` intégré à `gen_extract_raw.py` (skip des tables
+    CSV inchangées, rapport reconstruit), endpoints FastAPI `GET/PUT /pipeline/schedule` +
+    `GET /pipeline/status` (CORS PUT), page frontend `/pipeline` (édition admin). **Preuves :**
+    pytest **suite complète verte** (~99 tests, 0 échec) dont 37 (schedule/watermark/state) + 8
+    (API planification) ; `bash -n` OK (`run_pipeline.sh`, `install_cron.sh`) ; dry-run host OK
+    (full/resume/from/since). Reste : **validation VM réelle** du scheduler + d'un run
+    incrémental, commit.
 
 ## Dettes techniques connues
 

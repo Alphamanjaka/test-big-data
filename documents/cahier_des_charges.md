@@ -64,13 +64,30 @@ Le présent **dépôt unique** est la fusion des deux projets :
 
 | Étape | Script | Entrée → Sortie |
 |---|---|---|
-| 1/4 Extraction RAW | `provision/scripts/ELT/gen_extract_raw.py` | `data_sources.json` → Parquet HDFS + tables Hive externes + `extract_raw_report.json` |
-| 2/4 Mapping FHIR | `provision/scripts/ELT/gen_fhir_mapping.py` | `extract_raw_report.json` → `fhir_mapping.json` (RapidFuzz + synonymes) |
-| 3/4 Silver | `provision/scripts/ELT/create_silver.py` | RAW + mapping → `datalake_silver.*_fhir` (4 entités, genre normalisé, doublons) |
-| 4/4 Gold | `provision/scripts/ELT/create_gold.py` | 4 tables Silver → `datalake_gold.patient_events_gold` |
+| 0/5 Données générateur | `ensure_generator_data.sh` | CSV synthétiques (seed 42) si absents |
+| 1/5 Extraction RAW | `provision/scripts/ELT/gen_extract_raw.py` | `data_sources.json` → Parquet HDFS + tables Hive externes + `extract_raw_report.json` |
+| 2/5 Mapping FHIR | `provision/scripts/ELT/gen_fhir_mapping.py` | `extract_raw_report.json` → `fhir_mapping.json` (RapidFuzz + synonymes) |
+| 3/5 Silver | `provision/scripts/ELT/create_silver.py` | RAW + mapping → `datalake_silver.*_fhir` (4 entités, genre normalisé, doublons) |
+| 4/5 Gold | `provision/scripts/ELT/create_gold.py` | 4 tables Silver → `datalake_gold.patient_events_gold` |
 
 Orchestration : `bash provision/scripts/run_pipeline.sh` (arrêt sur erreur), logs `provision/logs/elt.log`,
 suivi `sync_metadata.json` (UTC+3).
+
+**Ingestion incrémentale et reprise (exigence cahier : pas de retraitement en boucle)**
+
+- **Watermark anti-retraitement** : chaque source de type CSV conserve une empreinte
+  (sha256 + taille + mtime) dans `provision/metadata/watermark.json`. À un nouveau run, une table
+  dont l'empreinte n'a pas changé est **sautée** (le rapport d'extraction est reconstruit pour
+  conserver un pipeline côté aval strictement identique). Priorité de décision : `ingest.mode`
+  de la source (`full`) > mode du pipeline (`full`/`since`) > comparaison d'empreinte.
+- **Reprise de run** : l'état de chaque run (étape atteinte, statut) est persisté dans
+  `provision/metadata/pipeline_state.json` (le statut `running` verrouille tout double lancement).
+  En mode `auto` (défaut du planificateur), un run échoué reprend à la première étape non
+  terminée ; un run sain passe en incrémental (skip des tables inchangées).
+- **Planification automatique** (cron VM, vérification chaque minute, déclenchement réel décidé
+  par `provision/scripts/scheduler/scheduler.py`) : fréquence `daily` / `weekly` / `monthly`, heure
+  fixe (fuseau VM), configuration dans `provision/config/schedule.yaml` (runtime, gitignoré ;
+  template committé `schedule.example.yaml`) ou via l'API gouvernance.
 
 ### 4.2 Déduplication (moteur `engine/`)
 
@@ -99,6 +116,10 @@ suivi `sync_metadata.json` (UTC+3).
 - **API données (Flask + PySpark + Hive)** sur SILVER/GOLD : endpoints `/api/governance/duplicates`
   et `/api/governance/consent` (mocks backend si Spark/Hive indisponible).
 - **API plateforme (FastAPI, port 8000, hôte Windows)** : `/health`, `/metrics`, `/patients`, `/patients/{master_patient_id}`, `/audit`, `/consent` — payloads RAW jamais exposés. Lancement : `uvicorn engine.governance.app:app --port 8000`.
+- **API gouvernance — planification** (sur ce même port 8000) : `GET/PUT /pipeline/schedule`
+  (lecture : admin/analyst ; écriture : **admin** uniquement, validation stricte) et
+  `GET /pipeline/status` (plan + état du dernier run + sources suivies). Le format écrit est
+  identique à celui attendu par le planificateur cron de la VM.
 
 ### 4.5 Frontend (optionnel)
 
