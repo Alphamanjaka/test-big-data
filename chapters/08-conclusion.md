@@ -18,6 +18,8 @@ La problématique du chapitre 1 était la suivante :
 > données patients issues de sources hétérogènes, tout en assurant la traçabilité des identités
 > et la gouvernance des accès basée sur le consentement du patient ?*
 
+**Tableau 33 — Les six volets de la problématique : la réponse conçue et réalisée, et la preuve vérifiable dans le dépôt.**
+
 | Volet de la problématique | Réponse conçue et réalisée | Preuve vérifiable |
 |---|---|---|
 | **Intégrer** des sources hétérogènes | couche d'extraction abstraite (CSV, PostgreSQL, SQLite) → zone **RAW** en parquet HDFS, tables Hive externes, typage `STRING` assumé | 3 sources actives + 3 sources avancées (MAVIS 11 tables, MMT_DB 9 tables, CLINIQUE 4 tables) capturées [ch. 3 §3.1] |
@@ -34,6 +36,8 @@ critères explicites (§2.11) et chacun assorti d'un risque résiduel assumé. C
 table est la réponse à la question « *qu'avez-vous choisi, et à la place de quoi ?*
 ».
 
+**Tableau 34 — Les onze arbitrages du projet : la décision, l'alternative écartée, le critère décisif, la preuve et le risque résiduel assumé.**
+
 | Décision | Alternative écartée | Critère décisif | Preuve | Risque résiduel |
 |---|---|---|---|---|
 | **RapidFuzz** + dictionnaire de synonymes | `sentence_transformers` | compatibilité Python 3.8 (C1 éliminatoire) | 2.10 vs 5.00 en arbitrage pondéré ; parité Pandas = Spark | rappel limited sur variations fortes (0.422) |
@@ -44,6 +48,9 @@ table est la réponse à la question « *qu'avez-vous choisi, et à la place de 
 | **Clé API + 3 rôles** | comptes nominatifs / annuaire | pas d'annuaire d'identité sur place (§4.5) | `api_user`, SHA-256, 401/403 vérifiés | pas de traçabilité nominative individuelle |
 | **Finalité en paramètre de requête** | finalité déduite du rôle | finalité déterminée (art. 5.1.b) | 422 hors liste fermée, 403 sinon | une finalité reste déclarative : elle repose sur l'honnêteté de l'appelant |
 | **FastAPI** | Flask | contrôle de finalité exprimé dans le schéma d'API | 4.65 vs 4.50 | écart faible : choix revisable |
+| **MPI local + pivot FHIR** | DMP / MPI réglementaire dédié | périmètre du stage, données synthétiques | `engine/identity/`, 4 entités `_fhir` | MPI non certifié, à valider avant tout usage réel |
+| **3 niveaux : MVP → Spark → Big Data** | Big Data direct | chaque technologie introduite par un besoin | `run_pipeline.sh`, 4/4 étapes vertes | chaque niveau ajoute un palier à maintenir |
+| **Parité Pandas = Spark vérifiée** | deux logiques divergentes | démontrer que le scale ne change pas la sémantique | `test_spark_parity` : TP=307, FP=0, FN=420 identiques | parité vérifiée sur 3 jeux, pas sur le volume réel |
 
 > **Ce que cette synthèse dit du projet.** Aucun arbitrage n'a été fait « par
 > défaut » : chacun a une raison, une preuve et un risque associé. Les deux
@@ -78,6 +85,8 @@ table est la réponse à la question « *qu'avez-vous choisi, et à la place de 
 
 ## 8.3 Limites assumées
 
+**Tableau 35 — Les limites assumées du prototype : état observé et cause, sans dissimulation.**
+
 | Limite | État observé | Cause |
 |---|---|---|
 | **Rappel 0.422 sur le jeu « hard »** | 420 faux négatifs sur 1 057 enregistrements | variations à 50 % ; seuil 0.80 conservateur ; le métier n'a pas validé un seuil plus bas |
@@ -86,6 +95,7 @@ table est la réponse à la question « *qu'avez-vous choisi, et à la place de 
 | **Droit applicable non vérifié localement** | conformité démontrée au RGPD seul | cadre juridique malgache des données de santé non étudié dans le stage (§4.5) |
 | **API Flask de démonstration non sécurisée** | `/governance/consent` sans authentification, `debug=True` | dette connue du PoC ; le contrôle de consentement est implémenté sur l'API **FastAPI** de gouvernance, qui est celle du dépôt consolidé |
 | **Clés d'API hachées sans sel** | `engine/governance/auth.py:26` et `provision/db/seed_governance.py:57` : `hashlib.sha256(...).hexdigest()`, sans sel ni itération | l'empreinte protège la lecture directe de `api_user`, mais une même clé produit toujours la même empreinte : une table de correspondance suffit à la retrouver. Voie de correction : un sel par clé, ou une fonction lente par défaut (`bcrypt`, déjà employée côté frontend pour les mots de passe). Sans effet sur le moteur de déduplication, qui n'utilise pas ces clés |
+| **Précision 1.000 = un plancher, pas une borne** | aucun cas adversariaire dans la vérité terrain | le générateur ne dégrade que des enregistrements existants et ne crée jamais deux personnes presque identiques ; un module « faux jumeaux » renforcerait la preuve (§ 7.5) |
 | **Endpoints sur données de secours** | `laboratory`, `malaria` | sources métier absentes du run de référence ; indicateur `mocked` exposé dans chaque réponse |
 | **Volume démontré** | quelques centaines de lignes en Silver | la VM 8 Go ne permet pas de charger les volumes réels de l'établissement ; le parcours Big Data est **architecturé et reproductible**, pas passé à l'échelle |
 | **Comparaison de l'existant = documentaire** | aucun produit tiers installé | banc d'essai hors périmètre du stage (ch. 3) |

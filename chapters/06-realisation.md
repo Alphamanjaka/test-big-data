@@ -17,6 +17,8 @@ Le générateur
 [`synthetic-patient-generator`](../projet/code-source/evaluation/synthetic-patient-generator)
 est implémenté en 7 étapes, déterministe (seed 42) :
 
+**Tableau 26 — Les six modules du générateur synthétique et le rôle réel de chacun.**
+
 | Module | Rôle réalisé |
 |---|---|
 | `patient_generator.py` | 500 patients maîtres + `master_patients.csv` (vérité absolue) |
@@ -63,6 +65,8 @@ flowchart LR
 > **Figure 7 — Le pipeline ELT en quatre étapes, de l'extraction RAW au chargement
 > GOLD, piloté par `data_sources.json` et contrôlé par `extract_raw_report.json`.**
 
+**Tableau 27 — Les quatre étapes du pipeline ELT, le script qui les exécute et la sortie réellement produite.**
+
 | Étape | Script | Sortie réelle |
 |---|---|---|
 | **1 — Extraction RAW** | `gen_extract_raw.py` | parquet `/datalake/raw/{source}/{table}`, tables Hive externes, `extract_raw_report.json` |
@@ -95,6 +99,8 @@ soin rattachés.
 ## 6.3 Moteur de déduplication : Pandas et Spark
 
 Le moteur `engine/identity/` est la pièce centrale, deux implantations alignées :
+
+**Tableau 28 — Les deux implantations du moteur côte à côte : la sémantique est alignée, seule la mécanique change.**
 
 | Aspect | `matcher.py` (Pandas) | `spark_dedup.py` (PySpark driver-side) |
 |---|---|---|
@@ -160,6 +166,8 @@ le nom du patient dans sa réponse de consentement — et le contrôle de consen
 s'applique à l'API de gouvernance, comme le rappelle `ai/dev/suivi_avancement.md`.
 
 ## 6.6 Difficultés rencontrées et résolutions
+
+**Tableau 29 — Les six difficultés réellement rencontrées, leur cause et le correctif testé.**
 
 | Problème réel | Cause | Correctif |
 |---|---|---|

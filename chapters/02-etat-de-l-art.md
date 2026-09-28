@@ -28,15 +28,13 @@ concluant à un match, un non-match ou un match indéterminé
 systèmes d'ER modernes [B1].
 
 Le processus générique, décrit par Elmagarmid et al. [B1] et détaillé par Christen
-[B3], se décompose en étapes :
-
-| Étape | Rôle | Application dans le projet |
-|---|---|---|
-| **Prétraitement** | nettoyer, standardiser les champs | `CanonicalPatient` : casse, accents, CIN, villes, dates [deduplication.md §3] |
-| **Indexation (blocking)** | réduire les comparaisons en groupes de candidats | préfixe nom, date de naissance, CIN [deduplication.md §4] |
-| **Comparaison** | mesurer la similarité champ à champ | RapidFuzz, score pondéré [deduplication.md §5] |
-| **Classification** | décider match / non-match | seuil 0.80, exact puis probabiliste [deduplication.md §5] |
-| **Évaluation** | mesurer la qualité sur une vérité terrain | ground truth P/R/F1 [evaluation.md] |
+[B3], se décompose en cinq étapes, chacune appliquée dans le projet : le
+**prétraitement** nettoie et standardise les champs (`CanonicalPatient` : casse, accents,
+CIN, villes, dates) ; l'**indexation** (*blocking*) réduit les comparaisons en groupes de
+candidats (préfixe du nom, date de naissance, CIN) ; la **comparaison** mesure la
+similarité champ à champ (RapidFuzz, score pondéré) ; la **classification** décide match
+ou non-match (seuil 0.80, passe exacte puis passe probabiliste) ; l'**évaluation** mesure
+la qualité sur une vérité terrain (ground truth P/R/F1) [deduplication.md §3-§5].
 
 Le résultat attendu de l'ER est une **réconciliation d'identités** : un patient
 présent sous plusieurs formes dans plusieurs systèmes doit être reconnu comme une
@@ -55,6 +53,8 @@ chaînes de caractères, pas seulement des égalités.
 
 Les mesures classiques du domaine [B1], [B3] :
 
+**Tableau 3 — Les mesures de similarité classiques du domaine et leur usage dans le rapprochement d'identités.**
+
 | Mesure | Principe | Usage typique |
 |---|---|---|
 | **Levenshtein** | distance d'édition : nombre minimal d'insertions / suppressions / substitutions | nom, prénom |
@@ -68,14 +68,9 @@ décisif est **opérationnel** : léger, compatible Python 3.8 (indispensable su
 VM), sans dépendance NLP lourde — le recours à `sentence_transformers` a été
 explicitement **interdit** (crash sous Python 3.8) [bigdata_concepts.md §8].
 
-Le score combine quatre champs **pondérés** et **configurables** [deduplication.md §5] :
-
-| Critère | Poids |
-|---|---:|
-| Nom | 0.50 |
-| Date de naissance | 0.30 |
-| CIN | 0.10 |
-| Ville de naissance | 0.10 |
+Le score combine quatre champs **pondérés** et **configurables** : le nom pèse 0.50, la
+date de naissance 0.30, le CIN 0.10 et la ville de naissance 0.10. Le détail de ces
+pondérations et leur justification figurent au § 2.11 [deduplication.md §5].
 
 Décision : **score ≥ 0.80 → fusion automatique**, sinon pas de fusion (aucune
 logique arbitraire). Les deux valeurs — pondérations et seuil — sont calibrées sur
@@ -104,6 +99,8 @@ En santé, l'ER aboutit à un référentiel d'identités : le **Master Patient I
 (MPI)** — chaque patient des bases sources est rattaché à un identifiant synthétique
 unique, le *master patient*, via une **identity map** traçable
 [deduplication.md §6] :
+
+**Tableau 4 — Exemple d'identity map : trois enregistrements de sources différentes rattachés à un même master patient, chacun avec sa méthode et son score.**
 
 | Source | ID source | Master ID | Score | Méthode |
 |---|---|---|---|---|
@@ -136,6 +133,8 @@ le consentement au **traitement** diffère du consentement aux soins [B11], [B12
 
 Le projet incarne ces principes dans le système, et non à côté
 [`consentement_gouvernance.md` §2–§5] :
+
+**Tableau 5 — Traduction des exigences du RGPD en mécanismes implémentés, avec le fichier qui en constitue la preuve.**
 
 | Exigence RGPD | Mécanisme implémenté | Preuve |
 |---|---|---|
@@ -170,11 +169,12 @@ généralise le modèle (RDD/DataFrame) — largement utilisé via son API Pytho
 (thrift://localhost:9083), et HiveServer2/beeline, le service qui reçoit et exécute
 les requêtes SQL (port 10000) [B8].
 
-| Brique | Rôle dans le projet | Fait vérifiable |
-|---|---|---|
-| HDFS | entrepôt du Data Lake (parquet) | `spark.sql.warehouse.dir = hdfs://localhost:9000` [bigdata_concepts.md §4] |
-| Spark (PySpark) | mapping FHIR, normalisation, dédup, GOLD | config VM 8 Go : 4g/2g, 8 partitions [bigdata_concepts.md §6] |
-| Hive | tables externes SILVER/GOLD, analyses SQL | `datalake_gold.patient_events_gold` [bigdata_concepts.md §5] |
+Chaque brique a un rôle et un fait vérifiable : **HDFS** est l'entrepôt du Data Lake en
+parquet (`spark.sql.warehouse.dir = hdfs://localhost:9000`) ; **Spark (PySpark)** assure
+le mapping FHIR, la normalisation, la déduplication et la production GOLD, avec une
+configuration VM 8 Go à 4g/2g et 8 partitions ; **Hive** porte les tables externes
+SILVER/GOLD et les analyses SQL, par exemple `datalake_gold.patient_events_gold`
+[bigdata_concepts.md §4-§6].
 
 Constat mesuré du projet : sur petits volumes (~6 à 36 lignes), Pandas est ~1–2 ms
 contre ~0.4–4 s pour Spark — l'overhead JVM domine. Spark se justifie sur le
@@ -187,11 +187,11 @@ Le **modèle Medallion** (Databricks) organise le lac en **zones de qualité
 croissante** : RAW (brut, inchangé) → SILVER (nettoyé, standardisé, doublons
 identifiés) → GOLD (agrégé, prêt à l'analyse) [B9].
 
-| Couche | Rôle | Dans le projet |
-|---|---|---|
-| **RAW** | brute, sans transformation | parquet `/datalake/raw/{source}/{table}` + tables externes |
-| **SILVER** | nettoyée, **normalisée FHIR**, doublons marqués | `datalake_silver.*_fhir` (4 tables) |
-| **GOLD** | agrégats prêts à l'analyse | `datalake_gold.patient_events_gold` (18 colonnes, 8 tranches RMA) |
+Concrètement, la zone **RAW** reçoit la donnée brute en parquet sous
+`/datalake/raw/{source}/{table}` et sous forme de tables externes ; la zone **SILVER**
+porte la donnée nettoyée, **normalisée FHIR**, avec les doublons marqués
+(`datalake_silver.*_fhir`, 4 tables) ; la zone **GOLD** contient les agrégats prêts à
+l'analyse (`datalake_gold.patient_events_gold`, 18 colonnes, 8 tranches RMA).
 
 Chaque zone est un **état distinct de la donnée**, ce qui apporte trois choses : la
 **traçabilité** (on sait d'où vient chaque valeur), le **rejeu** (relancer un
@@ -206,15 +206,18 @@ du format au moment de lire »), caractéristique du Data Lake
 
 ## 2.8 Positionnement de la solution retenue
 
-Face à cet état de l'art, les choix du projet sont assumés et explicables :
-
-| Choix | Alternative écartée | Justification |
-|---|---|---|
-| **RapidFuzz** + synonymes | NLP lourd (`sentence_transformers`) | crash Python 3.8 ; mapping fake illustratif |
-| **MPI local + FHIR pivot** | DMP/MPI réglementaire dédié | périmètre stage, données synthétiques |
-| **Seuil 0.80 pondéré 0.5/0.3/0.1/0.1** | seuil à 3 niveaux (90/70) | parité ground-truth, logique explicable |
-| **3 niveaux MVP → Spark → Big Data** | Big Data direct | chaque technologie introduite par besoin |
-| **Parité Pandas = Spark vérifiée** | logiques divergentes | démontrer que scale ≠ changement de sémantique |
+Face à cet état de l'art, les choix du projet sont assumés et explicables. Cinq
+arbitrages structurent le positionnement : **RapidFuzz** avec un dictionnaire de
+synonymes plutôt qu'un NLP lourd (`sentence_transformers`, qui crash sous Python 3.8
+et n'aurait apporté qu'un mapping illustratif) ; un **MPI local avec pivot FHIR**
+plutôt qu'un DMP/MPI réglementaire dédié, hors périmètre d'un stage sur données
+synthétiques ; un **seuil pondéré 0.80** (0.5/0.3/0.1/0.1) plutôt qu'un seuil unique
+à trois niveaux (90/70), validé par la parité ground-truth et par la lisibilité de la
+décision ; une montée en complexité **par paliers (MVP → Spark → Big Data)** plutôt
+qu'un Big Data direct, pour introduire chaque technologie par un besoin ; et enfin la
+**parité Pandas = Spark vérifiée** plutôt que deux logiques divergentes, pour montrer
+que le scale ne change pas la sémantique. L'inventaire complet des onze arbitrages,
+avec pour chacun la preuve et le risque résiduel assumé, est donné au § 8.2.
 
 Cette grille est confrontée aux **produits existants** (MPI/DMP, MDM, plateformes Data Lake
 santé, open source) au chapitre 3.
@@ -260,6 +263,8 @@ flowchart RL
 liens : les sections 2.1 à 2.9 correspondent à des **questions formulées à l'avance**,
 dérivées du cahier des charges, auxquelles on a cherché une réponse sourcée.
 
+**Tableau 6 — Les sept questions de veille formulées à l'avance, le paragraphe qui y répond et les sources retenues.**
+
 | Question de veille | Où c'est traité | Sources retenues |
 |---|---|---|
 | Quelle théorie fonde l'appariement d'enregistrements ? | §2.1 | [B1], [B2], [B3] |
@@ -292,6 +297,8 @@ traite directement 11, en traite partiellement 7, laisse 1 axe hors périmètre
 (les personas : le commanditaire est le public cible, pas l'utilisateur final) et
 1 axe optionnel non traité (sobriété).
 
+**Tableau 7 — Couverture du plan imposé : traitement de chacun des cinq blocs d'axes, et mention explicite de ce qui reste hors périmètre.**
+
 | Bloc | Axes | Traitement dans le mémoire |
 |---|---|---|
 | **1 — Existant** (0-4) | veille · règlementaire · solutions du marché · internes · personas | **0 traité** (§2.10) · **1-3 traités** (chapitres 2, 3) · **4 absent** (hors périmètre : le commanditaire est le public cible, pas l'utilisateur final) |
@@ -302,10 +309,12 @@ traite directement 11, en traite partiellement 7, laisse 1 axe hors périmètre
 
 ## 2.11 Matrice de sélection technologique
 
-Les choix du projet ne sont pas des preferences : ils sont arbitrés sur des
+Les choix du projet ne sont pas des préférences : ils sont arbitrés sur des
 critères **explicités et pondérés**. La grille ci-dessous est appliquée aux trois
 arbitrages structurants ; les critères sont issus des contraintes du chapitre 4
 (Python 3.8, VM 8 Go, interdiction de NLP lourd, exigence d'explicabilité).
+
+**Tableau 8 — Les cinq critères pondérés de la grille d'arbitrage et la justification de chaque poids.**
 
 | Critère | Poids | Justification du poids |
 |---|---:|---|
@@ -315,28 +324,20 @@ arbitrages structurants ; les critères sont issus des contraintes du chapitre 4
 | C4 · Maturité et documentation | 0.15 | autonomie du stage, sans expert dédié |
 | C5 · Coût de licence | 0.10 | budget nul |
 
-**Arbitrage 1 — moteur de similarité** (note 1 à 5, 5 = le meilleur) :
+Les options sont notées de 1 à 5, 5 étant le meilleur :
 
-| Option | C1 | C2 | C3 | C4 | C5 | **Score** | Verdict |
-|---|---:|---:|---:|---:|---:|---:|---|
-| **RapidFuzz** [B4] | 5 | 5 | 5 | 5 | 5 | **5.00** | **retenu** |
-| `sentence_transformers` | 1 | 2 | 1 | 4 | 5 | 2.10 | écarté (crash Python 3.8) |
-| Levenshtein pur Python (`difflib`) | 4 | 3 | 2 | 5 | 5 | 3.60 | repli possible, trop lent |
+**Tableau 9 — Notation des options sur les cinq critères pondérés, pour les trois arbitrages structurants.**
 
-**Arbitrage 2 — base centrale** :
-
-| Option | C1 | C2 | C3 | C4 | C5 | **Score** | Verdict |
-|---|---:|---:|---:|---:|---:|---:|---|
-| **PostgreSQL** | 5 | 5 | 4 | 5 | 5 | **4.80** | **retenu** (JSONB, contraintes CHECK, `TIMESTAMPTZ`) |
-| SQLite | 5 | 3 | 5 | 4 | 5 | 4.35 | écarté (écriture concurrente des 3 sources) |
-| MySQL | 4 | 4 | 4 | 5 | 5 | 4.25 | écarté (JSONB moins intégré) |
-
-**Arbitrage 3 — framework d'API de gouvernance** :
-
-| Option | C1 | C2 | C3 | C4 | C5 | **Score** | Verdict |
-|---|---:|---:|---:|---:|---:|---:|---|
-| **FastAPI** | 5 | 5 | 4 | 4 | 5 | **4.65** | **retenu** |
-| Flask | 5 | 3 | 5 | 5 | 5 | 4.50 | écarté de peu — validation manuelle de la finalité |
+| Arbitrage | Option | C1 | C2 | C3 | C4 | C5 | **Score** | Verdict |
+|---|:---|---:|---:|---:|---:|---:|---:|---|
+| **1 · Moteur de similarité** | **RapidFuzz** [B4] | 5 | 5 | 5 | 5 | 5 | **5.00** | **retenu** |
+| | `sentence_transformers` | 1 | 2 | 1 | 4 | 5 | 2.10 | écarté (crash Python 3.8) |
+| | Levenshtein pur Python (`difflib`) | 4 | 3 | 2 | 5 | 5 | 3.60 | repli possible, trop lent |
+| **2 · Base centrale** | **PostgreSQL** | 5 | 5 | 4 | 5 | 5 | **4.80** | **retenu** (JSONB, contraintes CHECK, `TIMESTAMPTZ`) |
+| | SQLite | 5 | 3 | 5 | 4 | 5 | 4.35 | écarté (écriture concurrente des 3 sources) |
+| | MySQL | 4 | 4 | 4 | 5 | 5 | 4.25 | écarté (JSONB moins intégré) |
+| **3 · Framework d'API de gouvernance** | **FastAPI** | 5 | 5 | 4 | 4 | 5 | **4.65** | **retenu** |
+| | Flask | 5 | 3 | 5 | 5 | 5 | 4.50 | écarté de peu — validation manuelle de la finalité |
 
 > **Lecture honnête du score.** Flask et FastAPI ne se séparent que de 0.15 : le
 > choix n'est pas « le meilleur », mais « celui qui rend le contrôle de finalité

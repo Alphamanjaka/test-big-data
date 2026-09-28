@@ -4,7 +4,7 @@
     {
       "number": 1,
       "file": "fig-1.png",
-      "source": "01-introduction.md:89",
+      "source": "01-introduction.md:95",
       "config": "serre",
       "width_px": 1185,
       "height_px": 124,
@@ -14,7 +14,7 @@
     {
       "number": 2,
       "file": "fig-2.png",
-      "source": "02-etat-de-l-art.md:224",
+      "source": "02-etat-de-l-art.md:227",
       "config": "compact",
       "width_px": 600,
       "height_px": 822,
@@ -24,7 +24,7 @@
     {
       "number": 3,
       "file": "fig-3.png",
-      "source": "03-etude-existant.md:98",
+      "source": "03-etude-existant.md:102",
       "config": "compact",
       "width_px": 912,
       "height_px": 528,
@@ -34,7 +34,7 @@
     {
       "number": 4,
       "file": "fig-4.png",
-      "source": "04-analyse.md:72",
+      "source": "04-analyse.md:76",
       "config": "compact",
       "width_px": 1426,
       "height_px": 338,
@@ -54,7 +54,7 @@
     {
       "number": 6,
       "file": "fig-6.png",
-      "source": "05-conception.md:63",
+      "source": "05-conception.md:65",
       "config": "serre",
       "width_px": 2114,
       "height_px": 343,
@@ -64,7 +64,7 @@
     {
       "number": 7,
       "file": "fig-7.png",
-      "source": "06-realisation.md:54",
+      "source": "06-realisation.md:56",
       "config": "serre",
       "width_px": 1146,
       "height_px": 124,

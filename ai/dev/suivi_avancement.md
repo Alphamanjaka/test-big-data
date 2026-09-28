@@ -291,3 +291,23 @@ dans `Mon_Memoire` (subtree → `projet/code-source/`, `projet/mvp/`, `archives/
   est présenté comme un plancher (pas de cas adversariaire dans la vérité terrain) et la parité
   comme l'identité des décisions sur les jeux testés. Reste : filmer la vidéo à la maison (VM
   allumée), construire la slide de repli, convertir le Markdown dans l'outil de présentation.
+- 28/09 : **Mémoire — étape 2 : 52 → 40 tableaux, 35 légendes, liste des tableaux active** —
+  réduction au critère jury, sans perte de preuve. Convertis en prose : le vocabulaire d'introduction
+  (§1.3) et les trois niveaux (§1.4) en puces, les 5 étapes de l'ER (§2.1), les poids du score (§2.2,
+  doublon du §2.11), les briques Big Data (§2.6) et les zones Medallion (§2.7), les 3 grilles de
+  notation fusionnées en **une seule** avec colonne « Arbitrage » (§2.11), les définitions de
+  métriques et le breakdown par méthode (§7.2, §7.3). Doublons supprimés : les arbitrages du §2.8
+  existaient en double au §8.2 (les 3 choix absents de la conclusion y ont été ajoutés, tableau
+  consolidé à **11 arbitrages**) et les limites du §7.5 existaient en double au §8.3 (la limite des
+  homophones, absente de la conclusion, y a été ajoutée). Colonne redondante retirée du tableau
+  des sources (§4.2), le mapping champ par champ restant au §5.2. Les **40 tableaux conservés**
+  (5 du glossaire volontairement non légendés, c'est du matériel de référence) portent **35
+  légendes** numérotées 1..35 en continu, ce qui active la **liste des tableaux** du liminaire
+  (absente tant qu'aucune légende n'existait). Preuves : numérotation continue 1..35 sans doublon,
+  aucun tableau cassé (contrôle en-tête + séparateur + lignes sur les 9 chapitres), scan des lignes
+  modifiées **sans accent manquant**, `pytest` **54/54**, DOCX régénéré (**41** tableaux = 40 + 1
+  acronymes, 14 sections, liminaire : 8 figures et **35 tableaux** listés, archive zip et XML
+  valides). **6 numéros de ligne** de `documents/figures/manifest.json` recorrectés (décalages dus
+  aux légendes et aux conversions).
+  **Reste : relecture humaine dans Word**, et l'étape 3 (3 pages de front en plus des RMA, bandeau
+  `mocked`, KPI `CPN4` à corriger, puis les 3 passages du mémoire qui en dépendent).

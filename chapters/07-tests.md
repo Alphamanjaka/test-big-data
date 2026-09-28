@@ -36,6 +36,8 @@ flowchart TD
 > **Figure 8 — La stratégie de test : un socle hors ligne (générateur, moteur), puis le
 > MVP, et enfin la preuve système (API sur données réelles, évaluation ground truth).**
 
+**Tableau 30 — Les cinq niveaux de test, leur périmètre et le résultat obtenu ; les 14 tests de l'API ne prouvent que la joignabilité.**
+
 | Niveau | Périmètre | Résultat |
 |---|---|---|
 | **Générateur** (7 fichiers de tests) | variation engine, générateurs de sources, distribution, identity mapping, experiment builder | **44 tests PASS** [contexte_projet.md] |
@@ -71,6 +73,8 @@ Ces 13 cas d'API ne simulent que le transport PostgreSQL : ils empruntent le
 contrôle du rôle → contrôle du consentement, et **n'overrident jamais la
 dépendance d'authentification**. Ils constituent la preuve du §2.5.
 
+**Tableau 31 — Les dix cas de contrôle d'accès vérifiés sur le chemin réel, et le code ou le comportement attendu.**
+
 | Cas vérifié | Attendu |
 |---|---|
 | Aucun `Authorization` | **401**, journalisé en `anonymous` |
@@ -97,14 +101,17 @@ dépendance d'authentification**. Ils constituent la preuve du §2.5.
 enregistrements du même patient ; l'algorithme **ne la reçoit jamais**. Les
 métriques sont calculées **par paires** d'enregistrements [evaluation.md §2].
 
-| Métrique | Définition | Interprétation pour la santé |
-|---|---|---|
-| **Precision** | TP / (TP + FP) | exactitude des fusions — fusionner à tort est le risque le plus grave |
-| **Recall** | TP / (TP + FN) | complétude — rater les vrais doublons |
-| **F1** | 2·P·R / (P+R) | compromis global |
+Les trois métriques sont définies par comptage sur les intersections de groupes. La
+**précision** (`TP / (TP + FP)`) mesure l'exactitude des fusions : c'est le risque le
+plus grave en santé, où fusionner deux personnes distinctes est plus grave que d'en
+laisser deux séparées. Le **rappel** (`TP / (TP + FN)`) mesure la complétude, c'est-à-dire
+la part des vrais doublons effectivement trouvés. Le **F1** (`2·P·R / (P+R)`) est le
+compromis global des deux.
 
 **Résultats de référence** (run 08/09/2026, 500 masters par niveau, ~1 000
 enregistrements, parité MVP = Spark vérifiée à chaque niveau) [evaluation.md §3] :
+
+**Tableau 32 — Les résultats de l'évaluation ground-truth sur les trois niveaux de variation.**
 
 | Niveau | Masters prédits | TP | FP | FN | Precision | Recall | F1 |
 |---|---|---|---|---|---|---|---|
@@ -135,13 +142,11 @@ exigerait un générateur d'homophones quasi identiques, identifié comme piste 
 
 ## 7.3 Breakdown par méthode et par source
 
-Sur le niveau hard, le découpage par technique de match localise la faiblesse
-(identique MVP/Spark) [evaluation.md §3] :
-
-| Méthode | Precision / Recall / F1 |
-|---|---|
-| exact | 1.000 / 0.854 / 0.921 |
-| probabilistic | 1.000 / 0.533 / 0.696 |
+Le découpage par technique de match localise la faiblesse : sur le niveau hard, la
+méthode **exacte** atteint 1.000 / 0.854 / 0.921 (précision / rappel / F1) contre
+1.000 / 0.533 / 0.696 pour la méthode **probabiliste**. La précision reste parfaite
+dans les deux cas : toute la perte de rappel se situe sur les variantes que la passe
+probabiliste ne franchit pas le seuil 0.80 (identique MVP/Spark) [evaluation.md §3].
 
 Le rappel est homogène entre sources (hard) : pharmacy 0.422 · consultation 0.422 ·
 imaging 0.423 — la dégradation vient du **taux de variation**, pas d'une source.
@@ -169,17 +174,23 @@ Pandas = Spark [evaluation.md §3].
 
 ## 7.5 Limites et dettes identifiées
 
-Le prototype est évalué sans complaisance [contexte_projet.md — reste à faire] :
+Le prototype est évalué sans complaisance [contexte_projet.md — reste à faire].
+Sept limites ont été relevées, toutes reprises et documentées au § 8.3 : le **rappel
+de 0.422** sur le jeu « hard » (420 faux négatifs ; à corriger en abaissant le seuil ou
+en enrichissant la clé avec l'adresse, si le métier l'accepte) ; **`patient_events_gold`
+vide**, les Encounter et Condition n'étant pas rattachées à un `patient_uuid`, donc un
+enrichissement du mapping FHIR à prévoir ; le **consentement non alimenté** en base
+centrale (`purpose` et `granted` à `NULL`), le seed étant fourni mais non exécuté, la
+mécanique étant prouvée et la donnée absente ; les **endpoints `laboratory` et
+`malaria`** sur données de secours, le flag `mocked` étant tracé ; l'absence de
+**cas adversariaire d'homophones**, qui fait de la précision 1.000 un plancher et non
+une borne ; le **contrôle d'accès de l'API Flask non testé**, `test_api.py` ne
+contrôlant que 14 statuts sans authentification, dette assumée puisque le contrôle par
+rôle et par consentement est appliqué et testé sur l'API de gouvernance ; enfin
+l'absence de **tests EI-déployés et d'intégration continue**, hors périmètre du stage.
 
-| Limite | Observation | Cause / piste |
-|---|---|---|
-| **Recall 0.422 (hard)** | 420 faux négatifs sur 1 057 | variations 50% ; seuil 0.80 conservateur ; abaisser le seuil / enrichir la clé (adresse), si le métier l'accepte |
-| **`patient_events_gold` vide** | 0 ligne en intermédiaire | jointures FHIR non rattachées (Encounter/Condition sans `patient_uuid`) — enrichissement suspect |
-| **Consentement non alimenté** | `granted`/`purpose` NULL dans GOLD | PostgreSQL central non peuplé en interim ; seed fourni mais non exécuté — la mécanique est démontrée (54/54), pas les données |
-| **Endpoints mock** | `laboratory`, `malaria` sur données de secours | sources métier absentes du run final ; flag `mocked` tracé |
-| **Homophones non sollicités** | précision 1.000, mais aucun cas adversariaire dans la vérité terrain | le générateur dégrade des enregistrements, il n'en crée pas de quasi identiques ; un module « faux jumeaux » renforcerait la preuve |
-| **Contrôle d'accès de l'API Flask non testé** | `test_api.py` contrôle 14 statuts, sans authentification | dette assumée : l'API Flask est une surface de reporting ; le contrôle par rôle et consentement est appliqué et testé sur l'API de gouvernance |
-| **Tests EI-déployés / CI absent** | — | hors périmètre stage (Docker/CI écartés) |
+Ces limites sont **assumées et non masquées** : chacune est écrite ici avec sa cause
+et, quand elle existe, sa piste de correction, plutôt que passée sous silence.
 
 ## Conclusion
 

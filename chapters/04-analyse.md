@@ -18,6 +18,8 @@ conception du chapitre 5, une fois l'existant examiné au chapitre 3.
 Le cahier des charges fixe six objectifs [cahier_des_charges.md §3], traduits ici
 en exigences vérifiables :
 
+**Tableau 15 — Les six exigences fonctionnelles et leur critère de succès vérifiable.**
+
 | # | Exigence fonctionnelle | Critère de succès |
 |---|---|---|
 | F1 | **Centraliser** les données hétérogènes dans un Data Lake | pipeline ELT Medallion RAW → SILVER → GOLD |
@@ -36,11 +38,13 @@ explicable** ; architecture évolutive au volume (Spark) sans changer la sémant
 Trois sources métier, modélisées sur les systèmes réellement rencontrés en
 établissement (consultations, pharmacies, imagerie) [cahier_des_charges.md §1] :
 
-| Source | Fichier | Identifiant | Champs patients |
-|---|---|---|---|
-| **pharmacy** | `pharmacy/patients.csv` | `client_id` | `nom_complet, naissance, cin, ville_naissance, adresse, sexe` |
-| **consultation** | `consultation/patients.csv` | `patient_code` | `prenom, nom, date_naiss, no_cin, ville_nai, genre` |
-| **imaging** | `imaging/patients.csv` | `id_personne` | `patient_name, dob, cin_number, birth_place, sex` |
+**Tableau 16 — Les trois sources synthétiques : nom de fichier et identifiant, qui portent des noms différents d'une source à l'autre. Le mapping champ par champ vers le modèle canonique est donné au chapitre 5.**
+
+| Source | Fichier | Identifiant |
+|---|---|---|
+| **pharmacy** | `pharmacy/patients.csv` | `client_id` |
+| **consultation** | `consultation/patients.csv` | `patient_code` |
+| **imaging** | `imaging/patients.csv` | `id_personne` |
 
 L'hétérogénéité est **triple** et volontaire :
 
@@ -110,6 +114,8 @@ Transactions adjointes (dataset hard) : 792 achats (pharmacie, 1–3/patient),
 
 ## 4.4 Contraintes techniques et environnementales
 
+**Tableau 17 — Les six contraintes du stage et le traitement adopté pour chacune.**
+
 | Contrainte | Nature | Traitement adopté |
 |---|---|---|
 | **VM 8 Go / 4 cœurs** | mémoire limitée (Spark gourmand) | `executor 4g / driver 2g`, `shuffle.partitions=8` [cahier_des_charges.md §11] |
@@ -129,6 +135,8 @@ Un prototype reproductible sur sa VM ne devient un outil utilisable que si les
 contraintes du terrain ont été regardées. Quatre plans de la réalité malgache
 conditionnent l'applicabilité du projet — et deux d'entre eux n'ont **pas** pu
 être résolus dans le périmètre du stage, ce qui doit être dit.
+
+**Tableau 18 — Les quatre plans de réalité du contexte local, et ce que chacun change à la solution ; le dernier reste non traité.**
 
 | Plan de réalité | Observation de terrain | Conséquence sur la solution | État |
 |---|---|---|---|
@@ -164,6 +172,8 @@ projet de ce type :
 Le stage a suivi une **démarche incrémentale en cinq jalons**, chaque jalon
 n'étant stabilisé (tests, évaluation) avant d'engager le suivant. Cette
 progression est un choix de gestion du risque autant que de méthode technique.
+
+**Tableau 19 — Les cinq jalons du stage : contenu, critère de sortie atteint et preuve correspondante.**
 
 | Jalon | Contenu | Critère de sortie | Preuve |
 |---|---|---|---|

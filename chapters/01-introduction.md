@@ -60,14 +60,20 @@ d'analyse (agrégats faux en présence de doublons) et des failles de confidenti
 Six mots reviennent dans tous les chapitres. Ils sont expliqués ici en français courant ; le
 **glossaire (chapitre 9)** reprend l'ensemble du vocabulaire employé.
 
-| Mot du projet | En clair |
-|---|---|
-| **ELT** | on **charge** d'abord les fichiers tels quels, on **transforme** ensuite — l'inverse d'un ETL classique, où l'on transforme avant d'écrire |
-| **Medallion** | ranger la donnée dans trois zones de qualité croissante : **RAW** (brut, inchangé) → **SILVER** (nettoyé, standardisé) → **GOLD** (prêt à analyser) |
-| **MPI** | l'annuaire qui reconnaît qu'un patient est le même d'un système à l'autre, et lui attribue un identifiant unique |
-| **Déduplication** | rapprocher les fiches identiques dispersées dans plusieurs systèmes, en pouvant **expliquer** chaque fusion |
-| **RBAC** | les droits d'accès sont portés par un **rôle** (`admin`, `analyst`, `viewer`), pas par une personne |
-| **Consentement par finalité** | le patient autorise **un usage précis** (`api_access`, `research`, `analytics`) : c'est le *purpose-by-purpose* |
+- **ELT** : on **charge** d'abord les fichiers tels quels, on **transforme** ensuite — l'inverse
+  d'un ETL classique, où l'on transforme avant d'écrire.
+- **Medallion** : ranger la donnée dans trois zones de qualité croissante — **RAW** (brut,
+  inchangé) → **SILVER** (nettoyé, standardisé) → **GOLD** (prêt à analyser).
+- **MPI** : l'annuaire qui reconnaît qu'un patient est le même d'un système à l'autre, et lui
+  attribue un identifiant unique.
+- **Déduplication** : rapprocher les fiches identiques dispersées dans plusieurs systèmes, en
+  pouvant **expliquer** chaque fusion.
+- **RBAC** : les droits d'accès sont portés par un **rôle** (`admin`, `analyst`, `viewer`), pas
+  par une personne.
+- **Consentement par finalité** : le patient autorise **un usage précis** (`api_access`,
+  `research`, `analytics`) — c'est le *purpose-by-purpose*.
+
+**Tableau 1 — Les six objectifs du cahier des charges et l'illustration concrète retenue pour chacun d'eux.**
 
 | # | Objectif | Illustration concrète |
 |---|---|---|
@@ -99,12 +105,16 @@ flowchart LR
 > validation des algorithmes conditionne le passage à l'échelle, la gouvernance vient
 > s'appuyer sur la zone GOLD.**
 
-| Niveau | Contenu | Légitimité |
-|---|---|---|
-| **1 — MVP** | CSV + Pandas + PostgreSQL : extraction, nettoyage, déduplication, master patient (+ dashboard de démonstration dans le PoC d'origine) | résoudre le problème métier d'abord, au plus simple |
-| **2 — Spark** | PySpark local, résultats **strictement identiques** au MVP (parité vérifiée) | passer à l'échelle sans changer la logique métier |
-| **3 — Big Data** | Data Lake + HDFS + Hive + Spark, pipeline ELT Medallion 4 étapes, API Flask | traiter des volumes réels dans une architecture médicale |
-| **Transverse** | validation des algorithmes (vérité terrain P/R/F1), puis gouvernance (consentement, audit, API) | ne pas passer à l'échelle ni ouvrir les accès avant que la preuve soit verte |
+Le **niveau 1 — MVP** utilise CSV, Pandas et PostgreSQL pour l'extraction, le nettoyage, la
+déduplication et le master patient, afin de résoudre le problème métier d'abord, au plus
+simple. Le **niveau 2 — Spark** passe à PySpark local avec des résultats **strictement
+identiques** au MVP, la parité étant vérifiée : passer à l'échelle sans changer la logique
+métier. Le **niveau 3 — Big Data** mobilise le Data Lake, HDFS, Hive et Spark, un pipeline
+ELT Medallion en 4 étapes et une API Flask, pour traiter des volumes réels dans une
+architecture médicale. Deux volets sont enfin **transverses** : la validation des
+algorithmes (vérité terrain, précision / rappel / F1), puis la gouvernance (consentement,
+audit, API) — on ne passe pas à l'échelle ni on n'ouvre les accès avant que la preuve soit
+verte.
 
 Le schéma ci-dessus détaille ces deux étapes transverses : la **validation des algorithmes**, qui
 conditionne le passage à Spark, et la **gouvernance**, traitée en dernier car elle s'appuie sur
@@ -147,6 +157,8 @@ Les principaux chiffres vérifiables, détaillés dans les chapitres 4 à 7, son
   sur données réelles [ai/memoire/contexte_projet.md].
 
 ## 1.7 Plan du mémoire
+
+**Tableau 2 — Le plan du mémoire : neuf chapitres, du contexte de l'organisme au glossaire.**
 
 | Partie | Contenu |
 |---|---|

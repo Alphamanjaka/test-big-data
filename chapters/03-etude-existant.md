@@ -20,6 +20,8 @@ santé, open source), (c) ce que le projet peut **réutiliser** et ce qu'il doit
 Trois systèmes sources ont été rencontrés puis capturés (schémas et volumes) au cours du stage
 [`archives/datalake_mavis/LOG.md`](../archives/datalake_mavis/LOG.md) :
 
+**Tableau 10 — Les quatre sources capturées au stage : socle technique, volume vérifié, tables retenues et particularités relevées.**
+
 | Source | Socle | Volume vérifiable | Tables retenues | Particularités relevées |
 |---|---|---|---|---|
 | **MAVIS** (`mavis_notheme`) | Odoo + module HMS, PostgreSQL **distant** (tunnel SSH) | 73 090 lignes en réplique locale ; 1 260 tables détectées sur le nœud distant | 11 (`hms_patient`, `res_partner`, `hms_physician`, `hms_diseases`, `acs_ethnicity`, `ir_attachment`, `hr_employee`, `res_users`, `patient_death_register`, `product_product`, `account_move`) | nœud distant **instable** (102.16.7.154) ; jointure `hms_patient.partner_id = res_partner.id` vérifiée **9 791 / 9 791** |
@@ -81,6 +83,8 @@ trois sources synthétiques n'écrivent pas seulement le même champ sous des no
 différemment** (`H/F`, `male/female`, `Homme/femme`). Le moteur y répond par des listes fermées,
 dans `engine/identity/canonical.py` :
 
+**Tableau 11 — Le contrat de normalisation : règle appliquée à chaque champ et comportement quand la règle échoue.**
+
 | Champ | Règle de normalisation appliquée | Comportement en cas d'échec |
 |---|---|---|
 | Genre | liste fermée de 5 libellés masculins et 4 féminins → `M` / `F` | valeur **vide** (jamais devinée) |
@@ -138,6 +142,8 @@ qualité des données d'un établissement) et le **MDM** (Master Data Management
 approche appliquée aux données de référence, patients ou non). Pour chacune, ce qu'elle apporte
 et ce qui bloque son adoption dans le contexte du stage :
 
+**Tableau 12 — Les six solutions du domaine : ce qu'elles apportent au besoin et ce qui bloque leur adoption ici.**
+
 | Solution | Famille | Apport pour le besoin | Ce qui bloque l'adoption ici |
 |---|---|---|---|
 | **InterSystems EMPI** [B13] | MPI / DMP santé | Moteur d'identité déterministe **et** probabiliste, rapprochement de référence (LexisNexis LexID), création d'un enregistrement composite par personne, services IHE **PIX** (MRN → MPI ID) et **PDQ** (démographiques partiels → MPI IDs) | Produit **propriétaire et sous licence**, conçu pour des systèmes de santé nord-américains ; son atout est un **référentiel externe** de population, incompatible avec l'exigence d'hébergement interne ; ne couvre ni le Data Lake Medallion ni la gouvernance par consentement |
@@ -152,6 +158,8 @@ et ce qui bloque son adoption dans le contexte du stage :
 Six critères ont été retenus, déduits de la fiche 1.2 (disperser, dédupliquer, gouverner) et des
 contraintes du ch. 4. `✔` = capacité annoncée par la documentation, `◐` = partielle,
 `✖` = absente. **Aucune mesure : lecture documentaire.**
+
+**Tableau 13 — Grille de comparaison des six solutions et de la solution du stage sur les six critères retenus (lecture documentaire, aucune mesure).**
 
 | Critère | InterSystems EMPI | Talend MDM | Azure HDS | HAPI FHIR | Splink | Apache Atlas | Solution du stage |
 |---|:---:|:---:|:---:|:---:|:---:|:---:|:---:|
@@ -183,6 +191,8 @@ data steward.
 **Décision.** Le projet ne réinvente pas les concepts : il **réutilise les standards et les
 algorithmes de l'existant** et n'écrit que la chaîne d'exécution et de gouvernance, qu'aucune
 solution ne peut fournir dans le contexte imposé.
+
+**Tableau 14 — Ce que le projet reprend de l'existant, d'où cela vient et comment cela a été implémenté.**
 
 | Élément repris de l'existant | Provenance | Implémentation retenue |
 |---|---|---|

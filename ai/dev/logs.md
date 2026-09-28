@@ -1020,3 +1020,73 @@ ne sont pas « sur les donnees GOLD » mais avec repli mocked, laboratory et mal
 inconditionnel ; § 1 L78 et § 4 L27 : le dashboard RMA n'est pas notre livrable). Relecture humaine du
 DOCX dans Word ; toute edition de chapitre decale les lignes de documents/figures/manifest.json a
 mettre a jour apres restructuration.
+
+## 28/09/2026 - Memoire : etape 2, 52 -> 40 tableaux, 35 legendes, liste des tableaux active
+
+**Cible.** Les deux rapports de reference (8 a 12 tableaux numerotes) et le plan impose
+demandent de reduire les tableaux au strict necessaire, sans perdre une preuve. Etat de
+depart : **52 tableaux de chapitre, 0 legende**, donc **aucune liste des tableaux** dans
+le liminaire.
+
+**Ce qui a ete converti en prose ou fusionne (12 tableaux en moins).** Ch. 1 : le
+vocabulaire d'introduction et les trois niveaux de la demarche. Ch. 2 : les 5 etapes de
+l'ER, les poids du score de similarite (doublon du 2.11, renvoi conserve), les briques
+Big Data, les zones Medallion, et surtout les **3 grilles de notation fusionnees en une
+seule** avec une colonne `Arbitrage` (8 lignes au lieu de 3 tableaux). Ch. 4 : colonne
+`Champs patients` retiree du tableau des sources, le mapping champ par champ restant au
+5.2. Ch. 7 : definitions des metriques, breakdown par methode, et le tableau des limites.
+
+**Doublons entre chapitres supprimes (2 tableaux en moins).** Les arbitrages existaient
+en double au 2.8 et au 8.2 : le tableau de la conclusion, plus riche (preuve + risque
+residuel), a ete conserve et **complete des 3 choix qui n'existaient qu'au 2.8** (MPI local
++ pivot FHIR, 3 niveaux MVP -> Spark -> Big Data, parite Pandas = Spark) -- il compte
+maintenant **11 arbitrages**. Les limites existaient en double au 7.5 et au 8.3 : celui de
+la conclusion a ete conserve et **complete de la limite des homophones**, qui n'existait
+qu'au 7.5 et qui est une des honestites les plus fortes du memoire (la precision 1.000
+est un plancher, pas une borne). Aucun tableau n'a ete supprime sans que son contenu soit
+retrouve ailleurs.
+
+**Ce qui a ete conserve et legende (35 legendes).** Les 40 tableaux restants (2 / 7 / 5 /
+5 / 6 / 4 / 3 / 3 puis 5 dans le glossaire) portent une legende `**Tableau N - ...**`
+placee sur **une seule ligne** juste avant l'en-tete, numerotee 1..35 en continu. Les
+**5 tableaux du glossaire ne sont volontairement pas legendes** : c'est du materiel de
+reference consulte, pas de l'argumentaire, et les 27 acronymes du liminaire jouent le
+meme role. C'est cette presence de legendes qui **active la liste des tableaux**, absente
+jusqu'ici faute de legendes a lister.
+
+**Preuves.** Controle structurel sur les 9 chapitres : chaque separateur de tableau est
+precede d'un en-tete et suivi d'au moins une ligne de donnees, **aucun tableau casse** ;
+numerotation **1..35 continue, sans doublon** ; le nombre de lignes de tableau par
+chapitre ne differe de HEAD que du montant exact des coupes et des 4 lignes ajoutees au
+8.2. Scan des lignes modifiees : **aucun mot sans accent**. `pytest
+projet/code-source/tests` = **54 passed** (code de sortie 0). DOCX regenere : 9
+chapitres, 8 figures, 14 sections, **41 tableaux** (40 + 1 acronymes), liminaire listant
+**8 figures et 35 tableaux**, resume 179 mots, abstract 145, 27 acronymes, archive zip
+INTEGRE et 18 parties XML bien formees.
+
+**Effet de bord corrige.** `documents/figures/manifest.json` positionne les figures par
+numero de ligne : les legendes et conversions ont decale **6 positions** (fig. 1, 2, 3, 4,
+6, 7), recalculees avec la meme logique d'extraction que le moteur, et verifiees en
+relisant chaque ligne citee. Les PNG n'ont pas ete re-rendus (les diagrammes sont
+inchanges).
+
+**Incident et pieges rencontres pendant cette etape.** (1) Un script de renumerotation a
+supprime les `**` fermants des legendes ; le script de correction a ensuite consomme
+l'en-tete et la premiere ligne de 13 tableaux. Detection par controle systematique
+avant tout commit, **restauration depuis HEAD**, puis reprise a la main des 7 editions
+structurelles et re-insertion des legendes par un script qui n'ecrit que des lignes
+nouvelles. (2) Le meme script inserait la legende entre l'en-tete et le separateur au
+lieu de l'edans de les devancer. (3) Les premieres legendes ecrites par script etaient
+**sans accents** ; scan systematique et reecriture des 13 concernees. (4) Les
+conversions en prose avaient laisse trois redondances (intro orpheline au 7.3, phrase
+repetee au 7.2, reformulation en double au 2.11) ; relues et corrigees.
+Leçon appliquée : ne jamais resumer un chapitre par une substitution de motif regex
+silencieuse, et **toujours controler structure et accents avant commit**.
+
+**Reste a faire (etapes non lancees).** Etape 3 : 3 pages de front (Doublons,
+Gouvernance, Synthese) **en plus** des RMA, bandeau `mocked` sur les vues RMA, correction
+du KPI CPN4 qui affiche 0 %, puis les corrections du memoire qui en dependent (1.3 : le
+dashboard RMA n'est pas notre livrable ; 1.5 : les endpoints /rma/* ne sont pas « sur les
+donnees GOLD » mais avec repli `mocked`, `laboratory` et `malaria` en mock inconditionnel ;
+4.1 : le dashboard RMA). Relecture humaine du DOCX dans Word. La figure 6 reste a
+5,7 pt en paysage et n'est pas projetable.
