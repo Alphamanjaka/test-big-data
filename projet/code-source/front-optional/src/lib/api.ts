@@ -127,6 +127,15 @@ export const GOVERNANCE_API_URL =
 const GOVERNANCE_API_KEY =
   process.env.NEXT_PUBLIC_GOVERNANCE_API_KEY || "";
 
+/** Erreur levée par l'API gouvernance, avec le statut HTTP pour un traitement ciblé (403 consentement). */
+export class ApiError extends Error {
+  status: number;
+  constructor(message: string, status: number) {
+    super(message);
+    this.status = status;
+  }
+}
+
 export type ScheduleFrequency = "daily" | "weekly" | "monthly";
 export type ResumeMode = "auto" | "since" | "full";
 
@@ -197,4 +206,84 @@ export async function putPipelineSchedule(
     throw new Error(detail ? `HTTP ${res.status} — ${detail}` : `HTTP ${res.status}`);
   }
   return (await res.json()) as PipelineSchedule;
+}
+
+// ------------------------------------------------------------
+// Endpoints patients (API gouvernance FastAPI :8000)
+// ------------------------------------------------------------
+
+/** Identité d'un patient master — colonnes de sql/schema.sql (master_patient). */
+export interface PatientSummary {
+  master_patient_id: string;
+  first_name: string;
+  last_name: string;
+  full_name: string;
+  birth_date: string | null;
+  cin: string | null;
+  birth_city: string | null;
+  address: string | null;
+  gender: "M" | "F" | "" | null;
+}
+
+export interface PatientList {
+  items: PatientSummary[];
+  total: number;
+  page: number;
+  page_size: number;
+}
+
+export interface IdentityMapEntry {
+  source_system: string;
+  source_patient_id: string;
+  match_method: "new_master" | "exact" | "probabilistic";
+  match_score: number;
+}
+
+export interface PatientConsentRow {
+  purpose: ConsentPurpose;
+  granted: boolean;
+  recorded_at: string;
+}
+
+/** Dossier d'un patient master : identité + correspondances de déduplication + avis. */
+export interface PatientDetail extends PatientSummary {
+  identity_map: IdentityMapEntry[];
+  consents: PatientConsentRow[];
+}
+
+/**
+ * Liste des patients masters ayant consenti à la finalité demandée.
+ * Recherche (nom/CIN/id) et pagination côté API.
+ */
+export async function listPatients(options?: {
+  search?: string;
+  page?: number;
+  pageSize?: number;
+  purpose?: ConsentPurpose;
+}): Promise<PatientList> {
+  const params = new URLSearchParams({ purpose: options?.purpose ?? "api_access" });
+  if (options?.search) params.set("search", options.search);
+  if (options?.page) params.set("page", String(options.page));
+  if (options?.pageSize) params.set("page_size", String(options.pageSize));
+  const res = await fetchGovernance(`/patients?${params.toString()}`);
+  if (!res.ok) throw new ApiError(`/patients → HTTP ${res.status}`, res.status);
+  return (await res.json()) as PatientList;
+}
+
+/**
+ * Dossier d'un patient master. Sans consentement pour `purpose`, l'API répond
+ * 403 (refus journalisé dans l'audit) : l'erreur est soulevée avec `.status`.
+ */
+export async function getPatient(
+  masterPatientId: string,
+  purpose: ConsentPurpose = "api_access"
+): Promise<PatientDetail> {
+  const path = `/patients/${encodeURIComponent(masterPatientId)}?purpose=${purpose}`;
+  const res = await fetchGovernance(path);
+  if (res.status === 403) {
+    const detail = (await res.json().catch(() => null))?.detail;
+    throw new ApiError(detail ?? "Consentement non accordé", 403);
+  }
+  if (!res.ok) throw new ApiError(`${path} → HTTP ${res.status}`, res.status);
+  return (await res.json()) as PatientDetail;
 }

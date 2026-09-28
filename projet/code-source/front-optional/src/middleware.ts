@@ -8,6 +8,7 @@ const AUTHENTICATED_ROUTES = [
   /^\/gouvernance(\/|$)/,
   /^\/synthese(\/|$)/,
   /^\/pipeline(\/|$)/,
+  /^\/patients(\/|$)/,
   /^\/users(\/|$)/,
 ]
 
@@ -44,6 +45,7 @@ export const config = {
     "/gouvernance/:path*",
     "/synthese/:path*",
     "/pipeline/:path*",
+    "/patients/:path*",
     "/users/:path*",
   ],
 }

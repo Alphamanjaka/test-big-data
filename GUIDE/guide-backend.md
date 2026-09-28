@@ -197,7 +197,32 @@ Sémantique du mode de reprise `resume.mode` :
 - `since` : ré-extraction forcée à partir d'une date (`resume.since` au format `YYYY-MM-DD`) ;
 - `full` : purge + ré-extraction de tout.
 
-## 12. Dépannage rapide
+## 12. Patients — liste et dossier (API gouvernance :8000)
+
+L'API sert la **gestion de patients** (lecture seule) avec le même contrat de consentement :
+
+| Endpoint | Accès | Rôle |
+|---|---|---|
+| `GET /patients?purpose=…[&search=…][&page=1][&page_size=25]` | admin / analyst | Liste des masters ayant consenti (identité : nom, naissance, CIN, ville, adresse, genre) |
+| `GET /patients/{master_patient_id}?purpose=…` | admin / analyst | Dossier : identité + `identity_map` (correspondances dédup) + `consents` (avis par finalité) |
+
+- Le paramètre `purpose` est **obligatoire** (finalité déclarée, 422 hors liste fermée) ;
+  les patients non consentis sont **silencieux** dans la liste (`total` reflète uniquement les
+  consentis, le nombre d'exclusions est journalisé dans l'audit) et le dossier répond **403**
+  (refus journalisé) sinon.
+- La recherche (`search`) porte sur le nom complet, le CIN et l'identifiant master ;
+  le filtrage par consentement précède toujours la pagination.
+- Sources exposées : colonnes de `sql/schema.sql` (`master_patient`, `patient_identity_map`,
+  `consent`) — ni `source_system` ni `is_duplicate` ne sont des attributs d'un master
+  (ils appartiennent aux tables source/SILVER).
+
+```bash
+curl -H "Authorization: Bearer <cle>" "http://localhost:8000/patients?purpose=api_access"
+curl -H "Authorization: Bearer <cle>" "http://localhost:8000/patients?purpose=research&search=RAKOTO&page=1&page_size=20"
+curl -H "Authorization: Bearer <cle>" "http://localhost:8000/patients/PAT-0001?purpose=api_access"
+```
+
+## 13. Dépannage rapide
 
 | Symptôme | Cause probable | Correctif |
 |---|---|---|
@@ -208,8 +233,10 @@ Sémantique du mode de reprise `resume.mode` :
 | Python 3.8 des dépendances | libs sorties de compatibilité | respecter RapidFuzz (pas de NLP lourd) `[AGENTS.md]` |
 | `PUT /pipeline/schedule` → 403 | rôle non-admin | utiliser une clé `api_user` au rôle `admin` |
 | `PUT /pipeline/schedule` → 422 | config invalide | vérifier `frequency`/`time`/`resume.mode`/`since` (message détaillé dans le corps) |
+| `/patients/{id}` → 403 | finalité non consentie | le refus est journalisé dans l'audit ; attendre/obtenir un consentement, ou déclarer une finalité accordée |
+| `/patients` liste vide | aucun consentement api_access | le master existe mais reste silencieux (contrôle de consentement) |
 
-## 13. Suite logique
+## 14. Suite logique
 
 - Consommation par le front : **`GUIDE/guide-frontend.md`**.
 - Détail du moteur/gouvernance : `documents/documentation/api.md`, `documents/documentation/consentement_gouvernance.md`.

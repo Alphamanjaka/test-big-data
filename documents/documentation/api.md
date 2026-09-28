@@ -73,12 +73,20 @@ Auth : clés API (Bearer token, SHA-256 côté serveur).
 |---|---|---|
 | `GET /health` | Liveness probe | — |
 | `GET /metrics` | KPIs déduplication (total, doublons, taux) | admin, analyst |
-| `GET /patients` | Liste master patients | admin, analyst |
-| `GET /patients/{master_patient_id}` | Détail d'un master patient | admin, analyst |
+| `GET /patients` | Liste master patients (identité, triée par nom) | admin, analyst |
+| `GET /patients/{master_patient_id}` | Détail : identité + `identity_map` + `consents` | admin, analyst |
 | `GET /audit` | Journal d'accès (200 dernières lignes) | admin |
 | `GET /consent` | Liste consentements | admin, analyst |
 | `GET /consent/{master_patient_id}` | Consentements d'un patient | admin, analyst |
 | `POST /consent` | Créer un consentement | admin |
+
+`GET /patients` accepte `purpose` (obligatoire, fermé) ainsi que `search` (nom complet / CIN /
+identifiant master), `page` et `page_size` (défaut 25, max 100). Le filtrage par consentement
+précède la pagination : les patients non consentis à la finalité déclarée sont **silencieux**
+(leur nombre exclu est journalisé dans `access_audit.refusal_reason`). `GET /patients/{id}`
+retourne l'identité master, la table `patient_identity_map` (méthode et score de chaque
+correspondance de déduplication) et l'historique `consent` du master ; répond **403** pour une
+finalité non consentie (refus journalisé).
 
 API **lecture seule** exposant le PostgreSQL central (master patient, consentement, audit) :
 les payloads RAW ne sont jamais exposés.

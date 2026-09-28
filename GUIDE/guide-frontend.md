@@ -90,6 +90,7 @@ front-optional/
 │   │   ├── synthese/  # synthèse (déduplication + consentement + chaîne)
 │   │   ├── doublons/  # KPIs de déduplication
 │   │   ├── gouvernance/ # consentements purpose-by-purpose
+│   │   ├── patients/    # liste des patients masters + dossier (identité, dédup, avis)
 │   │   ├── settings/  # paramètres
 │   │   ├── users/     # gestion utilisateurs (ADMIN)
 │   │   └── api/       # auth (NextAuth) + users (CRUD)
@@ -146,9 +147,12 @@ flowchart TB
 
 - **NextAuth v4** (JWT) + Prisma adapter.
 - Deux rôles : `ADMIN` et `MEDECIN` (définition dans `src/lib/rbac.ts`).
-- Middleware protégeant `/settings`, `/synthese`, `/doublons`, `/gouvernance`, `/pipeline`.
+- Middleware protégeant `/settings`, `/synthese`, `/doublons`, `/gouvernance`, `/pipeline`,
+  `/patients`.
 - Routes `/users/*` réservées au rôle `ADMIN`. L'édition de la planification (`/pipeline`) est
   réservée au rôle `ADMIN` (lecture ouverte à tout utilisateur connecté).
+- Les pages `/patients` et `/patients/[id]` sont accessibles aux rôles `ADMIN` et `MEDECIN`
+  (lecture seule).
 
 ## 9. Pages
 
@@ -158,6 +162,8 @@ flowchart TB
 | `/synthese` | Synthèse : déduplication + consentement + chaîne RAW/SILVER/GOLD | `/api/governance/duplicates`, `/api/governance/consent` |
 | `/doublons` | KPIs de déduplication (masters, doublons, taux, méthodes) | `/api/governance/duplicates` |
 | `/gouvernance` | Consentements purpose-by-purpose + filtre par finalité | `/api/governance/consent` |
+| `/patients` | **Liste des patients masters** (recherche nom/CIN/id, pagination) — contrôle de consentement silencieux côté API | API gouvernance `:8000` — `GET /patients?purpose=…` |
+| `/patients/[id]` | **Dossier patient** : identité + correspondances de déduplication + avis par finalité (403 si finalité non consentie, refus journalisé) | API gouvernance `:8000` — `GET /patients/{id}?purpose=…` |
 | `/pipeline` | **Pipeline ELT** : planification (fréquence/heure, mode de reprise), état du dernier run, sources suivies | API gouvernance `:8000` — `GET/PUT /pipeline/schedule`, `GET /pipeline/status` |
 | `/settings` | Paramètres du compte | — |
 | `/users` | Gestion des utilisateurs (admin) | `/api/users` |
@@ -174,10 +180,14 @@ Chaque page affiche un bandeau « Données de démonstration » dès que le back
 | KPIs « n/d » + bandeau démo | endpoint backend indisponible / fallback mock | lancer le pipeline SILVER/GOLD (voir `guide-vagrant.md`) |
 | Erreur de connexion backend | API Flask éteinte | lancer l'API (voir `guide-backend.md`) |
 | Page `/pipeline` en erreur | API gouvernance `:8000` éteinte ou mauvaise clé | lancer `uvicorn engine.governance.app:app` ; vérifier `NEXT_PUBLIC_GOVERNANCE_API_URL/KEY` dans `.env` |
+| Page `/patients` en erreur | API gouvernance `:8000` éteinte / clé sans permission | lancer l'API ; vérifier `NEXT_PUBLIC_GOVERNANCE_API_URL/KEY` dans `.env` |
+| Dossier `/patients/[id]` → 403 | finalité non consentie | le refus est journalisé dans l'audit ; rien à corriger côté front |
 | Auth échoue / 401 | état de session invalide | re-seed : `npx prisma db seed` (comptes par défaut) |
 
 ## 11. Suite logique
 
-- Le front consomme les endpoints de l'API → **`GUIDE/guide-backend.md`**.
-- Fichiers de référence : `front-optional/README.md`, `front-optional/FONCTIONNALITES.md`,
+- Le front consomme les endpoints de l'API → **`GUIDE/guide-backend.md`** (endpoints `:5000` et
+  API gouvernance `:8000` — pipeline, patients).
+- Ressources : `front-optional/README.md`, `front-optional/FONCTIONNALITES.md`,
   `front-optional/structure_interface.md`.
+- Schéma de référence des données pacientes (master/identity_map/consent) : `sql/schema.sql`.

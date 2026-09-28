@@ -4,16 +4,23 @@ Endpoints :
 - GET /health         — liveness probe (pas d'auth)
 - GET /metrics        — KPIs dédup (total masters, doublons, taux)
 - GET /patients       — liste masters (admin/analyst), filtrée par consentement
-- GET /patients/{id}  — détail master (admin/analyst), 403 sans consentement
+- GET /patients/{id}  — dossier master (admin/analyst), 403 sans consentement
 - GET /audit          — journal d'accès (admin uniquement)
 - GET /pipeline/schedule — planification ELT (admin/analyst)
 - PUT /pipeline/schedule — écriture de la planification (admin uniquement)
 - GET /pipeline/status   — état du pipeline (admin/analyst)
 - /consent/*          — monté depuis engine.governance.consent.router
 
+Les patients exposés proviennent du schéma canonique `sql/schema.sql` : l'identité
+master (`master_patient`), les correspondances de déduplication
+(`patient_identity_map`) et l'historique des avis (`consent`). L'endpoint de liste
+accepte `search` (nom/CIN/id) et une pagination `page`/`page_size` ; le filtrage
+par consentement précède toujours la pagination pour que les patients non consentis
+restent silencieux.
+
 Les endpoints `/patients*` exigent le paramètre `purpose` (finalité déclarée par
 l'appelant) : la liste ne renvoie que les patients ayant consenti à cette
-finalité, et le détail renvoie 403 sinon. Le refus est journalisé dans
+finalité, et le dossier renvoie 403 sinon. Le refus est journalisé dans
 `access_audit` (colonne `refusal_reason`).
 
 Lancement : uvicorn engine.governance.app:app --port 8000
@@ -73,42 +80,82 @@ PURPOSE_QUERY = Query(
     description="Finalite declaree par l'appelant : " + " | ".join(PURPOSES),
 )
 
+# Colonnes d'identité du schéma canonique sql/schema.sql (table master_patient).
+# Le détail et la liste n'exposent que ces colonnes : `source_system` et
+# `is_duplicate` appartiennent aux tables source/SILVER, pas au master.
+MASTER_COLUMNS = (
+    "master_patient_id", "first_name", "last_name", "full_name",
+    "birth_date", "cin", "birth_city", "address", "gender",
+)
+
+MASTER_SELECT = "SELECT " + ", ".join(MASTER_COLUMNS) + " FROM master_patient"
+
+IDENTITY_MAP_COLUMNS = ("source_system", "source_patient_id", "match_method", "match_score")
+
+CONSENT_COLUMNS = ("purpose", "granted", "recorded_at")
+
+
+def _master_row(row) -> dict:
+    return dict(zip(MASTER_COLUMNS, row))
+
 
 @app.get("/patients")
 def list_patients(
     request: Request,
+    search: str = Query("", description="Recherche sur nom, CIN ou identifiant master"),
+    page: int = Query(1, ge=1, description="Numero de page (1-indexe)"),
+    page_size: int = Query(25, ge=1, le=100, description="Taille de page (1-100)"),
     purpose: str = PURPOSE_QUERY,
     user: UserContext = Depends(require_role("admin", "analyst")),
 ):
     """Liste des masters ayant consenti a la finalite demandee.
 
-    Deux requetes : les identifiants consentis (consent.py), puis les masters.
-    Le filtrage est applique en mémoire : il porte sur un ensemble d'identifiants
-    déjà restreint aux patients consentis. La reponse reste un tableau — les
-    patients sans consentement sont absents — et le nombre d'exclusions est
-    consigne dans l'audit pour que le silence soit explicable.
+    Contrat : le filtrage par consentement precede la recherche et la
+    pagination, executees en mémoire sur un sous-ensemble d'identifiants deja
+    restreint. Le nombre de patients exclus est consigne dans l'audit pour que
+    le silence soit explicable.
     """
     request.state.purpose = purpose
     allowed = consented_master_ids(purpose)
     conn = connection_factory()
     try:
         with conn.cursor() as cur:
-            cur.execute(
-                "SELECT master_patient_id, source_system, is_duplicate "
-                "FROM master_patient ORDER BY master_patient_id"
-            )
+            cur.execute(MASTER_SELECT)
             rows = cur.fetchall()
     finally:
         conn.close()
-    visible = [r for r in rows if r[0] in allowed]
-    hidden = len(rows) - len(visible)
+    term = search.strip().lower()
+    matched = [r for r in rows if _matches_search(r, term)]
+    visible = [r for r in matched if r[0] in allowed]
+    # Tri déterministe en mémoire (nom complet puis identifiant), pour un ordre
+    # stable identique en vrai base comme en jeu de test.
+    visible.sort(key=lambda r: (str(r[3] or "").lower(), r[0]))
+    hidden = len(matched) - len(visible)
     request.state.refusal_reason = (
         f"{hidden} patient(s) filtres : consentement non accorde pour {purpose}"
         if hidden
         else None
     )
-    return [{"master_patient_id": r[0], "source_system": r[1],
-             "is_duplicate": r[2]} for r in visible]
+    offset = (page - 1) * page_size
+    return {
+        "items": [_master_row(r) for r in visible[offset:offset + page_size]],
+        "total": len(visible),
+        "page": page,
+        "page_size": page_size,
+    }
+
+
+def _matches_search(row: tuple, term: str) -> bool:
+    """Recherche insensible à la casse sur nom complet, CIN et identifiant.
+
+    Le sous-ensemble porté par la liste étant déjà restreint par le consentement
+    (et de taille démonstrative), la recherche est appliquée en mémoire : elle
+    reste ainsi testable avec les fausses connexions des tests.
+    """
+    if not term:
+        return True
+    haystack = " ".join(str(field or "") for field in (row[3], row[5], row[0]))
+    return term in haystack.lower()
 
 
 @app.get("/patients/{master_patient_id}")
@@ -118,22 +165,44 @@ def get_patient(
     purpose: str = PURPOSE_QUERY,
     user: UserContext = Depends(require_role("admin", "analyst")),
 ):
+    """Dossier du patient master: identité, correspondances de dedup, avis.
+
+    Le consentement est verifie avant toute lecture (403 sinon). Les
+    correspondances proviennent de `patient_identity_map` (chaque master
+    regroupe une ou plusieurs sources) et les avis de `consent` (historique
+    purpose par purpose). 404 si l'identifiant master est inconnu.
+    """
     enforce_consent(request, master_patient_id, purpose)
     conn = connection_factory()
     try:
         with conn.cursor() as cur:
             cur.execute(
-                "SELECT master_patient_id, source_system, is_duplicate "
-                "FROM master_patient WHERE master_patient_id = %s",
+                MASTER_SELECT + " WHERE master_patient_id = %s",
                 (master_patient_id,),
             )
             row = cur.fetchone()
             if row is None:
                 raise HTTPException(status_code=404, detail="Patient master introuvable")
-            return {"master_patient_id": row[0], "source_system": row[1],
-                    "is_duplicate": row[2]}
+            cur.execute(
+                "SELECT source_system, source_patient_id, match_method, match_score "
+                "FROM patient_identity_map WHERE master_patient_id = %s "
+                "ORDER BY source_system, source_patient_id",
+                (master_patient_id,),
+            )
+            identity_map = [dict(zip(IDENTITY_MAP_COLUMNS, item)) for item in cur.fetchall()]
+            cur.execute(
+                "SELECT purpose, granted, recorded_at FROM consent "
+                "WHERE master_patient_id = %s ORDER BY recorded_at DESC",
+                (master_patient_id,),
+            )
+            consents = [dict(zip(CONSENT_COLUMNS, item)) for item in cur.fetchall()]
     finally:
         conn.close()
+    return {
+        **_master_row(row),
+        "identity_map": identity_map,
+        "consents": consents,
+    }
 
 
 @app.get("/pipeline/schedule")

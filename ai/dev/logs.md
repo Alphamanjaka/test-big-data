@@ -1368,5 +1368,28 @@ since+resume ; `python -m provision.scripts.scheduler.scheduler --dry-run` et `-
 seulement)**. Sémantique fixée pendant le dev : `--resume` ne continue qu'un run **échoué** (repère
 la 1ʳᵉ étape non-ok), sinon nouveau run incrémental.
 
-**Reste :** validation VM réelle (cron minute + run incrémental après reboot NameNode) ; commit en
-attente de validation utilisateur.
+**Reste :** validation VM réelle (cron minute + run incrémental après reboot NameNode) ;
+**commit `2c6a17f` (28 fichiers, +2665) réalisé le 28/09 après validation utilisateur**
+(logs/docs du lot mis à jour : guide-vagrant, guide-backend, guide-frontend, cahier des charges,
+suivi point 13).
+
+## 28/09/2026 — Patients : interface liste + dossier (lecture seule, API FastAPI + frontend)
+
+**Contexte :** il n'existait aucune interface de gestion des patients (liste ou dossier) ; l'API
+FastAPI de gouvernance retournait des payloads minimaux. Ajout d'un périmètre **lecture seule**
+(ADMIN + MEDECIN, base PostgreSQL centrale uniquement, pas de Hive) avec le contrôle de
+consentement appliqué côté API : identité + correspondances de déduplication + avis par finalité.
+
+| # | Action | Détail |
+| - | ------ | ------ |
+| 1 | `engine/governance/app.py` | `MASTER_COLUMNS` (9 colonnes réelles de `master_patient`), `MASTER_SELECT`, `IDENTITY_MAP_COLUMNS`, `CONSENT_COLUMNS`, helper `_master_row` ; `list_patients` : `purpose` obligatoire, `search` (nom complet / CIN / identifiant master), `page`/`page_size` (défaut 25, max 100), **filtrage par consentement avant pagination** (non-consentis silencieux, nombre exclu journalisé via `refusal_reason`), tri mémoire `(full_name.lower(), id)`, réponse `{items,total,page,page_size}` ; `get_patient` : enforce_consent d'abord, 404 si master absent, identité + `identity_map` (méthode/score) + `consents` ; docstrings corrigés (duplicata retiré, `dict_row` → tuples nommés) |
+| 2 | `tests/test_governance_api.py` | FakeCursor/FakeConnection réécrits avec routage par motif SQL (`query_map`) + comportement partagé conservé pour les métriques ; `_patch_db(results, query_map)` ; fixtures `_master`/`M1/M2/M3` (9 colonnes) ; tests adaptés (tri) + nouveaux : recherche nom, recherche CIN/id, pagination (5 lignes, page_size=2, totals), `purpose` requis 422, master inconnu 404, dossier détaillé (identity_map + consents), dossier refusé 403 + audit |
+| 3 | Frontend | `src/lib/api.ts` : `ApiError` (statut HTTP), types `PatientSummary`/`PatientList`/`IdentityMapEntry`/`PatientConsentRow`/`PatientDetail`, `listPatients` (search/page/purpose) et `getPatient` (403 typé) ; `src/app/patients/page.tsx` + `PatientsClient.tsx` (recherche différée 350 ms, pagination, message « silencieux » quand liste vide, lien dossier) ; `src/app/patients/[id]/page.tsx` + `PatientDetailClient.tsx` (carte identité, tableau identity_map avec badges méthode exact/new_master/probabilistic + score %, badges de consentement par finalité, états 403/404/erreur) ; `src/middleware.ts` (+`/patients/:path*`) ; `src/components/Sidebar.tsx` (menu « Patients », icône UserRound) |
+| 4 | Docs | `GUIDE/guide-backend.md` §12 (patients, tableau endpoints, sémantique consentement, curls) + §13 Dépannage (ligne 403) + renumérotation 13/14 ; `GUIDE/guide-frontend.md` (arborescence, RBAC, tableau Pages `/patients` + `/patients/[id]`, dépannage, suite logique) ; `documents/documentation/api.md` (endpoints patients enrichis) ; `ai/dev/suivi_avancement.md` point 14 |
+
+**Vérifications.** `py_compile` app.py OK ; pytest ciblés `test_governance_api.py` + `test_consent.py`
+exit 0 ; **suite complète 102/102 tests, 0 échec** (`--junitxml` : tests=102 failures=0 errors=0
+skipped=0) ; `npx tsc --noEmit` dans `front-optional/` → exit 0.
+
+**Reste :** run réel sur une base PostgreSQL (VM indisponible) ; commit en attente de validation
+utilisateur (regroupe app.py + tests + front + docs ; `documents/slide_soutenance/` reste non committé).

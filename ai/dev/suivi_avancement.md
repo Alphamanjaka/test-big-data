@@ -122,8 +122,18 @@ dans `Mon_Memoire` (subtree → `projet/code-source/`, `projet/mvp/`, `archives/
     `GET /pipeline/status` (CORS PUT), page frontend `/pipeline` (édition admin). **Preuves :**
     pytest **suite complète verte** (~99 tests, 0 échec) dont 37 (schedule/watermark/state) + 8
     (API planification) ; `bash -n` OK (`run_pipeline.sh`, `install_cron.sh`) ; dry-run host OK
-    (full/resume/from/since). Reste : **validation VM réelle** du scheduler + d'un run
-    incrémental, commit.
+    (full/resume/from/since). **Commit `2c6a17f` (28 fichiers, +2665).**
+    Reste : **validation VM réelle** du scheduler + d'un run incrémental.
+14. **[Patients — interface]** Gestion de patients **lecture seule** (liste + dossier) **implémentée
+    et testée** (28/09) — l'API FastAPI de gouvernance expose désormais l'identité master complète
+    (`GET /patients`, colonnes réelles de `master_patient`) avec `search` (nom/CIN/id), pagination
+    et **filtrage par consentement avant pagination** (patients non consentis silencieux, exclusions
+    journalisées), et le dossier (`GET /patients/{id}` = identité + `patient_identity_map`
+    [méthode/score des correspondances de déduplication] + `consents`). Pages frontend
+    `/patients` et `/patients/[id]` (ADMIN + MEDECIN), middleware et sidebar mis à jour.
+    **Preuves :** pytest **suite complète 102/102** (0 échec) dont nouveaux cas recherche/pagination/
+    identity_map/consents ; `tsc --noEmit` exit 0. Reste : commit (après relecture), run réel
+    sur base PostgreSQL (VM indisponible).
 
 ## Dettes techniques connues
 
