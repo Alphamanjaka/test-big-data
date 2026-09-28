@@ -576,7 +576,7 @@ def s16_resultats(prs):
         box(s, x, 2.4, 3.45, 2.9)
         text(s, x, 2.7, 3.45, 1.0, big, 48, PRIMARY, bold=True, align=PP_ALIGN.CENTER)
         text(s, x + 0.2, 3.9, 3.05, 1.2, lbl.split("\n"), 15, TEXT, align=PP_ALIGN.CENTER, gap=2)
-    chip(s, 0.75, 5.8, 4.6, 0.9, "Pipeline RAW → SILVER → GOLD : **4/4**", 16)
+    chip(s, 0.75, 5.8, 4.6, 0.9, "Pipeline **5 étapes** · run **4/4**", 16)
     chip(s, 5.7, 5.8, 4.6, 0.9, "Tests : **102/102**", 16)
     chip(s, 10.65, 5.8, 4.6, 0.9, "API d'indicateurs : **3/3**", 16)
     text(s, 0.75, 7.0, 14.5, 0.45, "Sources CSV synthétiques ; GOLD certifie l'identité, pas "
@@ -608,13 +608,14 @@ def s17_avant_apres(prs):
 
 def s18_demo(prs):
     s = new_slide(prs, "Démonstration", "Vidéo enregistrée (3 min 30) — aucun point de défaillance le jour J")
-    table(s, 2.0, 2.6, 12.0, ("Plan", "Contenu filmé", "Durée"), [
-        ("1", "`pytest projet/code-source/tests` — moteur, gouvernance, planification **102/102**", "1:00"),
-        ("2", "Évaluation « hard » : précision / rappel / F1 (précision 1,000)", "1:00"),
-        ("3", "`run_pipeline.sh` de bout en bout : RAW → SILVER → GOLD", "1:30"),
+    table(s, 2.0, 2.5, 12.0, ("Plan", "Contenu filmé", "Durée"), [
+        ("1", "`pytest projet/code-source/tests` — moteur, gouvernance, planification **102/102**", "0:45"),
+        ("2", "Évaluation « hard » : précision / rappel / F1 (précision 1,000)", "0:45"),
+        ("3", "`run_pipeline.sh` de bout en bout : RAW → SILVER → GOLD (5 étapes)", "1:00"),
+        ("4", "Tableau de bord `/dashboard` : zones Medallion, planification cron, fraîcheur", "0:30"),
         ("Repli", "Compteurs figés : 214 · 145 · 69 · 32,24 %", "0:30"),
-    ], col_w=(1.4, 9.1, 1.5), size=16, head_size=16, row_h=0.72)
-    text(s, 2.0, 6.6, 12.0, 0.5, "Données synthétiques, graine fixe : la démonstration est "
+    ], col_w=(1.4, 9.1, 1.5), size=16, head_size=16, row_h=0.6)
+    text(s, 2.0, 6.55, 12.0, 0.5, "Données synthétiques, graine fixe : la démonstration est "
          "rejouable à l'identique.", 15, MUTED, italic=True, align=PP_ALIGN.CENTER)
 
 

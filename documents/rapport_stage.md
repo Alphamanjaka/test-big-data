@@ -79,10 +79,11 @@ unique** autonome.
 
 ## 3. Réalisation
 
-### 3.1 Pipeline ELT Medallion (4 étapes)
+### 3.1 Pipeline ELT Medallion (5 étapes)
 
-`run_pipeline.sh` orchestre extraction RAW → mapping FHIR → SILVER → GOLD, avec arrêt sur erreur
-et logs `elt.log`.
+`run_pipeline.sh` orchestre la préparation des sources (étape idempotente), l'extraction RAW →
+mapping FHIR → SILVER → GOLD, avec arrêt sur erreur, reprise (`--resume`), ingestion
+incrémentale (empreinte des sources, `watermark.json`), planification cron et logs `elt.log`.
 
 ### 3.2 Résultats du run de référence (VM, 07/09/2026)
 
@@ -124,8 +125,9 @@ tort, propriété essentielle en santé. L'introduction de la **clé CIN** (~75 
 le rappel hard de 0.287 (07/09) à **0.422** sans le moindre faux positif. La **parité
 Pandas = Spark** est parfaite à chaque niveau (TP=307, FP=0, FN=420 pour les deux).
 
-**Tests** : moteur + gouvernance **54/54 PASS** (matcher 12 · consentement 21 · canonique 8 ·
-API gouvernance 13) ; générateur **44/44** ; MVP 20 ; API données **14/14 PASS** — soit une
+**Tests** : moteur + gouvernance + planification/reprise **102/102 PASS** (matcher 12 ·
+consentement 21 · canonique 8 · API gouvernance 16 · planification/reprise 45) ; générateur
+**44/44** ; MVP 20 ; API des indicateurs **3/3 PASS** — soit une
 pyramide unitaire → intégration → système complète.
 
 ---

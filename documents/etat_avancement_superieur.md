@@ -17,16 +17,17 @@ des tests avant d'aller plus loin.
 
 | Objectif attendu | État | Ce que c'est concrètement |
 |---|---|---|
-| Centraliser les données médicales | **Réalisé** | Le pipeline complet fonctionne sur les vraies données des 3 systèmes de MMT (MAVIS, MMT_DB, CLINIQUE). 4 étapes passent toutes au vert en environnement VM. |
+| Centraliser les données médicales | **Réalisé** | Le pipeline complet fonctionne sur les vraies données des 3 systèmes de MMT (MAVIS, MMT_DB, CLINIQUE). Le run de référence passe 4/4 au vert en environnement VM, avec une orchestration en 5 étapes (la première, préparatoire, est idempotente). |
 | Nettoyer et standardiser | **Réalisé** | Les formats divergents (genre, dates, numéro CIN, orthographes) sont harmonisés vers un modèle unique. |
 | Dédupliquer (éviter qu'un même patient soit enregistré plusieurs fois) | **Réalisé** | 214 fiches entrées → **145 dossiers patients uniques**, **69 doublons** détectés (taux 32 %). Chaque rapprochement est **documenté** (pourquoi on juge que c'est le même patient). |
 | Gouverner les accès (consentement + traçabilité) | **Réalisé côté mécanique**, une vérification réelle en base reste à faire | Consentement du patient par finalité (ex. consultation / recherche / statistiques), refus bloquant, historique de qui a accédé à quoi, mots de passe jamais stockés en clair. |
-| Visualiser (optionnel) | **Réalisé, reste optionnel** | Tableau de bord recentré sur l'essentiel : synthèse, doublons, gouvernance. |
+| Visualiser (optionnel) | **Réalisé, reste optionnel** | Tableau de bord de pilotage du pipeline (`/dashboard`) : zones Medallion, étapes, planification cron et fraîcheur des sources — distinct des tableaux d'analyse du PoC, hors périmètre. |
 | Évaluer la qualité de la déduplication | **Réalisé** | Test sur un jeu de données de référence : **aucun faux rapprochement** (tout ce qui est fusionné l'est à juste titre) ; sur le cas le plus difficile (volontairement dégradé), 42 % des doublons sont retrouvés — chiffre connu et assumé. |
 
 ## 2. Fiabilité (tests)
 
-- Moteur de déduplication + consentement + API : **54 tests, tous passent**.
+- Moteur, gouvernance et planification/reprise : **102 tests, tous passent** (57 moteur +
+  gouvernance, 45 planification et reprise).
 - API de gouvernance sur données réelles : **3 sur 3**.
 - Générateur de données de test : **44 sur 44**.
 - Un même patient est retrouvé à l'identique quelle que soit la technologie utilisée (simple ou
@@ -67,7 +68,7 @@ des tests avant d'aller plus loin.
 ## Verdict global
 
 Le cœur du projet (centraliser, nettoyer, dédupliquer, gouverner, évaluer) est **terminé et prouvé
-par des tests** (54/54, API 3/3, zéro accès non autorisé). Il reste de la **finalisation** (base
+par des tests** (102/102, API 3/3, zéro accès non autorisé). Il reste de la **finalisation** (base
 réelle à rejouer, vidéo de démo, relectures) et des **dettes assumées**, toutes documentées.
 
 ## Ordre de priorité des actions restantes

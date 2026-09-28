@@ -4,13 +4,15 @@
 
 Le pipeline est piloté par un seul script, `provision/scripts/run_pipeline.sh`, qui enchaîne
 les étapes dans l'ordre et produit le journal `elt.log`. Le principe Medallion — RAW, puis
-SILVER, puis GOLD — est implémenté par quatre programmes distincts : `gen_extract_raw.py`
-(extraction vers la zone RAW), `gen_fhir_mapping.py` (association des champs FHIR aux colonnes
-sources), `create_silver.py` (nettoyage, standardisation et marquage des doublons) et
-`create_gold.py` (zone finale, application du consentement). Chaque étape est un programme
-distinct plutôt qu'une fonction d'un programme unique : une étape qui échoue ne laisse pas la
-zone suivante dans un état intermédiaire, ce qui est la condition pour que le pipeline soit
-relançable.
+SILVER, puis GOLD — est implémenté par cinq programmes distincts : `ensure_generator_data.sh`
+(étape préparatoire et idempotente : régénère les CSV synthétiques seulement s'ils sont
+absents), `gen_extract_raw.py` (extraction vers la zone RAW), `gen_fhir_mapping.py` (association
+des champs FHIR aux colonnes sources), `create_silver.py` (nettoyage, standardisation et
+marquage des doublons) et `create_gold.py` (zone finale, application du consentement). Chaque
+étape est un programme distinct plutôt qu'une fonction d'un programme unique : une étape qui
+échoue ne laisse pas la zone suivante dans un état intermédiaire, ce qui est la condition pour
+que le pipeline soit relançable. La reprise d'un run (`--resume`), l'ingestion incrémentale
+(`watermark.json`) et la planification par cron (scheduler) sont décrites au § 7.3.2 du mémoire.
 
 Le journal `elt.log` est l'artefact le plus utile en cas de doute : il conserve, pour chaque
 exécution, le nombre de lignes lues, écrites et écartées, et la durée de chaque étape. C'est
@@ -54,8 +56,11 @@ Quatre fichiers de `engine/governance/` portent la gouvernance. `auth.py` résou
 d'API en utilisateur et en rôle, la base ne conservant que l'empreinte SHA-256 de la clé.
 `consent.py` définit les finalités autorisées et la décision d'accorder ou de refuser un
 accès, avec le refus par défaut. `audit.py` journalise chaque appel, y compris les refus.
-`app.py` expose l'API : la liste des patients, le détail d'un patient et la consultation de
-l'audit.
+`app.py` expose l'API FastAPI : la liste des patients (avec recherche texte et CIN, pagination,
+et **filtrage silencieux** — un patient sans consentement pour la finalité demandée disparaît
+plutôt que de provoquer une erreur), le détail d'un patient, la consultation de l'audit, la
+planification du pipeline (`/pipeline/schedule`, GET/PUT, écriture réservée à l'admin) et son
+statut (`/pipeline/status` : plan, prochain run, sources suivies, zones et dernier run).
 
 Un refus renvoie un **403** et
 non une réponse muette ou une liste réduite, et que ce refus est journalisé comme un accès
@@ -123,7 +128,7 @@ Conclusion générale (limites, perspectives).
 
 **5. « Le consentement est-il réellement appliqué ? »**
 La règle l'est : `purpose` est obligatoire (422), une finalité non consentie produit un refus (403),
-et chaque accès comme chaque refus est journalisé — 13 cas de test dédiés à l'API de gouvernance.
+et chaque accès comme chaque refus est journalisé — 16 cas de test dédiés à l'API de gouvernance.
 La donnée ne l'était pas au moment du run : `patient_consent_gold` compte 145 lignes mais `purpose`
 et `granted` sont à `NULL`, le PostgreSQL central n'ayant pas été peuplé faute d'environnement. La
 distinction entre **mécanique prouvée** et **donnée absente** est maintenue partout. § 7.3.5, § 8.6.
@@ -143,7 +148,7 @@ générale.
 
 **8. « Les 3 tests de l'API Flask prouvent-ils le contrôle d'accès ? »**
 Non : ils prouvent la joignabilité et les statuts de réponse. Le contrôle d'accès est vérifié
-séparément par les 13 cas de l'API de gouvernance. § 8.4, § 8.6.
+séparément par les 16 cas de l'API de gouvernance. § 8.4, § 8.6.
 
 **9. « Comment garantissez-vous qu'aucun profil n'a été inventé ? »**
 Le générateur est à racine fixe (`RANDOM_SEED = 42`) et toutes les données sont synthétiques. Aucune

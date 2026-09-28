@@ -1,0 +1,263 @@
+<!doctype html>
+<!--
+  Figure « Les quatre notions clés du rapport » (section 1.2.2 du rapport de stage).
+  Rendu : python projet/code-source/scripts/dev/render_html_figures.py
+  Sortie : documents/figures/notions_cles.png (1200 x 920 px CSS, échelle 2.5).
+  À 16 cm imprimés, 1 px CSS = 0,38 pt : aucun texte sous 18 px (≈ 7 pt).
+  Toutes les données montrées sont fictives (cas de référence « Jean Rakoto »).
+-->
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<style>
+  :root {
+    --accent: #1F3864;
+    --accent-2: #2E5597;
+    --ink: #1d2433;
+    --muted: #5b6475;
+    --line: #c9d2e0;
+    --card: #ffffff;
+    --bg: #ffffff;
+    --soft: #f3f6fb;
+    --raw: #8a6f55;   --raw-bg: #f4eee8;
+    --silver: #6f7b8c; --silver-bg: #eef1f5;
+    --gold: #b8860b;  --gold-bg: #fbf4de;
+    --ok: #2e7d4f;    --ok-bg: #e5f3ea;
+    --ko: #b3261e;    --ko-bg: #fbe7e5;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  html, body { width: 1200px; height: 920px; background: var(--bg); }
+  body {
+    font-family: "Segoe UI", "Calibri", "Helvetica Neue", Arial, sans-serif;
+    color: var(--ink);
+    padding: 16px 18px;
+  }
+  .grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    grid-template-rows: 1fr 1fr;
+    gap: 16px;
+    height: 100%;
+  }
+  .card {
+    background: var(--card);
+    border: 1.5px solid var(--line);
+    border-radius: 18px;
+    padding: 18px 20px 16px 24px;
+    display: flex;
+    flex-direction: column;
+    position: relative;
+    overflow: hidden;
+  }
+  .card::before {
+    content: ""; position: absolute; left: 0; top: 0; bottom: 0; width: 7px;
+    background: var(--accent);
+  }
+  .head { display: flex; align-items: center; gap: 16px; }
+  .num {
+    width: 40px; height: 40px; border-radius: 50%;
+    background: var(--accent); color: #fff;
+    font-weight: 700; font-size: 22px;
+    display: flex; align-items: center; justify-content: center; flex: none;
+  }
+  h2 { font-size: 30px; font-weight: 700; color: var(--accent); letter-spacing: .2px; }
+  h2 small { white-space: nowrap; font-size: 19px; font-weight: 500; color: var(--muted); margin-left: 6px; }
+  .def { margin: 8px 0 0 0; font-size: 21px; line-height: 1.32; color: var(--muted); }
+  .def b { color: var(--ink); }
+  .visual { flex: 1; display: flex; align-items: center; justify-content: center; margin-top: 10px; }
+
+  /* 1. ELT */
+  .flows { display: flex; flex-direction: column; gap: 14px; width: 100%; }
+  .flow { display: flex; align-items: center; gap: 6px; }
+  .flow .tag { width: 52px; font-weight: 700; font-size: 21px; color: var(--accent); }
+  .flow.dim .tag { color: #9aa3ae; }
+  .step {
+    flex: 1; text-align: center; padding: 8px 4px; border-radius: 10px;
+    font-size: 21px; font-weight: 600; border: 2px solid var(--accent-2);
+    background: var(--soft); color: var(--accent);
+  }
+  .step span { display: block; font-size: 18px; line-height: 1.15; font-weight: 500; color: var(--muted); margin-top: 2px; }
+  .step.load { background: var(--raw-bg); border-color: var(--raw); color: #5e4a37; }
+  .flow.dim .step { border: 2px dashed #b7bec9; background: #fafbfc; color: #8b94a1; }
+  .flow.dim .step span { color: #a3abb6; }
+  .arrow { color: var(--accent-2); font-size: 24px; font-weight: 700; flex: none; }
+  .flow.dim .arrow { color: #b7bec9; }
+
+  /* 2. Medallion */
+  .zones { display: flex; align-items: stretch; gap: 6px; width: 100%; }
+  .zone {
+    flex: 1; border-radius: 14px; padding: 10px 8px 10px; text-align: center;
+    border: 2.5px solid; display: flex; flex-direction: column; align-items: center; gap: 4px;
+  }
+  .zone .medal {
+    width: 38px; height: 38px; border-radius: 50%;
+    display: flex; align-items: center; justify-content: center;
+    font-weight: 800; font-size: 18px; color: #fff; letter-spacing: .5px;
+  }
+  .zone .name { font-size: 25px; font-weight: 800; letter-spacing: 1px; }
+  .zone .what { font-size: 20px; color: var(--muted); line-height: 1.3; }
+  .zone.raw { border-color: var(--raw); background: var(--raw-bg); }
+  .zone.raw .medal { background: var(--raw); } .zone.raw .name { color: var(--raw); }
+  .zone.silver { border-color: var(--silver); background: var(--silver-bg); }
+  .zone.silver .medal { background: var(--silver); } .zone.silver .name { color: var(--silver); }
+  .zone.gold { border-color: var(--gold); background: var(--gold-bg); }
+  .zone.gold .medal { background: var(--gold); } .zone.gold .name { color: var(--gold); }
+  .zarrow { align-self: center; color: var(--accent-2); font-size: 24px; font-weight: 700; }
+  .quality {
+    margin-top: 10px; width: 100%; height: 9px; border-radius: 5px;
+    background: linear-gradient(90deg, var(--raw), var(--silver), var(--gold));
+  }
+  .quality-label { display: flex; justify-content: space-between; font-size: 18px; color: var(--muted); margin-top: 6px; }
+  .med-wrap { width: 100%; }
+
+  /* 3. MPI */
+  .mpi { display: grid; grid-template-columns: 1fr 64px 1fr; align-items: center; width: 100%; }
+  .records { display: flex; flex-direction: column; gap: 8px; }
+  .rec {
+    border: 1.5px solid var(--line); border-radius: 10px; padding: 5px 10px;
+    background: #fff; font-size: 19px; line-height: 1.3;
+  }
+  .rec .src { font-size: 18px; font-weight: 700; color: var(--accent-2); text-transform: uppercase; letter-spacing: .6px; }
+  .rec .val { font-family: "Consolas", monospace; font-size: 19px; color: var(--ink); }
+  .master {
+    border: 2.5px solid var(--accent); border-radius: 14px; padding: 12px 10px;
+    background: var(--soft); text-align: center;
+  }
+  .master .k { font-size: 18px; font-weight: 700; color: var(--muted); letter-spacing: .6px; text-transform: uppercase; }
+  .master .id { font-family: "Consolas", monospace; font-size: 30px; font-weight: 700; color: var(--accent); margin: 6px 0; }
+  .master .n { font-size: 19px; color: var(--ink); }
+  .master .m { font-size: 18px; color: var(--muted); margin-top: 6px; }
+  svg.links { width: 64px; height: 230px; }
+
+  /* 4. Consentement */
+  .consent { display: grid; grid-template-columns: 150px 50px 1fr; align-items: center; width: 100%; }
+  .patient {
+    border: 2.5px solid var(--accent); border-radius: 14px; background: var(--soft);
+    padding: 12px 6px; text-align: center;
+  }
+  .patient svg { width: 46px; height: 46px; }
+  .patient .id { font-family: "Consolas", monospace; font-weight: 700; color: var(--accent); font-size: 19px; margin-top: 4px; }
+  .patient .n { font-size: 18px; color: var(--muted); }
+  .purposes { display: flex; flex-direction: column; gap: 8px; }
+  .purpose {
+    display: flex; align-items: center; justify-content: space-between; gap: 10px;
+    border: 2px solid; border-radius: 10px; padding: 5px 10px;
+  }
+  .purpose .p { font-family: "Consolas", monospace; font-size: 20px; font-weight: 700; }
+  .purpose .l { font-size: 18px; color: var(--muted); display: block; font-family: "Segoe UI", sans-serif; font-weight: 500; }
+  .purpose .state { font-size: 18px; font-weight: 700; padding: 4px 12px; border-radius: 20px; white-space: nowrap; }
+  .purpose.ok { border-color: var(--ok); background: var(--ok-bg); }
+  .purpose.ok .p { color: var(--ok); } .purpose.ok .state { background: var(--ok); color: #fff; }
+  .purpose.ko { border-color: var(--ko); background: var(--ko-bg); }
+  .purpose.ko .p { color: var(--ko); } .purpose.ko .state { background: var(--ko); color: #fff; }
+  svg.fan { width: 50px; height: 200px; }
+  .note { margin-top: 8px; font-size: 18px; color: var(--muted); text-align: center; }
+  .note b { color: var(--ko); }
+</style>
+</head>
+<body>
+<div class="grid">
+
+  <!-- 1. ELT -->
+  <section class="card">
+    <div class="head"><div class="num">1</div><h2>ELT <small>Extract · Load · Transform</small></h2></div>
+    <p class="def">On <b>charge d'abord</b> la donnée telle quelle, on la <b>transforme ensuite</b> : l'inverse d'un ETL classique.</p>
+    <div class="visual">
+      <div class="flows">
+        <div class="flow">
+          <div class="tag">ELT</div>
+          <div class="step">Extract<span>lire la source</span></div>
+          <div class="arrow">→</div>
+          <div class="step load">Load<span>déposer le brut</span></div>
+          <div class="arrow">→</div>
+          <div class="step">Transform<span>nettoyer ensuite</span></div>
+        </div>
+        <div class="flow dim">
+          <div class="tag">ETL</div>
+          <div class="step">Extract<span>lire la source</span></div>
+          <div class="arrow">→</div>
+          <div class="step">Transform<span>nettoyer d'abord</span></div>
+          <div class="arrow">→</div>
+          <div class="step">Load<span>écrire le résultat</span></div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- 2. Medallion -->
+  <section class="card">
+    <div class="head"><div class="num">2</div><h2>Modèle Medallion <small>trois zones</small></h2></div>
+    <p class="def">La donnée est rangée dans <b>trois zones de qualité croissante</b> ; chaque zone est un état distinct, que l'on peut rejouer.</p>
+    <div class="visual">
+      <div class="med-wrap">
+        <div class="zones">
+          <div class="zone raw"><div class="medal">R</div><div class="name">RAW</div><div class="what">brut,<br>inchangé</div></div>
+          <div class="zarrow">→</div>
+          <div class="zone silver"><div class="medal">S</div><div class="name">SILVER</div><div class="what">nettoyé,<br>standardisé</div></div>
+          <div class="zarrow">→</div>
+          <div class="zone gold"><div class="medal">G</div><div class="name">GOLD</div><div class="what">prêt<br>à analyser</div></div>
+        </div>
+        <div class="quality"></div>
+        <div class="quality-label"><span>qualité faible</span><span>qualité croissante →</span><span>qualité élevée</span></div>
+      </div>
+    </div>
+  </section>
+
+  <!-- 3. MPI -->
+  <section class="card">
+    <div class="head"><div class="num">3</div><h2>Master Patient Index <small>MPI</small></h2></div>
+    <p class="def">L'annuaire qui <b>reconnaît le même patient</b> d'un système à l'autre et lui attribue un <b>identifiant unique</b>.</p>
+    <div class="visual">
+      <div class="mpi">
+        <div class="records">
+          <div class="rec"><div class="src">Pharmacie</div><div class="val">Jean Rakoto<br>1990-01-10</div></div>
+          <div class="rec"><div class="src">Consultation</div><div class="val">Rakoto Jean<br>10/01/1990</div></div>
+          <div class="rec"><div class="src">Imagerie</div><div class="val">J. RAKOTO<br>1990/01/10</div></div>
+        </div>
+        <svg class="links" viewBox="0 0 64 230" preserveAspectRatio="none" aria-hidden="true">
+          <defs><marker id="a3" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="7" markerHeight="7" orient="auto"><path d="M0,0 L10,5 L0,10 z" fill="#2E5597"/></marker></defs>
+          <path d="M2,38 C32,38 32,115 58,115" stroke="#2E5597" stroke-width="3" fill="none" marker-end="url(#a3)"/>
+          <path d="M2,115 L58,115" stroke="#2E5597" stroke-width="3" fill="none" marker-end="url(#a3)"/>
+          <path d="M2,192 C32,192 32,115 58,115" stroke="#2E5597" stroke-width="3" fill="none" marker-end="url(#a3)"/>
+        </svg>
+        <div class="master">
+          <div class="k">Patient maître</div>
+          <div class="id">PAT-0102</div>
+          <div class="n">Jean Rakoto<br>CIN 101024045</div>
+          <div class="m">3 fiches reliées, chacune<br>avec méthode et score</div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- 4. Consentement par finalité -->
+  <section class="card">
+    <div class="head"><div class="num">4</div><h2>Consentement par finalité<small style="display:block;margin:2px 0 0 0">purpose-by-purpose</small></h2></div>
+    <p class="def">Le patient autorise <b>un usage précis</b>, finalité par finalité, et non un accès global.</p>
+    <div class="visual">
+      <div style="width:100%">
+        <div class="consent">
+          <div class="patient">
+            <svg viewBox="0 0 52 52" aria-hidden="true"><circle cx="26" cy="17" r="10" fill="#1F3864"/><path d="M6,48 C6,34 16,28 26,28 C36,28 46,34 46,48 z" fill="#1F3864"/></svg>
+            <div class="id">PAT-0102</div>
+            <div class="n">patient maître</div>
+          </div>
+          <svg class="fan" viewBox="0 0 50 200" preserveAspectRatio="none" aria-hidden="true">
+            <path d="M2,100 C25,100 25,33 48,33" stroke="#9aa3ae" stroke-width="2.5" fill="none"/>
+            <path d="M2,100 L48,100" stroke="#9aa3ae" stroke-width="2.5" fill="none"/>
+            <path d="M2,100 C25,100 25,167 48,167" stroke="#9aa3ae" stroke-width="2.5" fill="none"/>
+          </svg>
+          <div class="purposes">
+            <div class="purpose ok"><div><span class="p">api_access</span><span class="l">accès applicatif</span></div><span class="state">✓ accordé</span></div>
+            <div class="purpose ok"><div><span class="p">research</span><span class="l">recherche</span></div><span class="state">✓ accordé</span></div>
+            <div class="purpose ko"><div><span class="p">analytics</span><span class="l">analyse statistique</span></div><span class="state">✕ refusé</span></div>
+          </div>
+        </div>
+        <div class="note">Sans avis enregistré, la réponse est un <b>refus par défaut</b>.</div>
+      </div>
+    </div>
+  </section>
+
+</div>
+</body>
+</html>

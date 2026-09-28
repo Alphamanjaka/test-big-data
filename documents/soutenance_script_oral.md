@@ -7,7 +7,7 @@
 > Repères `[0:00] → [0:30]` = position dans le budget. `→` = transition, à dire en passant à la
 > slide suivante.
 > **Règle appliquée** : aucune affirmation non vérifiable ; les nuances d'honnêteté du mémoire
-> (précision = plancher, 14/14 = test de fumée, API Flask = reporting) sont **dites à l'oral**.
+> (précision = plancher, 16/16 = tests d'intégration, API Flask = reporting) sont **dites à l'oral**.
 
 ---
 
@@ -19,6 +19,7 @@
 .venv\Scripts\python -m pytest projet/code-source/tests -q
 .venv\Scripts\python projet\code-source\evaluation\evaluate_engine.py --level hard
 bash projet/code-source/provision/scripts/run_pipeline.sh
+# plan 4 : ouvrir le tableau de bord /dashboard (front-optional + API FastAPI port 8000)
 ```
 
 **Vidéo** : 3:30 maximum, muette de préférence, à enregistrer à la maison avec la VM allumée ; ne
@@ -29,7 +30,8 @@ le poste de soutenance avant le jour J.
 `fig-3`, `fig-9` ; **jamais projetée** `fig-5` (5,7 pt, illisible en projection).
 
 **Trois choses à ne pas dire** : que PostgreSQL a été validé en conditions réelles (le `.env` n'a
-pas été fourni) ; que les 14 tests API prouvent le contrôle d'accès (ils prouvent la joignabilité) ;
+pas été fourni) ; que les 16 tests de l'API de gouvernance prouvent le contrôle d'accès (ils prouvent
+la joignabilité et les statuts, le contrôle d'accès relevant de cas dédiés) ;
 que le pipeline a été exécuté sur ce poste (il ne l'est pas).
 
 ---
@@ -189,11 +191,12 @@ Another garbled fragment. Must rewrite cleanly.
 
 ---
 
-## S7. Résultats du run — 1:00 · `[7:00] → [8:00]` · 112 mots mesurés
+## S7. Résultats du run — 1:00 · `[7:00] → [8:00]` · 122 mots mesurés
 
 **À dire**
 > Ce sont des chiffres de run, pas des chiffres de présentation. Sur la VM, le pipeline Medallion
-> s'est exécuté de bout en bout : quatre étapes sur quatre.
+> s'est exécuté de bout en bout : quatre étapes sur quatre au run de référence ; l'orchestration en
+> compte cinq.
 >
 > La zone SILVER compte 214 lignes patients : 76 en pharmacie, 76 en consultation, 62 en imagerie.
 > Après déduplication, cela donne 145 patients maîtres et 69 doublons liens, soit un taux de
@@ -203,9 +206,9 @@ Another garbled fragment. Must rewrite cleanly.
 > par un simple comptage sur le lac, sans consulter la logique de fusion. C'est la correspondance
 > « un patient maître = un enregistrement non dupliqué » qui est vérifiée, pas la décision.
 >
-> L'API répond sur 14 tests sur données réelles, sans données de secours.
+> L'API de gouvernance répond sur 16 tests sur données réelles, sans données de secours.
 
-**À montrer** — `figures/fig-8.png` : les 4 étapes, puis le tableau de compteurs.
+**À montrer** — `figures/fig-8.png` : les 5 étapes, puis le tableau de compteurs.
 
 → « Est-ce que ces 145 patients maîtres sont les bons ? C'est la question suivante. »
 
@@ -249,8 +252,9 @@ Another garbled fragment. Must rewrite cleanly.
 > peuplée au moment du run. La **mécanique** est prouvée par les tests, pas la **donnée**.
 >
 > Enfin une distinction : l'API de données est un *reporting*, elle ne filtre rien ; le contrôle par
-> rôle et consentement s'applique à l'API de gouvernance. Et les 14 sur 14 sont des tests de fumée :
-> ils prouvent la joignabilité, pas le contrôle d'accès, qui est vérifié par 13 cas dédiés.
+> rôle et consentement s'applique à l'API de gouvernance. Et les 16 de gouvernance sont des tests
+> d'intégration : ils prouvent la joignabilité, pas le contrôle d'accès, vérifié par des cas dédiés
+> — 401, 403, 422.
 
 **À montrer** — le tableau des dettes.
 
@@ -258,21 +262,22 @@ Another garbled fragment. Must rewrite cleanly.
 
 ---
 
-## S10. Démonstration vidéo — 4:00 · `[10:00] → [14:00]` · 76 mots de narration + vidéo 3:30
+## S10. Démonstration vidéo — 4:00 · `[10:00] → [14:00]` · 85 mots de narration + vidéo 3:30
 
 **Vidéo muette de 3:30 + narration à voix haute.** Si la vidéo est sonore, couper la narration et
-commenter au moment des plans 2 et 3.
+commenter au moment des plans 2 à 4.
 
 | Plan | Ce qu'on voit | **À dire pendant le plan** |
 |---|---|---|
-| 1 · 1:00 | 54 tests qui passent | « Le moteur de déduplication et l'API de gouvernance, 54 tests, aucun échec. » |
-| 2 · 1:00 | métriques du jeu hard | « Le même moteur, sur le jeu à 50 % de variation : zéro faux positif, rappel 0,422, et les mêmes décisions en Pandas et en Spark. » |
-| 3 · 1:30 | pipeline Medallion 4/4 | « Et voici le pipeline complet, de l'extraction au chargement : quatre étapes sur quatre. » |
-| 4 · 0:30 | repli (captures figées) | « Si la vidéo ne s'est pas lancée, les mêmes preuves sont ici : 214 lignes, 145 maîtres, 69 doublons, 32,24 %. » |
+| 1 · 0:45 | 102 tests qui passent | « 102 tests, aucun échec : moteur, gouvernance et planification. » |
+| 2 · 0:45 | métriques du jeu hard | « Zéro faux positif, rappel 0,422, décisions identiques en Pandas et en Spark. » |
+| 3 · 1:00 | pipeline Medallion 5 étapes | « Le pipeline : cinq étapes, de la préparation au GOLD, avec reprise et watermark. » |
+| 4 · 0:30 | tableau de bord `/dashboard` + planification cron | « Et le tableau de bord : le pipeline, sa planification cron, la fraîcheur des sources. » |
+| 5 · 0:30 | repli (captures figées) | « Si la vidéo échoue, les mêmes preuves sont ici : 214 lignes, 145 maîtres, 69 doublons, 32,24 %. » |
 
 **À dire en introduction, avant de lancer la vidéo (15 s)**
-> Trois démonstrations, dans l'ordre où le projet a été construit : les tests, l'évaluation, puis le
-> lac de données.
+> Quatre volets, dans l'ordre où le projet a été construit : les tests, l'évaluation, le lac de
+> données, puis son tableau de bord.
 
 → « Après la démonstration, la synthèse. »
 
@@ -340,7 +345,7 @@ commenter au moment des plans 2 et 3.
 | Situation | Geste |
 |---|---|
 | `[4:00]` dépassé | raccourcir S5 et S6 : les figures portent déjà l'information, ralentir sur S9 |
-| `[10:00]` dépassé | réduire le plan 3 de la vidéo (couper le pipeline) plutôt que l'évaluation |
+| `[10:00]` dépassé | réduire les plans 3 et 4 de la vidéo (pipeline accéléré, tableau de bord) plutôt que l'évaluation |
 | `[14:00]` dépassé | ne PAS toucher à S11 et S12 : ce ne sont que 2 minutes de synthèse |
 | Question du jury en cours d'exposé | noter, répondre, reprendre le fil au point suivant |
 | **Toujours** | ne jamais couper S2 (problème), S8 (évaluation), S9 (honnêteté) |
@@ -358,19 +363,19 @@ prononcé, hors gestes et hors annotations.
 | S4 | 1:15 | 154 | 123 /min | large |
 | S5 | 1:30 | 168 | 112 /min | large |
 | S6 | 1:30 | 219 | 146 /min | tenu |
-| S7 | 1:00 | 112 | 112 /min | large |
+| S7 | 1:00 | 122 | 122 /min | large |
 | S8 | 1:15 | 169 | 135 /min | tenu |
 | S9 | 0:45 | 112 | 149 /min | à la limite |
-| S10 | 4:00 | 76 + vidéo 3:30 | — | narration seulement |
+| S10 | 4:00 | 85 + vidéo 3:30 | — | narration seulement |
 | S11 | 1:00 | 138 | 138 /min | tenu |
 | S12 | 0:45 | 104 | 139 /min | tenu |
 | S13 | 0:15 | 34 | 136 /min | tenu |
-| **Parole** | **12:00** | **1 548** | **129 /min** | — |
+| **Parole** | **12:00** | **1 558** | **130 /min** | — |
 
-**Conclusion mesurée.** Les 12 slides de parole contiennent 1 548 mots, soit **11:03 à 140 mots/min**,
+**Conclusion mesurée.** Les 12 slides de parole contiennent 1 558 mots, soit **11:08 à 140 mots/min**,
 auxquels s'ajoutent 12 transitions (121 mots, 0:52). Avec la vidéo de 3:30, l'exposé court
-**15:25 sur 16:00 planifiées** — 35 secondes de filet à l'intérieur du plan, plus les 4:00 de marge
-déclarée, soit environ **19:25 sur 20:00**.
+**15:30 sur 16:00 planifiées** — 30 secondes de filet à l'intérieur du plan, plus les 4:00 de marge
+déclarée, soit environ **19:30 sur 20:00**.
 
 Conséquence pratique : il ne faut **pas** ajouter de texte avant la première répétition. Le temps
 disponible se dépense en **ralentir** sur S2, S8 et S9, et en laissant le temps de montrer les

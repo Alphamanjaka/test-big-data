@@ -82,12 +82,12 @@ PROBLÈME MÉTIER → MVP (Pandas+PG) → VALIDATION (ground-truth) → SPARK (p
 ### S7. Résultats du run de référence (VM) (1:00)
 | Élément | Valeur vérifiée |
 |---|---|
-| Pipeline | 4/4 vert |
+| Pipeline | 4/4 au run de référence · orchestration en 5 étapes (reprise + incrémentale) |
 | SILVER `patient_fhir` | 214 lignes (76+76+62) |
 | Masters / doublons | 145 / 69 (exact) · duplicate_rate 32.24 % |
 | API données | 3/3 PASS |
-- **Image à projeter : `figures/fig-8.png`** — le pipeline ELT en quatre étapes.
-- *Support : `ai/memoire/contexte_projet.md` ; logs `elt.log` ; `test_api.py`.*
+- **Image à projeter : `figures/fig-8.png`** — le pipeline ELT en cinq étapes (la 1re, préparatoire, est idempotente).
+- *Support : `ai/memoire/contexte_projet.md` ; logs `elt.log` ; `test_api.py` ; `chapters/07-conception.md` §7.3.2.*
 
 ### S8. Évaluation ground-truth (1:15)
 - 3 jeux easy/medium/hard (500 maîtres, ~1 057 enregistrements, seed 42) ; vérité terrain réservée.
@@ -106,8 +106,9 @@ PROBLÈME MÉTIER → MVP (Pandas+PG) → VALIDATION (ground-truth) → SPARK (p
   consentement GOLD non alimenté en base (la mécanique est prouvée, pas la donnée) ; l'API Flask
   reste une surface de **reporting**, le contrôle par rôle et consentement s'applique à l'API de
   gouvernance.
-- Les 14/14 de l'API sont un **test de fumée** (statuts) : la joignabilité est prouvée, le contrôle
-  d'accès est prouvé par 13 cas dédiés.
+- Les 16 tests de l'API de gouvernance sont un **test d'intégration** (statuts : 401, 403, 422) :
+  la joignabilité est prouvée, et le contrôle d'accès y est vérifié par des cas dédiés (rôle,
+  consentement, finalité).
 - *Support : `chapters/07-conception.md` §7.3.5-7.3.6 ; `chapters/08-tests.md` §8.1 et §8.6.*
 
 ---
@@ -121,15 +122,16 @@ PROBLÈME MÉTIER → MVP (Pandas+PG) → VALIDATION (ground-truth) → SPARK (p
 
 | Plan | Contenu à filmer | Commande | Durée |
 |---|---|---|---|
-| 1 | Les 54 tests passent (moteur + gouvernance) | `.venv\Scripts\python -m pytest projet/code-source/tests -q` | 1:00 |
-| 2 | L'évaluation hard sort ses métriques | `.venv\Scripts\python projet\code-source\evaluation\evaluate_engine.py --level hard` | 1:00 |
-| 3 | Le pipeline Medallion tourne bout en bout | `bash projet/code-source/provision/scripts/run_pipeline.sh` | 1:30 |
-| 4 | **Repli** si la vidéo ne se lance pas : compteurs figés | slide de captures datées (voir ci-dessous) | 0:30 |
+| 1 | Les 102 tests passent (moteur + gouvernance + planification/reprise) | `.venv\Scripts\python -m pytest projet/code-source/tests -q` | 0:45 |
+| 2 | L'évaluation hard sort ses métriques | `.venv\Scripts\python projet\code-source\evaluation\evaluate_engine.py --level hard` | 0:45 |
+| 3 | Le pipeline Medallion tourne bout en bout (5 étapes) | `bash projet/code-source/provision/scripts/run_pipeline.sh` | 1:00 |
+| 4 | **Tableau de bord `/dashboard`** : zones Medallion, étapes, planification cron, fraîcheur des sources | lancer `front-optional/`, API FastAPI sur le port 8000 | 0:30 |
+| 5 | **Repli** si la vidéo ne se lance pas : compteurs figés | slide de captures datées (voir ci-dessous) | 0:30 |
 
-- **À enregistrer à la maison, VM allumée** : le plan 3 exige la VM Vagrant, indisponible sur le
-  poste de préparation.
+- **À enregistrer à la maison, VM allumée** : les plans 3 et 4 exigent la VM Vagrant et `front-optional`,
+  indisponibles sur le poste de préparation.
 - Le plan 1 doit être **rejoué juste avant l'enregistrement** pour que l'écran montre 102/102.
-- *Slide de repli obligatoire* (à construire dans le même deck) : capture du run 4/4,
+- *Slide de repli obligatoire* (à construire dans le même deck) : capture du run de référence,
   `patient_fhir` **214 lignes** / **145 masters** / **69 doublons** / **32.24 %**, extrait de
   `evaluation_truth.md`, sortie de l'API.
 - Préalables pour le public : dépôt `Mon_Memoire`, venv Python 3.8+ (`pyproject.toml`).
@@ -161,14 +163,14 @@ consentement** — sur données synthétiques, architecture Big Data, dépôt un
 | `figures/fig-1.png` | S2 | trois systèmes isolés, cinq manques | **projeté** — le meilleur visuel « problème » |
 | `figures/fig-2.png` | S4 | la démarche en six étapes | **projeté** |
 | `figures/fig-4.png` | S5 | l'architecture en trois niveaux | **projeté** |
-| `figures/fig-8.png` | S7 | le pipeline ELT en quatre étapes | **projeté** |
+| `figures/fig-8.png` | S7 | le pipeline ELT en cinq étapes | **projeté** |
 | `figures/fig-5.png` | — | le chemin d'une donnée | **exclu** : à 5,7 pt même en page paysage, illisible sur un vidéoprojecteur. Reste dans le mémoire, et ne passe qu'en pause zoomée dans la vidéo. |
 | `figures/fig-6.png`, `figures/fig-3.png`, `figures/fig-9.png` | — | état de l'art, générateur, stratégie de test | **réserves** pour les questions du jury |
 
 ## Note de préparation
 
-- [ ] **Enregistrer la vidéo (3:30)** dans l'ordre des 4 plans, VM allumée, depuis la racine du dépôt
-      `Mon_Memoire`. Chronométrer le film : au-delà de 4 min, couper le plan 3.
+- [ ] **Enregistrer la vidéo (3:30)** dans l'ordre des 5 plans, VM allumée, depuis la racine du dépôt
+      `Mon_Memoire`. Chronométrer le film : au-delà de 4 min, couper les plans 3 et 4.
 - [ ] Vérifier la **lecture du `.mp4` sur le poste de la salle** (codec, plein écran, chemin) et
       garder le fichier dans le même dossier que les slides.
 - [ ] Construire la **slide de repli** (captures d'écran datées du run VM et de la sortie API) :

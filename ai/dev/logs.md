@@ -1613,3 +1613,163 @@ glossaire : HDFS, FHIR, ELT, MPI, RBAC). Choix : fusionner dans une seule sectio
 0 markup brut ; `py_compile` OK. `documents/memoire_M2_MBDS.docx` **non régénéré** : ouvert dans Word.
 
 **Reste :** régénérer le DOCX (avant l'ajout manuel des logos) ; commit en attente de validation.
+
+## 28/09/2026 — Soutenance : supports alignés sur l'ELT en 5 étapes et 102/102
+
+**Contexte :** après la restructuration MBDS du mémoire (ch. 06-07, planification/watermark, dashboard,
+102/102), les supports de soutenance et les annexes gardaient des nombres périmés (54/54, 13 cas,
+14/14, 4 plans, pipeline « en 4 étapes »).
+
+| # | Action | Détail |
+| - | ------ | ------ |
+| 1 | `documents/slides_soutenance.md` | S7 : pipeline « 4/4 au run de référence · orchestration en 5 étapes (reprise + incrémentale) », fig-8 « en cinq étapes (la 1re, préparatoire, est idempotente) », renvoi `chapters/07-conception.md §7.3.2` ; S9 : 16 tests = test d'intégration (statuts 401, 403, 422), contrôle d'accès vérifié par cas dédiés (rôle, consentement, finalité) ; S10 : 5 plans (102 tests 0:45 · éval hard 0:45 · pipeline 5 étapes 1:00 · tableau de bord `/dashboard` 0:30 · repli 0:30), note « plans 3 et 4 exigent VM + front-optional » |
+| 2 | `documents/soutenance_script_oral.md` | en-tête « 16/16 = tests d'intégration » ; bloc commandes + plan 4 dashboard ; « trois choses à ne pas dire » : 16 tests prouvent joignabilité + statuts, le contrôle d'accès = cas dédiés ; S7 122 mots mesurés ; S10 85 mots de narration + vidéo 3:30 ; parole 1 558 (130/min) ; conclusion 11:08 → 15:30/16:00 (30 s filet), 19:30/20:00 |
+| 3 | `scripts/dev/build_soutenance_pptx.py` | chip s16 « Pipeline **5 étapes** · run **4/4** » ; `s18_demo` : 5 plans (dashboard ajouté), durées 0:45/0:45/1:00/0:30/0:30, `row_h` 0.72→0.6 ; PPTX régénéré (21 slides) |
+| 4 | `references/annexes.md` | Annexe A : 5 programmes (+ `ensure_generator_data.sh` préparatoire/idempotente) + reprise `--resume`/watermark/cron → §7.3.2 ; Annexe D : recherche/pagination/filtrage silencieux des patients + `/pipeline/schedule` (GET/PUT) + `/pipeline/status` ; Annexe G : 13 → 16 cas API gouvernance |
+| 5 | `scripts/dev/export_memoire_docx.py` | RESUME/ABSTRACT : clause « pipeline rejouable, incrémental (empreinte des sources), planifiable (cron) » ; DOCX non régénéré |
+| 6 | `documents/rapport_stage.md` | tests 54/54 → 102/102 (matcher 12 · consentement 21 · canonique 8 · API gouvernance 16 · planification/reprise 45) ; API données 14/14 → 3/3 ; §3.1 « ELT 4 étapes » → 5 étapes (reprise, watermark, cron) |
+| 7 | `documents/etat_avancement_superieur.md` | 54 tests → 102/102 ; orchestration 4 → 5 étapes (run de référence 4/4) ; tableau de bord = pilotage `/dashboard` (distinct des tableaux d'analyse du PoC) ; verdict « 102/102 » |
+
+**Vérifications.** Grep ciblé sur les 5 fichiers du lot : 0 résidu « 54/54 », « 13 cas », « 14/14 »,
+« quatre programmes », « pipeline en 4 étapes » (seul résidu apparent : « quatre étapes sur quatre au
+run de référence », voulu — l'orchestration en compte cinq). `py_compile` build + export OK. Pytest
+fraîcheur `-p no:warnings --junitxml` : tests=102 failures=0 errors=0 (2,81 s). PPTX régénéré
+(21 slides, 610 810 o). Non touchés à dessein : mentions « four/four 4/4 » historiques des chapitres
+04/09, `cahier_des_charges.md` (spécification PoC datalake_mavis), `journal_poc_datalake_mavis.md`
+(suppression interdite), glossaire figé (décision utilisateur).
+
+**Reste :** filmer la vidéo de démo 3:30 (5 plans) ; régénérer le DOCX quand l'utilisateur le décide
+(logos hand-placés) ; commit en attente de validation.
+
+## 28/09/2026 — Mémoire : glossaire allégé (42 → 23 entrées)
+
+**Demande utilisateur :** retirer du glossaire les termes déjà définis et argumentés dans le corps
+(stack technique dans la partie outils, notions du sujet) : API, Big Data, CI, consentement par finalité,
+Data Lake, déduplication, ETL, Hive, HDFS, JWT, MBDS, MDM, Medallion, MMT, REST, score pondéré et seuil,
+SHA-256, SQL, vérité terrain. Lève le « glossaire figé » noté plus haut (nouvelle décision utilisateur).
+
+| # | Fichier | Changement |
+| - | ------- | ---------- |
+| 1 | `chapters/glossaire.md` | 19 entrées supprimées ; 23 restent, ordre alphabétique inchangé |
+
+| 2 | `documents/memoire_M2_MBDS.docx` | mêmes 19 paragraphes retirés directement dans le DOCX (python-docx), sans régénération, pour conserver les logos de la page de garde placés à la main |
+
+**Vérifications.** Script de retrait : 19 lignes supprimées dans le Markdown et 19 paragraphes dans le DOCX ; glossaire DOCX relu (23 entrées) ; images, tableaux et reste du document inchangés (comparaison avec une copie de sauvegarde).
+
+## 28/09/2026 — Suivi : Gantt Excel reconstruit (`documents/Gantt_suivi_projet.xlsx`)
+
+**Constat sur `documents/Agile Gantt chart1.xlsx`** (non modifié) : modèle Microsoft ré-enregistré par
+`wijmo.xlsx`, mise en forme conditionnelle perdue (0 règle : aucune barre), grille ne testant que
+« Objectif »/« Jalon », chronologie décalée d'un jour (07/07) et limitée à 56 jours, dates `mm-dd-yy`,
+soutenance calculée au 07/11/2026 (mémoire : fin octobre, Tableau 22).
+
+| # | Élément | Contenu |
+| - | ------- | ------- |
+| 1 | Feuille « Gantt » | colonnes Description du jalon / Catégorie / Progression / Début / Jours ; légende 5 catégories ; début 06/07/2026 (C6) et décalage en semaines (C7) nommés |
+| 2 | Chronologie | 119 jours depuis le lundi de début (06/07 → 01/11), mois épelés, initiales des jours, week-ends grisés, trait rouge « aujourd'hui » |
+| 3 | Barres | 14 règles : couleur pleine = part faite, teinte = reste, par catégorie ; barre bleu pétrole pour les phases (catégorie vide) |
+| 4 | Phase 1 « Étude du projet » | 7 tâches alignées sur le Tableau 22 ; dates sans trace datée commentées « à confirmer » ; phase calculée (début, durée, progression pondérée) |
+| 5 | Feuille « Mode d'emploi » | cellules à saisir, règles de couleur, défilement |
+
+**Vérifications.** Ouverture et recalcul dans Excel (COM) : 0 erreur de formule ; H7 = 06/07/2026, dernière
+colonne = 01/11 ; phase 1 = 84 jours (06/07 → 28/09), 100 % ; rendu image contrôlé (barres, légende, mois).
+Script de génération : scratchpad de session (`build_gantt.py`), non versionné.
+
+## 28/09/2026 — Suivi : Gantt, phase 2 « Analyse et conception » ajoutée
+
+Validée par l'utilisateur. 8 tâches (besoins et exigences, cas d'utilisation et rôles, modèle de données et
+flux, architecture Medallion, gouvernance, moteur de déduplication, plan d'évaluation, jalon). Seul le jalon
+est daté (fusion en dépôt unique, 07/09) ; les autres dates sont estimées et commentées « à confirmer »,
+en cohérence avec le journal du PoC (démarrage 23/08, auth + RBAC 24/08) et le Tableau 21 (J1 01/09, J2 07–08/09).
+**Vérifications.** Recalcul Excel : 0 erreur ; phase 2 = 10/08 → 07/09 (29 jours), 100 % ; rendu image contrôlé.
+
+## 28/09/2026 — Suivi : Gantt, phase 3 « Réalisation » ajoutée
+
+Validée par l'utilisateur. 10 lignes : PoC Big Data (23/08–01/09), auth + RBAC + API Flask + interface (24–27/08),
+générateur + vérité terrain + MVP, fusion en dépôt unique (07/09), moteur de déduplication (07–08/09),
+gouvernance complète (01/09–28/09) et jalons J1 à J4 du Tableau 21. Dates tirées du journal du PoC, de
+`ai/dev/logs.md` et du Tableau 21 ; seul le début du générateur (29/08) est estimé et commenté.
+**Vérifications.** Recalcul Excel : 0 erreur ; phase 3 = 23/08 → 28/09 (37 jours), 100 % ; rendu image contrôlé.
+
+## 28/09/2026 — Suivi : Gantt, phases 4 « Tests et évaluation » et 5 « Rédaction et soutenance » ajoutées
+
+Validées par l'utilisateur. Phase 4 : runs VM et API (07/09), évaluation vérité terrain (07–08/09), pytest
+23/23 → 102/102 (07/09 → 28/09), recette prévue (29/09, 0 %). Phase 5 : rédaction (31/08 → 11/10, 70 %
+estimé), slides et script oral (09/09 → 28/09, 80 % estimé), vidéo de démo, relecture encadrant, jalons
+dépôt (26/10) et soutenance (30/10) prévus, catégorie « Non attribué », commentés « à confirmer ».
+Couleur « Non attribué » foncée (barres confondues avec les week-ends).
+**Vérifications.** Recalcul Excel : 0 erreur ; phase 4 = 35 jours, 66 % ; phase 5 = 31/08 → 30/10, 53 % ; rendu contrôlé.
+
+## 28/09/2026 — Suivi : Gantt, thème modernisé
+
+Demande utilisateur : thème et polices plus modernes et plus visuels. Données des phases inchangées.
+Police Segoe UI (titres Segoe UI Semibold) ; bandeau de titre pleine largeur ; 4 tuiles d'indicateurs
+calculées (prochain jalon, avancement global pondéré, tâches terminées, jours restants jusqu'à la
+soutenance) ; catégories en pastilles colorées ; progression en barre de données ; jalons en losange ◆
+coloré ; bande des mois en teintes alternées ; jour courant en pastille rouge + trait ; séparateurs de
+semaine ; feuille « Mode d'emploi » restylée. Script scratchpad séparé en `build_gantt.py` + `gantt_data.py`.
+**Vérifications.** Recalcul Excel : 0 erreur ; tuiles = J4 le 28/09 (aujourd'hui), 88 %, 28 / 35, 32 j ;
+rendu image contrôlé. Correctif : recherche du prochain jalon passée de SUMPRODUCT(MAX(...)) (#VALUE!) à
+MATCH(1, INDEX(...,0), 0).
+
+## 28/09/2026 — Rapport de stage : nouveau document Word sur le gabarit des rapports de référence
+
+Demande utilisateur : un rapport de stage plus propre et plus professionnel, au niveau des deux rapports
+de référence (`RAPPORT_HASINA_1613.docx`, `Rapport de stage ETU 1156 … .docx`).
+
+| # | Action | Détail |
+| - | ------ | ------ |
+| 1 | `documents/rapport_stage_source.md` (nouveau) | réécriture condensée des chapitres 00–09 (~11 000 mots contre ~21 500) selon le plan MBDS ; renvois de fichiers du dépôt retirés du texte ; chiffres repris à l'identique ; bibliographie renumérotée [1]–[20] ; annexes A–C |
+| 2 | `projet/code-source/scripts/dev/build_rapport_stage_docx.py` (nouveau) | part du rapport ETU 1156 comme gabarit (styles, page de garde à 4 logos, sections romain/arabe), en retire tout le contenu, les images, l'étiquette de sensibilité « Confidential » et les propriétés de l'autre organisation ; légendes à champs SEQ, sommaire et listes des tableaux et figures mis à jour par Word (COM) |
+| 3 | `documents/Rapport_de_stage_RANOMENJANAHARY_Manjaka_Alpha.docx` (généré) | 61 pages, 40 tableaux, 5 figures (dont 1 page paysage), Gantt en cases colorées |
+
+**Vérifications :** rendu PDF via Word relu page par page ; numérotation i… puis 1… contrôlée ;
+paquet scanné (aucune trace du nom, des images ni de l'étiquette du gabarit). Le mémoire
+(`chapters/`, `export_memoire_docx.py`) et `documents/rapport_stage.md` sont inchangés.
+
+**Résultat :** rapport généré ; budget humain toujours présenté comme hypothèse de travail. Commit en attente.
+
+## 28/09/2026 — Rapport de stage : emplacements de captures et extraits de code
+
+Demande utilisateur : réserver des emplacements pour les captures d'interface et extraits de code qu'il prépare.
+
+| # | Action | Détail |
+| - | ------ | ------ |
+| 1 | `build_rapport_stage_docx.py` | directive `Capture:` (image de `documents/captures/` si présente, sinon cadre « EMPLACEMENT RÉSERVÉ » avec consigne, légende numérotée) ; directive `Code:` (code réel du dépôt extrait par nom de fonction via `ast` ou par plage de lignes, numéros de ligne, docstring omise ; remplacé par une image si fournie) ; liste des extraits de code ; état des emplacements affiché à chaque génération |
+| 2 | `documents/rapport_stage_source.md` | 16 emplacements de captures (C01–C16 : existant, Gantt, 7 écrans de l'interface, Swagger, HDFS, run du pipeline, comptages, refus 403, pytest, évaluation) et 7 extraits de code (X01–X07, dont annexe D) |
+| 3 | `documents/captures/README.md` (nouveau) | liste des captures à préparer, noms de fichiers, priorité, règles (aucune donnée réelle, aucun secret visible) |
+
+**Vérifications :** génération OK (72 pages, 21 figures dont 16 cadres réservés, 7 extraits) ; rendu PDF d'un cadre
+réservé et d'un extrait contrôlé. C14 (refus 403) marqué « seulement si la base est peuplée » : elle ne l'a pas été
+pendant le stage.
+
+## 28/09/2026 — Rapport de stage : schéma des quatre notions clés (section 1.2.2)
+
+Demande utilisateur : transformer le paragraphe de définitions (ELT, Medallion, MPI, consentement par finalité)
+en schéma illustratif.
+
+| # | Action | Détail |
+| - | ------ | ------ |
+| 1 | `documents/figures/src/notions_cles.html` (nouveau) | planche 2 × 2 en HTML/CSS/SVG : ELT contre ETL, zones RAW → SILVER → GOLD, fusion des trois fiches « Jean Rakoto » vers PAT-0102, finalités accordées/refusée avec refus par défaut (données fictives) |
+| 2 | `projet/code-source/scripts/dev/render_html_figures.py` (nouveau) | rendu PNG par le Chrome/Edge du poste en headless (rien d'installé) → `documents/figures/notions_cles.png` (3000 × 2300 px) |
+| 3 | `documents/rapport_stage_source.md` | paragraphe remplacé par une phrase d'introduction et la figure, placée avant le tableau des objectifs (évite un blanc de page) |
+| 4 | `build_rapport_stage_docx.py` | message explicite si le .docx est verrouillé (ouvert dans Word) |
+
+**Vérifications :** taille des textes calculée pour l'impression (≥ 18 px CSS, soit ≈ 7 pt à 16 cm) ; rendu contrôlé
+en PNG puis dans le PDF d'une copie de contrôle (figure 1, page 4). Le .docx du dépôt n'a pas été régénéré :
+il était ouvert dans Word.
+
+## 28/09/2026 — Rapport de stage : tableau des outils avec logos (section 4.1.4)
+
+Demande utilisateur : représenter les outils par leur logo ; colonnes Usage, Outil (logo), Version, Description.
+
+| # | Action | Détail |
+| - | ------ | ------ |
+| 1 | `documents/icon/` | 12 logos manquants ajoutés : VS Code, Node.js, Git, VirtualBox, Ubuntu, Laragon, OpenJDK, pandas, FastAPI, pytest, Mermaid (Simple Icons, CC0, couleurs de marque officielles), RapidFuzz (dépôt GitHub du projet) |
+| 2 | `projet/code-source/scripts/dev/build_logos.py` (nouveau) | normalise 24 logos (png, jpg, webp, avif, svg) dans un cadre identique 400 × 140 via Chrome headless → `documents/figures/logos/<id>.png` ; agrandissement pour les images à marges |
+| 3 | `build_rapport_stage_docx.py` | tableaux `{logos}` : cellule `logo:<id> Nom` (logo + nom), `^` fusionne la cellule d'usage avec celle du dessus, groupe d'usage maintenu sur une page, largeurs fixes |
+| 4 | `documents/rapport_stage_source.md` | tableau des outils refait : 24 outils en 6 usages, versions tirées du dépôt (Vagrantfile, bootstrap.sh, package.json, pyproject.toml) ou du poste, et note sur l'origine des versions |
+
+**Vérifications :** planche des 24 logos contrôlée ; rendu du tableau relu dans le PDF d'une copie de contrôle (pages 18–20).
+Non utilisés dans le projet et donc écartés : MongoDB, HBase, VMware, Siemens. Version de Laragon non déterminée (« — »).
+Le .docx du dépôt n'est pas régénéré tant qu'il est ouvert dans Word.
