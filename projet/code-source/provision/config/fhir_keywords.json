@@ -1,0 +1,7 @@
+{
+  "FHIR_KEYWORDS": [
+    "patient", "evaluation", "hospitalization", "ward", "disease", "diagnosis",
+    "treatment", "appointment", "clinical", "medical", "laboratory", "imaging",
+    "vaccination", "surgery", "medication", "health_service", "perinatal"
+  ]
+}

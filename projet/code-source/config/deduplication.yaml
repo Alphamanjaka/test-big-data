@@ -1,0 +1,14 @@
+# Configuration de la déduplication — source de vérité des paramètres métier.
+# Lu par engine/identity/config.py (matcher Pandas + spark_dedup + évaluation + SILVER).
+# Recalibrer ici (seuil, poids, préfixe de blocage) propage le changement partout.
+
+threshold: 0.80  # score >= seuil -> fusion automatique (probabiliste)
+
+weights:
+  name: 0.5        # fuzz.ratio du nom complet (token, ordre indifférent)
+  birth_date: 0.3  # date de naissance exacte
+  cin: 0.1         # CIN exact (clé forte, ~75 % de couverture)
+  birth_city: 0.1  # ville de naissance exacte (normalisée, poids faible)
+
+blocking:
+  name_prefix_len: 4  # longueur du préfixe de nom pour l'index de blocage

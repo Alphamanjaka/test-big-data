@@ -1,0 +1,1 @@
+# Patient platform — Apache Spark layer (Level 2).

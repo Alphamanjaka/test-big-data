@@ -1,0 +1,37 @@
+#!/bin/sh
+# pre-commit — refuse tout secret en dur (garde anti-fuite).
+# Active pour ce depot par : git config core.hooksPath githooks
+# Une ligne contenant le marqueur `secret-scan:ignore` est ignoree par le scan.
+
+fail=0
+
+# Lignes ajoutees au commit (index), sans le marqueur d'ignorance.
+added() {
+    git diff --cached --no-color -U0 2>/dev/null | grep '^+' | grep -v '^+++' | grep -v 'secret-scan:ignore'
+}
+
+check() {
+    name="$1"
+    pattern="$2"
+    hit=$(added | grep -E -- "$pattern" | sed 's/^+/    /')
+    if [ -n "$hit" ]; then
+        echo "pre-commit: SECRET BLOQUE [$name] dans le diff indexe :"
+        printf '%s\n' "$hit"
+        fail=1
+    fi
+}
+
+# Mots de passe / identifiants connus deja exposes (ne jamais re-committer).
+check "mots de passe / identifiants connus" 'rkt20mc|mmtadmin|jonah'  # secret-scan:ignore
+# Chaine de connexion DSN avec mot de passe reel (placeholder <...> autorise).
+check "DSN postgresql:// avec mot de passe" 'postgresql://[^:]*:[^<@]*@'  # secret-scan:ignore
+# Literal password = "..." / password = '...' dans le code.  # secret-scan:ignore
+check "litteral password= \"...\"" 'password[[:space:]]*=[[:space:]]*["'"'"'][^"'"'"']+["'"'"']'  # secret-scan:ignore
+# PGPASSWORD avec valeur non placeholder.
+check "PGPASSWORD non placeholder" 'PGPASSWORD=["'"'"'][^<][^"'"'"']*["'"'"']'  # secret-scan:ignore
+
+if [ "$fail" -eq 1 ]; then
+    echo "pre-commit: externalise les secrets (variables d'environnement / .env gitignore) puis recommite."
+    exit 1
+fi
+exit 0

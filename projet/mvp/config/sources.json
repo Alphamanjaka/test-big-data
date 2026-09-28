@@ -1,0 +1,18 @@
+{
+  "data_root": "synthetic-patient-generator/data/experiments/easy",
+  "pharmacy": {
+    "type": "csv",
+    "patient_source": "pharmacy/patients.csv",
+    "business_source": "pharmacy/achats.csv"
+  },
+  "consultation": {
+    "type": "csv",
+    "patient_source": "consultation/patients.csv",
+    "business_source": "consultation/consultations.csv"
+  },
+  "imaging": {
+    "type": "csv",
+    "patient_source": "imaging/patients.csv",
+    "business_source": "imaging/examens.csv"
+  }
+}

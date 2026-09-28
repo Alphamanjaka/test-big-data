@@ -1,0 +1,38 @@
+[
+  {
+    "name": "pharmacy",
+    "type": "csv",
+    "ingest": {
+      "mode": "signature"
+    },
+    "db": {
+      "dir": "{PROJECT_ROOT}/evaluation/synthetic-patient-generator/data/raw/pharmacy"
+    },
+    "main_table": "patients",
+    "tables_to_include": ["patients", "achats"]
+  },
+  {
+    "name": "consultation",
+    "type": "csv",
+    "ingest": {
+      "mode": "signature"
+    },
+    "db": {
+      "dir": "{PROJECT_ROOT}/evaluation/synthetic-patient-generator/data/raw/consultation"
+    },
+    "main_table": "patients",
+    "tables_to_include": ["patients", "consultations"]
+  },
+  {
+    "name": "imaging",
+    "type": "csv",
+    "ingest": {
+      "mode": "signature"
+    },
+    "db": {
+      "dir": "{PROJECT_ROOT}/evaluation/synthetic-patient-generator/data/raw/imaging"
+    },
+    "main_table": "patients",
+    "tables_to_include": ["patients", "examens"]
+  }
+]

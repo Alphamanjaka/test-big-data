@@ -1,53 +1,36 @@
-# Patient Data Platform
+# Mon_Memoire — Plateforme de Centralisation et de Gouvernance des Données Patients
 
-MVP de centralisation de donnees patients synthetiques.
+Mémoire de stage (Master 2 — Big Data) et **projet unique consolidé** portant sur la conception et la
+réalisation d'une plateforme de centralisation et de gouvernance de données **patients synthétiques** :
+nettoyage, déduplication multi-sources (exact + probabiliste, Master Patient Index), consentement
+purpose-by-purpose, audit d'accès et architecture Big Data.
 
-## Demarrage
+## Organisation du dépôt unique
 
-```powershell
-python -m venv .venv
-.venv\Scripts\python -m pip install -e ".[test]"
-.venv\Scripts\python -m pytest -q
+```
+Mon_Memoire/
+├── chapters/             # mémoire — chapitres 01 → 09 (rédigés, statut daté ; 09 = glossaire)
+├── documents/            # cahier des charges + articles + documentation conceptuelle
+├── references/           # bibliographie (B1 → B20) et sources citées
+├── projet/
+│   ├── code-source/      # code consolidé : Big Data (VM Hive/HDFS/Spark) + moteur engine/
+│   └── mvp/              # PoC `test_bigdata` (niveaux 1 et 2 : MVP Pandas + Spark)
+├── archives/
+│   └── datalake_mavis/   # PoC Big Data d'origine (source seule, sans .git ni artefacts runtime)
+├── ai/
+│   ├── dev/              # consignes de dev, journal (logs.md), suivi des jalons
+│   └── memoire/          # consignes de rédaction (contexte, méthode)
+├── AGENTS.md             # consignes projet (traçabilité, interdits)
+└── README.md             # ce fichier
 ```
 
-Le pipeline local lit les trois sources CSV de `data/raw`, standardise les patients et produit une identity map explicable. PostgreSQL est prepare par `sql/schema.sql`; aucun secret ni aucune vraie donnee patient ne doit etre ajoute au depot.
+## Documents clés
 
-Les événements d'exécution sont ajoutés en temps réel dans `logs/runtime.log` et recopiés dans `LOGS.md` pour l'audit du projet.
+- Mémoire : `chapters/01-introduction.md` → `08-conclusion.md` (consignes : `ai/memoire/`).
+- Cahier des charges : `documents/cahier_des_charges.md`.
+- Code : `projet/code-source/README.md` (démarrage moteur/tests, démarrage VM Big Data).
 
-Quand la base `patient_plateform` existe, le chargement se lance avec :
+## Traçabilité
 
-```powershell
-.venv\Scripts\python load_to_postgres.py
-```
-
-La connexion utilise `DATABASE_URL` depuis `.env`; cette valeur ne doit jamais être commitée.
-
-## Dashboard
-
-Le dashboard de gouvernance se lance avec :
-
-```powershell
-.venv\Scripts\python dashboard_server.py
-```
-
-Il est ensuite disponible sur `http://localhost:8501`.
-
-## API
-
-L'API en lecture seule se lance avec :
-
-```powershell
-.venv\Scripts\python api_server.py
-```
-
-Endpoints disponibles : `/health`, `/metrics`, `/patients` et `/patients/{master_patient_id}`. Les payloads RAW ne sont pas exposés par l'API. Les lignes RAW sont conservées comme historique de chaque extraction.
-
-## Structure
-
-- `src/patient_platform/extract/`: lecture des sources
-- `src/patient_platform/transform/`: modele canonique et standardisation
-- `src/patient_platform/deduplication/`: matching exact et probabiliste
-- `src/patient_platform/load/`: chargement RAW, master et identity map vers PostgreSQL
-- `src/patient_platform/api/`: API FastAPI en lecture seule
-- `src/patient_platform/dashboard/`: dashboard Streamlit en lecture seule
-- `tests/`: cas critiques du MVP
+Toute session, fix ou jalon est journalisé dans `ai/dev/logs.md` et `ai/dev/suivi_avancement.md`
+(voir `AGENTS.md`).

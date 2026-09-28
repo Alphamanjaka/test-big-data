@@ -1,0 +1,298 @@
+. Présentation du projet
+ Nom du projet : Réalisation d’un Data Lake interopérables et une Application Web de 
+Visualisation
+ Objectif : Centralisation, traitement et visualisation de données multi-sources (type santé), 
+avec visualisation sur application web (Next.js + D3.js) connectée à un backend Data Lake 
+(Spark, Hive, Mongo, HBase).
+ Situation actuelle : Actuellement, l’entreprise ne dispose que de 2 bases PostgreSQL 
+hébergeant des données de santé. Cependant, l’ambition du projet est de construire une 
+architecture capable de s’adapter à l’avenir : jusqu’à 100 sources différentes, de types variés 
+(PostgreSQL, fichiers Excel, CSV, etc.)
+ 2. Périmètre du projet
+ Le projet est organisé en 5 phases principales :
+ 1. Préparation & Installation
+ Objectifs : Poser les bases du projet (outils, apprentissage, environnement).
+ Tâches :
+  Prise en main du projet.
+  Apprentissage des technologies Next.js, D3.js.
+  Étude de l’architecture d’un Data Lake.
+  Étude des types de réseaux et protocoles de sécurité.
+  Conception du schéma d’architecture réseau (interconnexion établissements → Data 
+Lake).
+  Création de VM avec Vagrant.
+  Installation des environnements (Hadoop, Hive, MongoDB, Spark, etc.).
+  Vérification de l’interopérabilité entre les outils installés.
+ 2. Backend – Construction du Data Lake
+ Objectifs : Mettre en place un pipeline d’ELT et une architecture modulaire.
+ Tâches :
+  Définition du schéma logique / schéma pivot.
+  Développement Spark pour :
+  Connexion aux bases sources.
+  Ingestion des données vers HDFS (Zone RAW).
+  Logging et gestion des erreurs.
+  Nettoyage des données :
+ o Suppression de doublons, gestion des formats.
+ o Normalisation des valeurs.
+  Transformation des données selon le schéma pivot basé sur des standards (FHIR)
+  Création des tables Hive.
+  Intégration de MongoDB et HBase (accès rapide + historique).
+  Génération d’UUID pour l’identification unique des patients.
+ Exposition des données via API (Hive, MongoDB, HBase).
+ 3. Frontend – Next.js + D3.js
+ Objectifs : Concevoir une interface utilisateur pour la visualisation des données.
+ Tâches :
+  Initialisation du projet avec Next.js.
+  Mise en place de l’authentification (NextAuth + JWT).
+  CRUD utilisateurs (gestion des comptes).
+  Connexion aux API backend (Hive, MongoDB, HBase).
+  Développement de 4 graphiques dynamiques avec D3.js pour cette première version.  
+o A définies à partir des indicateurs issus du Rapport Mensuel d’Activité (RMA)
+ 4. Tests & Validation
+ Objectifs : Vérifier le bon fonctionnement et la cohérence du système.
+ Tâches :
+  Construction de bases de données fictives pour test.
+  Vérification de la cohérence des données (UUID, transformation, agrégation...).
+  Tests d'interfaces et d'API (Next.js → Hive/Mongo).
+  Corrections des erreurs identifiées (backend + frontend).
+ 5. Déploiement & Livraison
+ Objectifs : Préparer une version stable et documentée du système.
+ Tâches :
+  Exportation de la VM Vagrant au format. box.
+  Test d'installation sur un autre poste.
+  Déploiement de l’application web.
+  Rédaction de la documentation technique et utilisateur.
+  Formation utilisateur.
+ 3. Livrables attendus
+  VM Vagrant exportable contenant l’environnement complet.
+  Code source du backend (ETL Spark, API).
+  Code source du frontend (Next.js + D3.js).
+  Documentation technique (installation, structure, API).
+  Documentation utilisateur (guide de l’interface).
+  Rapport de tests et corrections.
+  Graphiques interactifs dans l’application.
+ 4. Technologies utilisées
+ Domaine
+ Frontend
+ Backend
+ Technologies
+ Next.js, D3.js, NextAuth, Tailwind CSS
+ Apache Spark, Hive, MongoDB, HBase, API REST
+Domaine
+ Technologies
+ Stockage
+ HDFS, Hive Tables
+ Virtualisation Vagrant, VirtualBox
+ Langages
+ Sécurité
+ Typescript, Python, Scala (Spark), Shell
+ JWT, Protocoles sécurisés réseau
+ 5. Contraintes & Sécurité
+  Respect des normes RGPD en matière de traitement des données de santé.
+  Interopérabilité entre les outils (Spark, Hive, MongoDB...).
+  Sécurisation des accès via tokens (JWT) et protocoles réseau (VPN/SSL)
+  Génération d’identifiants anonymes (UUID) pour les patients.
+ 6. Planning prévisionnel
+ Phase
+ Préparation & Installation
+ Backend
+ Frontend
+ Tests & Validation
+ Livraison & Documentation
+ 7. Équipe projet
+ Durée estimée
+ 2 semaines
+ 3 semaines
+ 2 semaines
+ 1 semaine
+ 1 semaine
+ Chef de projet : Mr. Rabemanoela Harena
+ Développeur Backend : Ramanantsafidy Mariella Jonah Fitia
+ Développeur Frontend : Ramanantsafidy Mariella Jonah Fitia
+ Administrateur Systèmes / VM : Ramanantsafidy Mariella Jonah Fiti
+
+nous voulons creer ce projet . 
+nous voulons aussi developper appli web de visualisation avec next et d3 js utilisant des graphes modernes comme heatmap .. etc ..
+
+voici la liste des tableaux dans rapport mensuel d'activité :
+
+📊 Liste des Tableaux du RMA (CHRD2 Madagascar)
+
+Tableau 1 : Identification du CHRD2
+N° identification (code GESIS)
+Nom du CHRD2
+Statut administratif (Public / Privé)
+Particularités
+District, Région, Province
+
+Tableau 2 : Messages à l’EMAD
+Messages et rapports divers (urgences, épidémies, problèmes approvisionnement)
+Autres maladies importantes
+Diagnostics (par tranches d’âge : 0-28j, 29-59j, 2-11m, 1-4a, 5-14a, 15-24a, 25-59a, 60+)
+
+Tableau 3 : Transmission
+Date d’envoi
+Date de réception
+Signatures FS/SSD
+Rétro-information reçue
+
+Tableau 4 : Consultations externes de référence
+Nombre de consultants (par tranches d’âge)
+Total consultations
+Référés par niveau inférieur / supérieur
+Soins effectués
+Ordonnances prescrites et servies
+Bons de soins
+
+Tableau 5 : Diagnostics consultations externes (CIM-10)
+Code CIM-10
+Diagnostic (médecine, ex. diarrhée, paludisme, rougeole, tuberculose, etc.)
+Cas par tranche d’âge
+Total
+Référés
+
+Tableau 6 : Visites médicales d’aptitude
+Type (embauche, périodique, reprise, expertise, permis, autres)
+Nombre total / aptes / inaptes
+
+Tableau 7 : Activités urgences (ATU)
+Nb malades reçus
+Référés, auto-référés
+Accidents (circulation, travail, domestiques, scolaires, sportifs)
+Hospitalisés (médecine, chirurgie, maternité, pédiatrie, autres)
+Sorties (normales, évadés, décès, refus, cadavres, référés)
+
+Tableau 8 : Hospitalisations – Synthèse
+Nb lits disponibles
+Admissions du mois
+Sorties (normales, décès, évadés, référés, demande)
+Journées hospitalisation
+Durée moyenne de séjour
+Cas sociaux
+Transfusés
+Cas multidisciplinaires
+
+Tableau 9 : Morbidité et mortalité hospitalière
+Code CIM-10
+Diagnostic (médecine / chirurgie / maternité)
+Cas et décès (par tranche d’âge)
+Total, Référés
+
+Tableau 10 : Nutrition (CRENI)
+Admissions (nouvelles, ré-admissions, transferts)
+Sorties (guéris, décès, abandons, non répondants)
+Enfants <6m, 6-23m, 24-59m, >59m
+
+Tableau 11 : Consultations prénatales
+Nb femmes enceintes vues en 1ère CPN
+<15 ans, 15-17 ans, ≥18 ans
+Tests effectués (HTA, diabète, syphilis, VIH)
+Suivi (FAF, TPI paludisme, etc.)
+
+Tableau 12 : Activités maternité
+Nb accouchements (par âge de la mère)
+Morts-nés, morts in utero
+Avortements
+Décès maternels
+Visites postnatales
+Référées
+
+Tableau 13 : Planification familiale
+Méthodes contraceptives (pilule, injectable, DIU, implants, préservatifs, stérilisation, etc.)
+Nouveaux utilisateurs / réguliers / perdus de vue (par âge)
+
+Tableau 14 : Vaccination enfants <5 ans
+Vaccins (BCG, Polio, Penta, PCV10, Rotavirus, VAR, etc.)
+Nb doses par type (fixe, avancée)
+Enfants complètement vaccinés
+
+Tableau 15 : Vaccination femmes enceintes
+VAT1, VAT2, autres VAT
+HPV1, HPV2
+
+Tableau 16 : Laboratoire
+Types d’examens (BK, BH, palu, NFS, VIH, syphilis, hépatite, etc.)
+Total, Nouveaux cas, Résultats positifs
+
+Tableau 17 : Transfusion sanguine
+Produits (sang total, culot, plasma, plaquettes)
+Nb poches demandées, reçues, distribuées, retournées
+
+Tableau 18 : Stomatologie
+Tranches d’âge
+Consultants, Consultations
+Extractions, soins, radiologie
+
+Tableau 19 : Imagerie
+Examens (radio simple/avec préparation, échographie, scanner, scintigraphie)
+Nb examens, Nb clichés
+Origine patients (hôpital, externe, référence)
+
+Tableau 20 : Explorations fonctionnelles
+Examens (endoscopie, EEG, ECG, spirométrie, audiométrie, réfraction)
+Nb externes / hospitalisés / consult. externe
+
+Tableau 21 : Ressources critiques
+Médicaments (ex. amoxicilline, ACT, ARV, etc.)
+Intrants (oxygène, poches de sang, réactifs, seringues, etc.)
+Vaccins (stock début, reçus, utilisés, perdus, restant)
+Nb jours de rupture de stock
+
+Tableau 22 : Counseling & Dépistage VIH/Syphilis
+Nb dépistés, positifs
+Répartition par âge / sexe / groupes vulnérables
+
+Tableau 23 : Suivi PVVIH
+Nb suivis (nouveaux, transferts, perdus de vue, décès)
+Traitements ARV
+Infections opportunistes
+Prophylaxies
+
+Tableau 24 : Prise en charge IST
+Cas masculins / féminins
+Nb dépistés syphilis (+), traités
+Nb partenaires traités
+
+Tableau 25 : Prise en charge Paludisme
+Consultants avec fièvre
+Nb TDR et lames effectués
+Résultats (+), traités
+Nb moustiquaires distribuées
+
+Tableau 26 : Prise en charge Diarrhée (Zinc + SRO)
+Enfants par âge
+Nb ayant reçu Zinc, SRO, ou combinaison
+
+Tableau 27 : Lésions pré-cancéreuses du col
+Femmes dépistées par IVA
+IVA+ et traitées
+Anomalies mammaires détectées
+
+Tableau 28 : Gestion financière
+Recettes, dépenses, avoirs (par service)
+Fonds d’équité
+Pharmacie (stocks, ventes, écarts)
+
+Tableau 29 : Protection financière des usagers
+Mode paiement soins externes et hospitalisations (PASF, CNSS, fonds équité, etc.)
+Montants reçus
+Ordonnances prescrites et servies
+
+Tableau 30 : Activités bloc opératoire
+Types interventions (césarienne, traumatologie, abdomen, ORL…)
+Nb interventions urgentes vs programmées
+Type anesthésie (locale, générale…)
+Décès
+
+Tableau 31 : Supervision EMAD
+Incohérences RMA relevées
+Recommandations
+
+et comme on voulait developper 4 graphes ,donc choisi le meilleur tableau qui est pertinent ou importants avec mes attentes . 
+
+cette appli web : 
+avec login, 
+header 
+affichage de dernier date de synchornisation de datalake 
+modificaiton de profil
+
+mets toutes les données fictif dans un fichier et merci de les appels comme e appellant des APIs
