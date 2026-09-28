@@ -132,8 +132,18 @@ dans `Mon_Memoire` (subtree → `projet/code-source/`, `projet/mvp/`, `archives/
     [méthode/score des correspondances de déduplication] + `consents`). Pages frontend
     `/patients` et `/patients/[id]` (ADMIN + MEDECIN), middleware et sidebar mis à jour.
     **Preuves :** pytest **suite complète 102/102** (0 échec) dont nouveaux cas recherche/pagination/
-    identity_map/consents ; `tsc --noEmit` exit 0. Reste : commit (après relecture), run réel
-    sur base PostgreSQL (VM indisponible).
+    identity_map/consents ; `tsc --noEmit` exit 0. **Commit `4e1f2d0` (14 fichiers, +881).**
+    Reste : run réel sur base PostgreSQL (VM indisponible).
+15. **[Dashboard]** Tableau de bord pipeline **visuel** (`/dashboard`) **implémenté et testé**
+    (28/09) — rendu de `GET /pipeline/status` (**aucun changement backend**) : bannière d'état
+    global (ok / en cours pulsation / échec / jamais exécuté), schéma **Medallion RAW→SILVER→GOLD**
+    (statut + `last_sync` relatif), stepper des 5 étapes du dernier run (pending/started/ok/failed,
+    durée, erreur), fraîcheur des sources watermark (barres <7 j vert / 7–30 j ambre / >30 j rouge),
+    planification (fréquence, prochain run avec compte à rebours, drapeaux), derniers déclenchements
+    cron, alertes consolidées, KPIs en tête ; **polling auto 10 s désactivable**. Page protégée
+    (menu « Tableau de bord », icône Gauge, ADMIN + MEDECIN). **Preuves :** `tsc --noEmit` exit 0,
+    `npm run build` exit 0 (route `/dashboard` 7.13 kB) ; pytest inchangé 102/102 ; aucune
+    dépendance ajoutée. Reste : commit (après relecture).
 
 ## Dettes techniques connues
 

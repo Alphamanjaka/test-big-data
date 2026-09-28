@@ -1391,5 +1391,26 @@ consentement appliqué côté API : identité + correspondances de déduplicatio
 exit 0 ; **suite complète 102/102 tests, 0 échec** (`--junitxml` : tests=102 failures=0 errors=0
 skipped=0) ; `npx tsc --noEmit` dans `front-optional/` → exit 0.
 
-**Reste :** run réel sur une base PostgreSQL (VM indisponible) ; commit en attente de validation
-utilisateur (regroupe app.py + tests + front + docs ; `documents/slide_soutenance/` reste non committé).
+**Reste :** run réel sur une base PostgreSQL (VM indisponible) ; **commit `4e1f2d0` réalisé le
+28/09 après validation utilisateur** (`documents/slide_soutenance/` reste non committé).
+
+## 28/09/2026 — Tableau de bord pipeline : page `/dashboard` (rendu visuel de `/pipeline/status`)
+
+**Contexte :** le statut du pipeline n'était représenté que par des badges texte sur `/pipeline` ;
+demande d'une lecture visuelle « d'un coup d'œil » et de contenus de dashboard pertinents.
+
+| # | Action | Détail |
+| - | ------ | ------ |
+| 1 | Aucun changement backend | `GET /pipeline/status` fournit déjà tout : plan/next_run/run_flags, run (statut, étapes, started/finished, last_error), zones Medallion (RAW/SILVER/GOLD : status + last_sync), sources watermark (tables + last_extracted_at), derniers 5 déclenchements cron |
+| 2 | `src/lib/api.ts` | Types `PipelineStatus` affinés : zones `{status, last_sync}`, pipeline `started_at/finished_at/last_error/ingest_since`, steps typés pending/started/ok/failed |
+| 3 | `src/app/dashboard/page.tsx` | Garde `getServerSession` → login sinon ; rend `DashboardClient` |
+| 4 | `src/app/dashboard/DashboardClient.tsx` | Bannière état global (OK / en cours pulsation / échec / jamais exécuté, run_id + mode + last_error) ; 5 KPIs (étapes OK /5, durée du run, zones /3, sources + tables, compte à rebours prochain run) ; **schéma Medallion** 3 cartes zones reliées par flèches (statut, last_sync relatif, étape liée) ; **stepper 5 étapes** (nœuds pending/started pulsation/ok/failed, durée, dernière étape OK / échec, ingest_since) ; **fraîcheur des sources** (nb tables + barre d'âge : <7 j vert / 7–30 j ambre / >30 j ou jamais rouge) ; **planification** (activée/désactivée, fréquence, heure, jour, mode, prochain run, run_flags, schedule_error) ; **historique cron** (5 derniers : slot/heure/drapeaux/PID) ; **état de santé** (alertes consolidées) ; **polling auto 10 s désactivable** + bouton Actualiser ; helpers `fmtRelative`/`fmtCountdown`/`fmtDuration`/`fmtTime` ; Tailwind + SVG inline, aucune dépendance ajoutée |
+| 5 | `src/middleware.ts` + `src/components/Sidebar.tsx` | Route `/dashboard/:path*` protégée ; entrée menu « Tableau de bord » (icône Gauge) en tête de la sidebar |
+| 6 | Docs | `GUIDE/guide-frontend.md` (arborescence, RBAC, tableau Pages, dépannage, suite logique) ; `ai/dev/suivi_avancement.md` point 15 |
+
+**Vérifications.** `npx tsc --noEmit` dans `front-optional/` → exit 0 ; `npm run build` → exit 0
+(route `/dashboard` : 7.13 kB, 115 kB First Load JS) ; aucun test Python touché (suite inchangée
+**102/102**). Décisions validées par l'utilisateur : nouvelle page dédiée (pas de refonte de
+`/pipeline`), accueil `/synthese` inchangé, polling 10 s désactivable.
+
+**Reste :** commit en attente de validation utilisateur.

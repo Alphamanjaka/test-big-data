@@ -87,6 +87,7 @@ front-optional/
 │   ├── app/
 │   │   ├── layout.tsx · page.tsx (→ /synthese) · globals.css
 │   │   ├── login/     # connexion
+│   │   ├── dashboard/ # tableau de bord visuel du pipeline (zones Medallion, run, fraîcheur, planification, cron)
 │   │   ├── synthese/  # synthèse (déduplication + consentement + chaîne)
 │   │   ├── doublons/  # KPIs de déduplication
 │   │   ├── gouvernance/ # consentements purpose-by-purpose
@@ -148,9 +149,11 @@ flowchart TB
 - **NextAuth v4** (JWT) + Prisma adapter.
 - Deux rôles : `ADMIN` et `MEDECIN` (définition dans `src/lib/rbac.ts`).
 - Middleware protégeant `/settings`, `/synthese`, `/doublons`, `/gouvernance`, `/pipeline`,
-  `/patients`.
+  `/patients`, `/dashboard`.
 - Routes `/users/*` réservées au rôle `ADMIN`. L'édition de la planification (`/pipeline`) est
   réservée au rôle `ADMIN` (lecture ouverte à tout utilisateur connecté).
+- `/dashboard` (tableau de bord pipeline) est accessible aux rôles `ADMIN` et `MEDECIN`
+  (lecture seule, polling de `/pipeline/status` toutes les 10 s, désactivable).
 - Les pages `/patients` et `/patients/[id]` sont accessibles aux rôles `ADMIN` et `MEDECIN`
   (lecture seule).
 
@@ -159,6 +162,7 @@ flowchart TB
 | Route | Contenu | Source API |
 |---|---|---|
 | `/` | Redirection vers `/synthese` | — |
+| `/dashboard` | **Tableau de bord pipeline** : état global + schéma Medallion RAW/SILVER/GOLD, stepper des 5 étapes du dernier run, fraîcheur des sources (watermark), planification, derniers déclenchements cron, alertes consolidées — rafraîchissement auto 10 s désactivable | API gouvernance `:8000` — `GET /pipeline/status` |
 | `/synthese` | Synthèse : déduplication + consentement + chaîne RAW/SILVER/GOLD | `/api/governance/duplicates`, `/api/governance/consent` |
 | `/doublons` | KPIs de déduplication (masters, doublons, taux, méthodes) | `/api/governance/duplicates` |
 | `/gouvernance` | Consentements purpose-by-purpose + filtre par finalité | `/api/governance/consent` |
@@ -180,6 +184,7 @@ Chaque page affiche un bandeau « Données de démonstration » dès que le back
 | KPIs « n/d » + bandeau démo | endpoint backend indisponible / fallback mock | lancer le pipeline SILVER/GOLD (voir `guide-vagrant.md`) |
 | Erreur de connexion backend | API Flask éteinte | lancer l'API (voir `guide-backend.md`) |
 | Page `/pipeline` en erreur | API gouvernance `:8000` éteinte ou mauvaise clé | lancer `uvicorn engine.governance.app:app` ; vérifier `NEXT_PUBLIC_GOVERNANCE_API_URL/KEY` dans `.env` |
+| Page `/dashboard` en erreur | API gouvernance `:8000` éteinte / clé sans permission | mêmes correctifs que `/pipeline` (le dashboard consomme `/pipeline/status`) |
 | Page `/patients` en erreur | API gouvernance `:8000` éteinte / clé sans permission | lancer l'API ; vérifier `NEXT_PUBLIC_GOVERNANCE_API_URL/KEY` dans `.env` |
 | Dossier `/patients/[id]` → 403 | finalité non consentie | le refus est journalisé dans l'audit ; rien à corriger côté front |
 | Auth échoue / 401 | état de session invalide | re-seed : `npx prisma db seed` (comptes par défaut) |
@@ -187,7 +192,9 @@ Chaque page affiche un bandeau « Données de démonstration » dès que le back
 ## 11. Suite logique
 
 - Le front consomme les endpoints de l'API → **`GUIDE/guide-backend.md`** (endpoints `:5000` et
-  API gouvernance `:8000` — pipeline, patients).
+  API gouvernance `:8000` — pipeline, dashboard, patients).
+- Le tableau de bord (`/dashboard`) est un rendu visuel de `GET /pipeline/status` : aucune
+  logique métier côté front, aucune dépendance ajoutée (Tailwind + SVG inline).
 - Ressources : `front-optional/README.md`, `front-optional/FONCTIONNALITES.md`,
   `front-optional/structure_interface.md`.
 - Schéma de référence des données pacientes (master/identity_map/consent) : `sql/schema.sql`.

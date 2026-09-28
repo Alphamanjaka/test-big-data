@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useSession } from "next-auth/react";
-import { Users, Settings, Table, CopyCheck, ShieldCheck, Layers, PlayCircle, UserRound } from "lucide-react";
+import { Users, Settings, Table, CopyCheck, ShieldCheck, Layers, PlayCircle, UserRound, Gauge } from "lucide-react";
 
 export default function Sidebar() {
     const pathname = usePathname();
@@ -11,6 +11,7 @@ export default function Sidebar() {
     const isAdmin = session?.user?.role === "ADMIN";
 
     const menuItems = [
+        { href: "/dashboard", label: "Tableau de bord", icon: Gauge },
         { href: "/synthese", label: "Synthèse", icon: Layers },
         { href: "/doublons", label: "Doublons", icon: CopyCheck },
         { href: "/gouvernance", label: "Gouvernance", icon: ShieldCheck },

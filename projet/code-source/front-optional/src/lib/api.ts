@@ -154,18 +154,24 @@ export interface PipelineStatus {
   next_run: string;
   run_flags: string[];
   pipeline: {
-    status?: string;
+    status?: "running" | "ok" | "failed";
     run_id?: string;
     mode?: string;
-    steps?: Record<string, string>;
-    [key: string]: unknown;
+    from_step?: string | null;
+    ingest_since?: string | null;
+    started_at?: string | null;
+    finished_at?: string | null;
+    steps?: Record<string, "pending" | "started" | "ok" | "failed">;
+    last_ok_step?: string | null;
+    last_failed_step?: string | null;
+    last_error?: string | null;
   };
   scheduler: {
     last_launched_slot?: string | null;
     last_launch_at?: string | null;
     runs: { at: string; slot: string; flags: string[]; pid: number }[];
   };
-  zones: Record<string, unknown>;
+  zones: Record<string, { status?: "ok" | "error" | "pending"; last_sync?: string | null }>;
   sources: Record<string, { tables: number; last_extracted_at: string | null }>;
 }
 
