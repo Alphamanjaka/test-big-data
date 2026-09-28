@@ -307,7 +307,27 @@ dans `Mon_Memoire` (subtree → `projet/code-source/`, `projet/mvp/`, `archives/
   aucun tableau cassé (contrôle en-tête + séparateur + lignes sur les 9 chapitres), scan des lignes
   modifiées **sans accent manquant**, `pytest` **54/54**, DOCX régénéré (**41** tableaux = 40 + 1
   acronymes, 14 sections, liminaire : 8 figures et **35 tableaux** listés, archive zip et XML
-  valides). **6 numéros de ligne** de `documents/figures/manifest.json` recorrectés (décalages dus
-  aux légendes et aux conversions).
-  **Reste : relecture humaine dans Word**, et l'étape 3 (3 pages de front en plus des RMA, bandeau
-  `mocked`, KPI `CPN4` à corriger, puis les 3 passages du mémoire qui en dépendent).
+   valides). **6 numéros de ligne** de `documents/figures/manifest.json` recorrectés (décalages dus
+   aux légendes et aux conversions).
+   **Complément d'étape 2, même jour — glossaire ramené à 1 seul tableau (40 → 36).** Les deux
+   rapports de référence ont été relus avec `python-docx` pour calibrer la réduction :
+   **HASINA = 12 tableaux, RAMANANTSAFIDY = 8**, et ils ne mettent ni le vocabulaire ni les
+   inventaires de code en tableaux. Nos 5 tableaux de glossaire étaient donc plus lourds que
+   les leurs. Les 3 tableaux de vocabulaire (18 + 24 + 21 entrées) sont fusionnés en **un seul**
+   tableau `Domaine | Mot | En clair | Où c'est détaillé` (63 entrées, colonne Domaine = famille du
+   mot) et les 2 inventaires d'objets (tables de la base, scripts et couches) passent **en prose**
+   (§ 9.3.1 et § 9.3.2) car ils répètent les ch. 5 et 6. Aucun mot, table ou script perdu. Les
+   **35 légendes d'argument (Tableau 1..35) restent inchangées** : le glossaire n'était pas légendé,
+   la fusion ne touche donc ni la numérotation ni la liste des tableaux. Preuves : glossaire = 1
+   tableau de 65 lignes, 0 légende, 7 autres chapitres inchangés, `pytest` **54/54**, DOCX
+   régénéré (**37** tableaux = 36 + 1 acronymes, 14 sections, liminaire 8 figures / **35 tableaux**,
+   zip et XML valides). État : **36 tableaux** de chapitre (2 / 7 / 5 / 5 / 6 / 4 / 3 / 3 / 1).
+   **Plan des références : les 9 chapitres sont alignés, mais 5 sous-sections que les références
+   traitent manquent encore** — budget/coûts (3 tableaux chez HASINA, 1 chez RAMANANTSAFIDY ;
+   absent du mémoire, hors « budget nul » en ch. 2), cas d'utilisation (18 lignes chez
+   RAMANANTSAFIDY), rôles et parties prenantes (6 lignes chez HASINA ; le mémoire n'a que les
+   rôles RBAC applicatifs), gestion de la configuration, et **annexes** (4 chez HASINA, le mémoire
+   n'en a aucune). À traiter en prose pour ne pas ré-inflater le nombre de tableaux.
+   **Reste : relecture humaine dans Word**, les 5 sous-sections ci-dessus, et l'étape 3 (3 pages
+   de front en plus des RMA, bandeau `mocked`, KPI `CPN4` à corriger, puis les 3 passages du
+   mémoire qui en dépendent).

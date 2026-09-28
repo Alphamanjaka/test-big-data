@@ -1090,3 +1090,55 @@ dashboard RMA n'est pas notre livrable ; 1.5 : les endpoints /rma/* ne sont pas 
 donnees GOLD » mais avec repli `mocked`, `laboratory` et `malaria` en mock inconditionnel ;
 4.1 : le dashboard RMA). Relecture humaine du DOCX dans Word. La figure 6 reste a
 5,7 pt en paysage et n'est pas projetable.
+
+## 28/09/2026 - Memoire : complement d'etape 2, glossaire 5 -> 1 tableau (40 -> 36 tableaux)
+
+**Demande.** Reduire encore le nombre de tableaux, en suivant le plan des deux rapports de
+reference.
+
+**Cible de calibration.** Les deux references ont ete relues avec python-docx :
+RAPPORT_HASINA_1613 = **12 tableaux** (dont 1 vide, la bibliographie en tableau), RAMANANTSAFIDY
+= **8 tableaux** (dont 1 vide, les acronymes 21x2 en liminaire). Leur usage des tableaux se
+limite a sept categories : grille comparative, outils/techno, contraintes et risques, budget,
+taches/cas d'utilisation, modules et roles, plus acronymes et bibliographie. Le vocabulaire et
+les inventaires de code y sont **en prose**, pas en tableaux. Notre 5 tableaux de glossaire
+etaient donc plus lourds que ceux des references.
+
+**Coupure (4 tableaux).** Les 3 tableaux de vocabulaire (donnees/identite 18 entrees,
+architecture 24, gouvernance/droit 21) sont fusionnes en **un seul** tableau a 4 colonnes
+`Domaine | Mot | En clair | Ou c'est detaille` (63 entrees, colonne Domaine = famille du
+mot) : -3 tableaux, +1 colonne. Les 2 inventaires d'objets du depot (tables de la base
+centrale 7 entrees, scripts/couches 15 entrees) sont passes **en prose** (listes de
+definition dans 9.3.1 et 9.3.2) : leur contenu est deja argumente dans les ch. 5 et 6, un
+tableau ici ne faisait que le repeter. Aucun mot, aucune table, aucun script n'a ete perdu.
+Nouveau glossaire : **1 tableau**.
+
+**Resultat.** 40 -> **36 tableaux** de chapitre : 2 (ch. 1), 7 (ch. 2), 5, 5, 6, 4, 3, 3, et
+1 dans le glossaire. Les 35 legendes d'argument (Tableau 1..35) sont **inchangees** : le
+glossaire n'etait pas legende, la fusion ne touche donc pas a la numerotation ni a la liste
+des tableaux.
+
+**Preuves.** Controle structurel : glossaire = 1 tableau, 65 lignes (1 en-tete + 1 separateur +
+63 entrees), 0 legende. Les 7 autres chapitres sont inchanges (seul ecart = le glossaire).
+`pytest` = **54 passed**. DOCX regenere : 14 sections, **37 tableaux dans le corps** (36 +
+acronymes), liminaire listant **8 figures et 35 tableaux**, archive zip INTEGRE, 18 parties
+XML bien formees, mentions Tableau 1..35 presentes.
+
+**Plan des references : alignement confirme et ecarts releves.** Les 9 chapitres suivent bien
+le plan des deux references (introduction, etat de l'art avec grille comparative, existant +
+solutions, demarche projet, exigences realisees, conception, tests, conclusion, glossaire) :
+l'ecart a corriger porte non sur les chapitres mais sur des **sous-sections** que les
+references traitent et que le memoire n'a pas encore :
+- **Budget / couts** : present dans les 2 references (3 tableaux chez HASINA, 1 chez
+  RAMANANTSAFIDY) ; absent du memoire (seule mention : "budget nul" dans la grille de
+  criteres, ch. 2).
+- **Cas d'utilisation** : present chez RAMANANTSAFIDY (tableau 18 lignes) ; le memoire n'a que
+  les etapes ELT (ch. 6) et les exigences fonctionnelles (ch. 4).
+- **Roles / parties prenantes et equipe projet** : present chez HASINA (tableau 6 lignes) ; le
+  memoire n'a que les roles *RBAC applicatifs* (admin/analyst/viewer), pas les roles projet.
+- **Gestion de la configuration** : sous-section chez HASINA ; absente du memoire.
+- **Annexes** : HASINA en a 4 (script de deploiement, Spark, NLP, structure BDD) ;
+  RAMANANTSAFIDY en a aussi ; le memoire n'a **aucune annexe**.
+
+Ces ecarts restent a traiter (etape suivante, en prose pour ne pas re-inflater le nombre de
+tableaux) ; ils sont notes ici pour tracer le plan-vs-references.
