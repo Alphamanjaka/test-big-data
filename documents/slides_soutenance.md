@@ -85,7 +85,7 @@ PROBLÈME MÉTIER → MVP (Pandas+PG) → VALIDATION (ground-truth) → SPARK (p
 | Pipeline | 4/4 vert |
 | SILVER `patient_fhir` | 214 lignes (76+76+62) |
 | Masters / doublons | 145 / 69 (exact) · duplicate_rate 32.24 % |
-| API données | 14/14 PASS (`RMA_USE_MOCK=false`) |
+| API données | 3/3 PASS |
 - **Image à projeter : `figures/fig-7.png`** — le pipeline ELT en quatre étapes.
 - *Support : `ai/memoire/contexte_projet.md` ; logs `elt.log` ; `test_api.py`.*
 

@@ -1,4 +1,4 @@
-// app/dashboard/page.tsx
+// app/users/page.tsx
 import UserClient from "./UserClient";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth"
@@ -12,7 +12,7 @@ export default async function UserPage() {
   }
 
   if (session.user.role !== "ADMIN") {
-    redirect("/dashboard?denied=1");
+    redirect("/synthese?denied=1");
   }
 
   // return <UserClient userName={session.user.email ?? "Utilisateur"} />;

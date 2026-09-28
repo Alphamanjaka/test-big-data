@@ -106,7 +106,7 @@ l'ordre de démarrage des services est strict [architecture.md §3] :
 | Moteur `engine/` | déduplication + gouvernance (PostgreSQL) | — |
 | API données (Flask) | exposition de GOLD | 5000 |
 | API gouvernance (FastAPI) | `/health`, `/metrics`, `/patients`, `/audit`, `/consent` | — |
-| Frontend Next.js | visualisation RMA (**optionnel**) | 3000 (hôte Windows) |
+| Frontend Next.js | vues de gouvernance : déduplication et consentement (**optionnel**) | 3000 (hôte Windows) |
 
 > **Ordre strict :** `start-dfs.sh` → `start-yarn.sh` → metastore (9083) → HiveServer2 (10000) →
 > jobs Spark → API. Toute inversion produit des erreurs d'écriture ou de métadonnées (§6.6).
@@ -242,7 +242,7 @@ par test et par évaluation sur la vérité terrain.
 |---|---|---|
 | **RAW** | donnée brute, inchangée (schéma-on-read) | parquet HDFS `/datalake/raw/{source}/{table}` + tables Hive externes |
 | **SILVER** | normalisée **FHIR** (4 entités), doublons **marqués et expliqués** | `datalake_silver.{patient,encounter,condition,observation}_fhir` |
-| **GOLD** | agrégats prêts à l'analyse + consentement | `datalake_gold.patient_events_gold` (17→18 colonnes, 8 tranches RMA), `patient_consent_gold` |
+| **GOLD** | agrégats prêts à l'analyse + consentement | `datalake_gold.patient_events_gold` (17→18 colonnes, 8 tranches d'âge), `patient_consent_gold` |
 
 La logique ELT impose : l'ingestion **charge** la donnée brute, la transformation
 s'applique *a posteriori* dans les couches suivantes — la zone RAW reste le

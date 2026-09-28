@@ -29,14 +29,15 @@ flowchart TB
 
     PG[("POSTGRESQL CENTRAL · sql/schema.sql<br/>master_patient · patient_identity_map · raw_patient_record<br/>consent · api_user · access_audit<br/>+ API gouvernance (FastAPI, lecture seule)")]
 
-    API["API DONNÉES · Flask · port 5000<br/>provision/api/hive_api.py (PySpark → Hive GOLD)<br/>endpoints /rma/* · /api/rma/* (+ mocks backend)"]
-    FRONT["FRONTEND (optionnel) · Next.js 15 + D3.js · port 3000"]
+    API["API INDICATEURS DU WAREHOUSE · Flask · port 5000<br/>provision/api/hive_api.py (PySpark → Hive)<br/>endpoints /api/governance/* (+ mocks backend)"]
+    FRONT["FRONTEND (optionnel) · Next.js 15 · port 3000<br/>vues de gouvernance (déduplication / consentement)"]
 
     SRC --> RAW
     SIL -->|"enrichissement doublons (Phase 5)"| CAN
     CAN -->|"master_patient + identity map"| PG
-    GOLD -->|"consent (via DATABASE_URL)"| PG
-    GOLD --> API
+    GOLD -->|"consent GOLD (via DATABASE_URL)"| PG
+    SIL -.->|"KPIs déduplication"| API
+    GOLD -->|"consent GOLD"| API
     PG -.->|"consent / audit"| API
     API -->|"HTTP (CORS localhost:3000)"| FRONT
 

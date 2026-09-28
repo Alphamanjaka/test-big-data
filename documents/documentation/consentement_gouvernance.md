@@ -21,7 +21,7 @@ Deux systèmes coopéraient dans les projets sources, fusionnés ici sous une lo
 | Rôle | Accès données patient | Accès gouvernance | Accès admin |
 |---|---|---|---|
 | ADMIN (plateforme) / ADMIN (web) | Complet | Complet | Complet |
-| MEDECIN (web) | Données métier RMA uniquement | Non | Non |
+| MEDECIN (web) | Vues de gouvernance (déduplication, consentement) | Non | Non |
 | analyst (plateforme) | Lecture agrégée | Lecture | Non |
 | viewer (plateforme) | Lecture | Non | Non |
 
@@ -123,7 +123,7 @@ Démo de référence à présenter :
 3. un utilisateur autorisé mais **finalité non consentie** → **403** + motif journalisé ;
 4. `GET /patients?purpose=research` → seuls les patients consentis sont listés ;
 5. `GET /audit` → la trace du refus, avec `purpose` et `refusal_reason` ;
-6. dashboard : KPIs doublons / qualité / consentements / accès.
+6. frontend DataViz : KPIs doublons / qualité / consentements / accès.
 
 Peut être rejouée sans base grâce à la suite de tests `projet/code-source/tests/test_governance_api.py`
 (13 cas, chemin d'authentification réel, PostgreSQL simulé). Jeu de données :

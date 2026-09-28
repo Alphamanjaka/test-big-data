@@ -42,7 +42,7 @@ Choix de fusion validés : nouveau repo autonome ; docs = un seul set logique
 | Masters | **145** masters distincts ; **69** doublons liés (`is_duplicate`) ; `match_method` exact 69 / new_master 145 ; `match_score` 1.0 |
 | Gouvernance API | `duplicate_rate` **32.24 %**, `mocked: false` (données réelles Hive) |
 | GOLD | `patient_events_gold` **0** ligne (interim patients-only, attendu) ; `patient_consent_gold` **145** |
-| API | `test_api.py` **14/14 PASS** avec `RMA_USE_MOCK=false` ; health `GET /rma/last_sync` 200 |
+| API | `test_api.py` **3/3 PASS** ; health `GET /api/governance/duplicates` 200 |
 | Incident corrigé | explosion 11 614 lignes → cause racine : `patient_uuid` capturé par le mapping FHIR dynamique (colonne id détournée → `source_patient_id` NULL → jointure moteur 76×76) |
 
 ### Historique PoC `datalake_mavis` / `test_bigdata` (à dater dans le texte)
@@ -51,13 +51,13 @@ Choix de fusion validés : nouveau repo autonome ; docs = un seul set logique
 |---|---|
 | Pipeline | 4 étapes orchestrées ; ~65 680 patients Silver (run 24/08, PoC datalake_mavis d'origine) ; 24 872 doublons détectés (flag) |
 | Sources ELT | MAVIS (11 tables), MMT_DB (3 tables, base synthétique 60 271 lignes), CLINIQUE SQLite (54 582 lignes) |
-| GOLD | `datalake_gold.patient_events_gold` (18 colonnes, 8 tranches RMA) ; dette : jointures GOLD limitées |
+| GOLD | `datalake_gold.patient_events_gold` (18 colonnes, 8 tranches d'âge) ; dette : jointures GOLD limitées |
 | Plateforme | 3 sources CSV ; 60 RAW → 36 masters ; 24 fusions exactes ; 60 identity links ; 108 consentements |
 | Dédup | Score nom 0.5 / naissance 0.3 / CIN 0.1 / ville de naissance 0.1 ; seuil 0.80 ; blocking ; exact + probabiliste |
 | Évaluation | hard (2026-09-08, `evaluation_truth.md`) : **Precision 1.000, Recall 0.422, F1 0.594** ; exact P/R/F1 1.000/0.854/0.921 ; probabilistic 1.000/0.533/0.696 ; 0 FP ; rappel par source pharmacy 0.422 / consultation 0.422 / imaging 0.423 |
 | Spark | Spark 3.4.2 (VM) / 4.2 local ; dédup Spark **identique** au MVP (JSON `evaluation_truth.md` : modes MVP+Spark, TP=307 FP=0 FN=420, 804 masters prédits, 500 groupes vérité, 1 057 enregistrements) |
-| Tests | moteur + gouvernance **54/54 PASS** (matcher 12, consentement 21, canonique 8, API gouvernance 13 — `pytest projet/code-source/tests`, 27/09/2026) ; API données **14/14 PASS** ; MVP 20 tests + 44 tests générateur |
-| API | FastAPI gouvernance : `/health /metrics /patients /patients/{id} /audit /consent` — `purpose` obligatoire, refus 403 + audit `refusal_reason` ; Flask 11 endpoints PoC (9 `/rma/*` + 2 `/api/governance/*`) sans authentification, hors périmètre |
+| Tests | moteur + gouvernance **54/54 PASS** (matcher 12, consentement 21, canonique 8, API gouvernance 13 — `pytest projet/code-source/tests`, 27/09/2026) ; API données **3/3 PASS** ; MVP 20 tests + 44 tests générateur |
+| API | FastAPI gouvernance : `/health /metrics /patients /patients/{id} /audit /consent` — `purpose` obligatoire, refus 403 + audit `refusal_reason` ; Flask 2 endpoints gouvernance (`/api/governance/*`) sans authentification, hors périmètre |
 
 ### Existant à MMT — chiffres de l'étude (chapitre 3)
 

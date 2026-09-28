@@ -112,7 +112,7 @@ Si un fichier CSV des sources manque (`pharmacy/{patients,achats}.csv`, `consult
 
 1. Lecture des 4 tables SILVER (via Hive).
 2. **Réduction des colonnes** AVANT jointures (évite `AMBIGUOUS_REFERENCE: name`).
-3. **Âge** : `age = (current_date - birth_date) / 365.25` ; `age_tranche` via UDF (8 tranches RMA) :
+3. **Âge** : `age = (current_date - birth_date) / 365.25` ; `age_tranche` via UDF (8 tranches d'âge) :
 
 | Tranche | Plage |
 |---|---|

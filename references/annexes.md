@@ -79,20 +79,21 @@ accordé. C'est cette propriété qui rend la gouvernance vérifiable par un tie
 *À lire avec* : le § 2.5 pour le cadre de référence, le § 5.5 pour la conception, le § 6.5
 pour la réalisation.
 
-## Annexe E — L'API REST des données GOLD et les vues RMA
+## Annexe E — L'API des indicateurs du warehouse et les vues de gouvernance
 
-`provision/api/hive_api.py` expose les données de la zone GOLD sur des routes `/rma/*`, avec
-un repli explicite sur un jeu de démonstration lorsque la source n'est pas disponible. Les
-données de démonstration sont signalées comme telles à l'écran, ce qui évite qu'un indicateur
-de démonstration soit lu comme une mesure réelle. Le front se trouve dans
-`front-optional/`, et son contrat d'interface dans `front-optional/src/lib/api.ts`.
+`provision/api/hive_api.py` expose les indicateurs de **gouvernance** du Data Lake sur les
+routes `/api/governance/*` (`duplicates` sur la table SILVER `patient_fhir`, `consent` sur la
+table GOLD `patient_consent_gold`), avec un repli explicite sur un jeu de démonstration
+(`mock_data.py`) lorsque la source n'est pas disponible. Les données de démonstration sont
+signalées comme telles à l'écran, ce qui évite qu'un indicateur de démonstration soit lu comme
+une mesure réelle. Le front se trouve dans `front-optional/`, et son contrat d'interface dans
+`front-optional/src/lib/api.ts`.
 
-Cette partie du projet est **optionnelle** dans le cahier des charges, et son alimentation
-dépend d'une base distincte que le commanditaire n'a pas pu fournir. Elle est donc présentée
-comme une démonstration de ce que la zone GOLD sait exposer, et non comme un résultat de
+Cette partie du projet est **optionnelle** dans le cahier des charges. Elle est donc présentée
+comme une démonstration de ce que la zone SILVER/GOLD sait exposer, et non comme un résultat de
 production.
 
-*À lire avec* : le § 6.6 et le § 4.8, cas d'utilisation CU6.
+*À lire avec* : le § 6.5 et le § 4.8, cas d'utilisation CU6.
 
 ## Annexe F — La génération des données synthétiques et la vérité terrain
 

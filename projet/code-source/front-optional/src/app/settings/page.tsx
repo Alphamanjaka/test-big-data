@@ -1,4 +1,4 @@
-// app/dashboard/page.tsx
+// app/settings/page.tsx
 import SettingsClient from "./SettingsClient";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth"

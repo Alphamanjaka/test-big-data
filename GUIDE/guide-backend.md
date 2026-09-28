@@ -1,7 +1,7 @@
-# Guide Backend — API Flask (port 5000)
+# Guide Backend — API indicateurs du warehouse (Flask, port 5000)
 
-API JSON qui expose les données de la couche **GOLD** du Data Lake au frontend : endpoints RMA
-(Rapport Mensuel d'Activité) + **gouvernance** (rate de doublons, statut de consentement par finalité).
+API JSON qui expose les **indicateurs de gouvernance** du Data Lake au frontend : taux de
+doublons (déduplication SILVER) et statut du **consentement par finalité** (GOLD).
 
 ## 1. Vue d'ensemble
 
@@ -10,47 +10,48 @@ API JSON qui expose les données de la couche **GOLD** du Data Lake au frontend 
 | Emplacement | `projet/code-source/provision/api/` |
 | Technologie | Flask + PySpark (lecture Hive/HDFS) |
 | Port | 5000 |
-| Fichiers | `hive_api.py` (app), `mock_data.py` (fallback), `test_api.py` (tests), `test.py` (endpoint de démo) |
-| Prérequis | Pipeline ELT GOLD produit + HiveServer2/Metastore actifs (VM) |
+| Fichiers | `hive_api.py` (app), `mock_data.py` (fallback), `test_api.py` (tests) |
+| Prérequis | Pipeline ELT SILVER/GOLD produit + HiveServer2/Metastore actifs (VM) |
 
 ### Chaîne d'appel
 
 ```mermaid
 flowchart LR
     subgraph FRONT["Frontend — Next.js :3000"]
-        UI["Visualisations RMA (D3)"]
+        UI["Vues de gouvernance<br/>(déduplication · consentement)"]
     end
 
     subgraph API["API Flask :5000 — provision/api/hive_api.py"]
-        ROUTES["Endpoints<br/>/rma/last_sync · /rma/admissions_summary<br/>/api/rma/* · /api/governance/*"]
+        ROUTES["Endpoints<br/>/api/governance/duplicates · /api/governance/consent"]
         PYSPARK["PySpark — SparkSession<br/>(lecture HDFS/Hive)"]
         MOCK["mock_data.py<br/>fallback (réponse mocked: true)"]
     end
 
     subgraph HADOOP["VM Big Data"]
         HS2["HiveServer2 :10000"]
-        GOLD[("HDFS — couche GOLD<br/>patient_events_gold · patient_consent_gold")]
+        WAREHOUSE[("HDFS — SILVER<br/>patient_fhir · GOLD · patient_consent_gold")]
     end
 
-    UI -->|"HTTP :5000 /rma/*"| ROUTES
-    ROUTES -->|"si GOLD vide / indisponible"| MOCK
+    UI -->|"HTTP :5000 /api/governance/*"| ROUTES
+    ROUTES -->|"si table vide / Hive indisponible"| MOCK
     ROUTES -->|"requêtes métier"| PYSPARK
     PYSPARK -->|"Thrift JDBC"| HS2
-    HS2 -->|"métadonnées / lecture"| GOLD
+    HS2 -->|"métadonnées / lecture"| WAREHOUSE
 ```
 
 ## 2. Prérequis
 
-1. **Pipeline ELT exécuté** — table `datalake_gold.patient_events_gold` existante (`guide-vagrant.md`).
+1. **Pipeline ELT exécuté** — tables `datalake_silver.patient_fhir` et
+   `datalake_gold.patient_consent_gold` existantes (`guide-vagrant.md`).
 2. **HiveServer2 + Metastore actifs** dans la VM.
 3. **Environnements** : VM provisionnée (`~/api-venv` créé par `bootstrap.sh`).
 4. **Config de connexion** : `provision/config/data_sources.json` présents (cf. `guide-vagrant.md`).
 
-Vérifier la table GOLD :
+Vérifier une table :
 ```bash
 vagrant ssh
 beeline -u jdbc:hive2://localhost:10000 -n vagrant \
-  -e "SELECT count(*) FROM datalake_gold.patient_events_gold;"
+  -e "SELECT count(*) FROM datalake_silver.patient_fhir;"
 ```
 
 Vérifier le venv :
@@ -73,8 +74,8 @@ python -m provision.api.hive_api
 
 Vérification rapide :
 ```bash
-curl http://localhost:5000/rma/last_sync
-curl http://localhost:5000/rma/admissions_summary
+curl http://localhost:5000/api/governance/duplicates
+curl http://localhost:5000/api/governance/consent
 ```
 
 > Le venv `~/api-venv` peut être activé automatiquement au login (profil configuré par le provision).
@@ -87,63 +88,49 @@ bash provision/test_startup.sh --verbose          # détails + logs
 bash provision/test_startup.sh --report           # rapport JSON dans provision/reports/
 ```
 
-Checks : statut VM (CRITIQUE) · HiveServer2/beeline (CRITIQUE) · API `/rma/last_sync` (CRITIQUE) ·
-fraîcheur `sync_metadata.json` (IMPORTANT) · lecture GOLD (OPTIONNEL). Code de sortie **0** = prêt,
-**1** = à ne pas utiliser. Usage orchestration : `bash provision/test_startup.sh || exit 1`.
+Checks : statut VM (CRITIQUE) · HiveServer2/beeline (CRITIQUE) · API `/api/governance/duplicates`
+(CRITIQUE) · fraîcheur `sync_metadata.json` (IMPORTANT) · lecture table (OPTIONNEL).
+Code de sortie **0** = prêt, **1** = à ne pas utiliser. Usage orchestration :
+`bash provision/test_startup.sh || exit 1`.
 
 ## 5. Endpoints
 
-### 5.1 RMA — endpoints principaux
-
-| Méthode | Endpoint | Description | Params |
-|---|---|---|---|
-| GET | `/rma/last_sync` | Dernière synchro pipeline | — |
-| GET | `/rma/admissions_summary` | Total admissions, mortalité infantile/maternelle | `start`, `end`, `sex` |
-| GET | `/rma/top_diagnostics` | Top N diagnostics | `limit`, `start`, `end`, `sex` |
-| GET | `/rma/diagnostics_heatmap` | Diagnostics par tranche d'âge | `limit`, `start`, `end`, `sex` |
-| GET | `/rma/diagnostics_list` | Liste paginée | `page`, `limit`, `start`, `end`, `sex` |
-
-### 5.2 RMA — endpoints spécifiques
-
-| Méthode | Endpoint | Description | Params |
-|---|---|---|---|
-| GET | `/api/rma/mortality` | Morbidité/mortalité par catégorie | `start`, `end`, `sex` |
-| GET | `/api/rma/maternity` | Accouchements mensuels (agrégé) | `start`, `end`, `sex` |
-| GET | `/api/rma/laboratory` | Activité laboratoire | — |
-| GET | `/api/rma/malaria` | Prise en charge paludisme | — |
-
-> `/api/rma/laboratory` et `/api/rma/malaria` renvoient des **données vides** (sources externes hors GOLD).
-
-### 5.3 Gouvernance (déduplication + consentement)
+### 5.1 Gouvernance (déduplication + consentement)
 
 | Méthode | Endpoint | Description |
 |---|---|---|
-| GET | `/api/governance/duplicates` | Taux de doublons (`duplicate_rate`), 145 masters / 69 doublons — référence 07/09/2026 : `duplicate_rate` = **32.24 %**, `mocked: false` |
-| GET | `/api/governance/consent` | Statistiques de consentement (par finalité) depuis `patient_consent_gold` |
+| GET | `/api/governance/duplicates` | KPIs déduplication (patients, masters, doublons, taux, méthodes) depuis `datalake_silver.patient_fhir` |
+| GET | `/api/governance/consent` | Statistiques de consentement (par finalité) depuis `patient_consent_gold`, liste + agrégats |
 
-### 5.4 Paramètres communs
+### 5.2 Paramètres
 
 | Param | Défaut | Description |
 |---|---|---|
-| `start` | -365 j | Date début `YYYY-MM-DD` |
-| `end` | aujourd'hui | Date fin |
-| `sex` | tous | `male` / `female` |
-| `limit` | 5 ou 15 | Nombre max de résultats |
-| `page` | 1 | Numéro de page (`diagnostics_list`) |
+| `limit` | 200 | Nombre max de consentements renvoyés |
 
-### 5.5 Format de réponse
+### 5.3 Format de réponse
 
 ```json
 {
   "success": true,
-  "filters": { "start": "2025-08-26", "end": "2026-08-26", "sex": null },
-  "data": { "total_admissions": 1234, "mortalite_infantile": 3.2, "mortalite_maternelle": 0.85 }
+  "filters": {},
+  "data": {
+    "total_patients": 65214,
+    "total_masters": 62180,
+    "duplicates": 3034,
+    "duplicate_rate": 4.65,
+    "by_method": {"exact": 1876, "probabilistic": 1158}
+  },
+  "mocked": true
 }
 ```
 
+Le drapeau `mocked` vaut `true` uniquement en secours backend (jeu de démonstration), `false`
+lorsque la donnée provient des tables SILVER/GOLD.
+
 ## 6. Tests
 
-Suite de tests des endpoints (14/14 PASS, dont gouvernance) :
+Suite de tests des endpoints (3/3 PASS) :
 ```bash
 # Depuis la VM :
 cd ~/datalake-final
@@ -151,31 +138,23 @@ python -m provision.api.test_api
 # Ou depuis Windows (port 5000 forwardé) :
 python projet/code-source/provision/api/test_api.py
 ```
-Sortie attendue : liste `✅ PASS /endpoint ...` puis `RÉSULTAT : 14/14 PASS — 0 FAIL — 0 SKIP`.
-
-**Test avec les données réelles** (désactive le repli mock) :
-```bash
-RMA_USE_MOCK=false python -m provision.api.test_api
-```
-Le flag se lit dans `hive_api.py:55` : `USE_MOCK_FALLBACK = os.environ.get("RMA_USE_MOCK", "true")`.
-Par défaut, un endpoint renvoie des données fictives si la table GOLD est vide (`mocked: true` dans la
-réponse). En production, exécuter le pipeline puis `RMA_USE_MOCK=false`.
+Sortie attendue : liste `✅ PASS /endpoint ...` puis `RÉSULTAT : 3/3 PASS — 0 FAIL — 0 SKIP`.
 
 ## 7. Structure du code
 
 ```
 provision/api/
 ├── hive_api.py      # appl. Flask : endpoints + requêtes PySpark
-├── mock_data.py     # fallback / données fictives quand GOLD indisponible
-├── test_api.py      # tests automatisés des endpoints (14)
-└── test.py          # mini-app de démo (endpoint /patients_by_year)
+├── mock_data.py     # fallback / jeu de démonstration quand SILVER/GOLD indisponible
+├── test_api.py      # tests automatisés des endpoints (3)
+└── README.md        # documentation de l'API
 ```
 
 ## 8. Fichiers associés
 
 | Fichier | Rôle |
 |---|---|
-| `provision/scripts/run_pipeline.sh` | Pipeline ELT → GOLD (`guide-vagrant.md`) |
+| `provision/scripts/run_pipeline.sh` | Pipeline ELT → SILVER/GOLD (`guide-vagrant.md`) |
 | `provision/metadata/sync_metadata.json` | Métadonnées de synchronisation |
 | `provision/test_startup.sh` | Health check complet |
 | `sql/schema.sql` | Schéma PostgreSQL central (master, consent, api_user, audit) |
@@ -185,8 +164,6 @@ provision/api/
 | Problème | Détail | Priorité |
 |---|---|---|
 | Auth JWT non implémentée sur l'API | tous les endpoints sont ouverts (RBAC porté sur le front) | Haute |
-| `/api/rma/laboratory` | données vides — source externe requise | Moyenne |
-| `/api/rma/malaria` | données vides — source externe requise | Moyenne |
 | Pas de cache | chaque requête interroge Hive | Basse |
 | Pas de validation paramètres | invalides → 500 | Basse |
 
@@ -194,10 +171,10 @@ provision/api/
 
 | Symptôme | Cause probable | Correctif |
 |---|---|---|
-| `500` sur un endpoint RMA | GOLD absent ou Hive éteint | pipeline ELT + redémarrer metastore/HS2 (`guide-vagrant.md`) |
-| Réponses « mock » | `mock_data` activé (fonction de repli) | produire le GOLD ; vérifier flag `mocked` dans la réponse |
+| `500` sur un endpoint | table SILVER/GOLD absente ou Hive éteint | pipeline ELT + redémarrer metastore/HS2 (`guide-vagrant.md`) |
+| Réponses « mock » | `mock_data.py` activé (fonction de repli) | produire SILVER/GOLD ; vérifier flag `mocked` dans la réponse |
 | `/api/governance/duplicates` vide | SILVER/moteur non exécuté | lancer le pipeline (étape 3/4) |
-| Port 5000 occupé | autre service | `vagrant halt`/`port` conflictuel → changer de port forward ou tuer le process |
+| Port 5000 occupé | autre service | `vagrant halt` / port conflictuel → changer de port forward ou tuer le process |
 | Python 3.8 des dépendances | libs sorties de compatibilité | respecter RapidFuzz (pas de NLP lourd) `[AGENTS.md]` |
 
 ## 11. Suite logique

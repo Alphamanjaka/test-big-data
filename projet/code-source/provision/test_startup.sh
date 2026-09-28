@@ -1,4 +1,4 @@
-#!/bin/bash
+﻿#!/bin/bash
 
 ################################################################################
 # MAVIS Database Startup Health Check
@@ -53,9 +53,9 @@ CHECKS_RUN=0
 
 print_header() {
     echo ""
-    echo "══════════════════════════════════════════════════════════════════"
+    echo "â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•"
     echo "  MAVIS Database Startup Health Check"
-    echo "══════════════════════════════════════════════════════════════════"
+    echo "â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•"
     echo ""
 }
 
@@ -69,15 +69,15 @@ print_result() {
     local message="$2"
     
     if [ "$status" = "PASS" ]; then
-        echo -e "${GREEN}✓ PASS${NC}"
+        echo -e "${GREEN}âœ“ PASS${NC}"
         if [ "$VERBOSE" = "1" ] && [ -n "$message" ]; then
-            echo "      └─ $message"
+            echo "      â””â”€ $message"
         fi
         ((PASSED++))
     else
-        echo -e "${RED}✗ FAIL${NC}"
+        echo -e "${RED}âœ— FAIL${NC}"
         if [ -n "$message" ]; then
-            echo "      └─ $message"
+            echo "      â””â”€ $message"
         fi
         ((FAILED++))
     fi
@@ -86,18 +86,18 @@ print_result() {
 
 print_summary() {
     echo ""
-    echo "──────────────────────────────────────────────────────────────────"
+    echo "â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€"
     
     if [ "$FAILED" -eq 0 ]; then
-        echo -e "${GREEN}✓ SUCCESS: All checks passed!${NC}"
+        echo -e "${GREEN}âœ“ SUCCESS: All checks passed!${NC}"
         echo "  MAVIS database is running and accessible."
     else
-        echo -e "${RED}✗ FAILURE: $FAILED check(s) failed${NC}"
+        echo -e "${RED}âœ— FAILURE: $FAILED check(s) failed${NC}"
         echo "  MAVIS database is NOT ready."
     fi
     
     echo "  Results: $PASSED/$CHECKS_RUN checks passed"
-    echo "──────────────────────────────────────────────────────────────────"
+    echo "â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€"
     echo ""
 }
 
@@ -174,7 +174,7 @@ check_hive_connectivity() {
 ################################################################################
 
 check_flask_api_health() {
-    print_check "Flask API (/rma/last_sync)"
+    print_check "Flask API (/api/governance/duplicates)"
     
     if ! command -v curl &> /dev/null; then
         print_result "FAIL" "curl command not found"
@@ -185,7 +185,7 @@ check_flask_api_health() {
     local http_code
     
     response=$(timeout $TIMEOUT curl -s -w "\n%{http_code}" \
-        "http://localhost:5000/rma/last_sync" 2>/dev/null)
+        "http://localhost:5000/api/governance/duplicates" 2>/dev/null)
     
     http_code=$(echo "$response" | tail -n 1)
     local body=$(echo "$response" | sed '$d')

@@ -26,7 +26,7 @@ flowchart TD
         MVP["MVP : 20 tests<br/>pipeline, loader, auth, audit, api"]
     end
     subgraph Système
-        API["API données : 14/14 (données réelles)<br/>pipeline run 4/4 vert"]
+        API["API gouvernance : 3/3 (données réelles)<br/>pipeline run 4/4 vert"]
         EVAL["Évaluation ground truth<br/>P/R/F1 easy / medium / hard"]
     end
     G --> E --> MVP --> API
@@ -34,16 +34,16 @@ flowchart TD
 ```
 
 > **Figure 8 — La stratégie de test : un socle hors ligne (générateur, moteur), puis le
-> MVP, et enfin la preuve système (API sur données réelles, évaluation ground truth).**
+> MVP, et enfin la preuve système (API de gouvernance sur données réelles, évaluation ground truth).**
 
-**Tableau 31 — Les cinq niveaux de test, leur périmètre et le résultat obtenu ; les 14 tests de l'API ne prouvent que la joignabilité.**
+**Tableau 31 — Les cinq niveaux de test, leur périmètre et le résultat obtenu ; les 3 tests de l'API ne prouvent que la joignabilité.**
 
 | Niveau | Périmètre | Résultat |
 |---|---|---|
 | **Générateur** (7 fichiers de tests) | variation engine, générateurs de sources, distribution, identity mapping, experiment builder | **44 tests PASS** [contexte_projet.md] |
 | **Moteur `engine/`** | `test_matcher.py` (12 cas), `test_consent.py` (21 cas), `test_deduplication.py` (8 cas canonique), `test_governance_api.py` (13 cas) | **54/54 PASS** (`pytest projet/code-source/tests`, 27/09/2026) |
 | **MVP** (`test_bigdata`) | pipeline, loader PostgreSQL, auth, audit, api | **20 tests PASS** [contexte_projet.md] |
-| **API** | `test_api.py` — 14 tests sur données réelles (`RMA_USE_MOCK=false`) | **14/14 PASS** [logs.md] |
+| **API** | `test_api.py` — 3 tests sur données réelles | **3/3 PASS** [logs.md] |
 | **Pipeline** | `run_pipeline.sh` RAW → SILVER → GOLD | **4/4 vert** (07/09/2026) |
 
 L'ordre des niveaux n'est pas décoratif : il suit le **coût de retour à l'échec**. Un test
@@ -53,9 +53,10 @@ continue, écartée du périmètre du stage : la preuve est **reproductible manu
 pour le moteur, `run_pipeline.sh` pour le lac, `test_api.py` pour l'API) plutôt que rejouée à
 chaque commit.
 
-Une précision de portée, sur les **14/14 de l'API** : `test_api.py` est un **test de fumée**. Il
+Une précision de portée, sur les **3/3 de l'API** : `test_api.py` est un **test de fumée**. Il
 vérifie que chaque endpoint renvoie le code de statut attendu sur données réelles, sans en-tête
-d'authentification — il prouve la **joignabilité** des 11 endpoints et l'absence de régression de
+d'authentification — il prouve la **joignabilité** des 2 endpoints de gouvernance du backend
+Flask (`/api/governance/duplicates` et `/api/governance/consent`) et l'absence de régression de
 statut, **pas** le contrôle d'accès. Celui-ci est vérifié ailleurs, par les 13 cas de l'API de
 gouvernance, qui emprunte le chemin d'authentification réel (tableau ci-dessous). Aucun des deux
 niveaux ne se substitue à l'autre.
@@ -195,7 +196,7 @@ et, quand elle existe, sa piste de correction, plutôt que passée sous silence.
 ## Conclusion
 
 La stratégie de test couvre le générateur (44), le moteur et la gouvernance
-(54/54), le MVP (20), l'API (14/14) et le pipeline (4/4). L'évaluation
+(54/54), le MVP (20), l'API (3/3) et le pipeline (4/4). L'évaluation
 ground-truth démontre **une règle d'or tenue** : zéro fusion à tort (Precision
 1.000) sur tous les niveaux, avec une parité Pandas/Spark parfaite, et un rappel
 hard relevé à 0.422 grâce à la clé CIN. Le rappel sur le jeu dur indique

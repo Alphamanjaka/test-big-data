@@ -1220,3 +1220,74 @@ a echoue silencieusement. Corrige : le maximum est desormais deduit des legendes
 chapitres, avec detection explicite des numeros manquants ou en double, plus le controle de
 presence de la bibliographie, des annexes et des annexes A a F. Un controle qui peut
 reussir a vide ne prouve rien.
+
+---
+
+## 28/09/2026 - Front etape 3 : pages Doublons / Gouvernance / Synthese, flag mock partout, CPN4 en n/d
+
+**Demande.** "On continue", etape 3 du front au sens utilisateur : ajouter les trois pages a
+cote des 5 vues RMA et du dashboard, signaler les donnees de demonstration et corriger
+l'affichage CPN4.
+
+| # | Action | Detail |
+| - | ------ | ------ |
+| 1 | `front-optional/src/lib/api.ts` | `ApiResult<T>` = `{ data, mocked }` ; `resultOf()` lit `mocked` **dans l'enveloppe** du backend (jamais infere cote front) ; `getDuplicates()` et `getConsent()` (stats `total_consents`/`granted_count`/`patients` en meta) ; finalites typees (`api_access`/`research`/`analytics`) + libelles FR |
+| 2 | `front-optional/src/components/MockedBanner.tsx` (nouveau) | Bandeau ambre "Donnees de demonstration" visible des que `mocked=true` ; `{source}` decrit la table attendue (GOLD / identities / consentements) |
+| 3 | Pages RMA + dashboard | Bandeau branche sur `mocked` pour `/rma`, morbidite, maternite, laboratoire, paludisme, dashboard |
+| 4 | `front-optional/src/app/rma/maternite/page.tsx` | `CPN4` (et Avortements) passent en `number \| null` : le backend ne fournit pas CPN4, l'interface affiche **n/d** ("non renseigne par la source") au lieu de `0 %` |
+| 5 | `front-optional/src/app/dashboard/DashboardClient.tsx` | KPIs mortalite infantil./matern. en `number \| null` affiches **n/d** (au lieu de `?? 0`), unite explicite count/percent (fini le `< 10 => %`) |
+| 6 | `front-optional/src/app/doublons/page.tsx` (nouveau) | KPIs patients / patients maîtresses / doublons / taux + repartition par methode (exacte/probabiliste) avec justification de fusion ; aucune valeur recalculée (API telle quelle) |
+| 7 | `front-optional/src/app/gouvernance/page.tsx` (nouveau) | Stats consentements + tableau par (patient, finalite) + filtre par finalite (purpose-by-purpose) ; `patient_uuid` affiche n/d quand absent (mock) ; rappel noms synthetiques |
+| 8 | `front-optional/src/app/synthese/page.tsx` (nouveau) | Trois volets (admissions+mortalites, dedup, consentement) en `Promise.all`, bandeau si **l'un** des trois est mock, bloc RAW/SILVER/GOLD |
+| 9 | `front-optional/src/components/Sidebar.tsx` | Entrees Synthese / Doublons / Gouvernance dans le menu principal |
+| 10 | `front-optional/src/middleware.ts` | Les trois nouvelles routes passees en routes authentifiees (matcher + regex) |
+| 11 | `provision/api/mock_data.py` | `MOCK_CONSENT` aligne sur `PURPOSES = (api_access, research, analytics)` du moteur (`engine/governance/consent.py`) : l'ancien jeu (`recherche`/`qualite`/`reglementation`) affichait des etats que `validate_purpose` refuserait |
+| 12 | `front-optional/FONCTIONNALITES.md` | Sections 4 (indicateur mock), 6 (doublons), 7 (gouvernance), 8 (synthese), statuts RMA passes a "Actif", routes protegees et endpoints ajoutes |
+
+**Verifications.** `npx tsc --noEmit` = 0 erreur. `next build` = compilation OK, 18 routes
+(3 nouvelles presents). `next lint` = 18 erreurs, **meme compte qu'au commit `ab5a631`**
+(mesure precise apres `git stash push --include-untracked -- src`) : aucun nouveau defaut
+linters introduce ; les erreurs restantes sont pre-existantes (`any` d3, `react/no-unescaped-entities`,
+`ui/*`). `pytest projet/code-source/tests` = **54 passed, 2 warnings**. Controle de coherence :
+les types front correspondent a l'enveloppe reelle (`respond()` : `success/filters/data/mocked` ;
+mortality/maternity passe fallback `mocked=True` ; laboratory/malaria `mocked=USE_MOCK_FALLBACK`
+; governance_duplicates/consent fallback `mocked=True` + meta consent).
+
+**Point de methode.** Le build Next demande `prisma generate` (client absent de `node_modules`),
+pas d'erreur de code. `npm ci` et `prisma generate` ont ete executes (541 paquets installes).
+`mock_data.py` : la finalite inventee `reglementation` est un exemple de valeur que le moteur
+rejetterait en 422 - corrige afin que le jeu de demo reste un etat GU accessible par le moteur.
+
+**Rappel / limite.** Les chiffres mockes (65214 / 62180 / 3034 / 4,65) restent coherents entre
+eux mais differents du run reel (145 masters / 69 doublons) : les pages les portent avec le
+bandeau, jamais comme resultats. `documents/slide_soudenance/` (2 PPTX) reste non suivi.
+Commit en attente ; passages memoire §1.3 / §1.5 / §4.1, Aligner front restent a jour en
+fin d'etape.
+
+---
+
+## 28/09/2026 — Retrait radical du RMA : front + backend + documents memoire
+
+**Contexte :** a la demande explicite de l'utilisateur, la fonctionnalite de visualisation RMA
+(dashboard, vues `/rma/*` et `/api/rma/*`, documentation afferente) est retiree du perimetre
+consolide. Le front est recentre sur les vraies fonctionnalites : deduplication, consentement,
+gouvernance (`/synthese`, `/doublons`, `/gouvernance`). Le modele de donnees est conserve
+(8 tranches d'age dans `create_gold.py`) ; `archives/datalake_mavis/` non touche ; les entres
+historiques de ce journal ne sont pas modifiees (traces conservees).
+
+| # | Action | Détail |
+| - | ------ | ------ |
+| 1 | Front suppressions (git rm, staged D) | `src/app/rma/` (5 pages), `src/components/rma/` (4 composants), `src/app/dashboard/`, `pages/api/rma/diagnostics.ts`, `src/context/FiltersContext.tsx`, `src/components/ui/date-range-picker.tsx`, `front-optional/graphes.md` |
+| 2 | Front recentrage | `Header.tsx` (session seule, imports `Button`), `AppWrapper.tsx` (sans `FiltersProvider`), `layout.tsx` (titre "DataViz Gouvernance"), `login.tsx` (redirect `/synthese`), `app/page.tsx` (redirect `/synthese`), `middleware.ts` (routes protegees : settings/doublons/gouvernance/synthese/users ; `/users` admin-only ; denied → `/synthese?denied=1`), `users/page.tsx`, `settings/page.tsx` ; nouvelles pages `doublons/`, `gouvernance/`, `synthese/` (KPIs dedup + consent + chaine RAW/SILVER/GOLD), `MockedBanner.tsx` ; `tsconfig.json` (entree `dashboard/page.old.tsx.old` supprimee) |
+| 3 | Backend | `provision/api/hive_api.py` reecrit (2 endpoints : `/api/governance/duplicates`, `/api/governance/consent` ; import `json` supprime, `os` deplace dans la branche `except ImportError`) ; `mock_data.py` reduit (MOCK_GOVERNANCE_DUPLICATES + MOCK_CONSENT, finalites alignees sur `PURPOSES`) ; `test_api.py` = 3 tests ; `provision/api/README.md` + `provision/test_startup.sh` (health `/api/governance/duplicates`) |
+| 4 | Docs front | `FONCTIONNALITES.md`, `README.md`, `structure_interface.md` reecrits ; `todo.md` tableau final mis a jour |
+| 5 | Memoire | ch. 01 (objectif 5, "dashboard/RMA du PoC non repris", 3/3 PASS), 02, 04 (F5, CU6), 05, 06 (§6.5, "API gouvernance 3/3"), 07-tests (Tableau 31, figure 8, conclusion : 3/3 PASS), 09-glossaire (entree `hive_api.py`), `references/annexes.md` (Annexe E renommee) ; `documents/rapport_stage.md` + `slides_soutenance.md` (3/3 PASS) ; `cahier_des_charges.md`, `documents/documentation/*` (api.md reecrit, architecture.md, bases_de_donnees.md, bigdata_concepts.md, consentement_gouvernance.md, pipeline_elt.md) ; GUIDE (`guide-backend.md` reecrit, `guide-frontend.md` + `README.md` recentres) ; `ai/dev/architecture.md`, `ai/dev/pipeline_elt.md`, `ai/dev/suivi_avancement.md`, `ai/memoire/contexte_projet.md` alignes ; `scripts/dev/export_memoire_docx.py` (entree glossaire RMA supprimee) |
+
+**Verifications.** `npx tsc --noEmit` = 0 erreur (apres purge `.next`) ; `next build` = OK, 12 routes
+(plus de `/rma` ni `/dashboard`) ; `py_compile` OK sur `hive_api.py`, `mock_data.py`, `test_api.py` ;
+`pytest` = **54 passed** (venv racine). Recherche residue contrôlee : plus aucune reference RMA hors
+`archives/` et hors entrees historiques de ce journal (`front-optional/bokt.new` : notes utilisateur
+conservees).
+
+**Reste :** regeneration du DOCX (`export_memoire_docx.py`) a executer, relecture humaine dans Word,
+`documents/slide_soudenance/` (2 PPTX) non suivi, commit en attente de validation utilisateur.

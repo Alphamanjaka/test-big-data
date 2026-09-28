@@ -58,7 +58,7 @@ Config : `provision/config/data_sources.json` (**non committé**, secrets) — t
   - Condition : patient_uuid, diagnosis, diagnosis_code, category, code, info, name
   - Observation : patient_uuid, mortality, parity, gravida, live_births
 - **GOLD** : `datalake_gold.patient_events_gold` — 18 colonnes (patient_uuid, source_patient_id, name,
-  gender, birth_date, age, age_tranche[8 RMA], encounter_id, admission_date, discharge_date, visit_type,
+  gender, birth_date, age, age_tranche[8 tranches], encounter_id, admission_date, discharge_date, visit_type,
   diagnosis_code, category, diagnosis, mortality, parity, gravida, live_births).
 
 ### PostgreSQL central (`projet/code-source/sql/schema.sql`)

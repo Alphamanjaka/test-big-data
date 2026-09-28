@@ -69,7 +69,7 @@ flowchart LR
 |---|---|---|
 | **RAW** | Conserver la donnée brute, inchangée, telle qu'extraite | Parquet HDFS `/datalake/raw/{source}/{table}` + tables Hive externes ; permet traçabilité, rejeu du pipeline, comparaison avant/après |
 | **SILVER** | Données **nettoyées, normalisées, standardisées** ; les doublons sont identifiés | 4 tables Hive harmonisées **FHIR** : `datalake_silver.*_fhir` |
-| **GOLD** | Données **agrégées, prêtes pour l'analyse** | `datalake_gold.patient_events_gold` (18 colonnes, 8 tranches d'âge RMA), consommée par l'API |
+| **GOLD** | Données **agrégées, prêtes pour l'analyse** | `datalake_gold.patient_events_gold` (18 colonnes, 8 tranches d'âge), consommée par l'API |
 
 Bénéfices : séparation claire des états de la donnée, rejeu possible, qualité progressive, et
 **séparation des données** exigée par la gouvernance (brutes / nettoyées / consolidées).

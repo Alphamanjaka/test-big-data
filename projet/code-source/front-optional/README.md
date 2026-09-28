@@ -1,15 +1,19 @@
-# RMA DataViz - Application Web de Visualisation
+# DataViz Gouvernance - Application Web de Visualisation
 
 ## Presentation du projet
 
-**Nom du projet :** Data Lake MAVIS - Application Web de Visualisation
-**Objectif :** Centralisation, traitement et visualisation de donnees de sante issues du **Rapport Mensuel d'Activite (RMA)** du CHRD2 Madagascar (Centre Hospitalier Regional de Diagnostic et de Demonstration).
+**Nom du projet :** Plateforme de gouvernance des donnees patients
+**Objectif :** Centralisation et gouvernance de donnees patients synthetiques :
+pipeline Big Data Medallion (RAW→SILVER→GOLD) sur Hive/HDFS/Spark,
+de-duplication explicable (exact + probabiliste, master patient + identity map),
+consentement purpose-by-purpose, audit et roles + cles API.
 
-Cette application web est le **frontend de visualisation** d'un pipeline Data Lake compose de :
-- **Backend Data Lake :** Apache Spark, Hive, MongoDB, HBase (ETL, stockage, API REST)
-- **Frontend :** Next.js 15 + D3.js + Tailwind CSS (interface de visualisation interactive)
+Cette application web est le **frontend de presentation** des deux volets metier
+exposes depuis le warehouse :
+- **Qualite d'identite** : resultats de la de-duplication (masters, doublons, methodes)
+- **Consentement** : decisions purpose-by-purpose enregistrees en GOLD
 
-Le projet vise a construire une architecture capable de gerer jusqu'a 100 sources de donnees differentes (PostgreSQL, Excel, CSV, etc.) dans le cadre de la digitalisation du systeme de sante a Madagascar.
+Le backend de donnees expose les indicateurs via `hive_api.py` (Flask + PySpark).
 
 ### Stack technique
 
@@ -18,13 +22,11 @@ Le projet vise a construire une architecture capable de gerer jusqu'a 100 source
 | Framework     | Next.js 15.4.6 (App Router + Turbopack)                  |
 | Langage       | TypeScript 5.9                                            |
 | Styling       | Tailwind CSS v4 + shadcn/ui (New York style, Zinc base)  |
-| Visualisation | D3.js v7 (graphiques SVG customisés)                     |
 | Authentification | NextAuth v4 (JWT + Prisma adapter)                     |
 | Base de donnees | PostgreSQL via Prisma ORM 6.17                          |
 | Composants UI | Radix UI primitives (~40 composants shadcn/ui)           |
 | Icons         | Lucide React                                              |
 | Notifications | React Toastify                                            |
-| Dates         | date-fns + react-day-picker                               |
 
 ---
 
@@ -34,7 +36,7 @@ Le projet vise a construire une architecture capable de gerer jusqu'a 100 source
 
 - **Node.js** (v18+ recommande, compatible Next.js 15)
 - **PostgreSQL** en cours d'execution sur `localhost:5432`
-- **Backend API** sur `localhost:5000` (le serveur Spark/Hive qui expose les endpoints `/rma/*`)
+- **Backend API** sur `localhost:5000` (le serveur Spark/Hive qui expose les endpoints `/api/governance/*`)
 
 ### Installation
 
@@ -82,7 +84,7 @@ npm run lint     # Linter le code
 ## Structure du projet
 
 ```
-visualisation_app/
+front-optional/
 ├── prisma/
 │   ├── schema.prisma          # Schema de la base de donnees
 │   ├── seed.js                # Script de seed (utilisateurs par defaut)
@@ -91,51 +93,31 @@ visualisation_app/
 ├── src/
 │   ├── app/
 │   │   ├── layout.tsx         # Layout racine
-│   │   ├── page.tsx           # Page racine -> redirection vers /login
+│   │   ├── page.tsx           # Page racine -> redirection vers /synthese
 │   │   ├── globals.css        # Styles globaux (Tailwind v4)
 │   │   │
 │   │   ├── login/             # Page de connexion
-│   │   ├── dashboard/         # Tableau de bord (KPIs + top diagnostics)
-│   │   ├── rma/               # Visualisations RMA
-│   │   │   ├── page.tsx                    # Tableau 5 - Diagnostics consultations externes
-│   │   │   ├── morbidite/page.tsx          # Tableau 9 - Morbidite et mortalite
-│   │   │   ├── maternite/page.tsx          # Tableaux 11 & 12 - Maternite / CPN
-│   │   │   ├── laboratoire/page.tsx        # Tableau 16 - Activite de laboratoire
-│   │   │   └── paludisme/page.tsx          # Tableau 25 - Paludisme
+│   │   ├── synthese/          # Synthese (qualite d'identite + consentement)
+│   │   ├── doublons/          # KPIs de de-duplication
+│   │   ├── gouvernance/       # Consentements purpose-by-purpose
 │   │   ├── settings/          # Parametres
-│   │   ├── users/             # Gestion des utilisateurs (admin)
-│   │   │
-│   │   └── api/
-│   │       ├── auth/          # Route NextAuth
-│   │       └── users/         # API CRUD utilisateurs
+│   │   └── users/             # Gestion des utilisateurs (admin)
 │   │
 │   ├── components/
-│   │   ├── Header.tsx         # Barre superieure (filtres, user info, logout)
+│   │   ├── Header.tsx         # Barre superieure (info utilisateur, logout)
 │   │   ├── Sidebar.tsx        # Barre laterale de navigation
-│   │   ├── Heatmap.tsx        # Composant D3 heatmap generique
-│   │   ├── Providers.tsx      # Wrapper NextAuth SessionProvider
+│   │   ├── MockedBanner.tsx   # Bandeau "donnees de demonstration"
 │   │   │
-│   │   ├── rma/
-│   │   │   ├── DiagnosticsHeatmap.tsx    # Heatmap diagnostics x tranches d'age
-│   │   │   ├── LaboratoryChart.tsx       # Donut + bar chart laboratoire
-│   │   │   ├── MalariaKPI.tsx            # KPI cards + line chart paludisme
-│   │   │   └── MortalityChart.tsx        # Bar chart horizontal mortalite
-│   │   │
-│   │   └── ui/                # ~40 composants shadcn/ui
-│   │
-│   ├── context/
-│   │   └── FiltersContext.tsx # Filtres globaux (periode, sexe)
+│   │   └── ui/                # Composants shadcn/ui
 │   │
 │   ├── lib/
+│   │   ├── api.ts             # Client API gouvernance (getDuplicates, getConsent)
 │   │   ├── auth.ts            # Configuration NextAuth
 │   │   ├── prisma.ts          # Client Prisma singleton
 │   │   ├── rbac.ts            # Controle d'acces par role
 │   │   └── utils.ts           # Utilitaires (cn pour Tailwind)
 │   │
 │   └── middleware.ts          # Protection des routes
-│
-├── pages/
-│   └── api/rma/diagnostics.ts # Route API legacy (Pages Router)
 │
 ├── public/                    # Assets statiques
 ├── .env                       # Variables d'environnement
@@ -152,8 +134,8 @@ visualisation_app/
 L'application suit une architecture **hybride client-serveur** :
 
 1. **Server Components** (`page.tsx`) : Verification de l'authentification via `getServerSession()`, redirection des utilisateurs non connectes.
-2. **Client Components** (`*Client.tsx`) : Toute l'interactivite, le fetch de donnees et les visualisations D3.
-3. **Backend externe** (`localhost:5000`) : L'application proxy les requetes vers le serveur backend qui expose les endpoints RMA.
+2. **Client Components** (`*Client.tsx`) : Toute l'interactivite, le fetch de donnees et l'affichage des KPIs.
+3. **Backend externe** (`localhost:5000`) : L'application lit les indicateurs de gouvernance exposes par `hive_api.py`.
 
 ### Flux de donnees
 
@@ -169,21 +151,24 @@ Utilisateur -> Next.js Frontend -> API Backend (localhost:5000) -> Spark/Hive Da
 - **Autorisation** : RBAC (Role-Based Access Control) avec deux roles : `ADMIN` et `MEDECIN`
 - **Middleware** : Protection des routes avec verification du token JWT
 - **Routes admin** : `/users/*` restreintes au role `ADMIN`
-- **Routes protegees** : `/dashboard`, `/settings`, `/rma/*` necessitent une authentification
+- **Routes protegees** : `/settings`, `/synthese`, `/doublons`, `/gouvernance` necessitent une authentification
 
 ---
 
-## Visualisations RMA
+## Pages
 
-L'application implmente 4 graphiques D3.js correspondant aux tableaux du RMA :
+| Route | Contenu | Source API |
+|-------|---------|------------|
+| `/` | Redirection vers `/synthese` | — |
+| `/synthese` | Synthese : qualite d'identite + consentement + chaine RAW/SILVER/GOLD | `/api/governance/duplicates`, `/api/governance/consent` |
+| `/doublons` | KPIs de de-duplication (masters, doublons, taux, methodes) | `/api/governance/duplicates` |
+| `/gouvernance` | Consentements purpose-by-purpose + filtre par finalite | `/api/governance/consent` |
+| `/settings` | Parametres du compte | — |
+| `/users` | Gestion des utilisateurs (admin) | `/api/users` |
 
-| Route | Tableau RMA | Type de graphique | Statut |
-|-------|-------------|-------------------|--------|
-| `/rma` | Tableau 5 - Diagnostics consultations externes (CIM-10) | Heatmap (diagnostics x tranches d'age) + tableau pagine | Actif |
-| `/rma/morbidite` | Tableau 9 - Morbidite et mortalite hospitaliere | Bar chart horizontal (taux de mortalite par diagnostic) | En developpement |
-| `/rma/maternite` | Tableaux 11 & 12 - CPN et Maternite | Line chart + KPI cards | En developpement (donnees fictives) |
-| `/rma/laboratoire` | Tableau 16 - Activite de laboratoire | Donut chart + bar chart | En developpement |
-| `/rma/paludisme` | Tableau 25 - Prise en charge Paludisme | Line chart + KPI cards | En developpement |
+> Chaque page affiche un bandeau "Donnees de demonstration" quand le backend
+> repond en mode mock (`mocked: true` dans l'enveloppe) : aucune valeur n'est
+> jamais presentee comme issue de donnees reelles.
 
 ---
 

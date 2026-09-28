@@ -150,8 +150,6 @@ ACRONYMES = [
     ("NLP", "Natural Language Processing — traitement automatique du langage"),
     ("REST", "Representational State Transfer — style d'architecture d'API"),
     ("RGPD", "Règlement Général sur la Protection des Données"),
-    ("RMA", "reporting périodique d'activité de l'établissement : diagnostics, "
-            "morbidité–mortalité, laboratoire, paludisme"),
     ("SHA-256", "Secure Hash Algorithm 256 bits — empreinte de hachage"),
     ("SQL", "Structured Query Language — langage de requête"),
     ("VM", "Machine Virtuelle"),

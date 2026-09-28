@@ -72,7 +72,7 @@ flowchart LR
 | **1 — Extraction RAW** | `gen_extract_raw.py` | parquet `/datalake/raw/{source}/{table}`, tables Hive externes, `extract_raw_report.json` |
 | **2 — Mapping FHIR** | `gen_fhir_mapping.py` | `fhir_mapping.json` (table→entité FHIR, cartes explicites) |
 | **3 — SILVER FHIR** | `create_silver.py` | `datalake_silver.{patient,encounter,condition,observation}_fhir` |
-| **4 — GOLD** | `create_gold.py` | `patient_events_gold` (8 tranches RMA), `patient_consent_gold` |
+| **4 — GOLD** | `create_gold.py` | `patient_events_gold` (8 tranches d'âge), `patient_consent_gold` |
 
 Résultats du run de référence (sources CSV synthétiques, 214 enregistrements) :
 **`datalake_silver.patient_fhir` = 214 lignes** (76 + 76 + 62) ; **145 masters** ;
@@ -140,11 +140,12 @@ implémentations, qu'aucune des deux ne peut détecter seule.
 
 ## 6.5 Gouvernance et API
 
-L'API de données (Flask, port 5000) expose **11 endpoints** — 9 « RMA » (`/rma/*`,
-`/api/rma/*`) + 2 gouvernance (`/api/governance/duplicates`, `/api/governance/consent`)
-— avec une réponse unifiée portant l'indicateur **`mocked`** (vrai uniquement en
-secours backend, jamais côté frontend). `test_api.py` couvre les 11 endpoints +
-cas d'usage et retourne **14/14 PASS** en données réelles (`RMA_USE_MOCK=false`)
+L'API d'indicateurs du warehouse (Flask, port 5000) expose **2 endpoints** de
+gouvernance (`/api/governance/duplicates` sur la table SILVER `patient_fhir`,
+`/api/governance/consent` sur la table GOLD `patient_consent_gold`), avec une
+réponse unifiée portant l'indicateur **`mocked`** (vrai uniquement en secours
+backend, jamais côté frontend). `test_api.py` couvre les 2 endpoints (+ la limite
+`limit` du consentement) et retourne **3/3 PASS** en données réelles
 [contexte_projet.md].
 
 La gouvernance est implémentée dans le moteur : `auth.py` (authentification par
@@ -199,7 +200,7 @@ Java 8 ; Spark configuré `executor 4g / driver 2g / shuffle.partitions=8`
 ## Conclusion et transition
 
 La plateforme est réalisée et opérationnelle : 4/4 pipeline vert, dédup enregistrée
-dans le lac, API 14/14, gouvernance mécanisée. Reste à **démontrer la qualité** :
+dans le lac, API gouvernance 3/3, gouvernance mécanisée. Reste à **démontrer la qualité** :
 le chapitre 7 présente la stratégie de test, l'évaluation ground-truth (P/R/F1) et
 les limites honnêtes du prototype (rappel « hard », GOLD incomplet).
 

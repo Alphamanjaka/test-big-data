@@ -1,7 +1,7 @@
 # Guide Frontend — Application de visualisation (Next.js)
 
 Application Web de visualisation du Data Lake (optionnelle, non requise pour le pipeline). Le projet
-s'appelle `visualisation_app` (emplacement consolidé : `projet/code-source/front-optional/`).
+s'appelle **DataViz Gouvernance** (emplacement consolidé : `projet/code-source/front-optional/`).
 
 ## 1. Vue d'ensemble
 
@@ -11,7 +11,6 @@ s'appelle `visualisation_app` (emplacement consolidé : `projet/code-source/fron
 | Framework | Next.js 15.4.6 (App Router + Turbopack) |
 | Langage | TypeScript 5.9 |
 | Styling | Tailwind CSS v4 + shadcn/ui (New York, Zinc) |
-| Visualisation | D3.js v7 (graphiques SVG customisés) |
 | Auth | NextAuth v4 (JWT + Prisma adapter) |
 | BDD | PostgreSQL via Prisma ORM |
 | Port | 3000 |
@@ -84,23 +83,17 @@ front-optional/
 ├── prisma/            # schema.prisma · seed.js · migrations/
 ├── src/
 │   ├── app/
-│   │   ├── layout.tsx · page.tsx (→ /login) · globals.css
+│   │   ├── layout.tsx · page.tsx (→ /synthese) · globals.css
 │   │   ├── login/     # connexion
-│   │   ├── dashboard/ # KPIs + top diagnostics
-│   │   ├── rma/       # visualisations RMA
-│   │   │   ├── page.tsx               # Tableau 5 — diagnostics
-│   │   │   ├── morbidite/page.tsx     # Tableau 9 — morbidité/mortalité
-│   │   │   ├── maternite/page.tsx     # Tableaux 11 & 12
-│   │   │   ├── laboratoire/page.tsx   # Tableau 16
-│   │   │   └── paludisme/page.tsx     # Tableau 25
+│   │   ├── synthese/  # synthèse (déduplication + consentement + chaîne)
+│   │   ├── doublons/  # KPIs de déduplication
+│   │   ├── gouvernance/ # consentements purpose-by-purpose
 │   │   ├── settings/  # paramètres
 │   │   ├── users/     # gestion utilisateurs (ADMIN)
 │   │   └── api/       # auth (NextAuth) + users (CRUD)
-│   ├── components/    # Header · Sidebar · Heatmap · ui/ (shadcn) · rma/*
-│   ├── context/       # FiltersContext (période, sexe)
-│   ├── lib/           # auth.ts · prisma.ts · rbac.ts · utils.ts
+│   ├── components/    # Header · Sidebar · MockedBanner · ui/ (shadcn)
+│   ├── lib/           # api.ts (gouvernance) · auth.ts · prisma.ts · rbac.ts · utils.ts
 │   └── middleware.ts  # protection des routes
-├── pages/api/rma/diagnostics.ts   # route legacy (Pages Router)
 └── ... configs (next.config.ts, tsconfig.json, package.json)
 ```
 
@@ -108,8 +101,9 @@ front-optional/
 
 **Hybride client-serveur** :
 1. **Server Components** (`page.tsx`) : vérification `getServerSession()`, redirection si non connecté.
-2. **Client Components** (`*Client.tsx`) : interactivité, fetch et graphiques D3.
-3. **Backend externe** : le front proxy ses requêtes vers `localhost:5000` (endpoints `/rma/*`).
+2. **Client Components** (`*Client.tsx`) : interactivité et fetch des KPIs de gouvernance.
+3. **Backend externe** : le front proxy ses requêtes vers `localhost:5000` (endpoints
+   `/api/governance/*`).
 
 ```
 Utilisateur → Next.js (port 3000) → API Flask (port 5000) → Spark/Hive Data Lake
@@ -124,7 +118,7 @@ flowchart TB
         MID["middleware.ts — routes protégées"]
         SS["Server Components<br/>getServerSession() / redirection"]
         NC["NextAuth v4 — JWT"]
-        CC["Client Components<br/>filtres (FiltersContext) + graphiques D3"]
+        CC["Client Components<br/>fetch des KPIs de gouvernance"]
     end
 
     subgraph PGSQL["PostgreSQL :5432"]
@@ -132,36 +126,40 @@ flowchart TB
     end
 
     subgraph BEND["Backend — API Flask :5000"]
-        RMA["/rma/* · /api/rma/*<br/>/api/governance/*"]
+        GOV["/api/governance/duplicates<br/>/api/governance/consent"]
     end
 
     subgraph DL["Data Lake"]
         HIVE2["Spark/Hive"]
-        GOLD2[("GOLD — HDFS<br/>patient_events_gold")]
+        WAREHOUSE2[("SILVER / GOLD — HDFS<br/>patient_fhir · patient_consent_gold")]
     end
 
     U --> MID --> SS
     SS --> NC --> DB
     SS --> CC
-    CC -->|"fetch proxy HTTP"| RMA --> HIVE2 --> GOLD2
+    CC -->|"fetch proxy HTTP"| GOV --> HIVE2 --> WAREHOUSE2
 ```
 
 ## 8. RBAC
 
 - **NextAuth v4** (JWT) + Prisma adapter.
 - Deux rôles : `ADMIN` et `MEDECIN` (définition dans `src/lib/rbac.ts`).
-- Middleware protégeant `/dashboard`, `/settings`, `/rma/*`.
+- Middleware protégeant `/settings`, `/synthese`, `/doublons`, `/gouvernance`.
 - Routes `/users/*` réservées au rôle `ADMIN`.
 
-## 9. Visualisations RMA
+## 9. Pages
 
-| Route | Tableau RMA | Type de graphique | Statut |
-|---|---|---|---|
-| `/rma` | T5 — Diagnostics CIM-10 | Heatmap + tableau paginé | Actif |
-| `/rma/morbidite` | T9 — Morbidité/mortalité | Bar chart horizontal | En dév. |
-| `/rma/maternite` | T11 & T12 — Maternité/CPN | Line chart + KPIs | En dév. (données fictives) |
-| `/rma/laboratoire` | T16 — Laboratoire | Donut + bar chart | En dév. |
-| `/rma/paludisme` | T25 — Paludisme | Line chart + KPIs | En dév. |
+| Route | Contenu | Source API |
+|---|---|---|
+| `/` | Redirection vers `/synthese` | — |
+| `/synthese` | Synthèse : déduplication + consentement + chaîne RAW/SILVER/GOLD | `/api/governance/duplicates`, `/api/governance/consent` |
+| `/doublons` | KPIs de déduplication (masters, doublons, taux, méthodes) | `/api/governance/duplicates` |
+| `/gouvernance` | Consentements purpose-by-purpose + filtre par finalité | `/api/governance/consent` |
+| `/settings` | Paramètres du compte | — |
+| `/users` | Gestion des utilisateurs (admin) | `/api/users` |
+
+Chaque page affiche un bandeau « Données de démonstration » dès que le backend répond
+`mocked: true` : aucune valeur n'est présentée comme issue de données réelles.
 
 ## 10. Dépannage rapide
 
@@ -169,12 +167,12 @@ flowchart TB
 |---|---|---|
 | `NEXT_PUBLIC_SERVER_URL` non défini | `.env` manquant | créer `.env` (section 3) puis relancer `npm run dev` |
 | Erreur Prisma `database does not exist` | base `datalake_user_db` absente | démarrer PostgreSQL puis `npx prisma migrate dev --name init` |
-| Page de graphiques vide dans certaines routes | endpoint backend non implémenté / données fictives | vérifier `/api/rma/laboratory` et `/api/rma/malaria` (vides par conception) |
+| KPIs « n/d » + bandeau démo | endpoint backend indisponible / fallback mock | lancer le pipeline SILVER/GOLD (voir `guide-vagrant.md`) |
 | Erreur de connexion backend | API Flask éteinte | lancer l'API (voir `guide-backend.md`) |
-| Auth échoue / 401 | tat de session invalide | re-seed : `npx prisma db seed` (comptes par défaut) |
+| Auth échoue / 401 | état de session invalide | re-seed : `npx prisma db seed` (comptes par défaut) |
 
 ## 11. Suite logique
 
 - Le front consomme les endpoints de l'API → **`GUIDE/guide-backend.md`**.
 - Fichiers de référence : `front-optional/README.md`, `front-optional/FONCTIONNALITES.md`,
-  `front-optional/structure_interface.md`, `front-optional/graphes.md`.
+  `front-optional/structure_interface.md`.

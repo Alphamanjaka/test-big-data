@@ -11,7 +11,7 @@ correspondent au dépôt consolidé `Mon_Memoire/projet/code-source`**.
 | 1 | [`guide-vagrant.md`](guide-vagrant.md) | VM Big Data : création, démarrage, (ré)initialisation, pipeline ELT, arrêt | Vagrant + VirtualBox, données du générateur synthétique |
 | 2 | [`guide-generateur-donnees.md`](guide-generateur-donnees.md) | Générateur de données patients synthétiques (3 sources) + ground truth | Python 3.8+, `faker`/`pandas` |
 | 3 | [`guide-frontend.md`](guide-frontend.md) | Application de visualisation Next.js (optionnelle) | Node.js 18+, backend API allumé |
-| 4 | [`guide-backend.md`](guide-backend.md) | API Flask (port 5000) : endpoints, lancement, tests, gouvernance | Pipeline ELT GOLD + Hive actifs |
+| 4 | [`guide-backend.md`](guide-backend.md) | API Flask (port 5000) : endpoints gouvernance, lancement, tests | Pipeline ELT SILVER/GOLD + Hive actifs |
 
 ## Vue d'ensemble
 
@@ -28,11 +28,11 @@ flowchart TB
     end
 
     subgraph API["GUIDE n°4 — API Flask :5000"]
-        APIG["/rma/* · /api/rma/*<br/>/api/governance/*"]
+        APIG["/api/governance/duplicates<br/>/api/governance/consent"]
     end
 
     subgraph FE["GUIDE n°3 — Frontend Next.js :3000"]
-        FRONT["Visualisation + RBAC (NextAuth)<br/>PostgreSQL datalake_user_db"]
+        FRONT["Vues de gouvernance + RBAC (NextAuth)<br/>PostgreSQL datalake_user_db"]
     end
 
     GEN --> ELT

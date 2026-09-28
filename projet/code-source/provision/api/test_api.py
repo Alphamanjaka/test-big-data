@@ -2,7 +2,7 @@
 # -*- coding: utf-8 -*-
 """
 test_api.py — Test des endpoints Flask API (hive_api.py)
-========================================================
+=========================================================
 Usage :
   cd ~/datalake-final
   /usr/bin/python3 -m provision.api.test_api
@@ -61,58 +61,17 @@ def test(name, method, path, expected_status=200, params=None):
 
 # ==========================================================
 print("\n" + "=" * 60)
-print("  TEST API FLASK — datalake_gold.patient_events_gold")
+print("  TEST API FLASK — indicateurs de gouvernance")
 print("=" * 60 + "\n")
 
-# 1. Dernière synchronisation
-test("GET /rma/last_sync", "GET", "/rma/last_sync")
-
-# 2. Admissions summary (sans filtre)
-test("GET /rma/admissions_summary", "GET", "/rma/admissions_summary")
-
-# 3. Admissions summary (avec filtre)
-test("GET /rma/admissions_summary?start=2025-01-01&end=2025-12-31",
-     "GET", "/rma/admissions_summary",
-     params={"start": "2025-01-01", "end": "2025-12-31"})
-
-# 4. Top diagnostics
-test("GET /rma/top_diagnostics?limit=5", "GET", "/rma/top_diagnostics", params={"limit": 5})
-
-# 5. Top diagnostics (avec filtre sexe)
-test("GET /rma/top_diagnostics?sex=female&limit=3",
-     "GET", "/rma/top_diagnostics",
-     params={"sex": "female", "limit": 3})
-
-# 6. Diagnostics heatmap
-test("GET /rma/diagnostics_heatmap", "GET", "/rma/diagnostics_heatmap")
-
-# 7. Diagnostics heatmap (limit 3)
-test("GET /rma/diagnostics_heatmap?limit=3",
-     "GET", "/rma/diagnostics_heatmap",
-     params={"limit": 3})
-
-# 8. Diagnostics list (page 1)
-test("GET /rma/diagnostics_list?page=1&limit=10",
-     "GET", "/rma/diagnostics_list",
-     params={"page": 1, "limit": 10})
-
-# 9. Mortality
-test("GET /api/rma/mortality", "GET", "/api/rma/mortality")
-
-# 10. Maternity
-test("GET /api/rma/maternity", "GET", "/api/rma/maternity")
-
-# 11. Laboratory (non disponible, attendu 200 avec data vide)
-test("GET /api/rma/laboratory", "GET", "/api/rma/laboratory")
-
-# 12. Malaria (non disponible, attendu 200 avec data vide)
-test("GET /api/rma/malaria", "GET", "/api/rma/malaria")
-
-# 13. Gouvernance — KPIs de déduplication (SILVER patient + moteur)
+# 1. Gouvernance — KPIs de déduplication (SILVER patient + moteur)
 test("GET /api/governance/duplicates", "GET", "/api/governance/duplicates")
 
-# 14. Gouvernance — consentements purpose-by-purpose (GOLD)
+# 2. Gouvernance — consentements purpose-by-purpose (GOLD)
 test("GET /api/governance/consent", "GET", "/api/governance/consent")
+
+# 3. Gouvernance — consentements avec limite
+test("GET /api/governance/consent?limit=5", "GET", "/api/governance/consent", params={"limit": 5})
 
 # ==========================================================
 print("\n" + "=" * 60)

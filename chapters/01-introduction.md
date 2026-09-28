@@ -81,7 +81,7 @@ Six mots reviennent dans tous les chapitres. Ils sont expliqués ici en françai
 | 2 | **Nettoyer et standardiser** selon un modèle commun | modèle canonique `CanonicalPatient` côté déduplication, schéma pivot FHIR côté ELT [cahier_des_charges.md §7] |
 | 3 | **Dédupliquer** avec une logique toujours explicable | master patient, identity map, score + méthode + seuil [cahier_des_charges.md §4.2] |
 | 4 | **Gouverner les accès** | rôles (RBAC), consentement *purpose-by-purpose*, audit d'accès, clés API hachées [cahier_des_charges.md §4.3] |
-| 5 | **Visualiser** les indicateurs | dashboard RMA (frontend considéré optionnel) [cahier_des_charges.md §4.5] |
+| 5 | **Visualiser** les indicateurs | vues de gouvernance : déduplication et consentement (frontend optionnel) [cahier_des_charges.md §4.5] |
 | 6 | **Évaluer** la déduplication | vérité terrain (ground truth), précision / rappel / F1 [cahier_des_charges.md §4.4 / §8] |
 
 Les données manipulées sont **exclusivement synthétiques** : la confidentialité est un actif du
@@ -136,12 +136,14 @@ Périmètre fonctionnel couvert par ce stage :
   CIN 0.1 / ville de naissance 0.1), implémenté en Pandas **et** en PySpark [cahier_des_charges.md §4.2] ;
 - gouvernance : RBAC, consentement par finalité, audit d'accès, clés API hachées SHA-256
   [cahier_des_charges.md §4.3] ;
-- deux API REST : données (**Flask**, endpoints `/rma/*`, sur les données GOLD) et gouvernance
-  (**FastAPI**, lecture seule, avec contrôle de consentement) ;
+- deux API REST : indicateurs du warehouse (**Flask**, endpoints `/api/governance/*`, lecture des
+  tables SILVER/GOLD via PySpark/Hive) et gouvernance plateforme (**FastAPI**, lecture seule, avec
+  contrôle de consentement) ;
 - évaluation de la déduplication sur données synthétiques easy / medium / hard.
 
-Hors périmètre (assumés comme tels) : frontend Next.js du PoC (le dashboard de démonstration
-n'a pas été repris dans le dépôt consolidé), export VM `.box`, Docker/CI.
+Hors périmètre (assumés comme tels) : frontend Next.js optionnel de `front-optional/`, limité aux
+vues de gouvernance (le dashboard et les tableaux RMA du PoC ne sont pas repris), export VM `.box`,
+Docker/CI.
 
 ## 1.6 Contexte chiffré (repères)
 
@@ -153,8 +155,8 @@ Les principaux chiffres vérifiables, détaillés dans les chapitres 4 à 7, son
 - **Évaluation (dataset hard)** : Precision **1.000**, Recall **0.422**, F1 **0.594**, zéro faux
   positif, parité MVP = Spark parfaite [evaluation_truth.md].
 - **Pipeline fusion** (run 07/09/2026, sources CSV synthétiques) : 4/4 vert, SILVER `patient_fhir`
-  **214** lignes, **145** masters, **69** doublons liés, GOLD consentements 145, API **14/14 PASS**
-  sur données réelles [ai/memoire/contexte_projet.md].
+  **214** lignes, **145** masters, **69** doublons liés, GOLD consentements 145, API gouvernance
+  **3/3 PASS** sur données réelles [ai/memoire/contexte_projet.md].
 
 ## 1.7 Plan du mémoire
 
@@ -173,8 +175,8 @@ Les principaux chiffres vérifiables, détaillés dans les chapitres 4 à 7, son
 | **9 — Glossaire** | le vocabulaire du projet expliqué en français courant, et les objets du dépôt (tables, scripts, couches) |
 
 La bibliographie et les **annexes** (A à F : pipeline, base centrale, moteur de rapprochement,
-API de gouvernance, API RMA, données synthétiques) suivent ces neuf chapitres, comme dans les
-deux rapports de référence.
+API de gouvernance, données GOLD, données synthétiques) suivent ces neuf chapitres, comme dans
+les deux rapports de référence.
 
 ## Conclusion et transition
 

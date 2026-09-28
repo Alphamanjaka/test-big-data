@@ -93,7 +93,7 @@ et logs `elt.log`.
 | Masters | **145** distincts ; **69** doublons liés (`is_duplicate`), `match_method=exact` |
 | Gouvernance API | `duplicate_rate` **32.24 %** (`mocked: false`) |
 | GOLD | `patient_consent_gold` **145** lignes ; `patient_events_gold` 0 ligne (interim attendu) |
-| API données | `test_api.py` **14/14 PASS** sur données réelles (`RMA_USE_MOCK=false`) |
+| API données | `test_api.py` **3/3 PASS** sur données réelles |
 
 ### 3.3 Difficultés réelles et résolutions
 

@@ -26,7 +26,7 @@ en exigences vérifiables :
 | F2 | **Nettoyer / standardiser** selon un modèle commun | modèle canonique `CanonicalPatient` + pivot FHIR |
 | F3 | **Dédupliquer** de façon **explicable** | master patient + identity map (score, méthode, seuil) |
 | F4 | **Gouverner les accès** | RBAC + consentement *purpose-by-purpose* + audit + clés SHA-256 |
-| F5 | **Visualiser** les indicateurs | dashboard RMA (optionnel) |
+| F5 | **Visualiser** les indicateurs | vues de gouvernance : déduplication et consentement (optionnel) |
 | F6 | **Évaluer** la déduplication | vérité terrain, précision / rappel / F1 |
 
 Exigences non fonctionnelles : données **fictives uniquement** ; pipeline **rejouable**
@@ -284,15 +284,16 @@ manquant ou une finalité non accordée produit un **403** — et non un 404 sil
 liste réduite — et ce refus est journalisé au même titre qu'un accès accordé. C'est le point
 où se joue la crédibilité du dispositif de gouvernance : un refus doit être visible.
 
-**CU6 — Consulter un indicateur de suivi de la grossesse (RMA).** *Acteur* : un lecteur du
-dashboard RMA. *Prérequis* : la zone GOLD peuplée, ou le jeu de démonstration. *Déroulement* :
-le dashboard appelle l'API REST des données GOLD et affiche les indicateurs de suivi. *Résultat
-attendu* : des indicateurs calculés sur les données dédupliquées, donc sans double comptage.
-*Cas limite* : cet écran est explicitement **optionnel** dans le cahier des charges, et son
-alimentation dépend d'une base distincte que le commanditaire n'a pas pu fournir ; il est donc
-servi avec un repli sur des données de démonstration, signalé comme tel à l'écran. Le
-mémoire ne présente donc pas ce dashboard comme un résultat du projet, mais comme une
-illustration de ce que la zone GOLD pourrait exposer.
+**CU6 — Consulter les vues de gouvernance (déduplication et consentement).** *Acteur* : un
+lecteur du frontend DataViz. *Prérequis* : la zone SILVER/GOLD peuplée, ou le jeu de
+démonstration. *Déroulement* : le frontend appelle l'API REST des indicateurs du warehouse et
+affiche les KPIs de déduplication (masters, doublons, méthodes) et de consentement
+(accords/refus par finalité). *Résultat attendu* : des indicateurs calculés sur les données
+dédupliquées, donc sans double comptage. *Cas limite* : ce frontend est explicitement
+**optionnel** dans le cahier des charges ; il est servi avec un repli sur un jeu de
+démonstration chaque fois que Hive/Spark ne répond pas, ce repli étant signalé comme tel à
+l'écran. Le mémoire ne présente donc pas le frontend comme un résultat du projet, mais comme
+une illustration de ce que la zone GOLD pourrait exposer.
 
 ## 4.9 Gestion de la configuration
 

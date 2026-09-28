@@ -360,13 +360,11 @@ Pour résoudre l'erreur SSH actuelle (`Could not establish connection... SSH ses
 Résolvez l'erreur SSH en configurant le VPN et les credentials. Je suis là pour aider avec d'autres questions ou erreurs !
 
 
-# TABLEAU RECAPITULATION DE VISUALIZATION 
+# TABLEAU RECAPITULATION DE VISUALIZATION
 
 __________________________________________________________________
-| Route / Tableau                                                   | Données nécessaires dans le schéma pivot                                                         | Comment le pivot répond                                                                                                                        |
-| ----------------------------------------------------------------- | ------------------------------------------------------------------------------------------------ | ---------------------------------------------------------------------------------------------------------------------------------------------- |
-| `/rma` → Tableau 5 - Diagnostics consultations externes           | `patient_uuid`, `age_group`, `sex`, `diagnostic_code`, `date_event`, `service`                   | Chaque consultation est un événement pivot : filtrer par type « consultation » et grouper par diagnostic/tranche d’âge pour remplir le tableau |
-| `/rma/morbidite` → Tableau 9 : Morbidité & Mortalité hospitalière | `patient_uuid`, `service`, `admission_date`, `discharge_date`, `outcome`, `sex`, `age_group`     | Les hospitalisations sont des événements pivot : grouper par service, sexe, tranche d’âge et outcome pour générer les totaux et décès          |
-| `/rma/maternite` → Tableaux 11 & 12 : CPN & Maternité             | `patient_uuid`, `gestational_age`, `age_group`, `complications`, `interventions`, `newborn_uuid` | Chaque événement maternité ou CPN est pivoté : possibilité de compter les consultations prénatales, naissances, complications et prophylaxie   |
-| `/rma/laboratoire` → Tableau 16 - Activité de laboratoires        | `patient_uuid`, `test_type`, `result`, `date_event`, `service`                                   | Chaque test de labo est un événement pivot : on peut agréger par type de test, résultat et service pour remplir le tableau                     |
-| `/rma/paludisme` → Tableau 25 : Paludisme                         | `patient_uuid`, `diagnostic_code`, `date_event`, `age_group`, `sex`, `location`                  | Les diagnostics de paludisme sont filtrés depuis le pivot par `diagnostic_code` spécifique pour le tableau, avec regroupement par âge et sexe  |
+| Route / Page                                  | Données nécessaires dans les couches SILVER/GOLD                                  | Comment le backend répond                                                            |
+| --------------------------------------------- | --------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------- |
+| `/synthese` → Synthèse gouvernance            | KPIs `master_patient_id`, `is_duplicate`, `match_method` + consentements GOLD      | `/api/governance/duplicates` + `/api/governance/consent`, résultat brut sans recalcul |
+| `/doublons` → KPIs de déduplication           | `master_patient_id`, `is_duplicate`, `match_method` (datalake_silver.patient_fhir) | Comptage maîtres/doublons et taux sur la table SILVER, répartition par méthode        |
+| `/gouvernance` → Consentements purpose-by-purpose | `master_patient_id`, `patient_uuid`, `purpose`, `granted`, `recorded_at` (datalake_gold.patient_consent_gold) | Listing brut + stats agrégées (total, accords, patients) côté backend                |

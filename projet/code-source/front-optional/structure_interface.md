@@ -1,4 +1,4 @@
-# Structure de l'interface - RMA DataViz
+# Structure de l'interface - DataViz Gouvernance
 
 ## Architecture generale de l'interface
 
@@ -7,28 +7,21 @@ L'application suit un layout compose de trois elements principaux :
 ```
 +------------------------------------------------------------------+
 |                           HEADER                                  |
-|  [DateRangePicker] [Sexe: Tous v] [Voir] [Reset]  [User] [⚙] [⏻]|
+|  [Rappel plateforme gouvernance]                [User] [⚙] [⏻]   |
 +------------------------------------------------------------------+
 |            |                                                       |
 |  SIDEBAR   |                    CONTENU PRINCIPAL                  |
 |  (240px)   |                                                       |
 |            |  +---------------------------------------------------+|
 |  [Logo]    |  |                                                   ||
-|  RMA DataV |  |              Pages / Visualisations                ||
+|  DataViz   |  |              Pages Gouvernance                    ||
 |            |  |                                                   ||
-|  Derniere  |  |                                                   ||
-|  synchro   |  |                                                   ||
+|  Synthese  |  |                                                   ||
+|  Doublons  |  |                                                   ||
+|  Gouv.     |  |                                                   ||
+|  Utilisat. |  |                                                   ||
+|  Param.    |  |                                                   ||
 |            |  +---------------------------------------------------+|
-|  Accueil   |                                                       |
-|  Utilisat. |                                                       |
-|            |                                                       |
-|  Rapports  |                                                       |
-|  > T.5     |                                                       |
-|  > T.9     |                                                       |
-|  > T.11/12 |                                                       |
-|  > T.16    |                                                       |
-|  > T.25    |                                                       |
-|            |                                                       |
 +------------------------------------------------------------------+
 ```
 
@@ -42,9 +35,8 @@ L'application suit un layout compose de trois elements principaux :
 
 ### Providers
 
-L'interface est enveloppee par deux providers :
+L'interface est enveloppee par le provider :
 1. **`Providers`** (`src/components/Providers.tsx`) : Fournit le `SessionProvider` de NextAuth
-2. **`FiltersProvider`** (`src/context/FiltersContext.tsx`) : Fournit l'etat des filtres globaux (periode, sexe)
 
 ---
 
@@ -55,18 +47,15 @@ L'interface est enveloppee par deux providers :
 | Route | Page | Description |
 |-------|------|-------------|
 | `/login` | `src/app/login/page.tsx` | Page de connexion (pas de Sidebar/Header) |
-| `/` | `src/app/page.tsx` | Redirige automatiquement vers `/login` |
+| `/` | `src/app/page.tsx` | Redirige automatiquement vers `/synthese` |
 
 ### Pages authentifiees
 
 | Route | Page | Composant client | Description |
 |-------|------|------------------|-------------|
-| `/dashboard` | `src/app/dashboard/page.tsx` | `DashboardClient.tsx` | Tableau de bord avec KPIs |
-| `/rma` | `src/app/rma/page.tsx` | `DiagnosticsHeatmap.tsx` | Heatmap des diagnostics (Tableau 5) |
-| `/rma/morbidite` | `src/app/rma/morbidite/page.tsx` | `MortalityChart.tsx` | Taux de mortalite (Tableau 9) |
-| `/rma/maternite` | `src/app/rma/maternite/page.tsx` | `MalariaKPI.tsx` | Maternite et CPN (Tableaux 11 & 12) |
-| `/rma/laboratoire` | `src/app/rma/laboratoire/page.tsx` | `LaboratoryChart.tsx` | Activite laboratoire (Tableau 16) |
-| `/rma/paludisme` | `src/app/rma/paludisme/page.tsx` | `MalariaKPI.tsx` | Paludisme (Tableau 25) |
+| `/synthese` | `src/app/synthese/page.tsx` | — | Synthese : qualite d'identite + consentement + chaine |
+| `/doublons` | `src/app/doublons/page.tsx` | — | KPIs de de-duplication (masters, doublons, taux, methodes) |
+| `/gouvernance` | `src/app/gouvernance/page.tsx` | — | Consentements purpose-by-purpose + filtre par finalite |
 | `/settings` | `src/app/settings/page.tsx` | `SettingsClient.tsx` | Parametres (en cours de developpement) |
 
 ### Pages admin uniquement
@@ -83,22 +72,15 @@ L'interface est enveloppee par deux providers :
 Sidebar (240px, fond gris fonce #1a1a2e)
 |
 +-- Header Sidebar
-|   +-- Logo (icone Activity + "RMA DataViz")
-|   +-- "Derniere synchro : <date>"
+|   +-- Logo (icone Activity + "DataViz Gouvernance")
 |
 +-- Menu principal
-|   +-- Accueil (icone Home)          -> /dashboard
-|   +-- Gestion des utilisateurs*     -> /users
-|       (icone Users, admin seulement)
-|
-+-- Section "Rapports RMA" (collapsible)
-    +-- Tableau 5 - Diagnostics...    -> /rma
-    +-- Tableau 9 - Morbidite*        -> /rma/morbidite
-    +-- Tableaux 11 & 12 - Maternite* -> /rma/maternite
-    +-- Tableau 16 - Laboratoire*     -> /rma/laboratoire
-    +-- Tableau 25 - Paludisme*       -> /rma/paludisme
-
-* = en developpement (commente dans le code)
+|   +-- Synthese (icone Layers)            -> /synthese
+|   +-- Doublons (icone CopyCheck)         -> /doublons
+|   +-- Gouvernance (icone ShieldCheck)    -> /gouvernance
+|   +-- Gestion des utilisateurs* (icone Users) -> /users
+|       (admin seulement)
+|   +-- Parametres (icone Settings)        -> /settings
 ```
 
 ---
@@ -108,11 +90,9 @@ Sidebar (240px, fond gris fonce #1a1a2e)
 ```
 Header (pleine largeur, bordure inferieure, fond blanc)
 |
-+-- Gauche (filtres)
-|   +-- DatePickerWithRange (280px)
-|   +-- Select Sexe (120px) : Tous / Homme / Femme
-|   +-- Bouton "Voir" (applique les filtres)
-|   +-- Bouton "Reset" (reinitialise les filtres)
++-- Gauche
+|   +-- Rappel : "Plateforme de gouvernance des donnees patients
+|       — donnees synthetiques et de demonstration."
 |
 +-- Droite (infos utilisateur)
     +-- Icone User + email de l'utilisateur
@@ -122,95 +102,57 @@ Header (pleine largeur, bordure inferieure, fond blanc)
 
 ---
 
-## Structure du Dashboard
+## Structure de la page Synthese
 
 ```
-Dashboard (/dashboard)
+Synthese (/synthese)
 |
-+-- KPI Cards (grille responsive 1-2-4 colonnes)
-|   +-- Total Admissions (icone BarChart3, bordure rouge)
-|   +-- Taux Mortalite infantile (icone HeartPulse, bordure verte)
-|   +-- Taux Mortalite maternelle (icone Venus, bordure orange)
++-- MockedBanner (si au moins une source repond en mode mock)
 |
-+-- Top 5 des pathologies
-    +-- Titre : "Top 5 des pathologies du <date_debut> au <date_fin>"
-    +-- Tableau
-        +-- En-tete : Code CIM-10 | Pathologie | Nombre de cas
-        +-- Lignes : donnees fetch depuis /rma/top_diagnostics
++-- Cartes KPI (grille 1-2 colonnes)
+|   +-- Qualite d'identite (icone CopyCheck)
+|   |   +-- Patients maîtresses | Doublons resolus | Taux de doublon
+|   +-- Consentement (icone ShieldCheck)
+|       +-- Patients concernes | Accords (granted/total) | Refus
+|
++-- Chaine de traitement
+    +-- RAW : donnees sources conservees telles quelles
+    +-- SILVER : donnees normalisees, nettoyees, validees
+    +-- GOLD : donnees de reference, dedupliquees, pretes a l'usage
 ```
 
 ---
 
-## Structure des pages RMA
-
-### Page Diagnostics (Tableau 5)
+## Structure de la page Doublons
 
 ```
-/rma
+Doublons (/doublons)
 |
-+-- Heatmap D3.js
-|   +-- Axe Y : Diagnostics CIM-10
-|   +-- Axe X : Tranches d'age (0-28j, 29-59j, 2-11m, 1-4a, 5-14a, 15-24a, 25-59a, 60+)
-|   +-- Couleurs : Degradation representant l'intensite
-|   +-- Tooltips : Valeurs exactes au survol
++-- MockedBanner (si mock)
 |
-+-- Tableau pagine
-    +-- Colonnes : Code CIM-10 | Diagnostic | Total | Detail par age
-    +-- Pagination et tri
++-- Cartes KPI
+|   +-- Patients en base | Patients maîtresses | Doublons | Taux
+|
++-- Tableau de repartition par methode
+    +-- Colonnes : Methode (exacte / probabiliste) | Nb de correspondances | Justification
 ```
 
-### Page Morbidite (Tableau 9)
+---
+
+## Structure de la page Gouvernance
 
 ```
-/rma/morbidite
+Gouvernance (/gouvernance)
 |
-+-- Bar chart horizontal D3.js
-    +-- Axe Y : Diagnostics CIM-10
-    +-- Axe X : Taux de mortalite (%)
-    +-- Couleurs : Par service (medecine, chirurgie, maternite)
-    +-- Tooltips : Details par tranche d'age
-```
-
-### Page Maternite (Tableaux 11 & 12)
-
-```
-/rma/maternite
++-- MockedBanner (si mock)
 |
-+-- KPI Cards
-|   +-- Taux CPN >= 4
-|   +-- Deces maternels
-|   +-- Avortements
++-- Cartes KPI (consentement)
+|   +-- Patients concernes | Accords | Taux d'accord
 |
-+-- Line chart D3.js
-    +-- Axe X : Mois
-    +-- Axe Y : Nombre
-    +-- Lignes : CPN1 vs Accouchements
-```
-
-### Page Laboratoire (Tableau 16)
-
-```
-/rma/laboratoire
++-- Filtre par finalite (select : Toutes / api_access / research / analytics)
 |
-+-- Donut chart D3.js (volume d'examens par type)
-|
-+-- Bar chart D3.js (taux de positivite par type)
-    +-- Types : BK, BH, palu, NFS, VIH, syphilis, hepatitis...
-```
-
-### Page Paludisme (Tableau 25)
-
-```
-/rma/paludisme
-|
-+-- KPI Cards
-|   +-- Taux positivite TDR
-|   +-- Taux de traitement
-|   +-- Prevention (moustiquaires)
-|
-+-- Line chart D3.js
-    +-- Evolution mensuelle : cas vs cas traites
-    +-- Visualisation des pics saisonniers
++-- Tableau des consentements
+    +-- Colonnes : Patient maître | UUID | Nom | Finalite | Decision | Date
 ```
 
 ---
@@ -278,13 +220,6 @@ L'application utilise **shadcn/ui** (New York style, Zinc base) avec les composa
 - `Drawer`
 - `Popover`
 - `Toast` / `Toaster`
-
-### Composants de donnees
-- `Table`
-- `Pagination`
-- `Carousel`
-- `Calendar`
-- `DatePicker` (via react-day-picker)
 
 ### Composants utilitaires
 - `Collapsible`

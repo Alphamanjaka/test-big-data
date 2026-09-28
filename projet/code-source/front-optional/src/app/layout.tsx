@@ -16,8 +16,8 @@ import { Providers } from "@/components/Providers";
 // });
 
 export const metadata: Metadata = {
-  title:  "RMA DataViz",
-  description: "Visualisation du Data Lake",
+  title:  "DataViz Gouvernance",
+  description: "Gouvernance des données patients — déduplication, consentement, audit",
 };
 
 export default function RootLayout({

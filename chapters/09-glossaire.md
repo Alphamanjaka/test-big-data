@@ -147,7 +147,8 @@ objets :
   (§ 2.5, 6.5).
 - `engine/governance/app.py` : l'API de gouvernance — la liste des patients, le détail d'un
   patient, l'audit (§ 5.5, 6.5).
-- `hive_api.py` : l'API REST des données GOLD, exposée sur les routes `/rma/*` (§ 6.5, 6.6).
+- `hive_api.py` : l'API Flask des indicateurs du warehouse, exposée sur les routes
+  `/api/governance/*` (déduplication, consentement) (§ 6.5, 6.6).
 - `seed_governance.py` : prépare un jeu de démonstration — utilisateurs de démonstration et
   consentements (§ 8.3, 8.4).
 - `sql/schema.sql` : la structure de la base centrale, relisible et rejouable (§ 2.5, 5.4).

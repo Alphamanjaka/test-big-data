@@ -24,13 +24,13 @@ export default function Login() {
       password,
     });
 
-    setLoading(false);
+setLoading(false);
 
     if (res?.error) {
-      setErrorMessage("Échec de connexion : email ou mot de passe invalide.");
+      setErrorMessage("Adresse email ou mot de passe invalide.");
       console.error("Erreur NextAuth:", res.error);
     } else {
-      router.push("/dashboard");
+      router.push("/synthese");
     }
   }
 
@@ -41,13 +41,10 @@ export default function Login() {
         className="w-full max-w-sm space-y-5 bg-white p-6 rounded shadow-md"
       >
 
-        <div className="p-3 border-b border-gray-700 text-center">
+        <div className="p-3 border-b border-gray-300 text-center">
           <div className="flex items-center justify-center space-x-1">
-            <Activity className="h-6 w-6 text-blue-400" />
-            <h1 className="font-semibold tracking-wide">RMA DataViz</h1>
-          </div>
-          <div className="text-sm text-gray-100">
-            <h1 className="text-2xl font-bold text-center text-gray-800">Connexion</h1>
+            <Activity className="h-6 w-6 text-blue-600" />
+            <h1 className="font-semibold tracking-wide text-gray-800">DataViz Gouvernance</h1>
           </div>
         </div>
 

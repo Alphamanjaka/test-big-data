@@ -54,7 +54,7 @@ Le présent **dépôt unique** est la fusion des deux projets :
 3. **Dédupliquer intelligemment** : matching exact puis probabiliste, master patient, identity map,
    **logique toujours explicable** (score + méthode + seuil).
 4. **Gouverner les accès** : rôles (RBAC), **consentement purpose-by-purpose**, audit d'accès, clés API.
-5. **Visualiser** les données (dashboard RMA) et les indicateurs de gouvernance — frontend considéré
+5. **Visualiser** les indicateurs de gouvernance (déduplication, consentement) — frontend considéré
    **optionnel** (l'essentiel du stage porte sur les concepts Big Data et le consentement).
 6. **Évaluer** la déduplication sur données synthétiques avec vérité terrain (précision / rappel / F1).
 
@@ -96,12 +96,13 @@ suivi `sync_metadata.json` (UTC+3).
 
 ### 4.4 Backend API
 
-- **API données (Flask + PySpark + Hive)** sur GOLD : endpoints `/rma/*` et `/api/rma/*` (mocks backend si GOLD sparse).
+- **API données (Flask + PySpark + Hive)** sur SILVER/GOLD : endpoints `/api/governance/duplicates`
+  et `/api/governance/consent` (mocks backend si Spark/Hive indisponible).
 - **API plateforme (FastAPI, port 8000, hôte Windows)** : `/health`, `/metrics`, `/patients`, `/patients/{master_patient_id}`, `/audit`, `/consent` — payloads RAW jamais exposés. Lancement : `uvicorn engine.governance.app:app --port 8000`.
 
 ### 4.5 Frontend (optionnel)
 
-- `front-optional/` : Next.js (dashboard KPI, 5 pages RMA D3.js, gestion utilisateurs, settings).
+- `front-optional/` : Next.js (3 pages DataViz : synthèse, doublons, gouvernance, gestion utilisateurs, settings).
 - Conservé tel que `visualisation_app/` du projet Mavis, sans effort supplémentaire.
 
 ## 5. Architecture technique
@@ -171,7 +172,7 @@ Normalisation : `" Jean Rakoto " / "JEAN RAKOTO" / "jean rakoto"` → `jean rako
 | Observation | patient_uuid, mortality, parity, gravida, live_births |
 
 **GOLD** (`datalake_gold.patient_events_gold`, 18 colonnes) : patient_uuid, source_patient_id, name,
-gender, birth_date, age, age_tranche (8 tranches RMA), encounter_id, admission_date, discharge_date,
+gender, birth_date, age, age_tranche (8 tranches d'âge), encounter_id, admission_date, discharge_date,
 visit_type, diagnosis_code, category, diagnosis, mortality, parity, gravida, live_births.
 
 ### 7.3 PostgreSQL central (plateforme)

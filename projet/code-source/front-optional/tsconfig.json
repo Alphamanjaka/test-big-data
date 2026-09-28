@@ -22,7 +22,7 @@
       "@/*": ["./src/*"]
     }
   },
-  "include": ["next-env.d.ts", "**/*.ts", "**/*.tsx", ".next/types/**/*.ts", "prisma/seed.js", "next-auth.d.ts", "src/app/dashboard/page.old.tsx.old"],
+  "include": ["next-env.d.ts", "**/*.ts", "**/*.tsx", ".next/types/**/*.ts", "prisma/seed.js", "next-auth.d.ts"],
   "exclude": [
     "node_modules",
     "src/components/ui/accordion.tsx",

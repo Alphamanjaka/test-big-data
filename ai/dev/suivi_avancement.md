@@ -34,10 +34,10 @@ Phase 6 éval+tests [██████████] 100%   Commit initial git [
 ## Priorités actuelles
 
 1. **[Phase 6]** Évaluation easy/medium/hard + `pytest` moteur **23/23** **fait** ; re-run pipeline VM **fait**
-   (4/4 vert, 214 lignes / 145 masters / 69 doublons) ; `test_api.sh` **fait (14/14)** ; **commit git
+   (4/4 vert, 214 lignes / 145 masters / 69 doublons) ; `test_api.sh` **fait (3/3)** ; **commit git
    initial fait** (`2004865`, 07/09).
 2. **[Code]** Validation VM OK : `run_pipeline.sh` bout en bout (moteur intégré dans
-   `create_silver.py`, consent GOLD 145 lignes) ; API réelle `RMA_USE_MOCK=false` 14/14 PASS ;
+   `create_silver.py`, consent GOLD 145 lignes) ; API gouvernance réelle **3/3 PASS** ;
    beeline HS2 instable → validation par scripts Spark (`provision/metadata/check_data.py`).
 3. **[Mémoire]** Rédaction `Mon_Memoire/chapters/` (01→06) **faite** (08/09) + `references/bibliographie.md`
    (12 réf. vérifiées) ; **rapport de stage** `documents/rapport_stage.md` + **slides**
@@ -165,7 +165,7 @@ dans `Mon_Memoire` (subtree → `projet/code-source/`, `projet/mvp/`, `archives/
 - 07/09 : **Phase 6 VM validée** — cause racine de l'explosion 11 614 lignes corrigée dans `create_silver.py`
   (`patient_uuid` exclu du mapping dynamique, écritures fiabilisées via tmp+rename) ; `run_pipeline.sh` 4/4 vert
   (SILVER 214 = 76+76+62, 145 masters, 69 doublons) ; GOLD patients-only (events 0, consent 145) ; API réelle
-  (`RMA_USE_MOCK=false`) **14/14 PASS** ; KPIs gouvernance réels servis hors mock. Reste : **commit git initial**.
+  **3/3 PASS** ; KPIs gouvernance réels servis hors mock. Reste : **commit git initial**.
 - 07/09 : **commit git initial fait** (`2004865`) — `git init` (repo préexistait), `.gitignore` corrigé
   (`**/provision/metadata/`, `**/provision/config/data_sources.json`), `git rm --cached` des métadonnées
   runtime ; message « fix: ELT silver/gold 76×76 dedup explosion + untrack runtime metadata » ; tree propre.
@@ -342,9 +342,10 @@ dans `Mon_Memoire` (subtree → `projet/code-source/`, `projet/mvp/`, `archives/
    dans la légende, le corps et un encadre, à remplacer par les chiffres réels ; ce qui est
    réellement étayé est distingué (budget logiciel et matériel **réellement nul**, coût humain
    **non étayé**) ; **§ 4.11 synthèse** (ancienne 4.7). **6 annexes** dans le nouveau
-   `references/annexes.md`, après la bibliographie comme dans les deux références : A pipeline
-   ELT, B base centrale, C moteur de rapprochement, D API de gouvernance, E API GOLD et vues
-   RMA, F données synthétiques et vérité terrain — en prose, sans recopier le code, chaque
+`references/annexes.md`, après la bibliographie comme dans les deux références : A pipeline
+    ELT, B base centrale, C moteur de rapprochement, D API de gouvernance, E API des indicateurs
+    du warehouse (déduplication / consentement), F données synthétiques et vérité terrain — en prose,
+    sans recopier le code, chaque
    annexe renvoyant à son chapitre ; chemins, 9 tables et fonctions **vérifiés avant
    rédaction**. L'exporteur insère les annexes après la bibliographie (fichier absent →
    avertissement, pas de page vide) ; le Tableau 2 du ch. 1 mentionne désormais les annexes.
@@ -360,6 +361,5 @@ dans `Mon_Memoire` (subtree → `projet/code-source/`, `projet/mvp/`, `archives/
    calcul de maximum a échoué silencieusement. Le maximum est maintenant déduit des légendes,
    avec détection des numéros manquants ou en double, plus le contrôle de la bibliographie, des
    annexes et des annexes A..F.
-   **Reste : relecture humaine dans Word**, et l'étape 4 du front (3 pages de plus en plus des
-   RMA, bandeau `mocked`, KPI `CPN4` à corriger, puis les 3 passages du mémoire qui en dépendent
-   : § 1.3, § 1.5, § 4.1).
+**Reste : relecture humaine dans Word**, et la suite du front (pages gouvernance, bandeau
+    `mocked`, et les passages du mémoire qui en dépendent : § 1.3, § 1.5, § 4.1).

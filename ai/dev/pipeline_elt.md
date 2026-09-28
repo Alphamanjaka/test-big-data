@@ -43,7 +43,7 @@ Logs : `provision/logs/elt.log` · Suivi : `provision/metadata/sync_metadata.jso
 - **Lectures RAW robustes** : fallbacks Hive `{src}.{table}` → Hive `{table}` → Parquet ; gérer
   `FIXED_LEN_BYTE_ARRAY` (cast String des colonnes binary/decimal).
 - **GOLD** : réduire explicitement les colonnes AVANT jointures (sinon `AMBIGUOUS_REFERENCE: name`),
-  tranches d'âge RMA via UDF, `age` NULL → `"unknown"`.
+  tranches d'âge (8 classes) via UDF, `age` NULL → `"unknown"`.
 
 ## 4. Optimisation VM (8 Go) — dans CHAQUE session Spark
 

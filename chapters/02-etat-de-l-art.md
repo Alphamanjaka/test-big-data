@@ -191,7 +191,7 @@ Concrètement, la zone **RAW** reçoit la donnée brute en parquet sous
 `/datalake/raw/{source}/{table}` et sous forme de tables externes ; la zone **SILVER**
 porte la donnée nettoyée, **normalisée FHIR**, avec les doublons marqués
 (`datalake_silver.*_fhir`, 4 tables) ; la zone **GOLD** contient les agrégats prêts à
-l'analyse (`datalake_gold.patient_events_gold`, 18 colonnes, 8 tranches RMA).
+l'analyse (`datalake_gold.patient_events_gold`, 18 colonnes, 8 tranches d'âge).
 
 Chaque zone est un **état distinct de la donnée**, ce qui apporte trois choses : la
 **traçabilité** (on sait d'où vient chaque valeur), le **rejeu** (relancer un

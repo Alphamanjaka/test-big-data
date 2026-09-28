@@ -5,116 +5,29 @@ export const API_BASE_URL =
   process.env.NEXT_PUBLIC_API_URL || "http://localhost:5000";
 
 // ------------------------------------------------------------
-// Types (alignés sur les réponses du backend Flask)
+// Enveloppe et helpers
 // ------------------------------------------------------------
-export interface RmaFilters {
-  start?: string | null;
-  end?: string | null;
-  sex?: string;
-  limit?: number;
-  page?: number;
-}
-
-export interface AdmissionsSummary {
-  total_admissions: number;
-  mortalite_infantile: number | null;
-  mortalite_maternelle: number | null;
-}
-
-export interface TopDiagnostic {
-  diagnosis_code: string;
-  diagnosis: string;
-  total: number;
-}
-
-export interface AgeColumns {
-  age_0_28j: number;
-  age_29_59j: number;
-  age_2_11m: number;
-  age_1_4a: number;
-  age_5_14a: number;
-  age_15_24a: number;
-  age_25_59a: number;
-  age_60plus: number;
-}
-
-export interface Diagnostic {
-  diagnosis_code: string;
-  diagnosis: string;
-  total: number;
-  age_0_28j: number;
-  age_29_59j: number;
-  age_2_11m: number;
-  age_1_4a: number;
-  age_5_14a: number;
-  age_15_24a: number;
-  age_25_59a: number;
-  age_60plus: number;
-}
-
-export interface MortalityRow {
-  service: string;
-  code: string;
-  diagnostic: string;
-  cas: number;
-  deces: number;
-}
-
-export interface MaternityPoint {
-  month: string;
-  total: number;
-  accouchements: number;
-  deces_maternels: number;
-  live_births_total: number;
-}
-
-export interface LaboratoryRow {
-  examen: string;
-  total: number;
-  nouveaux: number;
-  positifs: number;
-}
-
-export interface MalariaData {
-  consultants_fievre: number;
-  tdr_effectues: number;
-  lames_effectuees: number;
-  tdr_positifs: number;
-  lames_positives: number;
-  traites: number;
-  moustiquaires_distribuees: number;
-  prevention: {
-    enfants_0_5ans: number;
-    femmes_enceintes: number;
-    population_generale: number;
-  };
-  evolution_mensuelle: Array<{ mois: string; cas: number; traites: number }>;
-}
-
-// ------------------------------------------------------------
-// Helpers
-// ------------------------------------------------------------
-function buildQuery(filters: RmaFilters = {}): string {
-  const params = new URLSearchParams();
-  if (filters.start) params.set("start", filters.start);
-  if (filters.end) params.set("end", filters.end);
-  if (filters.sex && filters.sex !== "all") params.set("sex", filters.sex);
-  if (filters.limit) params.set("limit", String(filters.limit));
-  if (filters.page) params.set("page", String(filters.page));
-  const qs = params.toString();
-  return qs ? `?${qs}` : "";
-}
-
 interface ApiEnvelope {
   success?: boolean;
   data?: unknown;
-  last_sync?: string;
+  mocked?: boolean;
   [key: string]: unknown;
 }
 
 /**
- * Fetch un endpoint RMA. Lève une erreur si le backend est
- * indisponible ou en erreur, sinon renvoie l'enveloppe API.
+ * Résultat d'un endpoint : les données, et le fait qu'elles soient ou non
+ * servies par le jeu de démonstration. Le backend le signale dans l'enveloppe
+ * (`mocked`), et l'interface doit le montrer : un indicateur de démonstration
+ * lu comme une mesure réelle est le principal risque de ce tableau de bord.
+ */
+export interface ApiResult<T> {
+  data: T;
+  mocked: boolean;
+}
+
+/**
+ * Fetch un endpoint du backend de gouvernance. Lève une erreur si le backend
+ * est indisponible ou en erreur, sinon renvoie l'enveloppe API.
  */
 async function fetchApi(path: string): Promise<ApiEnvelope> {
   const res = await fetch(`${API_BASE_URL}${path}`, { cache: "no-store" });
@@ -135,56 +48,69 @@ function dataOf<T>(env: ApiEnvelope): T {
   return env.data as T;
 }
 
+/** Combine `dataOf` et le drapeau `mocked` de l'enveloppe. */
+function resultOf<T>(env: ApiEnvelope): ApiResult<T> {
+  return { data: dataOf<T>(env), mocked: env.mocked === true };
+}
+
 // ------------------------------------------------------------
-// Endpoints RMA
+// Endpoints gouvernance (moteur de déduplication et consentement)
 // ------------------------------------------------------------
-export async function getAdmissionsSummary(filters?: RmaFilters): Promise<AdmissionsSummary> {
-  const env = await fetchApi(`/rma/admissions_summary${buildQuery(filters)}`);
-  return dataOf<AdmissionsSummary>(env);
+
+/** Finalités autorisées par le moteur : cf. `engine/governance/consent.py`. */
+export type ConsentPurpose = "api_access" | "research" | "analytics";
+
+export const CONSENT_PURPOSES: ConsentPurpose[] = [
+  "api_access",
+  "research",
+  "analytics",
+];
+
+export const PURPOSE_LABELS: Record<ConsentPurpose, string> = {
+  api_access: "Accès API",
+  research: "Recherche",
+  analytics: "Analyse",
+};
+
+/** KPI de déduplication : volumétrie, doublons, taux, répartition par méthode. */
+export interface GovernanceDuplicates {
+  total_patients: number;
+  total_masters: number;
+  duplicates: number;
+  duplicate_rate: number;
+  by_method: Record<string, number>;
 }
 
-export async function getTopDiagnostics(filters?: RmaFilters): Promise<TopDiagnostic[]> {
-  const env = await fetchApi(
-    `/rma/top_diagnostics${buildQuery({ ...filters, limit: filters?.limit ?? 5 })}`,
-  );
-  return dataOf<TopDiagnostic[]>(env);
+export interface ConsentRow {
+  master_patient_id: string;
+  patient_uuid?: string;
+  name: string;
+  purpose: ConsentPurpose;
+  granted: boolean;
+  recorded_at: string;
 }
 
-export async function getDiagnosticsHeatmap(filters?: RmaFilters): Promise<Diagnostic[]> {
-  const env = await fetchApi(
-    `/rma/diagnostics_heatmap${buildQuery({ ...filters, limit: filters?.limit ?? 15 })}`,
-  );
-  return dataOf<Diagnostic[]>(env);
+export interface ConsentStats {
+  total_consents: number;
+  granted_count: number;
+  patients: number;
 }
 
-export async function getDiagnosticsList(filters?: RmaFilters): Promise<Diagnostic[]> {
-  const env = await fetchApi(
-    `/rma/diagnostics_list${buildQuery({ ...filters, limit: filters?.limit ?? 20, page: filters?.page ?? 1 })}`,
-  );
-  return dataOf<Diagnostic[]>(env);
+export interface ConsentResult extends ApiResult<ConsentRow[]> {
+  stats: ConsentStats;
 }
 
-export async function getMortality(filters?: RmaFilters): Promise<MortalityRow[]> {
-  const env = await fetchApi(`/api/rma/mortality${buildQuery(filters)}`);
-  return dataOf<MortalityRow[]>(env);
+export async function getDuplicates(): Promise<ApiResult<GovernanceDuplicates>> {
+  const env = await fetchApi(`/api/governance/duplicates`);
+  return resultOf<GovernanceDuplicates>(env);
 }
 
-export async function getMaternity(filters?: RmaFilters): Promise<MaternityPoint[]> {
-  const env = await fetchApi(`/api/rma/maternity${buildQuery(filters)}`);
-  return dataOf<MaternityPoint[]>(env);
-}
-
-export async function getLaboratory(filters?: RmaFilters): Promise<LaboratoryRow[]> {
-  const env = await fetchApi(`/api/rma/laboratory${buildQuery(filters)}`);
-  return dataOf<LaboratoryRow[]>(env);
-}
-
-export async function getMalaria(filters?: RmaFilters): Promise<MalariaData> {
-  const env = await fetchApi(`/api/rma/malaria${buildQuery(filters)}`);
-  return dataOf<MalariaData>(env);
-}
-
-export async function getLastSync(): Promise<string> {
-  const env = await fetchApi("/rma/last_sync");
-  return env.last_sync ?? "";
+export async function getConsent(limit = 200): Promise<ConsentResult> {
+  const env = await fetchApi(`/api/governance/consent?limit=${limit}`);
+  const stats: ConsentStats = {
+    total_consents: (env.total_consents as number) ?? 0,
+    granted_count: (env.granted_count as number) ?? 0,
+    patients: (env.patients as number) ?? 0,
+  };
+  return { ...resultOf<ConsentRow[]>(env), stats };
 }

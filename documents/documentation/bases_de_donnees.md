@@ -118,7 +118,7 @@ Construite comme **lampe de chevet de `encounter_fhir`** :
 |----------|------------|
 | `patient_uuid`, `source_patient_id`, `name`, `gender`, `birth_date` | patient_fhir |
 | `age` (années, `datediff / 365.25`) | calculé |
-| `age_tranche` (8 classes démo RMA, `unknown` si absent) | `pipeline.yaml → gold.age_tranches` |
+| `age_tranche` (8 classes démo d'âge, `unknown` si absent) | `pipeline.yaml → gold.age_tranches` |
 | `encounter_id`, `admission_date`, `discharge_date`, `visit_type` | encounter_fhir |
 | `diagnosis_code`, `category`, `diagnosis` | condition_fhir |
 | `mortality`, `parity`, `gravida`, `live_births` | observation_fhir |

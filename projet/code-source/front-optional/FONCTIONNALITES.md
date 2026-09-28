@@ -1,14 +1,15 @@
-# Fonctionnalites - RMA DataViz
+﻿# Fonctionnalites - DataViz Gouvernance
 
 ## Table des matieres
 
 1. [Authentification et autorisation](#1-authentification-et-autorisation)
-2. [Tableau de bord (Dashboard)](#2-tableau-de-bord-dashboard)
-3. [Filtres globaux](#3-filtres-globaux)
-4. [Visualisations RMA](#4-visualisations-rma)
-5. [Gestion des utilisateurs](#5-gestion-des-utilisateurs)
-6. [Navigation et interface](#6-navigation-et-interface)
-7. [Fichiers de stockage](#7-fichiers-de-stockage)
+2. [Page de synthese](#2-page-de-synthese)
+3. [Doublons](#3-doublons)
+4. [Gouvernance et consentement](#4-gouvernance-et-consentement)
+5. [Indicateur de donnees de demonstration](#5-indicateur-de-donnees-de-demonstration)
+6. [Gestion des utilisateurs](#6-gestion-des-utilisateurs)
+7. [Navigation et interface](#7-navigation-et-interface)
+8. [Fichiers de stockage](#8-fichiers-de-stockage)
 
 ---
 
@@ -19,22 +20,22 @@
 - Formulaire de connexion avec email et mot de passe
 - Authentification via **NextAuth v4** avec strategy **JWT**
 - Messages d'erreur en cas de identifiants incorrects
-- Redirection automatique vers la page demande apres connexion
+- Redirection automatique vers `/synthese` apres connexion
 
 ### Roles et permissions
 
 | Role | Acces |
 |------|-------|
 | **ADMIN** | Toutes les routes + gestion des utilisateurs (`/users`) |
-| **MEDECIN** | Dashboard, parametres, visualisations RMA |
+| **MEDECIN** | Parametres, Synthese, Doublons, Gouvernance |
 
 ### Protection des routes
 
 Le middleware (`src/middleware.ts`) verifie le token JWT pour chaque requete :
 - Routes admin (`/users/*`) : requis role `ADMIN`
-- Routes protegees (`/dashboard`, `/settings`, `/rma/*`) : requis authentification
+- Routes protegees (`/settings`, `/doublons`, `/gouvernance`, `/synthese`, `/users`) : requis authentification
 - Non connecte : redirection vers `/login?callbackUrl=<route>`
-- Non autorise (MEDECIN sur route admin) : redirection vers `/dashboard?denied=1`
+- Non autorise (MEDECIN sur route admin) : redirection vers `/synthese?denied=1`
 
 ### Comptes par defaut
 
@@ -45,194 +46,103 @@ Le middleware (`src/middleware.ts`) verifie le token JWT pour chaque requete :
 
 ---
 
-## 2. Tableau de bord (Dashboard)
+## 2. Page de synthese
 
-**Route :** `/dashboard`
+**Route :** `/synthese`
+**Composant :** `src/app/synthese/page.tsx`
 
-### KPI Cards
+### Contenu
 
-Trois cartes d'indicateurs cles affichees en haut de page :
-
-| KPI | Description | Source API |
-|-----|-------------|------------|
-| Total Admissions | Nombre total d'admissions hospitalieres | `/rma/admissions_summary` |
-| Taux de Mortalite infantile | Taux de mortalite des nourrissons | `/rma/admissions_summary` |
-| Taux de Mortalite maternelle | Taux de mortalite maternelle | `/rma/admissions_summary` |
-
-Chaque carte affiche une valeur numerique, une icone coloree et une bordure laterale coloree.
-
-### Top 5 des pathologies
-
-Tableau affichant les 5 diagnostics les plus frequents :
-- Code CIM-10
-- Nom de la pathologie
-- Nombre de cas
-- Source API : `/rma/top_diagnostics`
+Reunit en une vue les deux volets metier alimentes par la zone GOLD :
+- **Qualite d'identite** : patients maîtresses, doublons resolus et taux via
+  `/api/governance/duplicates`
+- **Consentement** : patients concernes, accords / refus via
+  `/api/governance/consent`
+- **Chaine de traitement** : rappel RAW → SILVER → GOLD, seules les couches
+  pretes a l'usage sont exposees
 
 ### Comportement
 
-- Les donnees sont fetch automatiquement au montage du composant
-- Re-fetch automatique lors du changement de filtres (bouton "Voir")
-- Indicateur de chargement (spinner) pendant le fetch
-- Affichage de la periode selectionnee dans le titre du tableau
+- Les deux endpoints sont interroges en parallele (`Promise.all`)
+- Le bandeau de demonstration apparait si au moins l'un des deux repond en
+  mode mock
+- Aucune valeur n'est recalculee : l'interface affiche les reponses telles
+  quelles ; une valeur absente s'affiche `n/d`, jamais `0`
 
 ---
 
-## 3. Filtres globaux
+## 3. Doublons
 
-**Composant :** `src/components/Header.tsx`
-**Contexte :** `src/context/FiltersContext.tsx`
+**Route :** `/doublons`
+**Composant :** `src/app/doublons/page.tsx`
 
-### Filtres disponibles
+### Contenu
 
-| Filtre | Type | Options | Valeur par defaut |
-|--------|------|---------|-------------------|
-| Periode | DateRangePicker | Date debut / date fin | null (pas de filtre) |
-| Sexe | Select | Tous / Homme / Femme | `all` |
+- Cartes KPI issues de `/api/governance/duplicates` :
+  - Patients en base et patients maîtresses (table des identites)
+  - Doublons resolus et taux de doublon
+- Tableau de repartition des correspondances par methode :
+  - Exacte (identifiants identiques)
+  - Probabiliste (similarite de noms / dates de naissance / genre)
+  - Chaque ligne precise la justification d'une fusion
 
-### Fonctionnement
+### Choix d'affichage
 
-1. **Selection** : L'utilisateur modifie les filtres dans le Header
-2. **Application** : Clic sur le bouton "Voir" pour appliquer les filtres
-3. **Reset** : Clic sur "Reset" pour revenir aux valeurs par defaut
-4. **Transmission** : Les filtres sont passes en parametres de query (`start_date`, `end_date`, `gender`) aux appels API
-
-### Etat partage
-
-Le contexte `FiltersContext` partage l'etat des filtres entre :
-- Le Header (controles)
-- Le Dashboard (fetch des KPIs)
-- Les pages RMA (fetch des donnees de visualisation)
+- Aucune valeur n'est recalculee cote interface : les KPIs reprennent tels quels
+  la reponse du moteur
+- Un taux affiche n'est donc jamais une moyenne front : il provient du backend
+- Bandeau de demonstration des que `/api/governance/duplicates` repond en
+  mode mock
 
 ---
 
-## 4. Visualisations RMA
+## 4. Gouvernance et consentement
 
-### 4.1 Diagnostics consultations externes (Tableau 5)
+**Route :** `/gouvernance`
+**Composant :** `src/app/gouvernance/page.tsx`
 
-**Route :** `/rma`
-**Composant :** `DiagnosticsHeatmap.tsx`
-**Statut :** Actif
+### Contenu
 
-#### Description
+- Cartes KPI issues de `/api/governance/consent` (metadonnees de l'enveloppe) :
+  - Patients concernes
+  - Consentements accordes / total
+  - Taux d'accord
+- Tableau des consentements (une ligne par couple patient × finalite) :
+  - Patient maître, identifiant patient, nom
+  - Finalite : `api_access` (Acces API), `research` (Recherche), `analytics`
+    (Analyse) — alphabets de `engine/governance/consent.py`
+  - Decision (accorde / refuse) et date d'enregistrement
+- Filtre par finalite pour verifier le principe purpose-by-purpose (un patient
+  peut etre accorde en recherche et refuse en analyse)
 
-Visualisation des diagnostics CIM-10 des consultations externes, ventiles par tranches d'age.
+### Choix d'affichage
 
-#### Composants d'interface
-
-- **Heatmap D3.js** : Matrice diagnostics (lignes) x tranches d'age (colonnes)
-  - Tranches d'age : 0-28j, 29-59j, 2-11m, 1-4a, 5-14a, 15-24a, 25-59a, 60+
-  - Degradation de couleurs pour representeer l'intensite des cas
-  - Tooltips au survol avec les valeurs exactes
-- **Tableau pagine** : Liste detaillee des diagnostics avec tri et pagination
-
-#### Source API
-
-- Heatmap : `/rma/diagnostics_heatmap?start_date=...&end_date=...&gender=...`
-- Liste : `/rma/diagnostics_list?start_date=...&end_date=...&gender=...`
-
----
-
-### 4.2 Morbidite et mortalite hospitaliere (Tableau 9)
-
-**Route :** `/rma/morbidite`
-**Composant :** `MortalityChart.tsx`
-**Statut :** En developpement
-
-#### Description
-
-Visualisation du taux de mortalite hospitaliere par diagnostic principal.
-
-#### Composants d'interface
-
-- **Bar chart horizontal D3.js** :
-  - Axe Y : Diagnostics CIM-10
-  - Axe X : Taux de mortalite (%)
-  - Couleurs par service (medecine, chirurgie, maternite)
-  - Tooltips avec details par tranche d'age
-
-#### Source API
-
-- `/api/rma/mortality`
+- `patient_uuid` s'affiche `n/d` quand le jeu de demonstration ne le fournit pas
+- Les noms viennent du jeu de demonstration : identifiants synthetiques, sans
+  lien avec une personne reelle (mention affichee sous le tableau)
+- Bandeau de demonstration des que l'endpoint repond en mode mock
 
 ---
 
-### 4.3 Consultations prenatales et Maternite (Tableaux 11 & 12)
+## 5. Indicateur de donnees de demonstration
 
-**Route :** `/rma/maternite`
-**Composant :** `MalariaKPI.tsx` (composant reutilise)
-**Statut :** En developpement (donnees fictives)
+**Composant :** `src/components/MockedBanner.tsx`
 
-#### Description
+Le backend signale dans l'enveloppe de reponse une execution en mode mock
+(`mocked: true`) quand la zone GOLD/SILVER (Hive/warehouse) n'est pas joignable. Le
+front n'inferre jamais ce statut : il le lit dans l'enveloppe, via
+`resultOf()` dans `src/lib/api.ts`, et propage le drapeau jusqu'aux pages.
 
-Suivi des activites de maternite : consultations prenatales (CPN) et accouchements.
-
-#### Composants d'interface
-
-- **KPI Cards** :
-  - Taux de CPN >= 4 consultations
-  - Nombre de deces maternels
-  - Nombre d'avortements
-- **Line chart D3.js** :
-  - Evolution mensuelle des CPN1 vs Accouchements
-  - Comparaison mois par mois
-
-#### Source API
-
-- Donnees actuellement **hardcodees** (echantillon Jan-Mar 2025)
-- Pas encore connecte au backend API
+Comportement :
+- Un bandeau ambre "Donnees de demonstration" s'affiche sur toute vue dont les
+  chiffres ne proviennent pas de la zone GOLD
+- Applique aux pages Synthese / Doublons / Gouvernance
+- Le bandeau est masque des que la source reelle repond (`mocked: false`) :
+  aucune bascule manuelle cote interface
 
 ---
 
-### 4.4 Activite de laboratoire (Tableau 16)
-
-**Route :** `/rma/laboratoire`
-**Composant :** `LaboratoryChart.tsx`
-**Statut :** En developpement
-
-#### Description
-
-Volume et taux de positivite des examens de laboratoire.
-
-#### Composants d'interface
-
-- **Donut chart D3.js** : Repartition du volume d'examens par type
-- **Bar chart D3.js** : Taux de positivite par type d'examen
-  - Types d'examens : BK, BH, palu, NFS, VIH, syphilis, hepatitis, etc.
-
-#### Source API
-
-- `/api/rma/laboratory`
-
----
-
-### 4.5 Prise en charge Paludisme (Tableau 25)
-
-**Route :** `/rma/paludisme`
-**Composant :** `MalariaKPI.tsx`
-**Statut :** En developpement
-
-#### Description
-
-Suivi des cas de paludisme : cas detectes, TDR effectues, traites, et prevention.
-
-#### Composants d'interface
-
-- **KPI Cards** :
-  - Taux de positivite TDR
-  - Taux de traitement
-  - Statistiques de prevention (moustiquaires)
-- **Line chart D3.js** :
-  - Evolution mensuelle des cas vs cas traites
-  - Visualisation des pics saisonniers
-
-#### Source API
-
-- `/api/rma/malaria`
-
----
-
-## 5. Gestion des utilisateurs
+## 6. Gestion des utilisateurs
 
 **Route :** `/users` (admin uniquement)
 **Composant :** `UserClient.tsx`
@@ -253,7 +163,7 @@ Suivi des cas de paludisme : cas detectes, TDR effectues, traites, et prevention
 | Nom | text | Oui | `firstName` |
 | Prenom | text | Oui | `lastName` |
 | Email | email | Oui | Unique |
-| Role | select | Oui | `DOCTOR` ou `ADMIN` |
+| Role | select | Oui | `MEDECIN` ou `ADMIN` |
 | Mot de passe | password | Oui (creation uniquement) | Hashage via bcrypt |
 
 ### Securite
@@ -264,36 +174,32 @@ Suivi des cas de paludisme : cas detectes, TDR effectues, traites, et prevention
 
 ---
 
-## 6. Navigation et interface
+## 7. Navigation et interface
 
 ### Sidebar (`src/components/Sidebar.tsx`)
 
-- **Branding** : Logo + titre "RMA DataViz"
-- **Derniere synchro** : Affiche la date de derniere synchronisation du Data Lake (fetch depuis `/rma/last_sync`)
+- **Branding** : Logo + titre "DataViz Gouvernance"
 - **Menu principal** :
-  - Accueil (`/dashboard`) - tous les roles
+  - Synthese (`/synthese`) - tous les roles
+  - Doublons (`/doublons`) - tous les roles
+  - Gouvernance (`/gouvernance`) - tous les roles
   - Gestion des utilisateurs (`/users`) - admin uniquement
-- **Section RMA** (collapsible) :
-  - Tableau 5 - Diagnostics consultations externes (`/rma`) - actif
-  - Tableau 9 - Morbidite & Mortalite (`/rma/morbidite`) - en developpement
-  - Tableaux 11 & 12 - CPN & Maternite (`/rma/maternite`) - en developpement
-  - Tableau 16 - Activite de laboratoires (`/rma/laboratoire`) - en developpement
-  - Tableau 25 - Paludisme (`/rma/paludisme`) - en developpement
+  - Parametres (`/settings`) - tous les roles
 
 ### Header (`src/components/Header.tsx`)
 
-- **Filtres** : DateRangePicker + Select sexe + boutons Voir/Reset
+- **Rappel** : Plateforme de gouvernance — donnees synthetiques et de demonstration
 - **Info utilisateur** : Email de l'utilisateur connecte
 - **Parametres** : Lien vers `/settings`
 - **Deconnexion** : Bouton de deconnexion (redirige vers `/login`)
 
 ### AppWrapper (`src/app/AppWrapper.tsx`)
 
-Layout wrapper combinant Sidebar + Header + FiltersProvider pour toutes les pages authentifiees.
+Layout wrapper combinant Sidebar + Header pour toutes les pages authentifiees.
 
 ---
 
-## 7. Fichiers de stockage
+## 8. Fichiers de stockage
 
 ### Base de donnees PostgreSQL
 
@@ -304,15 +210,9 @@ Schema Prisma (`prisma/schema.prisma`) avec les migrations :
 
 ### API Backend externe
 
-L'application communique avec un serveur backend sur `localhost:5000` exposant les endpoints :
+L'application communique avec un serveur backend sur `localhost:5000` exposant les endpoints de gouvernance :
 
 | Endpoint | Description |
 |----------|-------------|
-| `/rma/last_sync` | Date de derniere synchro du Data Lake |
-| `/rma/diagnostics_heatmap` | Donnees pour la heatmap des diagnostics |
-| `/rma/diagnostics_list` | Liste detaillee des diagnostics |
-| `/rma/admissions_summary` | Resume des admissions (KPIs) |
-| `/rma/top_diagnostics` | Top N des diagnostics les plus frequents |
-| `/api/rma/mortality` | Donnees de mortalite |
-| `/api/rma/laboratory` | Donnees de laboratoire |
-| `/api/rma/malaria` | Donnees de paludisme |
+| `/api/governance/duplicates` | Statistiques de deduplication (doublons, methodes) |
+| `/api/governance/consent` | Consentements purpose-by-purpose (liste + metadonnees) |

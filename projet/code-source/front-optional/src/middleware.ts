@@ -2,7 +2,13 @@ import { NextResponse, type NextRequest } from "next/server"
 import { getToken } from "next-auth/jwt"
 
 const ADMIN_ONLY_ROUTES = [/^\/users(\/|$)/]
-const AUTHENTICATED_ROUTES = [/^\/dashboard(\/|$)/, /^\/settings(\/|$)/, /^\/rma(\/|$)/]
+const AUTHENTICATED_ROUTES = [
+  /^\/settings(\/|$)/,
+  /^\/doublons(\/|$)/,
+  /^\/gouvernance(\/|$)/,
+  /^\/synthese(\/|$)/,
+  /^\/users(\/|$)/,
+]
 
 export async function middleware(req: NextRequest) {
   const pathname = req.nextUrl.pathname
@@ -22,7 +28,7 @@ export async function middleware(req: NextRequest) {
   }
 
   if (isAdminRoute && token.role !== "ADMIN") {
-    const deniedUrl = new URL("/dashboard", req.url)
+    const deniedUrl = new URL("/synthese", req.url)
     deniedUrl.searchParams.set("denied", "1")
     return NextResponse.redirect(deniedUrl)
   }
@@ -31,5 +37,11 @@ export async function middleware(req: NextRequest) {
 }
 
 export const config = {
-  matcher: ["/dashboard/:path*", "/settings/:path*", "/rma/:path*", "/users/:path*"],
+  matcher: [
+    "/settings/:path*",
+    "/doublons/:path*",
+    "/gouvernance/:path*",
+    "/synthese/:path*",
+    "/users/:path*",
+  ],
 }
