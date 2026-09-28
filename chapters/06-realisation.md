@@ -5,9 +5,9 @@
 ## Objectif
 
 Restituer l'implémentation effective de la plateforme : générateur de données avec
-vérité terrain, pipeline ELT Medallion en 4 étapes, moteur de déduplication
-(Pandas + Spark), chargement PostgreSQL, gouvernance et API, puis difficultés
-rencontrées sur la VM et leur résolution.
+vérité terrain, pipeline ELT Medallion en 5 étapes (exécution reprise et
+planifiée), moteur de déduplication (Pandas + Spark), chargement PostgreSQL,
+gouvernance et API, puis difficultés rencontrées sur la VM et leur résolution.
 
 ---
 
@@ -48,31 +48,90 @@ nécessaire pour établir la parité Pandas/Spark (ch. 7) et pour rejouer une
 que `patient` : c'est leur rattachement au patient qui fait la dette
 `patient_events_gold` du chapitre 7.
 
-## 6.2 Pipeline ELT Medallion en 4 étapes
+## 6.2 Pipeline ELT Medallion en 5 étapes
 
-Orchestration par `run_pipeline.sh` (arrêt sur erreur, logs `elt.log`) : run
-**4/4 vert** sur la VM le 07/09/2026 [contexte_projet.md].
+Orchestration par `run_pipeline.sh` (arrêt sur erreur, logs `elt.log`) : le run
+de référence du 07/09/2026 est **4/4 vert** sur la VM ; l'orchestration compte
+désormais **cinq étapes**, l'ajout de `ensure_generator_data` étant préparatoire
+et sans effet quand les sources existent [contexte_projet.md].
 
 ```mermaid
 flowchart LR
-    DS[data_sources.json] --> R[1/4 gen_extract_raw<br/>parquet HDFS + tables Hive externes]
-    R --> M[2/4 gen_fhir_mapping<br/>fhir_mapping.json]
-    M --> S[3/4 create_silver<br/>4 tables FHIR + dédup moteur]
-    S --> G[4/4 create_gold<br/>patient_events_gold + patient_consent_gold]
+    DS[data_sources.json] --> I[1/5 ensure_generator_data<br/>sources de démo régénérées si absentes seed 42]
+    I --> R[2/5 gen_extract_raw<br/>parquet HDFS + tables Hive externes]
+    R --> M[3/5 gen_fhir_mapping<br/>fhir_mapping.json]
+    M --> S[4/5 create_silver<br/>4 tables FHIR + dédup moteur]
+    S --> G[5/5 create_gold<br/>patient_events_gold + patient_consent_gold]
     R -. "extract_raw_report.json" .-> M
 ```
 
-> **Figure 7 — Le pipeline ELT en quatre étapes, de l'extraction RAW au chargement
-> GOLD, piloté par `data_sources.json` et contrôlé par `extract_raw_report.json`.**
+> **Figure 7 — Le pipeline ELT en cinq étapes, de la préparation des sources au
+> chargement GOLD, piloté par `data_sources.json` et contrôlé par `extract_raw_report.json`.**
+> L'étape 1/5 est préparatoire : si les fichiers de démonstration existent déjà,
+> elle ne ré-écrit rien (idempotence).
 
-**Tableau 28 — Les quatre étapes du pipeline ELT, le script qui les exécute et la sortie réellement produite.**
+**Tableau 28 — Les cinq étapes du pipeline ELT, le script qui les exécute et la sortie réellement produite.**
 
 | Étape | Script | Sortie réelle |
 |---|---|---|
-| **1 — Extraction RAW** | `gen_extract_raw.py` | parquet `/datalake/raw/{source}/{table}`, tables Hive externes, `extract_raw_report.json` |
-| **2 — Mapping FHIR** | `gen_fhir_mapping.py` | `fhir_mapping.json` (table→entité FHIR, cartes explicites) |
-| **3 — SILVER FHIR** | `create_silver.py` | `datalake_silver.{patient,encounter,condition,observation}_fhir` |
-| **4 — GOLD** | `create_gold.py` | `patient_events_gold` (8 tranches d'âge), `patient_consent_gold` |
+| **1 — Préparation (préparatoire)** | `ensure_generator_data.sh` | régénère les CSV synthétiques (seed 42) s'ils sont absents ; sans effet sinon |
+| **2 — Extraction RAW** | `gen_extract_raw.py` | parquet `/datalake/raw/{source}/{table}`, tables Hive externes, `extract_raw_report.json` |
+| **3 — Mapping FHIR** | `gen_fhir_mapping.py` | `fhir_mapping.json` (table→entité FHIR, cartes explicites) |
+| **4 — SILVER FHIR** | `create_silver.py` | `datalake_silver.{patient,encounter,condition,observation}_fhir` |
+| **5 — GOLD** | `create_gold.py` | `patient_events_gold` (8 tranches d'âge), `patient_consent_gold` |
+
+Chaque étape est un programme distinct plutôt qu'une fonction d'un programme
+unique : une étape qui échoue ne laisse pas la zone suivante dans un état
+intermédiaire, ce qui est la condition pour que le pipeline reste **relançable**
+et **rejouable**.
+
+### 6.2.1 Reprise de run et ingestion incrémentale (watermark)
+
+Le cahier des charges ajoute une exigence : **pas de retraitement en boucle**.
+Deux mécanismes la réalisent [cahier_des_charges.md §4.1] :
+
+- **Reprise de run** — l'état de chaque exécution (identifiant `run_id`, statut
+  `running` / `ok` / `failed`, statut par étape) est persisté dans
+  `provision/metadata/pipeline_state.json`. En mode `resume`, un run échoué
+  repart de la **première étape non terminée** au lieu de tout rejouer ; un run
+  `running` **verrouille** tout lancement concurrent (le planificateur ne lance
+  pas de doublon).
+- **Watermark anti-retraitement** — chaque source de type CSV conserve une
+  empreinte (SHA-256 + taille + `mtime`) dans `provision/metadata/watermark.json`.
+  À un nouveau run, une table dont l'empreinte n'a pas changé est **sautée** ;
+  le rapport d'extraction est reconstruit pour que le pipeline côté aval reste
+  strictement identique. Priorité de décision : `ingest.mode` de la source
+  (`full`) > mode du pipeline (`full` / `since`) > comparaison d'empreinte —
+  l'ordre garantit qu'on rejoue **par choix**, jamais par oubli.
+
+`run_pipeline.sh` combine les deux : `--resume` (reprise), `--full` (purge et
+tout rejouer), `--since YYYY-MM-DD` (ré-extraction forcée à partir d'une date),
+`--from <étape>` (repartir d'une étape nommée) et `--dry-run` (afficher le plan
+sans rien exécuter ni écrire).
+
+### 6.2.2 Planification automatique (scheduler cron)
+
+Le lancement régulier est confié au crontab de la VM, qui vérifie **chaque
+minute** `python -m provision.scripts.scheduler.scheduler --check`
+[`cahier_des_charges.md` §4.1]. Le pipeline n'est lancé que si :
+
+1. la planification est **active** (`enabled: true` dans `provision/config/schedule.yaml`,
+   fichier runtime gitignoré, template committé `schedule.example.yaml`) ;
+2. l'**échéance** (fréquence `daily` / `weekly` / `monthly`, heure fixe fuseau VM)
+   vient d'être atteinte et n'a pas déjà été déclenchée (état persisté dans
+   `scheduler_runs.json`) ;
+3. **aucun run** n'est en cours (`pipeline_state.json` pas à `running`).
+
+Le lancement se fait en arrière-plan (`start_new_session`) : le cron revient
+aussitôt, le pipeline continue indépendamment et met à jour son propre état. La
+même planification est lisible et modifiable par l'API `/pipeline/schedule` (§ 6.5),
+dans un format identique à celui attendu par le cron de la VM.
+
+> **Honnêteté d'exécution.** La mécanique (scheduler, watermark, reprise) est
+> **écrite et testée** (chapitre 7), mais la VM étant indisponible sur le poste de
+> préparation, **aucune exécution réelle planifiée d'un run incrémental n'a encore
+> été rejouée sur la VM** : c'est une re-validation en attente, assumée en § 7.5
+> et § 8.4.
 
 Résultats du run de référence (sources CSV synthétiques, 214 enregistrements) :
 **`datalake_silver.patient_fhir` = 214 lignes** (76 + 76 + 62) ; **145 masters** ;
@@ -154,6 +213,27 @@ clé hachée SHA-256 + rôles `admin`/`analyst`/`viewer`), `consent.py` (router 
 chaque requête, refus compris). Les **payloads RAW ne sont jamais exposés** par
 l'API — seuls les maîtres consolidés le sont [consentement_gouvernance.md §7].
 
+**API plateforme (FastAPI, port 8000).** Au-delà des patients et de l'audit, l'API
+expose la planification et l'état du pipeline : `GET /pipeline/schedule` (lecture
+admin/analyst), `PUT /pipeline/schedule` (écriture **admin** uniquement, validation
+stricte ; format identique à celui attendu par le cron de la VM) et
+`GET /pipeline/status` (plan, prochain run, sources suivies par watermark, zones
+RAW/SILVER/GOLD, état du dernier run) [`engine/governance/app.py`]. Les endpoints
+`/patients` et `/patients/{id}` ont été enrichis : recherche plein texte,
+pagination, et **filtrage silencieux** — un master sans consentement pour la
+finalité demandée est retiré de la réponse, et le nombre d'exclusions est
+journalisé (§ 5.5).
+
+**Frontend `front-optional/` (Next.js, hôte Windows).** Trois pages de pilotage sont
+réalisées : `/pipeline` (statut en badges texte), `/dashboard` (vue d'exploitation
+visuelle de `GET /pipeline/status` : zones Medallion, étapes du run, fraîcheur des
+sources, planification et dernier déclenchements cron) et `/patients` +
+`/patients/{id}` (recherche, pagination, fiche d'identité, identity map et badges
+de consentement par finalité). L'accès est contrôlé par JWT avec les rôles
+**ADMIN** et **MEDECIN** (frontend), et `purpose` reste un paramètre obligatoire.
+Cette interface de pilotage est distinguée au § 1.5 des **dashboards d'analyse**
+du PoC (visualisation_app), hors périmètre.
+
 Il faut distinguer deux couches qui portent le même mot « gouvernance » sans avoir le
 même rôle. L'API **Flask** est une surface de *consommation et de reporting* : ses
 endpoints lisent le GOLD et en rendent des agrégats ; `/api/governance/consent` en
@@ -168,7 +248,7 @@ s'applique à l'API de gouvernance, comme le rappelle `ai/dev/suivi_avancement.m
 
 ## 6.6 Difficultés rencontrées et résolutions
 
-**Tableau 30 — Les six difficultés réellement rencontrées, leur cause et le correctif testé.**
+**Tableau 30 — Les sept difficultés réellement rencontrées, leur cause et le correctif testé.**
 
 | Problème réel | Cause | Correctif |
 |---|---|---|
@@ -178,8 +258,9 @@ s'applique à l'API de gouvernance, comme le rappelle `ai/dev/suivi_avancement.m
 | Spark ne démarrait pas | `JAVA_HOME` avec `\bin` en trop | normalisation `_resolve_java_home()` dans `spark/session.py` |
 | HiveServer2/beeline instable sur la VM | service HS2 fragile | validation des comptages par **scripts Spark** (`check_data.py`) |
 | NLP lourd inutilisable | `sentence_transformers` crash Python 3.8 | RapidFuzz + dictionnaire de synonymes (`fhir_synonyms.py`) |
+| `gen_extract_raw` ne passait pas `py_compile` | caractère insécable dans sa docstring, interprété comme fin de fichier | docstring corrigée, script recompilé (aucun drapeau d'encodage requis) |
 
-Ces six incidents se répartissent en trois familles, et la famille conditionne le
+Ces sept incidents se répartissent en trois familles, et la famille conditionne le
 correctif. Les **données** (les deux premières lignes) produisent les correctifs les
 plus structurés : ils sont documentés dans `pipeline_elt.md` comme des pièges
 anti-régression, avec le symptôme, la cause et la parade, précisément parce qu'ils
@@ -199,15 +280,20 @@ Java 8 ; Spark configuré `executor 4g / driver 2g / shuffle.partitions=8`
 
 ## Conclusion et transition
 
-La plateforme est réalisée et opérationnelle : 4/4 pipeline vert, dédup enregistrée
-dans le lac, API gouvernance 3/3, gouvernance mécanisée. Reste à **démontrer la qualité** :
+La plateforme est réalisée et opérationnelle : pipeline ELT en 5 étapes (4/4 au
+run de référence, reprise et watermark implémentées, planification cron intégrée),
+dédup enregistrée dans le lac, API gouvernance 3/3, gouvernance mécanisée et
+interface de pilotage (API et frontend) enrichie. Reste à **démontrer la qualité** :
 le chapitre 7 présente la stratégie de test, l'évaluation ground-truth (P/R/F1) et
-les limites honnêtes du prototype (rappel « hard », GOLD incomplet).
+les limites honnêtes du prototype (rappel « hard », GOLD incomplet, re-validation
+VM de la planification en attente).
 
 ### Références
 
 - `provision/scripts/ELT/*` + `run_pipeline.sh` ; `provision/api/hive_api.py`,
   `mock_data.py`, `test_api.py`.
-- `engine/identity/{canonical,matcher,spark_dedup}.py` ; `engine/governance/{auth,consent,audit}.py`.
+- `engine/identity/{canonical,matcher,spark_dedup}.py` ; `engine/governance/{auth,consent,audit,app,pipeline}.py`.
+- `provision/scripts/utils/{pipeline_state,watermark,schedule_logic}.py` ;
+  `provision/scripts/scheduler/scheduler.py` ; `provision/config/schedule.example.yaml`.
 - `sql/schema.sql` ; `ai/memoire/contexte_projet.md` (run 07/09/2026).
 - `documents/documentation/pipeline_elt.md` (pièges anti-régression).

@@ -105,8 +105,10 @@ l'ordre de démarrage des services est strict [architecture.md §3] :
 | HiveServer2 | accès SQL (`beeline`) | 10000 |
 | Moteur `engine/` | déduplication + gouvernance (PostgreSQL) | — |
 | API données (Flask) | exposition de GOLD | 5000 |
-| API gouvernance (FastAPI) | `/health`, `/metrics`, `/patients`, `/audit`, `/consent` | — |
-| Frontend Next.js | vues de gouvernance : déduplication et consentement (**optionnel**) | 3000 (hôte Windows) |
+| API gouvernance (FastAPI) | `/health`, `/metrics`, `/patients`, `/audit`, `/consent`, `/pipeline/schedule`, `/pipeline/status` | — |
+| Planificateur ELT | déclenche `run_pipeline.sh` selon `schedule.yaml` (`daily` / `weekly` / `monthly`), échéance vérifiée chaque minute, anti-double-run | cron VM + `provision/scripts/scheduler/scheduler.py` |
+| Watermark / état | empreinte des sources (`watermark.json`) pour l'incrémental ; état des runs (`pipeline_state.json`) pour la reprise | `provision/metadata/` |
+| Frontend Next.js | pages de pilotage : `/pipeline`, `/dashboard`, `/patients`, `/patients/{id}` (RBAC ADMIN/MEDECIN, `purpose` obligatoire) | 3000 (hôte Windows) |
 
 > **Ordre strict :** `start-dfs.sh` → `start-yarn.sh` → metastore (9083) → HiveServer2 (10000) →
 > jobs Spark → API. Toute inversion produit des erreurs d'écriture ou de métadonnées (§6.6).
@@ -193,6 +195,10 @@ identités et de la gouvernance [consentement_gouvernance.md §6] :
 **Idempotence** — relancer le même traitement ne duplique rien et ne casse rien :
 `CREATE TABLE IF NOT EXISTS` pour les tables, `ADD COLUMN IF
 NOT EXISTS` pour les migrations — le pipeline est rejouable [consentement_gouvernance.md §6].
+À cette idempotence **structurelle** s'ajoute une idempotence **opérationnelle**
+(§ 6.2) : l'état des runs (`pipeline_state.json`) et l'empreinte des sources
+(`watermark.json`) assurent qu'un run échoué **reprend**, et qu'une table dont
+l'empreinte n'a pas changé n'est **pas ré-extraite** (incrémental, anti-retraitement).
 
 ## 5.5 Gouvernance : RBAC, consentement, audit
 
@@ -220,6 +226,11 @@ et on **trace** ce qui s'est passé.
   `method`, `status`, `ip`, **`purpose`** et **`refusal_reason`**, y compris les
   refus et les appels anonymes [consentement_gouvernance.md §4]. Le refus est donc
   *consultable* a posteriori, et pas seulement déductible du code HTTP.
+- **Planification du pipeline** : `GET/PUT /pipeline/schedule` (lecture
+  admin/analyst, écriture **admin** uniquement avec validation stricte) et
+  `GET /pipeline/status` (plan, prochain run, sources suivies, zones) — le format
+  écrit étant identique à celui attendu par le cron de la VM
+  [cahier_des_charges.md §4.4].
 
 **Ce que la conception ne couvre pas** (assumé, §8.3) : ni `data_scope` (périmètre
 de données), ni durée de validité du consentement, ni chiffrement au repos du

@@ -33,6 +33,12 @@ Exigences non fonctionnelles : données **fictives uniquement** ; pipeline **rej
 et **idempotent** ; dédup **déterministe et reproductible** (seed) ; logique **toujours
 explicable** ; architecture évolutive au volume (Spark) sans changer la sémantique.
 
+L'exploitation impose enfin de **ne pas retraiter en boucle** (§ 4.1 du cahier des
+charges) : l'ingestion est **incrémentale** (une source dont l'empreinte n'a pas
+changé n'est pas ré-extraite), un run échoué **reprend** à la première étape non
+terminée, et le lancement régulier est **planifiable** (fréquence `daily` /
+`weekly` / `monthly`, cron) [cahier_des_charges.md §4.1].
+
 ## 4.2 Sources de données et hétérogénéité
 
 Trois sources métier, modélisées sur les systèmes réellement rencontrés en
@@ -294,6 +300,26 @@ dédupliquées, donc sans double comptage. *Cas limite* : ce frontend est explic
 démonstration chaque fois que Hive/Spark ne répond pas, ce repli étant signalé comme tel à
 l'écran. Le mémoire ne présente donc pas le frontend comme un résultat du projet, mais comme
 une illustration de ce que la zone GOLD pourrait exposer.
+
+**CU7 — Planifier et piloter le pipeline.** *Acteur* : l'administrateur. *Prérequis* : les
+services Spark/Hive démarrés et une planification définie. *Déroulement* : la fréquence
+(`daily` / `weekly` / `monthly`) est fixée par l'API `/pipeline/schedule` ou le fichier
+`schedule.yaml` ; le cron de la VM vérifie l'échéance chaque minute et lance
+`run_pipeline.sh` en arrière-plan ; `/pipeline/status` expose le plan, le prochain run,
+l'état du dernier run et la fraîcheur des sources. *Résultat attendu* : un run lancé
+régulièrement, **sans doublon** tant qu'un run est en cours, et **reprise** de la première
+étape non terminée en cas d'échec. *Cas limite* : une source dont l'empreinte n'a pas changé
+est **sautée** (incrémental) — on ne retraite que ce qui a changé, par choix explicite ou
+comparaison d'empreinte.
+
+**CU8 — Consulter un dossier patient.** *Acteur* : un médecin authentifié (rôle `MEDECIN`
+côté frontend), finalité déclarée. *Prérequis* : un accès web, un consentement enregistré.
+*Déroulement* : la page `/patients` recherche et pagine, en **retirant silencieusement** les
+masters sans consentement pour la finalité demandée ; `/patients/{id}` affiche l'identité, la
+carte d'identité (identity map) et les consentements par finalité. *Résultat attendu* : une
+lecture rapide et lisible, chaque appel journalisé dans `access_audit`. *Cas limite* : un
+master sans consentement n'apparaît simplement pas dans la liste — l'exclusion est comptée et
+journalisée plutôt qu'annoncée à l'écran.
 
 ## 4.9 Gestion de la configuration
 

@@ -1,6 +1,6 @@
 # Chapitre 7 — Tests et évaluation
 
-> **Statut** : rédigé (08/09/2026, actualisé 27/09/2026)
+> **Statut** : rédigé (08/09/2026, actualisé 28/09/2026)
 
 ## Objectif
 
@@ -20,13 +20,13 @@ La validation suit une pyramide : unitaire (générateur et moteur), intégratio
 flowchart TD
     subgraph Unitaire
         G["Générateur : 44 tests<br/>variation, distribution, mapping"]
-        E["Moteur : 54/54<br/>matcher 12 · consent 21 · canonique 8 · API 13"]
+        E["Moteur + gouvernance : 102/102<br/>matcher 12 · consent 21 · canonique 8<br/>API gouvernance 16 · planification 22<br/>watermark 10 · état pipeline 5 · API planif 8"]
     end
     subgraph Intégration
         MVP["MVP : 20 tests<br/>pipeline, loader, auth, audit, api"]
     end
     subgraph Système
-        API["API gouvernance : 3/3 (données réelles)<br/>pipeline run 4/4 vert"]
+        API["API gouvernance : 3/3 (données réelles)<br/>pipeline run 4/4 vert (07/09) · 5 étapes"]
         EVAL["Évaluation ground truth<br/>P/R/F1 easy / medium / hard"]
     end
     G --> E --> MVP --> API
@@ -41,10 +41,11 @@ flowchart TD
 | Niveau | Périmètre | Résultat |
 |---|---|---|
 | **Générateur** (7 fichiers de tests) | variation engine, générateurs de sources, distribution, identity mapping, experiment builder | **44 tests PASS** [contexte_projet.md] |
-| **Moteur `engine/`** | `test_matcher.py` (12 cas), `test_consent.py` (21 cas), `test_deduplication.py` (8 cas canonique), `test_governance_api.py` (13 cas) | **54/54 PASS** (`pytest projet/code-source/tests`, 27/09/2026) |
+| **Moteur `engine/`** | `test_matcher.py` (12 cas), `test_consent.py` (21 cas), `test_deduplication.py` (8 cas canonique), `test_governance_api.py` (16 cas) | **57/57 PASS** (`pytest projet/code-source/tests`, 28/09/2026) |
+| **Planification & reprise `provision/`** | `test_schedule_logic.py` (22 cas), `test_watermark.py` (10 cas), `test_pipeline_state.py` (5 cas), `test_pipeline_api.py` (8 cas) | **45/45 PASS** (même suite) |
 | **MVP** (`test_bigdata`) | pipeline, loader PostgreSQL, auth, audit, api | **20 tests PASS** [contexte_projet.md] |
 | **API** | `test_api.py` — 3 tests sur données réelles | **3/3 PASS** [logs.md] |
-| **Pipeline** | `run_pipeline.sh` RAW → SILVER → GOLD | **4/4 vert** (07/09/2026) |
+| **Pipeline** | `run_pipeline.sh` RAW → SILVER → GOLD | **4/4 vert** (07/09/2026) ; orchestration actuelle en 5 étapes, re-validation VM en attente |
 
 L'ordre des niveaux n'est pas décoratif : il suit le **coût de retour à l'échec**. Un test
 unitaire échoue en quelques secondes et pointe une ligne de code ; un test de système n'échoue
@@ -53,11 +54,14 @@ continue, écartée du périmètre du stage : la preuve est **reproductible manu
 pour le moteur, `run_pipeline.sh` pour le lac, `test_api.py` pour l'API) plutôt que rejouée à
 chaque commit.
 
+La suite complète (`pytest projet/code-source/tests`) passe à **102/102** (57 moteur +
+45 planification/reprise), zéro échec — le chiffre reporté dans le chapitre 8 et les slides.
+
 Une précision de portée, sur les **3/3 de l'API** : `test_api.py` est un **test de fumée**. Il
 vérifie que chaque endpoint renvoie le code de statut attendu sur données réelles, sans en-tête
 d'authentification — il prouve la **joignabilité** des 2 endpoints de gouvernance du backend
 Flask (`/api/governance/duplicates` et `/api/governance/consent`) et l'absence de régression de
-statut, **pas** le contrôle d'accès. Celui-ci est vérifié ailleurs, par les 13 cas de l'API de
+statut, **pas** le contrôle d'accès. Celui-ci est vérifié ailleurs, par les 16 cas de l'API de
 gouvernance, qui emprunte le chemin d'authentification réel (tableau ci-dessous). Aucun des deux
 niveaux ne se substitue à l'autre.
 
@@ -69,12 +73,12 @@ distincts**, et **parité Pandas/Spark** (`test_spark_parity`) [deduplication.md
 
 ### Couverture du contrôle d'accès et du consentement
 
-Ces 13 cas d'API ne simulent que le transport PostgreSQL : ils empruntent le
+Ces 16 cas d'API ne simulent que le transport PostgreSQL : ils empruntent le
 **chemin réel** `Authorization: Bearer <clé>` → résolution de l'utilisateur →
 contrôle du rôle → contrôle du consentement, et **n'overrident jamais la
 dépendance d'authentification**. Ils constituent la preuve du §2.5.
 
-**Tableau 32 — Les dix cas de contrôle d'accès vérifiés sur le chemin réel, et le code ou le comportement attendu.**
+**Tableau 32 — Les treize cas de contrôle d'accès et de consultation vérifiés sur le chemin réel, et le code ou le comportement attendu.**
 
 | Cas vérifié | Attendu |
 |---|---|
@@ -86,6 +90,9 @@ dépendance d'authentification**. Ils constituent la preuve du §2.5.
 | Finalité non consentie sur `/patients/{id}` | **403** + `refusal_reason` en audit |
 | Finalité consentie sur `/patients/{id}` | **200**, `refusal_reason` vide |
 | `/patients` avec consentements partiels | seuls les patients consentis sont renvoyés, exclusions comptées |
+| `/patients` — recherche plein texte | `q=<nom>` retrouve les masters dont le nom normalisé correspond |
+| `/patients` — recherche par CIN ou identifiant | `q=<CIN ou id>` retrouve le master correspondant |
+| `/patients` — pagination | `page`/`limit` renvoient une tranche bornée avec le total |
 | `/audit` | lit `accessed_at` (régression : la requête interrogeait `recorded_at`, inexistant) |
 | Absence de ligne de consentement | refus (fail closed) |
 
@@ -176,7 +183,7 @@ Pandas = Spark [evaluation.md §3].
 ## 7.5 Limites et dettes identifiées
 
 Le prototype est évalué sans complaisance [contexte_projet.md — reste à faire].
-Sept limites ont été relevées, toutes reprises et documentées au § 8.3 : le **rappel
+Huit limites ont été relevées, toutes reprises et documentées au § 8.3 : le **rappel
 de 0.422** sur le jeu « hard » (420 faux négatifs ; à corriger en abaissant le seuil ou
 en enrichissant la clé avec l'adresse, si le métier l'accepte) ; **`patient_events_gold`
 vide**, les Encounter et Condition n'étant pas rattachées à un `patient_uuid`, donc un
@@ -187,8 +194,11 @@ mécanique étant prouvée et la donnée absente ; les **endpoints `laboratory` 
 **cas adversariaire d'homophones**, qui fait de la précision 1.000 un plancher et non
 une borne ; le **contrôle d'accès de l'API Flask non testé**, `test_api.py` ne
 contrôlant que 14 statuts sans authentification, dette assumée puisque le contrôle par
-rôle et par consentement est appliqué et testé sur l'API de gouvernance ; enfin
-l'absence de **tests EI-déployés et d'intégration continue**, hors périmètre du stage.
+rôle et par consentement est appliqué et testé sur l'API de gouvernance ; l'absence de
+**tests EI-déployés et d'intégration continue**, hors périmètre du stage ; enfin la
+**re-validation sur VM de l'ingestion incrémentale et de la planification cron**,
+écrites et couvertes par 45 tests, mais dont **aucune exécution réelle planifiée n'a
+encore été rejouée sur la VM** (indisponible sur le poste de préparation).
 
 Ces limites sont **assumées et non masquées** : chacune est écrite ici avec sa cause
 et, quand elle existe, sa piste de correction, plutôt que passée sous silence.
@@ -196,7 +206,8 @@ et, quand elle existe, sa piste de correction, plutôt que passée sous silence.
 ## Conclusion
 
 La stratégie de test couvre le générateur (44), le moteur et la gouvernance
-(54/54), le MVP (20), l'API (3/3) et le pipeline (4/4). L'évaluation
+(102/102 : 57 moteur, 45 planification/reprise), le MVP (20), l'API (3/3) et le
+pipeline (4/4 au run de référence, 5 étapes d'orchestration). L'évaluation
 ground-truth démontre **une règle d'or tenue** : zéro fusion à tort (Precision
 1.000) sur tous les niveaux, avec une parité Pandas/Spark parfaite, et un rappel
 hard relevé à 0.422 grâce à la clé CIN. Le rappel sur le jeu dur indique
@@ -213,5 +224,7 @@ reprend ces acquis, expose les limites assumées et les perspectives.
 - `documents/documentation/evaluation.md` et `evaluation/evaluation_truth.md`.
 - `tests/test_matcher.py`, `tests/test_consent.py`, `tests/test_governance_api.py`
   (engine) ; `provision/api/test_api.py`.
+- `tests/test_schedule_logic.py`, `tests/test_watermark.py`, `tests/test_pipeline_state.py`,
+  `tests/test_pipeline_api.py` (planification et reprise).
 - `engine/governance/consent.py`, `engine/governance/audit.py` (comportements vérifiés).
 - `documents/documentation/deduplication.md` §9 ; `ai/memoire/contexte_projet.md`.

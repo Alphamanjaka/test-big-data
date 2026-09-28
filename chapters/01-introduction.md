@@ -110,7 +110,7 @@ déduplication et le master patient, afin de résoudre le problème métier d'ab
 simple. Le **niveau 2 — Spark** passe à PySpark local avec des résultats **strictement
 identiques** au MVP, la parité étant vérifiée : passer à l'échelle sans changer la logique
 métier. Le **niveau 3 — Big Data** mobilise le Data Lake, HDFS, Hive et Spark, un pipeline
-ELT Medallion en 4 étapes et une API Flask, pour traiter des volumes réels dans une
+ELT Medallion en 5 étapes (planifiable et rejouable) et une API Flask, pour traiter des volumes réels dans une
 architecture médicale. Deux volets sont enfin **transverses** : la validation des
 algorithmes (vérité terrain, précision / rappel / F1), puis la gouvernance (consentement,
 audit, API) — on ne passe pas à l'échelle ni on n'ouvre les accès avant que la preuve soit
@@ -130,8 +130,10 @@ consentement intégré à la couche GOLD [cahier_des_charges.md §10].
 
 Périmètre fonctionnel couvert par ce stage :
 
-- pipeline ELT Big Data en 4 étapes (RAW → mapping FHIR → SILVER → GOLD), orchestré par
-  `run_pipeline.sh`, logs `elt.log`, suivi `sync_metadata.json` [cahier_des_charges.md §4.1] ;
+- pipeline ELT Big Data en 5 étapes (préparation des sources → RAW → mapping FHIR →
+  SILVER → GOLD), orchestré par `run_pipeline.sh`, logs `elt.log`, avec **reprise de
+  run** (`pipeline_state.json`), **ingestion incrémentale** (watermark) et
+  **planification cron** (`schedule.yaml`) [cahier_des_charges.md §4.1] ;
 - moteur de déduplication exact + probabiliste (seuil 0.80, pondération nom 0.5 / naissance 0.3 /
   CIN 0.1 / ville de naissance 0.1), implémenté en Pandas **et** en PySpark [cahier_des_charges.md §4.2] ;
 - gouvernance : RBAC, consentement par finalité, audit d'accès, clés API hachées SHA-256
@@ -141,9 +143,11 @@ Périmètre fonctionnel couvert par ce stage :
   contrôle de consentement) ;
 - évaluation de la déduplication sur données synthétiques easy / medium / hard.
 
-Hors périmètre (assumés comme tels) : frontend Next.js optionnel de `front-optional/`, limité aux
-vues de gouvernance (le dashboard et les tableaux RMA du PoC ne sont pas repris), export VM `.box`,
-Docker/CI.
+Hors périmètre (assumés comme tels) : les **dashboards d'analyse du PoC**
+(`visualisation_app`, tableau de bord RMA) ne sont pas repris ; l'interface
+`front-optional/` se limite au **pilotage du pipeline** (statut, planification)
+et à la consultation des patients, et reste optionnelle au sens du cahier des
+charges. Export VM `.box`, Docker/CI.
 
 ## 1.6 Contexte chiffré (repères)
 
@@ -154,9 +158,12 @@ Les principaux chiffres vérifiables, détaillés dans les chapitres 4 à 7, son
   hard 50 % de variations) [synthetic-patient-generator].
 - **Évaluation (dataset hard)** : Precision **1.000**, Recall **0.422**, F1 **0.594**, zéro faux
   positif, parité MVP = Spark parfaite [evaluation_truth.md].
-- **Pipeline fusion** (run 07/09/2026, sources CSV synthétiques) : 4/4 vert, SILVER `patient_fhir`
+- **Pipeline fusion** (run 07/09/2026, sources CSV synthétiques) : 4/4 vert à ce run,
+  orchestration actuelle en 5 étapes avec reprise et planification ; SILVER `patient_fhir`
   **214** lignes, **145** masters, **69** doublons liés, GOLD consentements 145, API gouvernance
   **3/3 PASS** sur données réelles [ai/memoire/contexte_projet.md].
+- **Tests** : moteur + gouvernance + planification à **102/102** (57 moteur, 45
+  reprise/incrémental), zéro échec [chapitre 7].
 
 ## 1.7 Plan du mémoire
 
