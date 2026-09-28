@@ -1828,3 +1828,28 @@ Plan validé par l'utilisateur.
 **Vérifications.** `py_compile` des deux scripts OK ; le chemin TEMPLATE résolu depuis `ROOT` existe ; plus aucun
 renvoi vers les anciens chemins hors `ai/dev/logs.md` (historique conservé). Non touchés : verrous `~$` (fichiers
 ouverts), ancien deck `V2soutenance_m2_mmt_alpha.pptx` (encore utilisé par deux scripts). Pas de commit.
+
+## 28/09/2026 — Dépôt : nettoyage profond (lot 1, sans risque)
+
+| # | Action | Détail |
+| - | ------ | ------ |
+| 1 | Caches supprimés (ignorés, régénérables) | 28 dossiers `__pycache__` / `.pytest_cache`, `front-optional/.next`, `tsconfig.tsbuildinfo`, `patient_data_platform.egg-info` |
+| 2 | Versionnés supprimés (récupérables via Git) | `front-optional/todo.md` (réponse de chat de juillet 2025), `front-optional/bokt.new` (brouillon du sujet initial), `projet/mvp/.agents/skills/…` et `.claude/skills/…` (liens vers un skill Streamlit du `.venv`) |
+
+Conservés à dessein : données générées (`data/`), journaux (`logs/`, règle « ne jamais supprimer de traces »),
+`.vagrant/` (état de la VM), `.venv/`, `node_modules/`, `cim_embeddings.pkl`, `data_sources.json`.
+`projet/mvp/src/patient-data-platform` : dépôt Git imbriqué (historique propre, 483 Ko), référencé comme gitlink
+sans `.gitmodules` — laissé en place en attente de décision utilisateur.
+
+## 28/09/2026 — Dépôt : nettoyage profond (lot 2, validé par l'utilisateur)
+
+| # | Action | Détail |
+| - | ------ | ------ |
+| 1 | Ancien deck retiré | `documents/slide_soutenance/V2soutenance_m2_mmt_alpha.pptx` + `scripts/dev/build_soutenance_pptx.py` (remplacés par `Soutenance_M2_MBDS_RANOMENJANAHARY.pptx` / `build_soutenance_deck.py`, dont le docstring est mis à jour) |
+| 2 | 13 icônes inutilisées | `documents/icon/` : 410687, MongoDB, database, diusalisation, elt, entonnoir, goal, haddop_hdfs, hbase_logo, logo siemens, logo-sm, puits-deau, vmware |
+| 3 | Dépôt imbriqué supprimé | `projet/mvp/src/patient-data-platform` (ancienne copie du MVP, gitlink sans `.gitmodules`, historique local de 483 Ko perdu — décision utilisateur) |
+| 4 | Renommé | spec du MVP sans le suffixe « (1) » |
+
+**Vérifications.** `py_compile` de `build_soutenance_deck.py` et `build_logos.py` OK ; toutes les sources de
+`build_logos.py` existent encore dans `documents/icon/` ; plus aucun renvoi vers les fichiers retirés
+(hors historique de `ai/dev/logs.md`). Pas de commit.

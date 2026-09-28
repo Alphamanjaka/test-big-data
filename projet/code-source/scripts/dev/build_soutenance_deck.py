@@ -4,7 +4,7 @@ Usage :
     python scripts/dev/build_soutenance_deck.py
 
 Sortie : documents/slide_soutenance/Soutenance_M2_MBDS_RANOMENJANAHARY.pptx
-(l'ancien deck V2soutenance_m2_mmt_alpha.pptx et son générateur ne sont pas modifiés).
+(l'ancien deck V2soutenance_m2_mmt_alpha.pptx et son générateur ont été retirés le 28/09/2026 ; voir l'historique Git).
 
 Plan : celui du deck de référence (titre, entreprise, question, contexte, objectifs, plan,
 état de l'art, existant, solution, fonctionnalités, résultats, démonstration, perspectives,
