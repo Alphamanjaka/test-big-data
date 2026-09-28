@@ -25,7 +25,7 @@
 ### S1. Titre (0:30)
 **Concevoir une plateforme Big Data de gestion et de gouvernance des données patients**
 Nettoyage · Déduplication · Contrôle d'accès par consentement
-Stage M2 MBDS — Madagascar Medical Technology — Septembre 2026
+Stage M2 MBDS — Madagascar Medical Technology — Octobre 2026
 *Support : page de garde du rapport ; le message d'ouverture pointe la double finalité (qualité + confidentialité).*
 
 ### S2. Le problème : un même patient, plusieurs systèmes (1:15)
@@ -128,7 +128,7 @@ PROBLÈME MÉTIER → MVP (Pandas+PG) → VALIDATION (ground-truth) → SPARK (p
 
 - **À enregistrer à la maison, VM allumée** : le plan 3 exige la VM Vagrant, indisponible sur le
   poste de préparation.
-- Le plan 1 doit être **rejoué juste avant l'enregistrement** pour que l'écran montre 54/54.
+- Le plan 1 doit être **rejoué juste avant l'enregistrement** pour que l'écran montre 102/102.
 - *Slide de repli obligatoire* (à construire dans le même deck) : capture du run 4/4,
   `patient_fhir` **214 lignes** / **145 masters** / **69 doublons** / **32.24 %**, extrait de
   `evaluation_truth.md`, sortie de l'API.
