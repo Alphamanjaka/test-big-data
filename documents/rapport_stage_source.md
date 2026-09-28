@@ -1012,55 +1012,57 @@ Plusieurs perspectives prolongent ce travail. À court terme : enrichir le mappi
 
 #! Références et bibliographie
 
+Les ressources en ligne sont citées avec leur date de consultation : leur contenu a pu évoluer depuis. Les documentations logicielles sont rapportées à la version employée dans le projet lorsqu'elle est connue. Les articles et ouvrages publiés sont identifiés par leur DOI, qui reste stable.
+
 **Rapprochement d'identités**
 
-[1] ELMAGARMID, A. K. ; IPEIROTIS, P. G. ; VERYKIOS, V. S. *Duplicate Record Detection: A Survey*. IEEE Transactions on Knowledge and Data Engineering, vol. 19, n° 1, 2007, p. 1-16.
+[1] ELMAGARMID, A. K. ; IPEIROTIS, P. G. ; VERYKIOS, V. S. *Duplicate Record Detection: A Survey*. IEEE Transactions on Knowledge and Data Engineering, vol. 19, n° 1, 2007, p. 1-16. En ligne : https://www.cs.purdue.edu/homes/ake/pub/survey2.pdf (consulté le 8 septembre 2026).
 
-[2] FELLEGI, I. P. ; SUNTER, A. B. *A Theory for Record Linkage*. Journal of the American Statistical Association, vol. 64, n° 328, 1969, p. 1183-1210.
+[2] FELLEGI, I. P. ; SUNTER, A. B. *A Theory for Record Linkage*. Journal of the American Statistical Association, vol. 64, n° 328, 1969, p. 1183-1210. DOI : 10.2307/2286061.
 
-[3] CHRISTEN, P. *Data Matching: Concepts and Techniques for Record Linkage, Entity Resolution, and Duplicate Detection*. Springer, 2012.
+[3] CHRISTEN, P. *Data Matching: Concepts and Techniques for Record Linkage, Entity Resolution, and Duplicate Detection*. Springer, coll. Data-Centric Systems and Applications, 2012. DOI : 10.1007/978-3-642-31164-2.
 
-[4] RapidFuzz, documentation (version 3.14.5). https://rapidfuzz.github.io/RapidFuzz/
+[4] RapidFuzz, documentation et code source, version 3.14.5. En ligne : https://rapidfuzz.github.io/RapidFuzz/ (consulté le 8 septembre 2026).
 
 **Standards de santé**
 
-[5] HL7 FHIR, *Resource Patient* (v5.0.0), dont l'opération `$match` (§ 8.1.11). https://www.hl7.org/fhir/patient.html
+[5] HL7. *FHIR — Resource Patient*, version 5.0.0 (R5), dont l'opération `$match` (§ 8.1.11). En ligne : https://www.hl7.org/fhir/patient.html (consulté le 8 septembre 2026).
 
 **Architecture Big Data**
 
-[6] Apache Hadoop, *HDFS Architecture*. https://hadoop.apache.org
+[6] Apache Software Foundation. *HDFS Architecture* (documentation Hadoop). En ligne : https://hadoop.apache.org/docs/stable/hadoop-project-dist/hadoop-hdfs/HdfsDesign.html (consulté le 8 septembre 2026).
 
-[7] Apache Spark. https://spark.apache.org
+[7] Apache Software Foundation. *Apache Spark — Unified engine for large-scale data analytics*. En ligne : https://spark.apache.org (consulté le 8 septembre 2026).
 
-[8] Apache Hive. https://hive.apache.org
+[8] Apache Software Foundation. *Apache Hive*. En ligne : https://hive.apache.org (consulté le 8 septembre 2026).
 
-[9] Databricks, *Medallion Architecture*. https://docs.databricks.com/aws/en/lakehouse/medallion
+[9] Databricks. *What is the medallion lakehouse architecture?* En ligne : https://docs.databricks.com/aws/en/lakehouse/medallion (consulté le 8 septembre 2026).
 
 **Réglementation**
 
-[10] Règlement (UE) 2016/679 (RGPD), article 9.
+[10] Règlement (UE) 2016/679 du Parlement européen et du Conseil du 27 avril 2016 (règlement général sur la protection des données), article 9. Journal officiel de l'Union européenne, L 119, 4 mai 2016.
 
-[11] CNIL, *Quelles formalités pour les traitements de données de santé ?* https://www.cnil.fr
+[11] CNIL. *Quelles formalités pour les traitements de données de santé ?* En ligne : https://www.cnil.fr/fr/quelles-formalites-pour-les-traitements-de-donnees-de-sante (consulté le 8 septembre 2026).
 
-[12] CNIL, *RGPD et professionnels de santé libéraux : ce que vous devez savoir*. https://www.cnil.fr
+[12] CNIL. *RGPD et professionnels de santé libéraux : ce que vous devez savoir*. En ligne : https://www.cnil.fr/fr/rgpd-et-professionnels-de-sante-liberaux-ce-que-vous-devez-savoir (consulté le 8 septembre 2026).
 
-**Solutions existantes** (étude documentaire, consultée le 27/09/2026)
+**Solutions existantes** (étude documentaire : aucun produit n'a été installé)
 
-[13] InterSystems, *InterSystems EMPI* et documentation *IRIS for Health*. https://www.intersystems.com
+[13] InterSystems. *InterSystems EMPI* et documentation *InterSystems IRIS for Health*. En ligne : https://www.intersystems.com/products/intersystems-empi/ et https://docs.intersystems.com/irisforhealthlatest/ (consulté le 27 septembre 2026).
 
-[14] Qlik, *Talend MDM — Integrated Matching*. https://help.qlik.com
+[14] Qlik. *Integrated matching in Talend MDM* (version 8.0). En ligne : https://help.qlik.com/talend/en-US/mdm-examples/8.0/integrated-matching-in-talend-mdm (consulté le 27 septembre 2026).
 
-[15] LINACRE, R. et al. *Splink: Free software for probabilistic record linkage at scale*. International Journal of Population Data Science, vol. 7, n° 3, 2022.
+[15] LINACRE, R. ; LINDSAY, S. ; MANASSIS, T. ; SLADE, Z. ; HEPWORTH, T. ; KENNEDY, R. ; BOND, A. *Splink: Free software for probabilistic record linkage at scale*. International Journal of Population Data Science, vol. 7, n° 3, 2022. DOI : 10.23889/ijpds.v7i3.1794. Documentation : https://moj-analytical-services.github.io/splink (consulté le 27 septembre 2026).
 
-[16] HAPI FHIR. https://hapifhir.io
+[16] HAPI FHIR, implémentation open source de la spécification FHIR. En ligne : https://hapifhir.io (consulté le 27 septembre 2026).
 
-[17] Microsoft, *Azure Health Data Services*. https://learn.microsoft.com/azure/healthcare-apis/
+[17] Microsoft. *Azure Health Data Services* : export de données FHIR et service de dé-identification. En ligne : https://learn.microsoft.com/en-us/azure/healthcare-apis/fhir/export-data et https://learn.microsoft.com/en-us/azure/healthcare-apis/deidentification/overview (consulté le 27 septembre 2026).
 
-[18] Apache Atlas. https://atlas.apache.org
+[18] Apache Software Foundation. *Apache Atlas — Data Governance and Metadata framework for Hadoop*. En ligne : https://atlas.apache.org (consulté le 27 septembre 2026).
 
-[19] GNU Health. https://www.gnuhealth.org
+[19] GNU Health, système libre d'information de santé. En ligne : https://www.gnuhealth.org et https://docs.gnuhealth.org (consulté le 27 septembre 2026).
 
-[20] Odoo et applications hospitalières. https://www.odoo.com
+[20] Odoo, progiciel de gestion intégré, et module de gestion hospitalière. En ligne : https://www.odoo.com et https://apps.odoo.com/apps/modules/19.0/base_hospital_management (consulté le 27 septembre 2026).
 
 #! Annexes
 

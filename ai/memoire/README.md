@@ -16,7 +16,7 @@
 ## Structure de la mémoire (Mon_Memoire/chapters/)
 
 Le mémoire suit le **plan imposé par le master MBDS** (modèle des rapports de référence
-`documents/RAPPORT_HASINA_1613.docx` et `documents/Rapport de stage ETU 1156 … .docx`), adopté le
+`documents/references/RAPPORT_HASINA_1613.docx` et `documents/references/Rapport de stage ETU 1156 … .docx`), adopté le
 28/09/2026.
 
 | Fichier                     | Contenu cible                                                                                          |

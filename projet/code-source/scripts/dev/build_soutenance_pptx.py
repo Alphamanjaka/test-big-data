@@ -6,7 +6,7 @@ Usage :
 Sortie : documents/slide_soutenance/V2soutenance_m2_mmt_alpha.pptx
 Dépendances dev (venv local, hors deps du projet) : python-pptx>=0.6.21, Pillow.
 
-Structure des 21 slides alignée sur le deck de référence (V2soutenance_m2_hasina) :
+Structure des 21 slides alignée sur le deck de référence (documents/references/V2soutenance_m2_hasina.pptx) :
 bandeau de logos (ITuniversity, MBDS, Université Côte d'Azur, entreprise) et pied de page
 « titre » présenté par … / date sur chaque slide ; contenu = plateforme patients (mémoire
 `chapters/`). Les figures proviennent de documents/figures/ (render_mermaid_figures.py), les

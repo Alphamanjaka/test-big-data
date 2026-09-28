@@ -26,6 +26,7 @@ provision/metadata/
 
 # Livrables externes utilisateur (jamais commités)
 documents/*.docx
+documents/references/*.docx
 
 # Données générées et artefacts Big Data
 data/

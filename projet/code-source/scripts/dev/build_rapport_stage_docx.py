@@ -3,7 +3,7 @@
 Usage :
     python scripts/dev/build_rapport_stage_docx.py [--source ...] [--out ...] [--no-word]
 
-Le document part du rapport de référence `documents/Rapport de stage ETU 1156 ... .docx` utilisé
+Le document part du rapport de référence `documents/references/Rapport de stage ETU 1156 ... .docx` utilisé
 comme **gabarit** : ses styles (Times New Roman, titres numérotés 1 / 1.1 / 1.1.1, légendes,
 tables des matières), sa page de garde à quatre logos (UCA, MBDS, MMT, IT University), ses
 en-têtes et pieds de page et son découpage en sections (garde, liminaires en chiffres romains,
@@ -58,7 +58,7 @@ def etree_tostring(el):
     return _tostring(el, encoding="unicode")
 
 ROOT = Path(__file__).resolve().parents[4]
-TEMPLATE = ROOT / "documents" / "Rapport de stage ETU 1156 RAMANANTSAFIDY Jonah Fitia.docx"
+TEMPLATE = ROOT / "documents" / "references" / "Rapport de stage ETU 1156 RAMANANTSAFIDY Jonah Fitia.docx"
 SOURCE = ROOT / "documents" / "rapport_stage_source.md"
 OUT = ROOT / "documents" / "Rapport_de_stage_RANOMENJANAHARY_Manjaka_Alpha.docx"
 

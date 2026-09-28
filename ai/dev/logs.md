@@ -1773,3 +1773,58 @@ Demande utilisateur : représenter les outils par leur logo ; colonnes Usage, Ou
 **Vérifications :** planche des 24 logos contrôlée ; rendu du tableau relu dans le PDF d'une copie de contrôle (pages 18–20).
 Non utilisés dans le projet et donc écartés : MongoDB, HBase, VMware, Siemens. Version de Laragon non déterminée (« — »).
 Le .docx du dépôt n'est pas régénéré tant qu'il est ouvert dans Word.
+
+## 28/09/2026 — Rapport de stage : dates de consultation dans la bibliographie
+
+Demande utilisateur : dater la consultation des références en ligne, dont le contenu peut changer.
+
+| # | Action | Détail |
+| - | ------ | ------ |
+| 1 | `documents/rapport_stage_source.md` | bibliographie réécrite : « En ligne : URL (consulté le …) » pour les 16 ressources web ; dates reprises de `references/bibliographie.md` (8/09/2026 pour [1]–[12], 27/09/2026 pour [13]–[20]) ; URL complètes rétablies ; DOI pour [2], [3], [15] ; référence du Journal officiel pour le RGPD [10] ; version citée quand elle est connue (RapidFuzz 3.14.5, FHIR 5.0.0, Talend MDM 8.0) ; note d'introduction sur l'évolution possible des pages |
+
+**Vérifications :** rapport régénéré (75 pages) ; rendu des pages 54–55 contrôlé. Aucun lien n'a été re-vérifié en ligne
+dans cette session : les dates sont celles des vérifications consignées.
+
+## 28/09/2026 — Soutenance : nouveau deck refondu (20 slides)
+
+Demande utilisateur : slides plus propres et plus belles. Choix validés : nouveau deck, 15–20 min, plan de la
+référence (Hasina) conservé, style aligné sur le rapport.
+
+| # | Action | Détail |
+| - | ------ | ------ |
+| 1 | `projet/code-source/scripts/dev/build_soutenance_deck.py` (nouveau) | deck 16:9 (13,33 × 7,5 po) généré en python-pptx : 20 slides dans l'ordre de la référence, titre affirmatif et un message par slide, visuels natifs (cartes, flux, tableau comparatif coloré, graphique P/R/F1 modifiable), schéma des notions, logos des outils, emplacement vidéo/capture C07, notes de présentation sur chaque slide ; contrôle de géométrie avant écriture |
+| 2 | `documents/slide_soutenance/Soutenance_M2_MBDS_RANOMENJANAHARY.pptx` (généré) | nouveau deck ; l'ancien `V2soutenance_m2_mmt_alpha.pptx` et `build_soutenance_pptx.py` sont inchangés |
+
+**Incident :** premier fichier refusé par PowerPoint — une zone de texte de largeur négative (slide 11). Isolé par
+génération slide par slide ; corrigé, et un contrôle de géométrie bloque désormais ce cas à la génération.
+**Vérifications :** ouverture et export PDF par PowerPoint ; 20 slides relues visuellement ; validateur OOXML OK ;
+étiquettes du graphique en virgule décimale indépendamment de la langue du poste.
+**Reste :** le script oral (`documents/soutenance_script_oral.md`, 13 slides) ne suit pas encore ce deck.
+
+## 28/09/2026 — Soutenance : animations (essai sur la slide 2)
+
+Demande utilisateur : gérer les animations, tester d'abord sur la slide 2.
+
+| # | Action | Détail |
+| - | ------ | ------ |
+| 1 | `projet/code-source/scripts/dev/pptx_anim.py` (nouveau) | écrit le XML de minutage PowerPoint (`p:timing`, `p:bldLst`, `p:transition`) que python-pptx ne gère pas : modèle clics → étapes « après la précédente » → groupes « avec la précédente » ; effets fondu, balayage, zoom ; transition de slide |
+| 2 | `build_soutenance_deck.py` | repères `mark`/`since` pour grouper les formes ; slide 2 : clic 1 = trois chiffres clés en cascade, clic 2 = domaines d'activité, clic 3 = encart du stage ; transition en fondu ; option `--out` |
+
+**Vérifications :** validateur OOXML OK ; relecture par PowerPoint (COM) de la séquence de la slide 2 : 14 effets de
+fondu, 3 déclenchements au clic, enchaînements « avec » / « après la précédente » conformes, transition en fondu.
+Le deck du dépôt n'a pas été régénéré : il était ouvert dans PowerPoint (test sur une copie de contrôle).
+
+## 28/09/2026 — Dépôt : rangement de `documents/`
+
+Plan validé par l'utilisateur.
+
+| # | Action | Détail |
+| - | ------ | ------ |
+| 1 | Supprimé | `documents/Agile Gantt chart1.xlsx` (remplacé par `Gantt_suivi_projet.xlsx` ; récupérable dans l'historique Git) |
+| 2 | Déplacés vers `documents/references/` | `RAPPORT_HASINA_1613.docx`, `Rapport de stage ETU 1156 RAMANANTSAFIDY Jonah Fitia.docx` (non versionnés), `V2soutenance_m2_hasina.pptx`, `Etat-de-l'art-M2-pro-stage.docx.md` (`git mv`) |
+| 3 | Renvois | `build_rapport_stage_docx.py` (TEMPLATE + docstring), `build_soutenance_pptx.py` (docstring), `ai/memoire/README.md` |
+| 4 | `.gitignore` | ajout de `documents/references/*.docx` (les rapports d'autres étudiants restent hors Git) |
+
+**Vérifications.** `py_compile` des deux scripts OK ; le chemin TEMPLATE résolu depuis `ROOT` existe ; plus aucun
+renvoi vers les anciens chemins hors `ai/dev/logs.md` (historique conservé). Non touchés : verrous `~$` (fichiers
+ouverts), ancien deck `V2soutenance_m2_mmt_alpha.pptx` (encore utilisé par deux scripts). Pas de commit.
