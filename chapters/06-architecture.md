@@ -35,7 +35,7 @@ flowchart TB
 
 Design retenu pour chaque brique [cahier des charges §4] :
 
-**Tableau 31 — Les sept briques de la chaîne retenue et la conception adoptée pour chacune.**
+**Tableau 32 — Les sept briques de la chaîne retenue et la conception adoptée pour chacune.**
 
 | Brique | Conception |
 |---|---|
@@ -90,7 +90,7 @@ consentements, journal d'audit, comptes. C'est une séparation de rôles, pas un
 L'architecture est installée sur **une VM unique** (`ubuntu/focal64`, Vagrant, 8 Go / 4 cœurs) ;
 l'ordre de démarrage des services est strict [architecture.md §3] :
 
-**Tableau 32 — Les composants installés sur la VM, leur rôle et leur port ou leur chemin ; l'ordre de démarrage est imposé.**
+**Tableau 33 — Les composants installés sur la VM, leur rôle et leur port ou leur chemin ; l'ordre de démarrage est imposé.**
 
 | Composant | Rôle | Port / chemin |
 |---|---|---|

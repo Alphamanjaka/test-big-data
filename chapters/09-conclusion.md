@@ -8,7 +8,7 @@ La problématique posée en introduction était la suivante :
 > données patients issues de sources hétérogènes, tout en assurant la traçabilité des identités
 > et la gouvernance des accès basée sur le consentement du patient ?*
 
-**Tableau 46 — Les six volets de la problématique : la réponse conçue et réalisée, et la preuve vérifiable dans le dépôt.**
+**Tableau 47 — Les six volets de la problématique : la réponse conçue et réalisée, et la preuve vérifiable dans le dépôt.**
 
 | Volet de la problématique | Réponse conçue et réalisée | Preuve vérifiable |
 |---|---|---|
@@ -25,7 +25,7 @@ Les choix du projet se lisent comme une suite d'arbitrages, chacun posé sur des
 critères explicites (§ 7.1) et chacun assorti d'un risque résiduel assumé. Cette
 table est la réponse à la question « *qu'avez-vous choisi, et à la place de quoi ?* ».
 
-**Tableau 47 — Les onze arbitrages du projet : la décision, l'alternative écartée, le critère décisif, la preuve et le risque résiduel assumé.**
+**Tableau 48 — Les onze arbitrages du projet : la décision, l'alternative écartée, le critère décisif, la preuve et le risque résiduel assumé.**
 
 | Décision | Alternative écartée | Critère décisif | Preuve | Risque résiduel |
 |---|---|---|---|---|
@@ -92,14 +92,14 @@ Les difficultés ont été de quatre ordres.
 
 ## Limites assumées
 
-**Tableau 48 — Les limites assumées du prototype : état observé et cause, sans dissimulation.**
+**Tableau 49 — Les limites assumées du prototype : état observé et cause, sans dissimulation.**
 
 | Limite | État observé | Cause |
 |---|---|---|
 | **Rappel 0.422 sur le jeu « hard »** | 420 faux négatifs sur 1 057 enregistrements | variations à 50 % ; seuil 0.80 conservateur ; le métier n'a pas validé un seuil plus bas |
 | **`patient_events_gold` vide** | 0 ligne en intermédiaire | Encounter / Condition / Observation non rattachées à `patient_uuid` : enrichissement du mapping FHIR restant |
 | **Consentement non alimenté en base centrale** | `patient_consent_gold` : 145 lignes mais `purpose` / `granted` à `NULL` | PostgreSQL central non peuplé pendant le stage. La **mécanique** est démontrée et testée (seed `provision/db/seed_governance.py` fourni, non exécuté faute d'environnement) ; la **donnée** ne l'est pas |
-| **Droit applicable non vérifié localement** | conformité démontrée au RGPD seul | cadre juridique malgache des données de santé non étudié dans le stage (§ 4.2) |
+| **Formalités légales non accomplies** | conception alignée sur la loi n° 2014-038 et sur le RGPD (§ 2.1.6), sans déclaration ni autorisation auprès de la CMIL | prototype non déployé ; autorité de contrôle pas encore opérationnelle (§ 4.2) |
 | **API Flask de démonstration non sécurisée** | `/api/governance/consent` sans authentification, `debug=True` | dette connue du PoC ; le contrôle de consentement est implémenté sur l'API **FastAPI** de gouvernance, qui est celle du dépôt consolidé |
 | **Clés d'API hachées sans sel** | `engine/governance/auth.py:26` et `provision/db/seed_governance.py:57` : `hashlib.sha256(...).hexdigest()`, sans sel ni itération | l'empreinte protège la lecture directe de `api_user`, mais une même clé produit toujours la même empreinte : une table de correspondance suffit à la retrouver. Voie de correction : un sel par clé, ou une fonction lente par défaut (`bcrypt`, déjà employée côté frontend pour les mots de passe). Sans effet sur le moteur de déduplication, qui n'utilise pas ces clés |
 | **Précision 1.000 = un plancher, pas une borne** | aucun cas adversariaire dans la vérité terrain | le générateur ne dégrade que des enregistrements existants et ne crée jamais deux personnes presque identiques ; un module « faux jumeaux » renforcerait la preuve (§ 8.6) |

@@ -40,10 +40,10 @@ flowchart RL
 
 **Matrice de sélection technologique.** Les choix du projet ne sont pas des préférences : ils
 sont arbitrés sur des critères **explicités et pondérés**. La grille ci-dessous est appliquée aux
-trois arbitrages structurants ; les critères sont issus des contraintes du § 4.2 (Python 3.8,
+quatre arbitrages structurants ; les critères sont issus des contraintes du § 4.2 (Python 3.8,
 VM 8 Go, interdiction de NLP lourd, exigence d'explicabilité).
 
-**Tableau 33 — Les cinq critères pondérés de la grille d'arbitrage et la justification de chaque poids.**
+**Tableau 34 — Les cinq critères pondérés de la grille d'arbitrage et la justification de chaque poids.**
 
 | Critère | Poids | Justification du poids |
 |---|---:|---|
@@ -55,7 +55,7 @@ VM 8 Go, interdiction de NLP lourd, exigence d'explicabilité).
 
 Les options sont notées de 1 à 5, 5 étant le meilleur :
 
-**Tableau 34 — Notation des options sur les cinq critères pondérés, pour les trois arbitrages structurants.**
+**Tableau 35 — Notation des options sur les cinq critères pondérés, pour les quatre arbitrages structurants.**
 
 | Arbitrage | Option | C1 | C2 | C3 | C4 | C5 | **Score** | Verdict |
 |---|:---|---:|---:|---:|---:|---:|---:|---|
@@ -67,6 +67,11 @@ Les options sont notées de 1 à 5, 5 étant le meilleur :
 | | MySQL | 4 | 4 | 4 | 5 | 5 | 4.25 | écarté (JSONB moins intégré) |
 | **3 · Framework d'API de gouvernance** | **FastAPI** | 5 | 5 | 4 | 4 | 5 | **4.65** | **retenu** |
 | | Flask | 5 | 3 | 5 | 5 | 5 | 4.50 | écarté de peu — validation manuelle de la finalité |
+| **4 · Moteur d'appariement** | **Moteur propre sur RapidFuzz** (poids fixés) | 5 | 5 | 4 | 3 | 5 | **4.50** | **retenu** |
+| | Splink [B15] | 4 | 4 | 3 | 5 | 5 | 4.05 | écarté — poids estimés par EM, version figée à 4.0.11 sous Python 3.8 |
+| | *recordlinkage* | 5 | 4 | 2 | 3 | 5 | 3.85 | écarté — Pandas seul, peu actif depuis 2023 |
+| | *dedupe* | 5 | 2 | 3 | 4 | 5 | 3.70 | écarté — exige une campagne d'étiquetage humain |
+| | Ditto / LLM [B21], [B22] | 1 | 1 | 1 | 3 | 5 | 1.70 | écarté — GPU ou service externe, décision non lisible |
 
 > **Lecture honnête du score.** Flask et FastAPI ne se séparent que de 0.15 : le
 > choix n'est pas « le meilleur », mais « celui qui rend le contrôle de finalité
@@ -75,14 +80,21 @@ Les options sont notées de 1 à 5, 5 étant le meilleur :
 > par un critère de cohérence (écriture concurrente, support JSONB), pas par une
 > incapacité. Le pondérage est **sensible** : C1 étant éliminatoire, aucune
 > pondération ne réintroduirait `sentence_transformers`. Le même raisonnement
-> appliqué à la déduplication (§ 2.1.3, poids 0.5/0.3/0.1/0.1) impose de garder le
+> appliqué à la déduplication (§ 7.2.3, poids 0.5/0.3/0.1/0.1) impose de garder le
 > **score de similarité explicite**, jamais une décision opaque — c'est le principe
 > commun aux deux exercices.
+>
+> L'arbitrage 4 appelle la même prudence. Splink n'est distancé que de 0.45, et il
+> l'emporte en maturité (C4 = 5 contre 3) : le moteur propre ne gagne que par
+> l'explicabilité (poids fixés par le métier) et par la compatibilité durable avec
+> Python 3.8 (§ 2.2.2). Enfin, le socle Hadoop, Hive et Spark n'est **pas** noté par
+> cette grille : il découle du sujet (une plateforme Big Data) et du PoC hérité, et le
+> § 2.2.2 reconnaît que DuckDB ou Polars l'emporteraient sur de petits volumes.
 
 La plate-forme retenue est donc : Hadoop 3.3.6 (HDFS, YARN), Hive 3.1.3 et Spark 3.4.2 pour le
 Data Lake ; Python 3.8 avec Pandas, PySpark et RapidFuzz pour le moteur ; PostgreSQL pour la
 base centrale ; FastAPI pour l'API de gouvernance et Flask pour l'API des indicateurs ; Next.js
-pour l'interface optionnelle (Tableau 17, § 4.1.4).
+pour l'interface optionnelle (Tableau 18, § 4.1.4).
 
 ## 7.2 Conception du code source
 
@@ -133,7 +145,7 @@ Le mapping des colonnes source → canonique est **explicite et déterministe**
 (`canonical.py::map_patient()`) ; le `matching_key` produit la clé de déduplication
 `(birth_date, cin, nom normalisé)`.
 
-**Tableau 35 — Le mapping des colonnes source vers le modèle canonique, et la règle de standardisation appliquée à chaque champ.**
+**Tableau 36 — Le mapping des colonnes source vers le modèle canonique, et la règle de standardisation appliquée à chaque champ.**
 
 | Champ | pharmacy | consultation | imaging | Standardisation `_*` |
 |---|---|---|---|---|
@@ -217,7 +229,7 @@ erDiagram
 Le tableau ci-dessous précise le rôle de chaque table et les contraintes qui rendent l'écriture
 idempotente :
 
-**Tableau 36 — Les tables du modèle central PostgreSQL, leur rôle et les clés qui rendent l'écriture idempotente.**
+**Tableau 37 — Les tables du modèle central PostgreSQL, leur rôle et les clés qui rendent l'écriture idempotente.**
 
 | Table | Rôle | Clés de conception |
 |---|---|---|
@@ -239,7 +251,7 @@ l'empreinte n'a pas changé n'est **pas ré-extraite** (incrémental, anti-retra
 
 **Les zones du Data Lake** [bigdata_concepts.md §3] :
 
-**Tableau 37 — L'écriture dans les trois zones du Data Lake : ce que chaque zone reçoit et sous quelle forme.**
+**Tableau 38 — L'écriture dans les trois zones du Data Lake : ce que chaque zone reçoit et sous quelle forme.**
 
 | Couche | Rôle dans la conception | Écriture |
 |---|---|---|
@@ -267,7 +279,7 @@ candidats de ces buckets [deduplication.md §4].
 2. **Probabilistic matching** — parmi les candidats du blocking, score de
    similarité **pondéré** [deduplication.md §5] :
 
-**Tableau 38 — Le calcul du score de similarité : une similarité et un poids par critère, pour un total qui doit atteindre 0,80 pour fusionner.**
+**Tableau 39 — Le calcul du score de similarité : une similarité et un poids par critère, pour un total qui doit atteindre 0,80 pour fusionner.**
 
    | Critère | Similarité | Poids |
    |---|---|---:|
@@ -346,7 +358,7 @@ Le générateur
 [`synthetic-patient-generator`](../projet/code-source/evaluation/synthetic-patient-generator)
 est implémenté en 7 étapes, déterministe (seed 42) :
 
-**Tableau 39 — Les six modules du générateur synthétique et le rôle réel de chacun.**
+**Tableau 40 — Les six modules du générateur synthétique et le rôle réel de chacun.**
 
 | Module | Rôle réalisé |
 |---|---|
@@ -399,7 +411,7 @@ flowchart LR
 > L'étape 1/5 est préparatoire : si les fichiers de démonstration existent déjà,
 > elle ne ré-écrit rien (idempotence).
 
-**Tableau 40 — Les cinq étapes du pipeline ELT, le script qui les exécute et la sortie réellement produite.**
+**Tableau 41 — Les cinq étapes du pipeline ELT, le script qui les exécute et la sortie réellement produite.**
 
 | Étape | Script | Sortie réelle |
 |---|---|---|
@@ -485,7 +497,7 @@ soin rattachés.
 
 Le moteur `engine/identity/` est la pièce centrale, deux implantations alignées :
 
-**Tableau 41 — Les deux implantations du moteur côte à côte : la sémantique est alignée, seule la mécanique change.**
+**Tableau 42 — Les deux implantations du moteur côte à côte : la sémantique est alignée, seule la mécanique change.**
 
 | Aspect | `matcher.py` (Pandas) | `spark_dedup.py` (PySpark driver-side) |
 |---|---|---|
@@ -551,7 +563,7 @@ s'applique à l'API de gouvernance, comme le rappelle `ai/dev/suivi_avancement.m
 
 ### 7.3.6 Difficultés rencontrées et résolutions
 
-**Tableau 42 — Les sept difficultés réellement rencontrées, leur cause et le correctif testé.**
+**Tableau 43 — Les sept difficultés réellement rencontrées, leur cause et le correctif testé.**
 
 | Problème réel | Cause | Correctif |
 |---|---|---|

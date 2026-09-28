@@ -154,6 +154,13 @@ dans `Mon_Memoire` (subtree → `projet/code-source/`, `projet/mvp/`, `archives/
     de contrôle OK (plan MBDS, 50 tableaux, 8 images). Reste : régénérer
     `documents/memoire_M2_MBDS.docx` (verrouillé par Word), personnaliser les remerciements,
     confirmer les périodes non tracées du Gantt, commit.
+17. **[Mémoire — état de l'art]** Chapitre 2 **affiné** (28/09) : implémentation renvoyée aux
+    chapitres 6-7 ; droit malgache (loi n° 2014-038, CMIL) ; FHIR Consent ; ER récente (Ditto, LLM),
+    PPRL, codages phonétiques ; lakehouse / Delta Lake ; OpenCR ; coût et dépendance aux éditeurs
+    (retrait de Talend Open Studio) ; § 2.2.2 briques alternatives ; grille à 2 critères
+    éliminatoires + 5 de qualité ; arbitrage 4 ajouté à la matrice du § 7.1 ; B21-B31 ajoutées.
+    **Preuves :** sources consultées le 28/09 (URL et DOI dans `references/bibliographie.md`) ;
+    49 tableaux renumérotés sans trou ; export DOCX de contrôle OK. Reste : relecture, commit.
 
 ## Dettes techniques connues
 

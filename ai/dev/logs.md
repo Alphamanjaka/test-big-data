@@ -1853,3 +1853,20 @@ sans `.gitmodules` — laissé en place en attente de décision utilisateur.
 **Vérifications.** `py_compile` de `build_soutenance_deck.py` et `build_logos.py` OK ; toutes les sources de
 `build_logos.py` existent encore dans `documents/icon/` ; plus aucun renvoi vers les fichiers retirés
 (hors historique de `ai/dev/logs.md`). Pas de commit.
+
+## 28/09/2026 — Mémoire : affinage de l'état de l'art (chapitre 2)
+
+| # | Fichier | Changement |
+| - | ------- | ---------- |
+| 1 | `chapters/02-etat-de-l-art.md` | détails d'implémentation (fichiers, poids, config VM, tableau RGPD → fichiers) retirés et renvoyés au § 7.2.3 ; § 2.1.1 : mots-clés, biais commercial, tableau 5 réaligné sur les blocs A-E de la grille (12 traités, 6 partiels, 1 hors périmètre, 1 optionnel) ; § 2.1.2 : EM, Ditto, LLM ; § 2.1.3 : phonétique, version RapidFuzz sous Python 3.8 ; § 2.1.6 : loi n° 2014-038 (art. 13-15, 17, 18, 20, 28, 43, 46), CMIL non opérationnelle, tableau loi malgache / RGPD, FHIR Consent, PPRL ; § 2.1.8 : lakehouse, ACID ; § 2.2.1 : OpenCR, coût et dépendance (Talend Open Studio retiré le 31/01/2024) ; § 2.2.2 (nouveau) : briques alternatives ; § 2.3 : grille E1-E2 / Q1-Q5, Splink explicable (graphique en cascade), HAPI ◐ en gouvernance (cadre de consentement à programmer), Q4 du projet ◐ |
+| 2 | `references/bibliographie.md` | B4 corrigée (3.14.5 exige Python ≥ 3.10 ; 3.9.7 = dernière pour 3.8) ; B15, B16 complétées ; B21-B31 ajoutées avec date de consultation |
+| 3 | `chapters/07-conception.md` | matrice du § 7.1 : arbitrage 4 « moteur d'appariement » (moteur propre 4.50, Splink 4.05, recordlinkage 3.85, dedupe 3.70, Ditto/LLM 1.70) + lecture honnête ; renvoi § 2.1.3 → § 7.2.3 |
+| 4 | `chapters/04-demarche-projet.md`, `chapters/09-conclusion.md` | contexte juridique : « non traité » → « partiel » (loi étudiée, formalités CMIL non accomplies) |
+| 5 | `chapters/08-tests.md` | preuve des tests d'API rattachée au § 7.2.3 |
+| 6 | `chapters/03..09` | tableaux renumérotés (le chapitre 2 compte un tableau de plus) : 49 légendes, renvoi « Tableau 17 » → 18 |
+
+**Vérifications.** Articles de la loi lus dans le texte officiel (PDF AFAPDP) ; compatibilité Python 3.8 lue dans
+les métadonnées PyPI (`requires_python`) ; export DOCX de contrôle dans le scratchpad : 10 chapitres, 49 tableaux,
+9 figures. **Incohérence relevée, non corrigée dans le code** : la bibliographie citait RapidFuzz 3.14.5, qui ne
+s'installe pas sous Python 3.8 ; la version réellement installée sur la VM n'est tracée nulle part.
+`documents/rapport_stage_source.md` (rapport Word) non resynchronisé. Pas de commit.

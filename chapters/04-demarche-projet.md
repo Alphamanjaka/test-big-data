@@ -8,7 +8,7 @@ Le projet a mobilisé les cinq activités classiques de l'ingénierie logicielle
 une production vérifiable dans le dépôt, ce qui permet de la relire sans dépendre de la mémoire
 du stagiaire.
 
-**Tableau 16 — Les activités d'ingénierie logicielle du projet, ce que chacune a produit, et où le trouver.**
+**Tableau 17 — Les activités d'ingénierie logicielle du projet, ce que chacune a produit, et où le trouver.**
 
 | Activité | Ce qu'elle a produit | Où le trouver |
 |---|---|---|
@@ -70,7 +70,7 @@ tient en une seule personne :
 
 ### 4.1.4 Outils
 
-**Tableau 17 — Les outils du projet, regroupés par usage.**
+**Tableau 18 — Les outils du projet, regroupés par usage.**
 
 | Usage | Outils | Rôle dans le projet |
 |---|---|---|
@@ -125,7 +125,7 @@ en aval.
 
 **Contraintes techniques et environnementales.**
 
-**Tableau 18 — Les six contraintes du stage et le traitement adopté pour chacune.**
+**Tableau 19 — Les six contraintes du stage et le traitement adopté pour chacune.**
 
 | Contrainte | Nature | Traitement adopté |
 |---|---|---|
@@ -142,32 +142,34 @@ Environnement de référence : VM `ubuntu/focal64` (Vagrant) — Hadoop 3.3.6, H
 
 **Contexte local et conditions d'applicabilité.** Un prototype reproductible sur sa VM ne
 devient un outil utilisable que si les contraintes du terrain ont été regardées. Quatre plans
-de la réalité malgache conditionnent l'applicabilité du projet ; l'un d'entre eux n'a **pas**
-pu être résolu dans le périmètre du stage.
+de la réalité malgache conditionnent l'applicabilité du projet ; l'un d'entre eux n'est
+que **partiellement** traité dans le périmètre du stage.
 
-**Tableau 19 — Les quatre plans de réalité du contexte local, et ce que chacun change à la solution ; le dernier reste non traité.**
+**Tableau 20 — Les quatre plans de réalité du contexte local, et ce que chacun change à la solution ; le dernier n'est que partiellement traité.**
 
 | Plan de réalité | Observation de terrain | Conséquence sur la solution | État |
 |---|---|---|---|
 | **Données de santé dispersées** | chaque service tient son propre registre (pharmacie, consultation, imagerie), sans identifiant commun | justifie l'Entity Resolution et le MPI : l'identifiant partagé doit être **reconstruit**, pas supposé | traité |
 | **Organisation et rôles** | le service concerné n'a pas de référentiel d'identité ; la clé d'accès est un couple (identifiant fonctionnel, mot de passe) | l'API d'accès a été conçue sur un modèle **clé API + rôle** plutôt que sur des comptes nominatifs, plus simple à configurer sans annuaire | traité |
 | **Infrastructure et connectivité** | réseau intermittent, alimentation non garantie, pas de cluster | conception **mono-nœud** et **rejouable** : un run complet repart de zéro et produit le même résultat (seed fixe) | traité |
-| **Données sensibles, contexte juridique** | cadre juridique national des données de santé **non vérifié** dans ce stage : seul le RGPD et la loi française ont été étudiés (§ 2.1.6) | la conformité présentée est **européenne**, à transposer au droit malgache (loi sur les données à caractère personnel, autorité de protection) | **non traité** |
+| **Données sensibles, contexte juridique** | la loi n° 2014-038 classe les données de santé parmi les données sensibles ; son autorité de contrôle, la CMIL, n'est pas encore opérationnelle (§ 2.1.6) | conception alignée sur la loi malgache et sur le RGPD (finalité, consentement, sécurité, hébergement interne) ; les **formalités** (déclaration, autorisation préalable) restent à accomplir avant tout déploiement | **partiel** |
 
 Deux points restent ouverts :
 
-1. **Le droit applicable n'est pas celui du pays de l'établissement.** Le stage
-   s'est appuyé sur le RGPD [B10] et les recommandations CNIL [B11], [B12] parce
-   que ce sont les références accessibles depuis le stage. Elles constituent un
-   **cadre de conception exigeant** (finalité déterminée, minimisation,
-   traçabilité, consentement explicite) et non une certification de conformité
-   locale. La vérification du droit malgache — et de l'existence d'une autorité
-   de contrôle — reste à faire avant toute mise en production.
+1. **La conformité est un cadre de conception, pas une certification.** Le droit
+   applicable est la loi malgache n° 2014-038 [B24] ; le RGPD [B10] et les
+   recommandations CNIL [B11], [B12] ont servi de référence de conception, parce
+   que leur doctrine est détaillée et que leurs principes sont les mêmes (§ 2.1.6).
+   Aucune formalité n'a été accomplie auprès de la CMIL, puisque le prototype n'est
+   pas déployé ; une plateforme réelle relèverait probablement de l'autorisation
+   préalable prévue pour les traitements à risques particuliers (art. 46). Cette
+   démarche reste à mener avant toute mise en production, même si l'autorité n'est
+   pas encore opérationnelle [B25].
 2. **La volumétrie réelle n'a pas été utilisée.** Toutes les données sont
    synthétiques, générées à l'échelle du prototype (quelques centaines de lignes
    en SILVER, § 5.1.5). Le dimensionnement réel de l'établissement — volumétrie,
    cardinalité, taux de doublons observé — est **inconnu** et conditionne le choix
-   du seuil de similarité (§ 2.1.3) comme le partitionnement du blocking.
+   du seuil de similarité (§ 7.2.3) comme le partitionnement du blocking.
 
 > **Ce que le contexte local change concrètement.** Sans annuaire d'identité, la
 > gestion des accès par clé API avec trois rôles est un compromis pragmatique et
@@ -179,7 +181,7 @@ Deux points restent ouverts :
 projet ; le tableau ci-dessous les reprend avec la parade prévue et ce qu'il en est à la fin
 du stage.
 
-**Tableau 20 — Les risques du projet, leur impact, la parade prévue et le constat à la fin du stage.**
+**Tableau 21 — Les risques du projet, leur impact, la parade prévue et le constat à la fin du stage.**
 
 | Risque | Impact | Parade [cahier_des_charges.md §11] | Constat à la fin du stage |
 |---|---|---|---|
@@ -196,7 +198,7 @@ critère de sortie vérifiable. Les deux PoC d'origine ont avancé en parallèle
 pour le moteur métier, `datalake_mavis` pour l'architecture Big Data — avant d'être fusionnés
 dans le dépôt unique ; la règle du critère de sortie s'applique à l'intérieur de chaque chaîne.
 
-**Tableau 21 — Les cinq jalons du stage : contenu, critère de sortie atteint, preuve correspondante et traces datées dans les journaux.**
+**Tableau 22 — Les cinq jalons du stage : contenu, critère de sortie atteint, preuve correspondante et traces datées dans les journaux.**
 
 | Jalon | Contenu | Critère de sortie | Preuve | Traces datées |
 |---|---|---|---|---|
@@ -220,7 +222,7 @@ contrainte découverte relançant une discussion, une relecture de l'existant ou
 documentaire. C'est ce qui justifie une démarche itérative plutôt qu'un cycle en cascade
 (§ 4.1.2).
 
-**Tableau 22 — Diagramme de Gantt du stage, par quinzaine : ■ période datée dans les journaux du dépôt, □ période déclarée, sans trace datée dans le dépôt, ○ prévu.**
+**Tableau 23 — Diagramme de Gantt du stage, par quinzaine : ■ période datée dans les journaux du dépôt, □ période déclarée, sans trace datée dans le dépôt, ○ prévu.**
 
 | Phase | 06/07–19/07 | 20/07–02/08 | 03/08–16/08 | 17/08–30/08 | 31/08–13/09 | 14/09–27/09 | 28/09–11/10 | 12/10–31/10 |
 |---|:---:|:---:|:---:|:---:|:---:|:---:|:---:|:---:|
@@ -264,7 +266,7 @@ production, d'hébergement ou d'exploitation n'est compté.
 
 ### 4.4.1 Coûts humains
 
-**Tableau 23 — Coûts humains sur la durée du stage (hypothèses de travail, à remplacer par les chiffres réels du commanditaire).**
+**Tableau 24 — Coûts humains sur la durée du stage (hypothèses de travail, à remplacer par les chiffres réels du commanditaire).**
 
 | Poste | Base de calcul | Coût mensuel (Ar) | Coût sur 4 mois (Ar) |
 |---|---|---:|---:|
@@ -274,7 +276,7 @@ production, d'hébergement ou d'exploitation n'est compté.
 
 ### 4.4.2 Coûts matériels et logiciels
 
-**Tableau 24 — Coûts matériels et logiciels : le matériel est déjà acquis et les logiciels sont libres ; aucun achat n'a été nécessaire.**
+**Tableau 25 — Coûts matériels et logiciels : le matériel est déjà acquis et les logiciels sont libres ; aucun achat n'a été nécessaire.**
 
 | Poste | Détail | Coût (Ar) |
 |---|---|---:|
@@ -290,7 +292,7 @@ production, d'hébergement ou d'exploitation n'est compté.
 
 ### 4.4.3 Coût total
 
-**Tableau 25 — Coût total du projet sur la durée du stage.**
+**Tableau 26 — Coût total du projet sur la durée du stage.**
 
 | Catégorie | Coût sur 4 mois (Ar) |
 |---|---:|

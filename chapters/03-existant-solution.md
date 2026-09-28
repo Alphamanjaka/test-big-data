@@ -29,7 +29,7 @@ Ce que l'utilisateur ne peut pas faire, en revanche, c'est **passer d'un systèm
 Trois systèmes sources ont été rencontrés puis capturés (schémas et volumes) au cours du stage
 [`documents/journal_poc_datalake_mavis.md`](../documents/journal_poc_datalake_mavis.md) :
 
-**Tableau 12 — Les quatre sources capturées au stage : socle technique, volume vérifié, tables retenues et particularités relevées.**
+**Tableau 13 — Les quatre sources capturées au stage : socle technique, volume vérifié, tables retenues et particularités relevées.**
 
 | Source | Socle | Volume vérifiable | Tables retenues | Particularités relevées |
 |---|---|---|---|---|
@@ -68,7 +68,7 @@ sources synthétiques reproduisent l'hétérogénéité observée, sur le modèl
 réellement rencontrés en établissement (consultations, pharmacies, imagerie)
 [cahier_des_charges.md §1] :
 
-**Tableau 13 — Les trois sources synthétiques : nom de fichier et identifiant, qui portent des noms différents d'une source à l'autre. Le mapping champ par champ vers le modèle canonique est donné au § 7.2.2.**
+**Tableau 14 — Les trois sources synthétiques : nom de fichier et identifiant, qui portent des noms différents d'une source à l'autre. Le mapping champ par champ vers le modèle canonique est donné au § 7.2.2.**
 
 | Source | Fichier | Identifiant |
 |---|---|---|
@@ -201,7 +201,7 @@ consultation, `sex` en imagerie) : elles **encodent le genre différemment** (`H
 `male/female`, `Homme/femme`). Le moteur y répond par des listes fermées, dans
 `engine/identity/canonical.py` :
 
-**Tableau 14 — Le contrat de normalisation : règle appliquée à chaque champ et comportement quand la règle échoue.**
+**Tableau 15 — Le contrat de normalisation : règle appliquée à chaque champ et comportement quand la règle échoue.**
 
 | Champ | Règle de normalisation appliquée | Comportement en cas d'échec |
 |---|---|---|
@@ -245,7 +245,7 @@ charges. Le **déploiement** chez le commanditaire (serveur de production, expor
 Docker/CI) n'entre pas dans le stage : la plateforme est livrée comme un prototype reproductible
 sur sa VM de développement.
 
-**Tableau 15 — Les livrables prévus au cahier des charges et leur état à la fin du stage.**
+**Tableau 16 — Les livrables prévus au cahier des charges et leur état à la fin du stage.**
 
 | # | Livrable [cahier_des_charges.md §10] | État |
 |---|---|---|

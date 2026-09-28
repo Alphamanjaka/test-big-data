@@ -5,7 +5,7 @@
 Le cahier des charges fixe six objectifs [cahier_des_charges.md §3], traduits ici
 en exigences vérifiables :
 
-**Tableau 26 — Les six exigences fonctionnelles et leur critère de succès vérifiable.**
+**Tableau 27 — Les six exigences fonctionnelles et leur critère de succès vérifiable.**
 
 | # | Exigence fonctionnelle | Critère de succès |
 |---|---|---|
@@ -22,7 +22,7 @@ agit, **à partir de quand** et **ce qui se passe quand ça échoue**. Ils repre
 pipeline détaillées au § 7.3, mais vues par l'usage et non par l'implémentation, et sont écrits
 comme des scénarios, pas comme des lignes de code.
 
-**Tableau 27 — Les quatre étapes fonctionnelles, les exigences qu'elles couvrent et les cas d'utilisation qui les illustrent.**
+**Tableau 28 — Les quatre étapes fonctionnelles, les exigences qu'elles couvrent et les cas d'utilisation qui les illustrent.**
 
 | Étape | Exigences | Cas d'utilisation |
 |---|---|---|
@@ -173,7 +173,7 @@ n'est pas ré-extraite), un run échoué **reprend** à la première étape non 
 lancement régulier est **planifiable** (fréquence `daily` / `weekly` / `monthly`, cron)
 [cahier_des_charges.md §4.1].
 
-**Tableau 28 — Les exigences non fonctionnelles, regroupées par qualité attendue : ce qui est réalisé, et sa preuve ou sa limite.**
+**Tableau 29 — Les exigences non fonctionnelles, regroupées par qualité attendue : ce qui est réalisé, et sa preuve ou sa limite.**
 
 | Qualité | Exigence | Réalisation | Preuve ou limite |
 |---|---|---|---|
@@ -194,7 +194,7 @@ du cahier des charges. Elle se limite au pilotage du pipeline, aux vues de gouve
 consultation des patients ; l'accès est contrôlé par jeton (JWT) avec les rôles **ADMIN** et
 **MEDECIN**, et `purpose` reste un paramètre obligatoire des pages patients.
 
-**Tableau 29 — Les pages de l'interface web, ce qu'elles affichent et l'API qui les alimente.**
+**Tableau 30 — Les pages de l'interface web, ce qu'elles affichent et l'API qui les alimente.**
 
 | Page | Ce qu'elle affiche | Source des données |
 |---|---|---|
@@ -218,7 +218,7 @@ interface de pilotage est distinguée au § 3.4 des **dashboards d'analyse** du 
 chaque appel présente une clé d'API (`Authorization: Bearer <clé>`), résolue en utilisateur et
 en rôle, et chaque appel est journalisé dans `access_audit` [`engine/governance/app.py`].
 
-**Tableau 30 — Les points d'entrée de l'API de gouvernance, les rôles autorisés et les contrôles appliqués.**
+**Tableau 31 — Les points d'entrée de l'API de gouvernance, les rôles autorisés et les contrôles appliqués.**
 
 | Point d'entrée | Méthode | Rôles autorisés | Contrôle et réponse |
 |---|---|---|---|
