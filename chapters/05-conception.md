@@ -44,7 +44,7 @@ flowchart TB
 
 Design retenu pour chaque brique [cahier des charges §4] :
 
-**Tableau 20 — Les sept briques de la chaîne retenue et la conception adoptée pour chacune.**
+**Tableau 21 — Les sept briques de la chaîne retenue et la conception adoptée pour chacune.**
 
 | Brique | Conception |
 |---|---|
@@ -95,7 +95,7 @@ Traçabilité de bout en bout : chaque ligne SILVER conserve `_source_system`, `
 L'architecture est déployée sur **une VM unique** (`ubuntu/focal64`, Vagrant, 8 Go / 4 cœurs) ;
 l'ordre de démarrage des services est strict [architecture.md §3] :
 
-**Tableau 21 — Les composants déployés sur la VM, leur rôle et leur port ou leur chemin ; l'ordre de démarrage est imposé.**
+**Tableau 22 — Les composants déployés sur la VM, leur rôle et leur port ou leur chemin ; l'ordre de démarrage est imposé.**
 
 | Composant | Rôle | Port / chemin |
 |---|---|---|
@@ -125,7 +125,7 @@ Le mapping des colonnes source → canonique est **explicite et déterministe**
 (`canonical.py::map_patient()`) ; le `matching_key` produit la clé de déduplication
 `(birth_date, cin, nom normalisé)`.
 
-**Tableau 22 — Le mapping des colonnes source vers le modèle canonique, et la règle de standardisation appliquée à chaque champ.**
+**Tableau 23 — Le mapping des colonnes source vers le modèle canonique, et la règle de standardisation appliquée à chaque champ.**
 
 | Champ | pharmacy | consultation | imaging | Standardisation `_*` |
 |---|---|---|---|---|
@@ -155,7 +155,7 @@ l'union des candidats de ces buckets [deduplication.md §4].
 2. **Probabilistic matching** — parmi les candidats du blocking, score de
    similarité **pondéré** [deduplication.md §5] :
 
-**Tableau 23 — Le calcul du score de similarité : une similarité et un poids par critère, pour un total qui doit atteindre 0,80 pour fusionner.**
+**Tableau 24 — Le calcul du score de similarité : une similarité et un poids par critère, pour un total qui doit atteindre 0,80 pour fusionner.**
 
    | Critère | Similarité | Poids |
    |---|---|---:|
@@ -178,7 +178,7 @@ Nirina (probabiliste, score 0.8+) [deduplication.md §7].
 Le schéma central (`sql/schema.sql`) couvre la traçabilité des données brutes, des
 identités et de la gouvernance [consentement_gouvernance.md §6] :
 
-**Tableau 24 — Les tables du modèle central PostgreSQL, leur rôle et les clés qui rendent l'écriture idempotente.**
+**Tableau 25 — Les tables du modèle central PostgreSQL, leur rôle et les clés qui rendent l'écriture idempotente.**
 
 | Table | Rôle | Clés de conception |
 |---|---|---|
@@ -236,7 +236,7 @@ par test et par évaluation sur la vérité terrain.
 
 **Niveau 3 (Design Medallion)** [bigdata_concepts.md §3] :
 
-**Tableau 25 — L'écriture dans les trois zones du Data Lake : ce que chaque zone reçoit et sous quelle forme.**
+**Tableau 26 — L'écriture dans les trois zones du Data Lake : ce que chaque zone reçoit et sous quelle forme.**
 
 | Couche | Rôle dans la conception | Écriture |
 |---|---|---|

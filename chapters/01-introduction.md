@@ -158,19 +158,23 @@ Les principaux chiffres vérifiables, détaillés dans les chapitres 4 à 7, son
 
 ## 1.7 Plan du mémoire
 
-**Tableau 2 — Le plan du mémoire : neuf chapitres, du contexte de l'organisme au glossaire.**
+**Tableau 2 — Le plan du mémoire : neuf chapitres, du contexte de l'organisme au glossaire, puis bibliographie et annexes.**
 
 | Partie | Contenu |
 |---|---|
 | **1 — Introduction** | contexte de l'organisme, problématique, objectifs, démarche, périmètre et repères chiffrés |
 | **2 — État de l'art** | Entity Resolution / Master Patient Index, mesures de similarité, FHIR, architecture Big Data (Medallion, HDFS, Hive, Spark), consentement et RGPD |
 | **3 — Étude de l'existant** | systèmes d'information en place à MMT (MAVIS, MMT_DB, CLINIQUE) et leurs limites ; solutions du domaine (MPI/DMP, MDM, Data Lake santé, open source) ; grille de comparaison et verdict |
-| **4 — Analyse** | sources hétérogènes, générateur de données synthétiques avec vérité terrain, exigences et contraintes |
+| **4 — Analyse** | sources hétérogènes, générateur de données synthétiques avec vérité terrain, exigences et contraintes, rôles et parties prenantes, cas d'utilisation, gestion de la configuration, budget |
 | **5 — Conception et architecture** | architecture technique en trois niveaux et bout-en-bout, modèle canonique, algorithmes de déduplication, schéma PostgreSQL, gouvernance |
 | **6 — Réalisation** | implémentation : générateur, pipeline ELT, moteur (Pandas/Spark), interfaces, Data Lake |
 | **7 — Tests & évaluation** | stratégie de test, évaluation ground-truth, difficultés rencontrées, limites |
 | **8 — Conclusion générale** | réponse à la problématique, arbitrages, limites assumées, perspectives, bilan pour la formation |
 | **9 — Glossaire** | le vocabulaire du projet expliqué en français courant, et les objets du dépôt (tables, scripts, couches) |
+
+La bibliographie et les **annexes** (A à F : pipeline, base centrale, moteur de rapprochement,
+API de gouvernance, API RMA, données synthétiques) suivent ces neuf chapitres, comme dans les
+deux rapports de référence.
 
 ## Conclusion et transition
 

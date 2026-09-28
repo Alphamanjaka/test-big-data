@@ -18,7 +18,7 @@ La problématique du chapitre 1 était la suivante :
 > données patients issues de sources hétérogènes, tout en assurant la traçabilité des identités
 > et la gouvernance des accès basée sur le consentement du patient ?*
 
-**Tableau 33 — Les six volets de la problématique : la réponse conçue et réalisée, et la preuve vérifiable dans le dépôt.**
+**Tableau 34 — Les six volets de la problématique : la réponse conçue et réalisée, et la preuve vérifiable dans le dépôt.**
 
 | Volet de la problématique | Réponse conçue et réalisée | Preuve vérifiable |
 |---|---|---|
@@ -36,7 +36,7 @@ critères explicites (§2.11) et chacun assorti d'un risque résiduel assumé. C
 table est la réponse à la question « *qu'avez-vous choisi, et à la place de quoi ?*
 ».
 
-**Tableau 34 — Les onze arbitrages du projet : la décision, l'alternative écartée, le critère décisif, la preuve et le risque résiduel assumé.**
+**Tableau 35 — Les onze arbitrages du projet : la décision, l'alternative écartée, le critère décisif, la preuve et le risque résiduel assumé.**
 
 | Décision | Alternative écartée | Critère décisif | Preuve | Risque résiduel |
 |---|---|---|---|---|
@@ -85,7 +85,7 @@ table est la réponse à la question « *qu'avez-vous choisi, et à la place de 
 
 ## 8.3 Limites assumées
 
-**Tableau 35 — Les limites assumées du prototype : état observé et cause, sans dissimulation.**
+**Tableau 36 — Les limites assumées du prototype : état observé et cause, sans dissimulation.**
 
 | Limite | État observé | Cause |
 |---|---|---|

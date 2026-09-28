@@ -328,6 +328,38 @@ dans `Mon_Memoire` (subtree → `projet/code-source/`, `projet/mvp/`, `archives/
    RAMANANTSAFIDY), rôles et parties prenantes (6 lignes chez HASINA ; le mémoire n'a que les
    rôles RBAC applicatifs), gestion de la configuration, et **annexes** (4 chez HASINA, le mémoire
    n'en a aucune). À traiter en prose pour ne pas ré-inflater le nombre de tableaux.
-   **Reste : relecture humaine dans Word**, les 5 sous-sections ci-dessus, et l'étape 3 (3 pages
-   de front en plus des RMA, bandeau `mocked`, KPI `CPN4` à corriger, puis les 3 passages du
-   mémoire qui en dépendent).
+   **Étape 3, même jour — les 5 sous-sections du plan des références sont écrites, et 6 annexes
+   ajoutées (36 → 37 tableaux).** Les deux références ont été relues par **contenu de tableau**
+   (20 tableaux extraits) : budget, rôles, livrables et outils y sont dans des tableaux, absents
+   de notre mémoire. Ajouts au ch. 4, **en prose sauf le budget** : **§ 4.7 rôles, parties
+   prenantes et équipe projet** (les 4 parties prenantes, et la distinction explicite entre
+   rôles du projet et rôles d'exécution `admin`/`analyst`/`viewer` ; encadre d'honnêteté sur
+   l'équipe réduite à une personne, donc sans revue de code) ; **§ 4.8 cas d'utilisation**
+   (CU1 à CU6, en acteurs/préréquis/déroulement/résultat/cas limite, avec le 403 journalisé
+   en CU5 et le repli `mocked` en CU6) ; **§ 4.9 gestion de la configuration** (versionné /
+   déclaré / vérifié, avec l'encadre « ce que cela ne fait pas ») ; **§ 4.10 budget** —
+   **seul tableau ajouté**, montants en Ariary **explicitement étiquetés hypothèses de travail**
+   dans la légende, le corps et un encadre, à remplacer par les chiffres réels ; ce qui est
+   réellement étayé est distingué (budget logiciel et matériel **réellement nul**, coût humain
+   **non étayé**) ; **§ 4.11 synthèse** (ancienne 4.7). **6 annexes** dans le nouveau
+   `references/annexes.md`, après la bibliographie comme dans les deux références : A pipeline
+   ELT, B base centrale, C moteur de rapprochement, D API de gouvernance, E API GOLD et vues
+   RMA, F données synthétiques et vérité terrain — en prose, sans recopier le code, chaque
+   annexe renvoyant à son chapitre ; chemins, 9 tables et fonctions **vérifiés avant
+   rédaction**. L'exporteur insère les annexes après la bibliographie (fichier absent →
+   avertissement, pas de page vide) ; le Tableau 2 du ch. 1 mentionne désormais les annexes.
+   **Renumérotation** : l'insertion du tableau Budget en 4.10 a décalé les légendes des ch. 5 à 8
+   de +1 (20..35 → 21..36) par script ; contrôle préalable : **aucun renvoi en texte** vers un
+   numéro de tableau n'existait, donc rien d'autre à corriger. Séquence **1..36 continue**.
+   Preuves : **37 tableaux** (2 / 7 / 5 / 6 / 6 / 4 / 3 / 3 / 1), `pytest` **54/54**, DOCX
+   régénéré (H1 = 9 chapitres + Bibliographie + **Annexes**, 38 tableaux dans le corps, liminaire
+   8 figures / **36 tableaux**, annexes A..F présentes, zip et XML valides, 14 sections), 8
+   positions du manifeste **revérifiées une à une**.
+   **Défaut de contrôle corrigé** : le validateur testait `Tableau 1..35` **en dur**, donc
+   l'ajout du tableau 36 y est passé inapercu, et il a même affiché « 1..0 True » quand son
+   calcul de maximum a échoué silencieusement. Le maximum est maintenant déduit des légendes,
+   avec détection des numéros manquants ou en double, plus le contrôle de la bibliographie, des
+   annexes et des annexes A..F.
+   **Reste : relecture humaine dans Word**, et l'étape 4 du front (3 pages de plus en plus des
+   RMA, bandeau `mocked`, KPI `CPN4` à corriger, puis les 3 passages du mémoire qui en dépendent
+   : § 1.3, § 1.5, § 4.1).

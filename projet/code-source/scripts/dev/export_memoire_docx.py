@@ -7,11 +7,16 @@ Usage :
 Convertit `chapters/01..09.md` en un unique .docx A4 : pièce liminaire (page de garde,
 résumé, abstract, sommaire, listes des tableaux et figures, acronymes), titres,
 paragraphes, listes, tableaux, blocs de code, citations, bibliographie et pagination.
-
-La pièce liminaire est numérotée en chiffres romains et le corps repart à 1, comme dans
-le modèle de l'établissement. Les listes des tableaux et des figures sont recopiées
+La pièce liminaire est numérotée en chiffres romains et le corps repart à 1, comme dans le
+modèle de l'établissement. Les listes des tableaux et des figures sont recopiées
 depuis les légendes des chapitres : une liste vide est omise plutôt qu'affichée, et
 aucune numérotation n'est recomptée à l'export.
+
+La bibliographie (`references/bibliographie.md`) puis les annexes
+(`references/annexes.md`) sont ajoutées après les chapitres, dans cet ordre, comme dans
+les deux rapports de référence. Chacune est facultative : un fichier absent produit un
+avertissement, pas une page vide.
+
 
 Les diagrammes Mermaid sont insérés comme images (`documents/figures/fig-<N>.png`),
 produites par `render_mermaid_figures.py`. Le manifeste indique la taille naturelle
@@ -43,6 +48,7 @@ CHAPTERS_DIR = ROOT / "chapters"
 FIGURES_DIR = ROOT / "documents" / "figures"
 MANIFEST = FIGURES_DIR / "manifest.json"
 BIBLIOGRAPHY = ROOT / "references" / "bibliographie.md"
+ANNEXES = ROOT / "references" / "annexes.md"
 
 # Page de garde : métadonnées du mémoire (à modifier ici, en un seul endroit).
 # Le libellé du diplôme reprend celui de la page de garde de référence, à l'identique :
@@ -749,6 +755,11 @@ def build(out_path: Path) -> None:
         add_markdown(doc, BIBLIOGRAPHY.read_text(encoding="utf-8"), manifest, figure_number)
     else:
         print("  [avertissement] bibliographie absente : {0}".format(BIBLIOGRAPHY))
+
+    if ANNEXES.exists():
+        add_markdown(doc, ANNEXES.read_text(encoding="utf-8"), manifest, figure_number)
+    else:
+        print("  [avertissement] annexes absentes : {0}".format(ANNEXES))
 
     add_page_footer(doc)
     enable_update_fields(doc)

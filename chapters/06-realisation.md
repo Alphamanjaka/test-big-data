@@ -17,7 +17,7 @@ Le générateur
 [`synthetic-patient-generator`](../projet/code-source/evaluation/synthetic-patient-generator)
 est implémenté en 7 étapes, déterministe (seed 42) :
 
-**Tableau 26 — Les six modules du générateur synthétique et le rôle réel de chacun.**
+**Tableau 27 — Les six modules du générateur synthétique et le rôle réel de chacun.**
 
 | Module | Rôle réalisé |
 |---|---|
@@ -65,7 +65,7 @@ flowchart LR
 > **Figure 7 — Le pipeline ELT en quatre étapes, de l'extraction RAW au chargement
 > GOLD, piloté par `data_sources.json` et contrôlé par `extract_raw_report.json`.**
 
-**Tableau 27 — Les quatre étapes du pipeline ELT, le script qui les exécute et la sortie réellement produite.**
+**Tableau 28 — Les quatre étapes du pipeline ELT, le script qui les exécute et la sortie réellement produite.**
 
 | Étape | Script | Sortie réelle |
 |---|---|---|
@@ -100,7 +100,7 @@ soin rattachés.
 
 Le moteur `engine/identity/` est la pièce centrale, deux implantations alignées :
 
-**Tableau 28 — Les deux implantations du moteur côte à côte : la sémantique est alignée, seule la mécanique change.**
+**Tableau 29 — Les deux implantations du moteur côte à côte : la sémantique est alignée, seule la mécanique change.**
 
 | Aspect | `matcher.py` (Pandas) | `spark_dedup.py` (PySpark driver-side) |
 |---|---|---|
@@ -167,7 +167,7 @@ s'applique à l'API de gouvernance, comme le rappelle `ai/dev/suivi_avancement.m
 
 ## 6.6 Difficultés rencontrées et résolutions
 
-**Tableau 29 — Les six difficultés réellement rencontrées, leur cause et le correctif testé.**
+**Tableau 30 — Les six difficultés réellement rencontrées, leur cause et le correctif testé.**
 
 | Problème réel | Cause | Correctif |
 |---|---|---|

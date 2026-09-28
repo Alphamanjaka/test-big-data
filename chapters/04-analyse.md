@@ -198,7 +198,176 @@ plus-commodes à obtenir.
 > arrêté plus tôt. C'est la principale leçon de conduite de projet tirée du stage
 > (§8.4).
 
-## 4.7 Synthèse de l'analyse
+## 4.7 Rôles, parties prenantes et équipe projet
+
+Avant toute notion de rôle applicatif, il faut distinguer deux plans qui se ressemblent et
+que les rapports de référence traitent séparément : **les rôles du projet**, qui décident de
+quoi pendant le stage, et **les rôles d'exécution** (`admin`, `analyst`, `viewer`), qui
+régissent ce qu'un utilisateur de l'API a le droit de lire une fois le logiciel livré. Les
+premiers sont décrits ici, les seconds au § 2.5 et au § 5.5.
+
+Les parties prenantes du projet sont au nombre de quatre, et l'équipe de développement
+tient en une seule personne :
+
+- **Le commanditaire**, Madagascar Medical Technology (MMT), représenté par l'encadrant
+  professionnel. Il porte les deux contraintes structurantes du stage : l'**hébergement
+  interne** — les données ne doivent pas quitter les machines de l'établissement, donc aucun
+  service cloud externe — et l'usage de **données synthétiques** uniquement, aucune donnée
+  réelle de patient ne devant être mobilisée, y compris quand elle serait plus facile à
+  obtenir. Il valide par ailleurs les trois finalités déclarées à l'API.
+- **L'encadrant professionnel** fait le lien entre le besoin métier et sa formulation
+  technique : c'est lui qui arbitre, entre les options presented au chapitre 8, de celle que
+  le commanditaire valide.
+- **L'encadrant pédagogique** encadre le stage du point de vue de la formation et évalue ce
+  mémoire au regard du plan imposé.
+- **Le stagiaire**, auteur du projet, conçoit, développe, teste et documente. Il n'a pas
+  d'équipe de développement : toute décision technique qu'il n'a pas pu trancher avec ses
+  encadrants est écrite comme une question ouverte, pas comme un choix Assume.
+
+> **Point d'honnêteté sur la taille de l'équipe.** Le stage a été mené à effectif constant
+> et réduit : un développeur, deux encadrants, un commanditaire. Cela a des effets
+> mesurables. D'abord, la revue de code et les tests de revue mutuelle, qui supposent au moins
+> deux personnes, n'ont pas eu lieu : la seule relecture est celle que j'ai faite moi-même, ce
+> qui limite la valeur de mes tests comme preuve externe. Ensuite, la séparation des rôles
+> décrite plus haut n'a pas de contrepartie technique : il n'existe pas, dans le dépôt,
+> d'outil de revue de code ni de piste d'audit permettant de distinguer une modification faite sous une
+> consigne de celle prise en autonomie.
+
+## 4.8 Cas d'utilisation
+
+Les exigences fonctionnelles du § 4.1 énoncent ce que le logiciel doit faire ; les cas
+d'utilisation ci-dessous précisent **qui** le fait, **à partir de quand** et **ce qui se passe
+quand ça échoue**. Ils reprennent les étapes du pipeline détaillées au chapitre 6, mais vues
+par l'usage et non par l'implémentation, et sont écrits comme des scénarios, pas comme des
+lignes de code.
+
+**CU1 — Ingester un lot de sources.** *Acteur* : le développeur, ou le processus automatique
+lui-même. *Prérequis* : trois fichiers CSV présents, un par source. *Déroulement* :
+l'extraction lit chaque source et écrit ses fiches dans `raw_patient_record` et dans la zone
+RAW du Data Lake, sans transformation. *Résultat attendu* : le nombre de lignes de RAW égale
+la somme des lignes lues. *Cas limite* : un fichier source absent ou tronqué interrompt le lot
+et l'erreur est journalisée dans `elt.log` — le lot n'est jamais repris à moitié, ce qui
+interdit d'obtenir une zone RAW partiellement écrite.
+
+**CU2 — Ramener des formats différents à un modèle unique.** *Acteur* : le processus
+automatique. *Prérequis* : la zone RAW remplie. *Déroulement* : l'étape de mapping FHIR
+associe chaque champ attendu à la colonne source la plus proche, puis la normalisation produit
+le modèle canonique `CanonicalPatient` dans la zone SILVER. *Résultat attendu* : toute fiche,
+quelle que soit sa source, sort au même format. *Cas limite* : un champ sans équivalent dans
+la source reste vide et n'est pas deviné ; le mapping est écrit dans un fichier de règles et
+non dans le code, pour qu'un changement de source ne demande pas de modifier le programme.
+
+**CU3 — Dédoupliquer et décider qui est le même patient.** *Acteur* : le processus
+automatique. *Prérequis* : la zone SILVER, et une vérité terrain pour évaluer le résultat.
+*Déroulement* : le blocking réduit les comparaisons, le rapprochement exact s'applique d'abord,
+puis le rapprochement probabiliste pondéré par champ, au-dessus du seuil de 0,80. *Résultat
+attendu* : un `master_patient` par personne retenue, et une `patient_identity_map` qui relie
+**chaque** fiche d'origine au master retenu, avec son score et la méthode qui a décidé. *Cas
+limite* : deux fiches très proches mais non fusionnées restent traçables comme faux
+négatifs, avec leur score ; aucune fusion n'est appliquée sans inscription dans cette table,
+donc aucune fusion n'est invisible.
+
+**CU4 — Appliquer le consentement avant d'exposer la donnée.** *Acteur* : le processus
+automatique. *Prérequis* : les tables de déduplication et de consentement. *Déroulement* :
+la construction de la zone GOLD ne conserve, pour chaque master, que les finalités
+effectivement accordées, avec le refus par défaut en l'absence d'avis. *Résultat attendu* :
+aucune donnée sans consentement n'atteint la zone GOLD. *Cas limite* : le refus est
+définitif tant qu'il n'est pas levé ; il n'y a pas d'« accès provisoire ».
+
+**CU5 — Interroger l'API pour un patient donné.** *Acteur* : un utilisateur authentifié, ou
+une application tierce présentant une clé d'API. *Prérequis* : une clé connue de la table
+`api_user`, et un consentement enregistré. *Déroulement* : la clé est résolue en utilisateur
+et en rôle, la finalité demandée est comparée aux consentements, la réponse est renvoyée, et
+l'appel est journalisé dans `access_audit`. *Résultat attendu* : la liste des patients ou le
+détail d'un patient, avec une trace d'audit systématique. *Cas limite* : un consentement
+manquant ou une finalité non accordée produit un **403** — et non un 404 silencieux, ni une
+liste réduite — et ce refus est journalisé au même titre qu'un accès accordé. C'est le point
+où se joue la crédibilité du dispositif de gouvernance : un refus doit être visible.
+
+**CU6 — Consulter un indicateur de suivi de la grossesse (RMA).** *Acteur* : un lecteur du
+dashboard RMA. *Prérequis* : la zone GOLD peuplée, ou le jeu de démonstration. *Déroulement* :
+le dashboard appelle l'API REST des données GOLD et affiche les indicateurs de suivi. *Résultat
+attendu* : des indicateurs calculés sur les données dédupliquées, donc sans double comptage.
+*Cas limite* : cet écran est explicitement **optionnel** dans le cahier des charges, et son
+alimentation dépend d'une base distincte que le commanditaire n'a pas pu fournir ; il est donc
+servi avec un repli sur des données de démonstration, signalé comme tel à l'écran. Le
+mémoire ne présente donc pas ce dashboard comme un résultat du projet, mais comme une
+illustration de ce que la zone GOLD pourrait exposer.
+
+## 4.9 Gestion de la configuration
+
+Trois objets rendent le projet rejouable : ce qui est versionné, ce qui est déclaré, et ce
+qui est vérifié. Les séparer est ce qui permet à un tiers de reconstruire un résultat à
+partir du dépôt seul, sans dépendre d'une machine encore allumée.
+
+**Ce qui est versionné.** Le dépôt Git est la source de vérité du projet : code, scripts du
+pipeline, configuration de référence, tests, et ce mémoire. Chaque jalon correspond à des
+commits identifiables, et les documents de suivi (`ai/dev/logs.md`,
+`ai/dev/suivi_avancement.md`) enregistrent ce qui a été décidé et pourquoi. Les données
+patients ne sont pas versionnées : elles sont régénérées par le générateur synthétique, avec
+une graine fixe (`RANDOM_SEED = 42`) qui rend la génération reproductible. Les secrets et les
+fichiers de configuration contenant des identifiants sont exclus du dépôt et fournis par
+variables d'environnement ; c'est une contrainte de sécurité, pas une commodité.
+
+**Ce qui est déclaré, et non codé en dur.** Les sources de données, les chemins et les
+identifiants sont décrits dans des fichiers de configuration lus au démarrage, jamais
+écrits dans le code. Les paramètres qui gouvernent le comportement — le nombre de partitions,
+le seuil de rapprochement à 0,80, les poids par champ, les finalités autorisées — sont
+explicites et regroupés : les modifier ne demande pas de toucher à la logique, et le chapitre 7
+peut ainsi annoncer des résultats reproductibles. Le manifeste des figures
+(`documents/figures/manifest.json`) joue le même rôle pour la documentation : il associe chaque
+diagramme à son chapitre et à sa ligne, et il est revérifié à chaque export.
+
+**Ce qui est vérifié.** La suite de tests est exécutée à chaque jalon, et son résultat vert
+constitue le critère de sortie du jalon suivant : on n'engage pas une évolution sur un niveau
+de test cassé. Les journaux du pipeline (`elt.log`) conservent la trace des volumes traités à
+chaque étape, ce qui permet de comparer une exécution à une autre sans la rejouer. La
+rejouabilité est également une propriété du code : le pipeline est idempotent, et un
+traitement peut être relancé depuis la zone SILVER sans dupliquer ni corrompre les zones
+en aval.
+
+> **Ce que cette gestion de la configuration ne fait pas.** Elle ne garantit pas
+> l'exploitabilité en conditions de production : les fichiers de configuration contenant les
+> identifiants sont locaux au poste de développement, et le déploiement automatisé sur un
+> serveur du commanditaire n'a pas été réalisé. Ce qui est démontré ici, c'est la
+> reproductibilité depuis le dépôt, pas la mise en production.
+
+## 4.10 Budget du projet
+
+**Avertissement méthodologique.** Les montants ci-dessous sont des **hypothèses de travail
+étiquetées**, construites sur l'ordre de grandeur des rapports de référence, et non des
+comptes réels. Aucun de ces chiffres ne provient d'une facture ou d'un document comptable du
+commanditaire. Ils sont présentés dans cette forme parce que les deux rapports de référence
+comportent un budget, et qu'un mémoire sans cette rubrique laisserait cette question ouverte
+au jury ; ils doivent être remplacés par les chiffres réels du commanditaire avant toute
+diffusion. Ce qui est réel, en revanche, est indiqué séparément : les licences sont
+réellement nulles, et le matériel est réellement déjà acquis.
+
+**Tableau 20 — Budget du projet : coûts humains, matériels et logiciels (hypothèses de travail, à remplacer par les chiffres réels du commanditaire).**
+
+| Poste | Base de calcul | Coût mensuel (Ar) | Coût sur 4 mois (Ar) |
+|---|---|---|---|
+| Développeur (stagiaire) | 1 ETP sur la durée du stage | 1 000 000 | 4 000 000 |
+| Encadrement professionnel et pédagogique | 2 × 0,1 ETP | 150 000 | 600 000 |
+| Poste de travail du développeur | matériel déjà acquis, aucun achat | 0 | 0 |
+| Machine virtuelle du projet | fournie par le commanditaire, hébergée sur le poste existant | 0 | 0 |
+| Logiciels et licences | 100 % open source | 0 | 0 |
+| Connexion Internet | déjà acquise | 0 | 0 |
+| **Total** | | **1 150 000** | **4 600 000** |
+
+> **Ce qui est vérifiable, et ce qui ne l'est pas.** Le **budget logiciel et matériel réel
+> est zéro** : Hadoop, Spark, Hive, PostgreSQL, Next.js et l'ensemble des dépendances sont
+> libres, aucune licence n'a été achetée, et le développement s'est fait sur un poste de
+> travail et une machine virtuelle déjà existants, dont le commanditaire est le Fournisseur.
+> C'est un avantage décisif de l'open source dans un contexte où les moyens sont limités, et
+> il est attesté par les fichiers de dépendances du dépôt. Le **coût humain ne l'est pas** :
+> les montants du tableau sont des hypothèses, et le stage n'a pas été rémunéré, donc sa
+> valorisation n'a de sens que par rapport à un coût de recrutement équivalent. La ligne la
+> plus sous-estimée de tout projet de ce type n'est d'ailleurs pas l'infrastructure, mais le
+> temps passé à réconcilier deux implémentations d'un même algorithme, dont la parité stricte
+> (§ 5.6) a fait un choix d'architecture et non un simple contrôle.
+
+## 4.11 Synthèse de l'analyse
 
 L'analyse dégage trois besoins dominants :
 1. **Interpréter des formats divergents** → un modèle canonique + un pivot FHIR.

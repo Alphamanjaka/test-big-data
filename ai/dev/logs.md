@@ -1142,3 +1142,81 @@ references traitent et que le memoire n'a pas encore :
 
 Ces ecarts restent a traiter (etape suivante, en prose pour ne pas re-inflater le nombre de
 tableaux) ; ils sont notes ici pour tracer le plan-vs-references.
+
+## 28/09/2026 - Memoire : 5 sous-sections du plan des references + 6 annexes, tableau Budget (36 -> 37 tableaux)
+
+**Demande.** Reduire encore les tableaux et suivre le plan des deux rapports de reference.
+Apres reduction du glossaire (40 -> 36 tableaux), les references ont ete relues une seconde
+fois, cette fois par **contenu de tableau** (extraction des 20 tableaux des deux .docx), pour
+identifier les rubriques qu'elles traitent et que le memoire n'a pas.
+
+**Ce que les references contiennent comme tableaux (et que nous n'avions pas).** HASINA :
+grille comparative, outils/versions, contraintes, risques, **budget en 3 tableaux** (couts
+humains, materiels, total), taches, modules, roles, bibliographie. RAMANANTSAFIDY :
+acronymes, grille comparative, **livrables**, **outils/techno par categorie**,
+**contraintes / risques / mesures** en un seul tableau, **budget**, bibliographie. Le point
+commun est net : **budget, roles, livrables et outils sont dans leurs tableaux**, alors que
+notre memoire n'en avait aucun.
+
+**Cinq sous-sections ajoutees au chapitre 4, toutes en prose sauf le budget.**
+- **4.7 Roles, parties prenantes et equipe projet** : les 4 parties prenantes (commanditaire
+  MMT, encadrant professionnel, encadrant pedagogique, stagiaire), avec la distinction
+  explicite entre **roles du projet** (qui decide quoi) et **roles d'execution** (admin /
+  analyst / viewer, § 2.5 et 5.5) que les references traitent separement. Encadre
+  d'honnetete : l'equipe est **une seule personne**, donc pas de revue de code ni de tests
+  de revue mutuelle, et la seule relecture est celle de l'auteur.
+- **4.8 Cas d'utilisation** : CU1 ingestion, CU2 normalisation canonique, CU3 deduplication,
+  CU4 application du consentement, CU5 interrogation de l'API (403 journalise),
+  CU6 dashboard RMA. Chacun en acteurs / prerequis / deroulement / resultat attendu /
+  cas limite, ecrit comme un scenario. CU5 rappelle qu'un refus renvoie 403 et non une
+  reponse muette ; CU6 rappelle que le dashboard est optionnel et servi en repli mock.
+- **4.9 Gestion de la configuration** : ce qui est versionne (Git, seed 42, secrets hors
+  depot), ce qui est declare (fichiers de config lus au demarrage, seuil 0.80, poids,
+  finalites, manifeste des figures), ce qui est verifie (tests verts comme critere de sortie
+  de jalon, `elt.log`, idempotence, rejeu depuis SILVER). Encadre d'honnetete : ni
+  l'exploitabilite ni le deploiement sur serveur du commanditaire ne sont demontres.
+- **4.10 Budget du projet** : **seul tableau ajoute**, conforme a la forme des references.
+  Montants en Ariary, **explicitement etiquetes hypotheses de travail** dans la legende, le
+  corps et un encadre, a remplacer par les chiffres reels du commanditaire. Ce qui est
+  reellement etaye est distingue : budget logiciel et materiel **reellement nul** (100 %
+  open source, materiel deja acquis) ; cout humain **non etaye** (hypothese ; stage non
+  remuneration). Point releve : la ligne la plus sous-estimee n'est pas l'infrastructure
+  mais le temps de reconciliation Pandas / Spark impose par la parite stricte.
+- **4.11 Synthese de l'analyse** : l'ancienne 4.7, renumerotee.
+
+**Six annexes ajoutees** (`references/annexes.md`, nouveau fichier, **apres** la
+bibliographie comme dans les deux references) : A pipeline ELT et journaux, B structure de la
+base centrale, C moteur de rapprochement, D API de gouvernance, E API REST GOLD et vues RMA,
+F donnees synthetiques et verite terrain. Redigees **en prose** : elles disent ou se trouve le
+code et ce qu'il prouve, sans le recopier (le depot et son historique sont la preuve, pas un
+extrait fige). Chaque annexe renvoie au chapitre qui explique la chose. Aucun chemin cite
+n'a ete invente : les 9 tables de `sql/schema.sql`, les fonctions de `matcher.py` et
+`canonical.py`, et les 4 fichiers de `engine/governance/` ont ete verifies avant redaction ;
+`run_pipeline.sh` et `evaluation/synthetic-patient-generator/` ont ete localises (sous
+`provision/scripts/` et `evaluation/`), deux chemins differant de l'_intuition initiale.
+
+**Renumerotation.** L'insertion du tableau Budget en 4.10 a decale les numeros aval : les
+legendes des ch. 5 a 8 ont ete decalees de +1 par script (20..35 -> 21..36) et la nouvelle
+legende prend le numero 20. Controle prealable : **aucun renvoi en texte** vers un numero de
+tableau n'existait (0 occurrence en dehors des legendes), donc rien d'autre n'etait a corriger.
+Sequence finale verifiee : **1..36 continue, sans doublon**.
+
+**Exporteur.** `export_memoire_docx.py` accepte maintenant `references/annexes.md`, insere
+apres la bibliographie, avec la meme tolerance que la bibliographie (fichier absent ->
+avertissement, pas de page vide). Le plan du chapitre 1 (Tableau 2) mentionne desormais les
+annexes, et la ligne du chapitre 4 cite les 6 sous-sections.
+
+**Preuves.** Structure : 2 / 7 / 5 / **6** / 6 / 4 / 3 / 3 / 1 = **37 tableaux**, legendes
+**1..36** continues. `pytest` = **54 passed**. DOCX regenere : 9 chapitres, **H1 = 9
+chapitres + Bibliographie + Annexes**, 38 tableaux dans le corps (37 + acronymes), liminaire
+listant 8 figures et **36 tableaux**, annexes **A a F** presentes, archive zip INTEGRE, 18
+parties XML bien formees, 14 sections. Manifeste des figures : 8 positions **reverifiees une a
+une** apres les decalages de lignes (le nouveau script de controlecorrige detectait un faux
+negatif parce qu'il cherchait la legende *avant* le bloc mermaid, alors qu'elle est *apres*).
+
+**Point de methode.** Le validateur testait `Tableau 1..35` **en dur** : l'ajout du tableau 36
+y est passe inapercu, et le controle est meme remonte "1..0 True" quand le calcul de maximum
+a echoue silencieusement. Corrige : le maximum est desormais deduit des legendes des
+chapitres, avec detection explicite des numeros manquants ou en double, plus le controle de
+presence de la bibliographie, des annexes et des annexes A a F. Un controle qui peut
+reussir a vide ne prouve rien.

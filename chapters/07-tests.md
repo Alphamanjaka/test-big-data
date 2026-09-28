@@ -36,7 +36,7 @@ flowchart TD
 > **Figure 8 — La stratégie de test : un socle hors ligne (générateur, moteur), puis le
 > MVP, et enfin la preuve système (API sur données réelles, évaluation ground truth).**
 
-**Tableau 30 — Les cinq niveaux de test, leur périmètre et le résultat obtenu ; les 14 tests de l'API ne prouvent que la joignabilité.**
+**Tableau 31 — Les cinq niveaux de test, leur périmètre et le résultat obtenu ; les 14 tests de l'API ne prouvent que la joignabilité.**
 
 | Niveau | Périmètre | Résultat |
 |---|---|---|
@@ -73,7 +73,7 @@ Ces 13 cas d'API ne simulent que le transport PostgreSQL : ils empruntent le
 contrôle du rôle → contrôle du consentement, et **n'overrident jamais la
 dépendance d'authentification**. Ils constituent la preuve du §2.5.
 
-**Tableau 31 — Les dix cas de contrôle d'accès vérifiés sur le chemin réel, et le code ou le comportement attendu.**
+**Tableau 32 — Les dix cas de contrôle d'accès vérifiés sur le chemin réel, et le code ou le comportement attendu.**
 
 | Cas vérifié | Attendu |
 |---|---|
@@ -111,7 +111,7 @@ compromis global des deux.
 **Résultats de référence** (run 08/09/2026, 500 masters par niveau, ~1 000
 enregistrements, parité MVP = Spark vérifiée à chaque niveau) [evaluation.md §3] :
 
-**Tableau 32 — Les résultats de l'évaluation ground-truth sur les trois niveaux de variation.**
+**Tableau 33 — Les résultats de l'évaluation ground-truth sur les trois niveaux de variation.**
 
 | Niveau | Masters prédits | TP | FP | FN | Precision | Recall | F1 |
 |---|---|---|---|---|---|---|---|
