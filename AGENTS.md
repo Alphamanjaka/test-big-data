@@ -7,7 +7,9 @@
 - `documents/cahier_des_charges.md` : perimetre.
 - `documents/documentation/` : manuel conceptuel (Big Data, de-duplication, consentement).
 - `projet/code-source/` : code consolide (Big Data + moteur de de-duplication).
-- `projet/mvp/` : PoC `test_bigdata` (niveaux 1 et 2) ; `archives/datalake_mavis/` : PoC Big Data d'origine.
+- `projet/mvp/` : PoC `test_bigdata` (niveaux 1 et 2). Le PoC Big Data d'origine (`datalake_mavis`)
+  a été retiré du dépôt le 28/09/2026 (consultable dans l'historique Git) ; son journal est conservé
+  dans `documents/journal_poc_datalake_mavis.md`.
 
 ## Règle unique
 
@@ -30,7 +32,7 @@ Les donnees sont toujours fictives.
 - Ce fichier définit les règles globales du dépôt.
 - `ai/dev/` définit les règles opérationnelles du code consolidé.
 - `ai/memoire/` définit les règles de rédaction et de démonstration.
-- `projet/mvp/` et `archives/datalake_mavis/` sont des périmètres historiques ou locaux : leurs
+- `projet/mvp/` est un périmètre historique ou local : ses
   consignes ne s'appliquent pas au code consolidé sauf mention explicite.
 - En cas de conflit, appliquer la règle la plus spécifique si elle reste compatible avec les règles
   globales ; sinon conserver la règle globale et documenter l'écart.

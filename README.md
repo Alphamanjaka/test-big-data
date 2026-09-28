@@ -10,13 +10,11 @@ purpose-by-purpose, audit d'accès et architecture Big Data.
 ```
 Mon_Memoire/
 ├── chapters/             # mémoire, plan MBDS — 00 introduction, 01 → 08 chapitres, 09 conclusion (+ liminaires)
-├── documents/            # cahier des charges + articles + documentation conceptuelle
+├── documents/            # cahier des charges, documentation conceptuelle, journal du PoC datalake_mavis
 ├── references/           # bibliographie (B1 → B20) et sources citées
 ├── projet/
 │   ├── code-source/      # code consolidé : Big Data (VM Hive/HDFS/Spark) + moteur engine/
 │   └── mvp/              # PoC `test_bigdata` (niveaux 1 et 2 : MVP Pandas + Spark)
-├── archives/
-│   └── datalake_mavis/   # PoC Big Data d'origine (source seule, sans .git ni artefacts runtime)
 ├── ai/
 │   ├── dev/              # consignes de dev, journal (logs.md), suivi des jalons
 │   └── memoire/          # consignes de rédaction (contexte, méthode)

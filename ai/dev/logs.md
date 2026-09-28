@@ -1465,3 +1465,43 @@ contraintes réels), activités revenant en boucle ; captures IHM fournies par l
 plan MBDS, 50 tableaux (48 légendés + acronymes + glossaire), 8 images, 0 occurrence « Statut ».
 
 **Reste :** captures d'écran IHM (§5.3.1, fournies par l'utilisateur) ; commit en attente de validation.
+
+## 28/09/2026 — Soutenance : deck refondu sur le modèle du deck de référence (Hasina)
+
+**Contexte :** revue du deck `V2soutenance_m2_mmt_alpha.pptx` contre `V2soutenance_m2_hasina.pptx`
+(rendus PowerPoint slide par slide). Trame identique (21 slides) mais défauts bloquants : contenu
+placé sur un canevas 13,3 x 7,5 dans un fichier 16 x 9 (bande vide, pied de page flottant),
+`**gras**` et `code` affichés en brut (gras traité seulement en début de ligne), texte passant sous
+les figures, slides en listes de texte ~11 pt, pas de bandeau de logos ; contenus : S2 ne présentait
+pas l'entreprise, S10 « Existant — Modules » listait les modules de la plateforme, S18 annonçait 54/54.
+
+| # | Action | Détail |
+| - | ------ | ------ |
+| 1 | Générateur réécrit | `scripts/dev/build_soutenance_pptx.py` : canevas réel 16 x 9 ; bandeau de logos (ITuniversity, MBDS, Université Côte d'Azur, MMT) + filet sur chaque slide ; pied de page « titre » présenté par … / date ; parseur **gras** / `code` en ligne ; vraies puces PowerPoint (retrait suspendu) ; cartes, pastilles numérotées, chips, bandeaux, chiffres clés, flèches ; images ajustées dans leur boîte sans chevauchement |
+| 2 | Logos | `documents/image/logo-ituniversity.png`, `logo-mbds.jpg`, `logo-uca.png` extraits du deck de référence ; `mmt-logo.png` recadré automatiquement sur son contenu |
+| 3 | Contenus | S2 = présentation MMT (2009, Siemens Healthineers, R&D 2024) ; S7 = 6 solutions du mémoire (§2.2) ; S8 = grille comparative ✔/◐/✖ (§2.3) ; S10 = systèmes existants (MAVIS, MMT_DB, CLINIQUE, sources de démo) ; S11 = chiffres clés ; S15 = 4 étapes / 8 CU (ch. 5) ; S16 = chiffres du run + 102/102 ; S17 = avant/après + métriques ; S18 = 102/102 ; date « Octobre 2026 » (constante `DATE`) |
+| 4 | `documents/slides_soutenance.md` | 54/54 → 102/102 ; Septembre → Octobre 2026 |
+
+**Vérifications.** Génération OK (21 slides) ; export PowerPoint (COM) des 21 slides en PNG et
+contrôle visuel : aucun débordement, aucun `**`/backtick résiduel, logos et pieds de page alignés ;
+`py_compile` OK. Validateur XML de la compétence non exécuté (`defusedxml` absent, non installé).
+
+**Reste :** confirmer la date de soutenance (constante `DATE`) ; commit en attente de validation.
+
+## 28/09/2026 — Dépôt : retrait du répertoire `archives/` (journal du PoC conservé)
+
+**Contexte :** demande utilisateur de retirer `archives/` (PoC `datalake_mavis` + `elt.before`, 4,9 Mo,
+173 fichiers suivis). Option retenue par l'utilisateur : retirer, mais **conserver le journal du PoC**,
+cité comme preuve par le mémoire (captures de schémas §3.1.2, dates du Gantt §4.3).
+
+| # | Action | Détail |
+| - | ------ | ------ |
+| 1 | Journal conservé | `git mv archives/datalake_mavis/LOG.md documents/journal_poc_datalake_mavis.md` (historique Git préservé) |
+| 2 | Retrait | `git rm -r archives` (173 fichiers) + suppression des fichiers ignorés restants (`.ai_context/`, `provision/config/data_sources.json`, `tsconfig.tsbuildinfo`) ; le code du PoC reste consultable dans l'historique Git |
+| 3 | Renvois | chapitres 3 et 4 (8 renvois vers le nouveau chemin) ; `AGENTS.md`, `README.md`, `GUIDE/README.md`, `ai/dev/README.md`, `ai/memoire/README.md`, `ai/memoire/methode.md` |
+| 4 | Non modifié | entrées historiques de `ai/dev/logs.md` et `ai/dev/suivi_avancement.md` (traces de l'état passé) |
+
+**Vérifications.** Aucun code n'importait depuis `archives/` ; plus aucun renvoi vivant vers `archives/`
+hors traces historiques ; DOCX **non régénéré** (fichier ouvert dans Word).
+
+**Reste :** régénérer le DOCX après fermeture de Word ; commit en attente de validation.

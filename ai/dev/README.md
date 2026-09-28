@@ -112,5 +112,6 @@ python -m venv .venv
 
 - Le hook `githooks/pre-commit` et les vérifications ciblées constituent le minimum avant commit.
 - Les artefacts générés, secrets, fichiers `.env`, données et métadonnées locales restent hors commit.
-- Les dossiers `projet/mvp/` et `archives/datalake_mavis/` sont consultables pour comprendre l'historique ;
-  ils ne redéfinissent pas les chemins, journaux ou commandes du code consolidé.
+- Le dossier `projet/mvp/` et le journal `documents/journal_poc_datalake_mavis.md` sont consultables
+  pour comprendre l'historique ; ils ne redéfinissent pas les chemins, journaux ou commandes du code
+  consolidé.

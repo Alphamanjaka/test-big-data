@@ -2,8 +2,9 @@
 
 > **Lire ce dossier au début de toute session de rédaction du mémoire.** Il centralise le contexte et la
 > méthode de rédaction. Le mémoire vit dans `chapters/` du dépôt unique (`Mon_Memoire`), qui contient
-> aussi le code (`projet/code-source/`), le PoC `test_bigdata` (`projet/mvp/`) et l'archive du PoC Big
-> Data (`archives/datalake_mavis/`).
+> aussi le code (`projet/code-source/`) et le PoC `test_bigdata` (`projet/mvp/`). Le PoC Big Data
+> d'origine a été retiré du dépôt (28/09/2026) ; son journal reste dans
+> `documents/journal_poc_datalake_mavis.md`.
 
 ## Fichiers
 
@@ -46,7 +47,8 @@ chapitres (il s'imprimerait dans le DOCX) : il est tenu dans `ai/dev/logs.md`.
 - `documents/` — cahier des charges + manuel conceptuel (fusionnés).
 - `projet/code-source/` — code consolidé (ex `test_bigdata`) + consignes.
 - `projet/mvp/` — PoC `test_bigdata` (niveaux 1 et 2).
-- `archives/datalake_mavis/` — PoC Big Data d'origine (source seule).
+- `documents/journal_poc_datalake_mavis.md` — journal du PoC Big Data d'origine (captures de schémas,
+  incidents, dates du 23/08 au 01/09/2026) ; le code du PoC reste consultable dans l'historique Git.
 - `references/` — bibliographie.
 
 ## Règles de rédaction

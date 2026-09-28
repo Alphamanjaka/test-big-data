@@ -1,7 +1,7 @@
 # Guides techniques — Plateforme Big Data Patients
 
 Guides complets regroupés pour les utilisateurs et développeurs. Remplace la documentation éparpillée
-(références historiques dans `archives/datalake_mavis/`, README locaux) : **les chemins ci-dessous
+(références historiques du PoC `datalake_mavis`, retiré du dépôt ; README locaux) : **les chemins ci-dessous
 correspondent au dépôt consolidé `Mon_Memoire/projet/code-source`**.
 
 ## Index

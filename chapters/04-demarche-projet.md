@@ -20,7 +20,7 @@ du stagiaire.
 
 | Activité | Ce qu'elle a produit | Où le trouver |
 |---|---|---|
-| **Analyse** | cahier des charges consolidé, capture des schémas sources, exigences F1–F6 | `documents/cahier_des_charges.md`, `archives/datalake_mavis/LOG.md`, chapitre 5 |
+| **Analyse** | cahier des charges consolidé, capture des schémas sources, exigences F1–F6 | `documents/cahier_des_charges.md`, `documents/journal_poc_datalake_mavis.md`, chapitre 5 |
 | **Conception** | architecture en trois niveaux, modèle canonique, schéma de la base centrale, règles de gouvernance | chapitres 6 et 7, `sql/schema.sql`, `documents/documentation/` |
 | **Développement** | générateur synthétique, moteur de déduplication (Pandas et Spark), pipeline ELT, API, frontend optionnel | `projet/code-source/` |
 | **Tests et évaluation** | suites `pytest`, évaluation sur vérité terrain, runs du pipeline | `projet/code-source/tests/`, `evaluation/evaluation_truth.md`, chapitre 8 |
@@ -242,7 +242,7 @@ documentaire. C'est ce qui justifie une démarche itérative plutôt qu'un cycle
 | **Finalisation et soutenance** | | | | | | | ○ | ○ |
 
 > **Lecture honnête du planning.** Les journaux du dépôt commencent le 23/08/2026
-> (`archives/datalake_mavis/LOG.md`) ; les semaines antérieures sont **déclarées** par le
+> (`documents/journal_poc_datalake_mavis.md`) ; les semaines antérieures sont **déclarées** par le
 > stagiaire et figurées comme telles, sans dates reconstituées. Le dépôt consolidé
 > (`ai/dev/logs.md`) couvre ensuite la période du 07/09 au 28/09/2026. Les dernières
 > quinzaines (finalisation, soutenance) sont **prévues**, non réalisées à la date de rédaction.
@@ -331,6 +331,6 @@ par l'utilisateur : ce que la plateforme fait, avec quelle qualité, et par quel
 
 - `documents/cahier_des_charges.md` §9, §10, §11.
 - `provision/Vagrantfile`, `bootstrap.sh`.
-- `ai/dev/logs.md`, `ai/dev/suivi_avancement.md`, `archives/datalake_mavis/LOG.md`
+- `ai/dev/logs.md`, `ai/dev/suivi_avancement.md`, `documents/journal_poc_datalake_mavis.md`
   (dates des jalons J1 à J5).
 - `documents/budget.md` (budget détaillé).

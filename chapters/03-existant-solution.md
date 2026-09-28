@@ -35,7 +35,7 @@ Ce que l'utilisateur ne peut pas faire, en revanche, c'est **passer d'un systèm
 ### 3.1.2 Vision développeur (description interne)
 
 Trois systèmes sources ont été rencontrés puis capturés (schémas et volumes) au cours du stage
-[`archives/datalake_mavis/LOG.md`](../archives/datalake_mavis/LOG.md) :
+[`documents/journal_poc_datalake_mavis.md`](../documents/journal_poc_datalake_mavis.md) :
 
 **Tableau 12 — Les quatre sources capturées au stage : socle technique, volume vérifié, tables retenues et particularités relevées.**
 
@@ -53,7 +53,7 @@ produits n'est conçu pour être le référentiel d'identité transverse de l'é
 
 **Méthode de la capture.** L'étude de l'existant repose sur une **capture reproductible**, pas sur
 une impression : le schéma de chaque base a été introspecté puis consigné dans le dépôt
-[`archives/datalake_mavis/LOG.md`](../archives/datalake_mavis/LOG.md), ce qui permet de relire le
+[`documents/journal_poc_datalake_mavis.md`](../documents/journal_poc_datalake_mavis.md), ce qui permet de relire le
 diagnostic sans refaire les relevés. Trois chiffres de cette capture doivent être lus pour ce
 qu'ils établissent — et pour ce qu'ils n'établissent pas.
 
@@ -302,7 +302,7 @@ méthode, rôles, contraintes, planning et budget.
 ### Références citées
 
 - [B19] GNU Health. [B20] Odoo, applications hospitalières — voir `references/bibliographie.md`.
-- `archives/datalake_mavis/LOG.md` (captures de schéma, incidents) ;
+- `documents/journal_poc_datalake_mavis.md` (captures de schéma, incidents) ;
   `documents/documentation/bases_de_donnees.md` (recension des couches) ;
   `documents/documentation/architecture.md` (services, ports) ;
   `documents/Cahier_des_charges_stage_M2_MBDS.docx` (exigences d'hébergement et de sécurité).

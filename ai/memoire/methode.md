@@ -5,7 +5,7 @@
 - Le mémoire raconte une **démarche progressive et honnête** : problème métier → MVP → validation des
   algorithmes → passage à l'échelle → architecture Big Data.
 - **Preuves avant affirmations** : chaque chiffre doit être vérifiable dans le dépôt
-  (`documents/`, `projet/code-source/`, `archives/`) — pas d'invention de résultat.
+  (`documents/`, `projet/code-source/`, historique Git) — pas d'invention de résultat.
 - Conserver un ton pédagogique : expliquer **pourquoi** chaque technologie (voir
   `documents/documentation/bigdata_concepts.md`).
 
