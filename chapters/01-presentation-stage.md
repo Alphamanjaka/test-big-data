@@ -27,16 +27,14 @@ distante (`mavis_notheme`, 11 tables retenues dont `hms_patient`, `res_partner`,
 
 ### 1.2.1 Contexte métier
 
-Le même patient est enregistré dans plusieurs systèmes, **sous des formes différentes** :
+Le cas de référence de la plateforme en donne un exemple concret : trois fiches, **sous des formes
+différentes**, désignent une seule et même personne [deduplication.md §7].
 
 ```text
 Pharmacie     → Jean Rakoto · CIN 101 02404 5 · 1990-01-10
 Consultation  → Rakoto Jean · 101024045 · 10/01/1990
 Imagerie      → J. RAKOTO · 101024045 · 1990/01/10
 ```
-
-Exemple réel du cas de référence de la plateforme : les trois enregistrements ci-dessus
-représentent une seule et même personne [deduplication.md §7].
 
 Cette situation pose trois problèmes concrets :
 

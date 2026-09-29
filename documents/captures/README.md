@@ -28,19 +28,19 @@ emplacement (`inséré` / `EN ATTENTE`).
 | Id | Fichier | Section | Contenu attendu | Priorité |
 |---|---|---|---|---|
 | C01 | `C01_schema_mavis.png` | 3.1.2 Existant | liste des tables ou diagramme du schéma MAVIS (DBeaver, pgAdmin), sans données | optionnel |
-| C02 | `C02_gantt.png` | 4.4 Planification | feuille Gantt de `documents/Gantt_suivi_projet.xlsx`, du 06/07 à fin octobre | optionnel |
-| C03 | `C03_connexion.png` | 5.3.1 IHM | page `/login` | recommandé |
+| C02 | `C02_gantt.png` | 4.4 Planification | feuille Gantt de `documents/Gantt_suivi_projet.xlsx`, du 06/07 à fin octobre | retiré du rapport (29/09/2026) |
+| C03 | `C03_connexion.png` | 5.3.1 IHM | page `/login` | retiré du rapport (29/09/2026) |
 | C04 | `C04_synthese.png` | 5.3.1 IHM | page `/synthese` : maîtres, doublons, taux, accords/refus | **essentiel** |
-| C05 | `C05_doublons.png` | 5.3.1 IHM | page `/doublons` : répartition par méthode | **essentiel** |
-| C06 | `C06_gouvernance.png` | 5.3.1 IHM | page `/gouvernance`, filtrée sur une finalité | **essentiel** |
+| C05 | `C05_doublons.png` | 5.3.1 IHM | page `/doublons` : répartition par méthode | retiré du rapport (29/09/2026) |
+| C06 | `C06_gouvernance.png` | 5.3.1 IHM | page `/gouvernance`, filtrée sur une finalité | retiré du rapport (29/09/2026) |
 | C07 | `C07_pipeline.png` | 5.3.1 IHM | page `/dashboard` ou `/pipeline` : zones, dernier run, planification | **essentiel** |
-| C08 | `C08_patients.png` | 5.3.1 IHM | page `/patients` avec recherche et finalité | recommandé |
+| C08 | `C08_patients.png` | 5.3.1 IHM | page `/patients` avec recherche et finalité | retiré du rapport (29/09/2026) |
 | C09 | `C09_fiche_patient.png` | 5.3.1 IHM | page `/patients/{id}` d'un patient à plusieurs fiches (cas « Jean Rakoto ») | **essentiel** |
 | C10 | `C10_swagger.png` | 5.3.2 API | `/docs` de l'API FastAPI (port 8000), points d'entrée listés | recommandé |
 | C11 | `C11_hdfs_datalake.png` | 6.2 Architecture technique | interface HDFS (port 9870) > Browse, dossier `/datalake` (raw, silver, gold) | **essentiel** |
 | C12 | `C12_run_pipeline.png` | 7.3.1 Pipeline | terminal VM : sortie de `run_pipeline.sh` ou fin de `elt.log`, étapes OK | **essentiel** |
-| C13 | `C13_comptages.png` | 7.3.1 Pipeline | requête Spark/Hive : 214 lignes SILVER, 145 maîtres | recommandé |
-| C14 | `C14_refus_403.png` | 7.3.3 Gouvernance | réponse 403 + ligne `access_audit` (purpose, refusal_reason) | optionnel, **seulement si la base est peuplée** |
+| C13 | `C13_comptages.png` | 7.3.1 Pipeline | requête Spark/Hive : 214 lignes SILVER, 145 maîtres | retiré du rapport (29/09/2026) |
+| C14 | `C14_refus_403.png` | 7.3.3 Gouvernance | réponse 403 + ligne `access_audit` (purpose, refusal_reason) | retiré du rapport (29/09/2026) |
 | C15 | `C15_pytest.png` | 8.1 Tests | fin de `pytest projet/code-source/tests` : « 102 passed » | **essentiel** |
 | C16 | `C16_evaluation.png` | 8.4 Évaluation | sortie de `evaluate_engine.py` sur le jeu hard (P/R/F1) | recommandé |
 
@@ -54,7 +54,7 @@ fonction (il reste juste si le code bouge). Une capture est **facultative** : si
 |---|---|---|---|
 | X01 | `X01_normalisation.png` | 7.2.2 | `canonical.py` : `_cin`, `_gender` |
 | X02 | `X02_schema.png` | 7.2.2 | `sql/schema.sql` : tables `patient_identity_map` et `consent` |
-| X03 | `X03_config.png` | 7.2.3 | `config/deduplication.yaml` |
+| X03 | `X03_config.png` | 7.2.3 | retiré du rapport (29/09/2026) |
 | X04 | `X04_score.png` | 7.2.3 | `matcher.py` : `_similarity` |
 | X05 | `X05_consentement.png` | 7.2.3 | `consent.py` : `check_consent`, `enforce_consent` |
 | X06 | `X06_deduplicate.png` | Annexe D | `matcher.py` : `deduplicate` |

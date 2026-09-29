@@ -1870,3 +1870,181 @@ les métadonnées PyPI (`requires_python`) ; export DOCX de contrôle dans le sc
 9 figures. **Incohérence relevée, non corrigée dans le code** : la bibliographie citait RapidFuzz 3.14.5, qui ne
 s'installe pas sous Python 3.8 ; la version réellement installée sur la VM n'est tracée nulle part.
 `documents/rapport_stage_source.md` (rapport Word) non resynchronisé. Pas de commit.
+
+## 29/09/2026 — Soutenance : slide « Architecture technique » (13/21)
+
+| # | Élément | Détail |
+| - | ------- | ------ |
+| 1 | Méthode | slide insérée **directement dans le .pptx** (duplication de la slide 12 puis python-pptx), sans relancer `build_soutenance_deck.py`, pour préserver les animations et transitions ajoutées à la main dans PowerPoint |
+| 2 | Contenu | six couches (exposition et gouvernance, base centrale, moteur de déduplication, traitement distribué, lac de données, infrastructure), chacune avec icône, technologies, rôle et logos (`documents/figures/logos/`, marges rognées) ; bandeau « aucune licence, aucun abonnement, aucune donnée hors de l'établissement » ; notes de l'orateur |
+| 3 | Faits vérifiés | Vagrantfile (`ubuntu/focal64`, 8192 Mo, 4 CPU), `bootstrap.sh` (Hadoop 3.3.6, Hive 3.1.3, Spark 3.4.2, OpenJDK 8), § 7.1 (FastAPI, Flask, Next.js optionnel), § 4.4 (logiciels : 0 Ar) |
+| 4 | Pied de page | numérotation « N / 20 » → « N / 21 » sur toutes les slides |
+
+**Vérifications.** `validate.py --original` : PASSED ; rendu PowerPoint de la slide 13 contrôlé (pas de débordement) ;
+transition conservée sur la nouvelle slide ; animations de la slide 14 intactes (24 effets). La nouvelle slide n'a
+**pas d'animation** (la chronologie héritée de la slide 12 visait des formes supprimées). Le générateur
+`build_soutenance_deck.py` ne contient pas cette slide : le relancer écraserait les retouches manuelles.
+Sauvegarde du deck avant modification dans le scratchpad de session. Pas de commit.
+
+## 29/09/2026 — Mémoire : mots-clés retirés du Résumé
+
+`projet/code-source/scripts/dev/export_memoire_docx.py` : constante `MOTS_CLES` supprimée ; `add_abstract()` rend la
+ligne de mots-clés optionnelle et le Résumé est appelé sans elle. L'Abstract anglais garde ses « Keywords ».
+
+**Vérifications.** `python -m py_compile` : OK. DOCX régénéré (`documents/memoire_M2_MBDS.docx`, 10 chapitres, 9 figures, 49 tableaux ; Résumé 191 mots, Abstract 154 mots) : plus aucune ligne « Mots-clés », « Keywords » présente. Pas de commit.
+
+## 29/09/2026 — Rapport de stage : mots-clés retirés du Résumé
+
+`documents/rapport_stage_source.md` : ligne « **Mots-clés** : … » supprimée du Résumé (les « Keywords » de l'Abstract
+sont conservés). Rapport régénéré par `build_rapport_stage_docx.py` : 75 pages, 16 963 mots ; plus aucune ligne
+« Mots-clés » dans le .docx, contrôlé par relecture du fichier produit. Pas de commit.
+
+## 29/09/2026 — Mémoire : introduction générale réécrite (contexte humain)
+
+`chapters/00-introduction.md` : la section « Contexte général » s'ouvre sur le parcours d'une patiente (pharmacie,
+consultation, imagerie) avant le contexte technique ; elle précise que les sources ne sont pas figées (réorganisation
+des services, nouvelles technologies de base) et pose le besoin du patient (consultations autorisées, imagerie refusée).
+« Mission confiée » : ajout de l'état réel du consentement, contrôlé **par finalité** ; le contrôle **par type de
+dossier** est en cours (aucune trace dans `projet/code-source/` à ce jour). Textes validés par l'auteur.
+
+**Vérifications.** Mémoire régénéré (10 chapitres, 9 figures, 49 tableaux) ; nouveaux passages présents dans le .docx.
+`documents/rapport_stage_source.md` resynchronisé (mêmes passages dans son Introduction) ; rapport régénéré :
+75 pages, 17 149 mots, passages présents dans le .docx. Pas de commit.
+- Plan de l'Introduction du rapport mis en liste à puces (un point par chapitre). Génération du .docx refusée : fichier ouvert dans Word ; rendu vérifié sur une copie hors dépôt (puces présentes, 75 pages).
+- Rapport régénéré après fermeture de Word : 75 pages, 17 163 mots, plan en puces présent dans le .docx.
+
+## 29/09/2026 — Rapport de stage : allègement du chapitre 7 (Conception)
+
+`documents/rapport_stage_source.md`, chapitre 7 : sept coupes validées par l'auteur. Gouvernance regroupée dans une
+seule section (7.3.3) ; tableau des tables de la base centrale remplacé par une phrase (figure 7 et extrait X02
+conservés) ; vue statique du code en une phrase ; paragraphe « parité Spark » et paragraphe FastAPI/Flask supprimés
+(redondants avec leurs tableaux) ; déploiement renvoyé au chapitre 6 ; phrase sur le protocole de parité retirée.
+Renvoi de la section 3 vers les rôles corrigé (7.2.3 → 7.3.3). Aucun fait nouveau introduit.
+
+**Vérifications.** Chapitre 7 : 2 397 → 2 053 mots. Rapport régénéré : 75 → 74 pages, 17 163 → 16 792 mots.
+Sauvegarde de la source avant coupe dans le scratchpad. `chapters/07-conception.md` (mémoire) non modifié. Pas de commit.
+
+## 29/09/2026 — Rapport de stage : allègement du chapitre 4 (Démarche projet)
+
+`documents/rapport_stage_source.md`, chapitre 4 : cinq coupes validées par l'auteur. Tableaux « contraintes » et
+« risques » fusionnés en un seul (contrainte ou risque, traitement, constat), lignes Python 3.8 et partage vboxsf
+renvoyées au tableau des difficultés du chapitre 7 ; gestion de la configuration en un paragraphe ; origine des
+versions en une phrase ; lignes TypeScript, Tailwind et D3.js regroupées dans la ligne Next.js ; tableau « Coût total »
+remplacé par une phrase (4 600 000 Ar). Ligne « Reproductibilité » : constat « appliqué » (l'ancien tableau n'en
+donnait pas). Aucun autre fait nouveau.
+
+**Vérifications.** Chapitre 4 : 2 048 → 1 784 mots. Rapport régénéré : 74 → 73 pages, 16 792 → 16 507 mots.
+Sauvegarde de la source avant coupe dans le scratchpad. Mémoire (`chapters/04-*.md`) non modifié. Pas de commit.
+
+## 29/09/2026 — Rapport de stage : retouches du chapitre 2 et allègement du chapitre 5
+
+`documents/rapport_stage_source.md` (coupes validées par l'auteur) :
+- **Chapitre 2** (état de l'art, jugé prioritaire) : deux retouches seulement ; mention de `sentence_transformers`
+  retirée (déjà deux fois au chapitre 7) ; dernière phrase des « écarts assumés » raccourcie avec renvoi au chapitre 7.
+  Aucune source, aucun produit, aucun chiffre retiré.
+- **Chapitre 5** : captures d'IHM ramenées de sept à trois (C04 synthèse, C07 pipeline, C09 fiche patient ;
+  C03, C05, C06, C08 retirées, les écrans restant décrits dans le tableau des pages) ; CU7 réduit à la vision
+  utilisateur ; phrase redondante de CU3 retirée ; distinction Flask/FastAPI conservée au chapitre 5 et remplacée
+  par un renvoi en 7.3.3.
+- `documents/captures/README.md` : C03, C05, C06, C08 marquées « retiré du rapport ».
+
+**Vérifications.** Rapport régénéré : 73 → 71 pages, 16 507 → 16 210 mots. Sauvegardes de la source avant chaque
+coupe dans le scratchpad. Mémoire non modifié. Pas de commit.
+
+## 29/09/2026 — Chapitre 1 relu ; introduction et contexte métier alignés (mémoire et rapport)
+
+Relecture du chapitre 1 du rapport : renvois 4.1.5, 7.2.3, 8.3, 8.4 justes après les coupes ; faits sur MMT
+identiques au mémoire ; `documents/figures/notions_cles.png` présent. Retouches validées par l'auteur :
+- introduction (`chapters/00-introduction.md` et `documents/rapport_stage_source.md`) : « Une patiente » →
+  « Un patient », pour que Jean Rakoto (chapitre 1) illustre le même récit ;
+- contexte métier (`chapters/01-presentation-stage.md` et rapport) : première phrase, redondante avec
+  l'introduction, remplacée par « Le cas de référence de la plateforme en donne un exemple concret… » ; dans le
+  mémoire, la mention « Exemple réel » (contradictoire avec des données fictives) est supprimée.
+
+**Vérifications.** Régénération des .docx non exécutée dans cette session (vérification de sécurité de l'outil
+indisponible) : relancer `export_memoire_docx.py` et `build_rapport_stage_docx.py`. Pas de commit.
+
+## 29/09/2026 — Introduction sur une page ; script oral réécrit pour le deck de 20 slides
+
+Demande de l'auteur : introduction et annonce du plan sur **une seule page** ; le récit et la motivation passent
+à l'oral.
+- `chapters/00-introduction.md` : sous-titres supprimés ; contexte humain, mission (consentement par finalité
+  réalisé, par type de dossier en cours), contraintes, problématique, plan (tableau 1 conservé, raccourci, pour
+  ne pas décaler la numérotation des 49 tableaux). Motivation personnelle retirée.
+- `documents/rapport_stage_source.md` : même introduction ; plan en quatre puces groupées (chapitres 1-2, 3-4,
+  5-7, 8 et conclusion), la version à neuf puces débordant de deux lignes.
+- `ai/memoire/README.md` : description de l'introduction mise à jour (une page, motivation à l'oral).
+- `documents/soutenance_script_oral.md` : réécrit pour les 20 slides du deck présent sur disque (l'ancien script
+  suivait 13 slides et contenait un fragment corrompu) ; récit du patient (S3), motivation (S2), consentement par
+  type de dossier annoncé comme en cours (S14, S18), trois choses à ne pas dire, questions probables du jury ;
+  1 587 mots comptés par script, 16:30 prévues sur 20:00.
+
+**Vérifications.** Pagination contrôlée dans Word (COM) : mémoire, introduction et plan sur la page 13 ; rapport
+(copie générée hors dépôt), introduction et plan sur la page 15, chapitre 1 en page 16 ; rapport 70 pages,
+15 872 mots. Mémoire régénéré. `documents/Rapport_de_stage_RANOMENJANAHARY_Manjaka_Alpha.docx` **non régénéré**
+(ouvert dans Word).
+**Constat, non corrigé :** le deck sur disque (1 197 754 octets, modifié le 29/09 à 19:27) est identique à la
+version commitée (`bf0171c`, 20 slides) : la version de 21 slides avec la slide « Architecture technique » et les
+animations manuelles n'est plus dans l'arbre de travail. Deck non modifié en attendant l'avis de l'auteur.
+Pas de commit.
+
+## 29/09/2026 — Deck : notes de l'orateur alignées sur le script ; perspective ajoutée (slide 18)
+
+Accord de l'auteur. Sur le deck présent sur disque (20 slides) : notes des 20 slides remplacées par le texte
+« à dire » et la transition de `documents/soutenance_script_oral.md` (slide 17 : narration de la vidéo) ;
+slide 18, « Court terme » : ajout de « consentement par type de dossier » (texte d'un seul run modifié, formes et
+animations non touchées). Copie du deck avant modification dans le dossier temporaire.
+
+**Vérifications.** Deck rouvert par PowerPoint (COM) : 20 slides ; slide 18 exportée en image et relue : pas de
+débordement. Rapport régénéré après fermeture de Word : 70 pages, 15 872 mots. Pas de commit.
+
+## 29/09/2026 — Rapport de stage : légendes raccourcies ; symboles du tableau comparatif retirés
+
+`documents/rapport_stage_source.md`, à la demande de l'auteur :
+- 57 légendes (tableaux, figures, captures, extraits de code) ramenées à un intitulé court (2 à 8 mots) ;
+  listes des tableaux et des figures mises à jour d'elles-mêmes à la génération.
+- Tableau comparatif (chapitre 2) : ✔ / ◐ / ✖, rendus dans une police de symboles différente du texte, remplacés
+  par « oui », « partiel », « non » ; légende des symboles supprimée.
+- Gantt : la légende des couleurs, retirée de l'intitulé, passe dans la phrase qui présente le diagramme.
+
+**Vérifications.** Copie PDF générée hors dépôt et relue (liste des tableaux, page du comparatif) ; aucun
+symbole ✔ ◐ ✖ restant dans la source ; copie : 70 pages. Rapport du dépôt régénéré ensuite (70 pages, 15 152 mots). Mémoire
+(`chapters/`) non modifié. Pas de
+commit.
+
+## 29/09/2026 — Rapport de stage : légendes courtes pour les extraits de code
+
+`projet/code-source/scripts/dev/build_rapport_stage_docx.py` (`code()`) : la référence « fichier, l. X–Y » n'est
+plus ajoutée à la légende ; elle ouvre l'encadré de code en gris italique. Pour un extrait remplacé par une
+capture, la légende reste courte (référence non affichée).
+
+**Vérifications.** Copie PDF hors dépôt relue : liste des extraits sans chemins, encadré de l'extrait 1 correct
+(page 34). Rapport régénéré (70 pages). Pas de commit.
+
+## 29/09/2026 — Rapport de stage : figures, tableaux et captures redondants supprimés ou fusionnés
+
+`documents/rapport_stage_source.md`, neuf changements validés par l'auteur :
+1. figure « La stratégie de test » (fig-9) supprimée : doublon du tableau des niveaux de test, avec deux
+   incohérences (« API gouvernance 3/3 » au lieu de l'API des indicateurs ; planification rangée sous « moteur ») ;
+2. figure « Des concepts aux briques techniques » (fig-6) supprimée, renvoi à la section 2.5 ;
+3. tableau des six objectifs (chapitre 1) remplacé par une phrase, renvoi au chapitre 5 ;
+4. extrait X03 (YAML des poids) supprimé, chemin du fichier cité dans le texte ;
+5. coûts humains et matériels fusionnés en un tableau « Budget du projet sur quatre mois » avec total ;
+6.–8. captures C02 (Gantt détaillé), C13 (comptages) et C14 (refus 403, irréalisable sans base peuplée) retirées ;
+9. annexe B : tableau des modules du générateur remplacé par un renvoi à la section 5.1.5.
+`documents/captures/README.md` : C02, C13, C14 et X03 marquées « retiré du rapport ».
+
+**Vérifications.** Rapport régénéré : 70 → 67 pages, 15 152 → 14 647 mots ; page du budget relue sur une copie PDF
+hors dépôt. Figures `fig-6.png` et `fig-9.png` conservées dans `documents/figures/` (encore utilisées par le
+mémoire). Mémoire non modifié. Pas de commit.
+
+## 29/09/2026 — Mémoire : figure 9 (stratégie de test) corrigée
+
+`chapters/08-tests.md` : diagramme Mermaid de la figure 9 corrigé. Les tests de planification et de reprise (45)
+forment leur propre bloc au lieu d'être rangés sous « moteur + gouvernance », qui compte 57 tests. Le bloc
+système indique « API des indicateurs (Flask) » et non « API gouvernance » : `provision/api/test_api.py` teste bien
+l'API Flask (port 5000). La légende de la figure et la ligne « API » du tableau 44 sont alignées.
+
+**Vérifications.** `render_mermaid_figures.py` : 9 figures rendues, figure 9 relue. Les autres PNG, régénérés sans
+changement de contenu, ont été remis à leur version commitée ; seuls `fig-9.png` et `manifest.json` (numéros de
+ligne des sources) changent. Mémoire régénéré (9 figures, 49 tableaux). Pas de commit.

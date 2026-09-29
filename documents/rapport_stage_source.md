@@ -27,8 +27,6 @@ Ce stage, réalisé chez Madagascar Medical Technology (MMT), a porté sur la co
 
 Sur le jeu de démonstration, la plateforme ramène 214 enregistrements à 145 patients, soit un taux de doublons de 32,24 %. Évaluée sur trois jeux synthétiques dont la vérité est connue, la déduplication atteint une précision de 1,000 sur tous les niveaux — aucune fusion à tort — et un rappel de 0,422 sur le jeu le plus difficile. Les implémentations Pandas et Spark produisent des résultats strictement identiques. Toutes les données manipulées sont fictives.
 
-**Mots-clés** : données de santé, lac de données, architecture Medallion, Spark, Hive, FHIR, déduplication, Master Patient Index, consentement, RGPD.
-
 #= Abstract
 
 In a healthcare institution, patient data is spread across several independent information systems — consultations, pharmacy, imaging, hospital management — that share no common identifier. The same person appears several times in different forms, and no system controls who accesses their data or for what purpose.
@@ -105,17 +103,20 @@ On the demonstration dataset, the platform reduces 214 records to 145 patients, 
 
 #! Introduction
 
-Comme la plupart des organisations de santé, un établissement fait coexister plusieurs systèmes d'information indépendants : consultations, pharmacie, laboratoire, imagerie, dossiers médicaux. Chacun possède sa propre base, son propre format et ses propres identifiants. Le même patient y est donc enregistré plusieurs fois, sous des formes différentes, sans qu'aucun système ne sache qu'il s'agit de la même personne.
+Un patient se présente à la pharmacie, puis en consultation, puis au service d'imagerie. À chaque étape, il est enregistré de nouveau, dans une base différente et sous une forme différente. Aucun de ces services ne sait qu'il s'agit de la même personne, et aucun ne peut lui demander ce qu'il accepte que l'on fasse de ses données.
 
-Deux évolutions rendent ce problème pressant. D'une part, la quantité de données produites augmente, et leur exploitation relève désormais des architectures **Big Data** : des données trop nombreuses ou trop variées pour un seul poste de travail, qu'il faut stocker et traiter de façon répartie. D'autre part, les données de santé sont des données sensibles : leur usage doit être **gouverné**, c'est-à-dire contrôlé selon qui les demande, pour quelle finalité et avec l'accord du patient.
+C'est la situation de nombreux établissements de santé : des systèmes indépendants, chacun avec sa base, son format et ses identifiants. Or les données de santé sont sensibles : leur usage doit être **gouverné**, c'est-à-dire contrôlé selon qui les demande, pour quelle finalité et avec l'accord du patient.
 
-Ce sujet m'a attiré parce qu'il réunit, dans un seul projet, les trois volets de la formation MBDS — les bases de données, l'intégration de systèmes hétérogènes et le traitement de données à grande échelle — et parce qu'il m'a permis de passer de la théorie à la pratique du Big Data : installer un lac de données, écrire des traitements Spark, et comprendre pourquoi chaque technologie est introduite plutôt que de l'employer par effet de mode.
+Le stage s'est déroulé du 6 juillet à fin octobre 2026 au département Recherche et Développement de **Madagascar Medical Technology (MMT)**. La mission était de concevoir une plateforme de centralisation et de gouvernance des données patients : intégrer des sources hétérogènes, reconnaître un même patient d'une base à l'autre et n'ouvrir l'accès à ses données que selon son consentement, aujourd'hui **par finalité**, et **par type de dossier** en cours de développement. Deux contraintes encadrent ce travail : l'**hébergement interne** et l'usage exclusif de **données synthétiques**. La plateforme est livrée comme prototype reproductible, non déployé.
 
-Le stage, d'une durée de quatre mois, s'est déroulé du 6 juillet à fin octobre 2026 au sein du département Recherche et Développement de **Madagascar Medical Technology (MMT)**. La mission confiée était de concevoir une plateforme de centralisation et de gouvernance des données patients : intégrer des sources hétérogènes, nettoyer et standardiser les données, reconnaître les patients présents dans plusieurs systèmes, et contrôler l'accès aux données selon le consentement du patient. Deux contraintes du commanditaire encadrent ce travail : les données doivent rester sur les machines de l'établissement (**hébergement interne**), et seules des **données synthétiques** peuvent être utilisées. La plateforme est livrée sous forme de prototype reproductible ; elle n'a pas été déployée en production.
+D'où la problématique : **comment concevoir une plateforme capable d'intégrer, nettoyer, dédupliquer et centraliser des données patients issues de sources hétérogènes, tout en assurant la traçabilité des identités et la gouvernance des accès basée sur le consentement du patient ?**
 
-La problématique peut se formuler ainsi : **comment concevoir une plateforme capable d'intégrer, nettoyer, dédupliquer et centraliser des données patients issues de sources hétérogènes, tout en assurant la traçabilité des identités et la gouvernance des accès basée sur le consentement du patient ?**
+Pour y répondre, ce rapport s'organise comme suit :
 
-Pour y répondre, ce rapport présente d'abord le cadre du stage (chapitre 1) et l'état de l'art du domaine (chapitre 2). Il étudie ensuite l'existant et la solution envisagée (chapitre 3), puis la démarche de projet suivie (chapitre 4). Les exigences réalisées (chapitre 5), l'architecture (chapitre 6) et la conception du logiciel (chapitre 7) décrivent la solution construite ; les tests et l'évaluation (chapitre 8) en mesurent la qualité. La conclusion dresse le bilan, les limites et les perspectives.
+- **Chapitres 1 et 2** : le cadre du stage, puis l'état de l'art du domaine ;
+- **Chapitres 3 et 4** : l'étude de l'existant, la solution envisagée et la démarche de projet ;
+- **Chapitres 5 à 7** : les exigences réalisées, l'architecture et la conception du logiciel ;
+- **Chapitre 8 et conclusion** : les tests et l'évaluation, puis le bilan, les limites et les perspectives.
 
 # Présentation du stage
 
@@ -131,9 +132,9 @@ Depuis 2024, l'entreprise dispose d'un **département Recherche et Développemen
 
 ### Contexte métier
 
-Le même patient est enregistré dans plusieurs systèmes, sous des formes différentes. Dans le cas de référence de la plateforme, trois fiches désignent une seule et même personne :
+Le cas de référence de la plateforme en donne un exemple concret : trois fiches désignent une seule et même personne :
 
-Tableau: Trois enregistrements d'un même patient fictif dans trois systèmes différents.
+Tableau: Trois fiches d'un même patient fictif.
 | Système | Nom | CIN | Date de naissance |
 |---|---|---|---|
 | Pharmacie | Jean Rakoto | 101 02404 5 | 1990-01-10 |
@@ -150,25 +151,15 @@ Cette situation pose trois problèmes concrets :
 
 Les objectifs s'appuient sur quatre notions qui reviennent tout au long du rapport : l'ELT, le modèle Medallion, le Master Patient Index et le consentement par finalité. La figure ci-dessous les résume, chacune illustrée sur le cas de référence.
 
-Figure: Les quatre notions clés du rapport : ELT, modèle Medallion, Master Patient Index et consentement par finalité. | documents/figures/notions_cles.png | 16
+Figure: Les quatre notions clés du rapport. | documents/figures/notions_cles.png | 16
 
-Le cahier des charges fixe six objectifs, qui structurent l'ensemble du projet.
-
-Tableau: Les six objectifs du cahier des charges et leur traduction concrète.
-| N° | Objectif | Traduction concrète |
-|:---:|---|---|
-| 1 | **Centraliser** les données dans une architecture Big Data | pipeline ELT Medallion RAW → SILVER → GOLD |
-| 2 | **Nettoyer et standardiser** selon un modèle commun | modèle canonique du patient et schéma pivot FHIR |
-| 3 | **Dédupliquer** avec une logique toujours explicable | patient maître, identity map, score, méthode et seuil |
-| 4 | **Gouverner les accès** | rôles, consentement par finalité, audit d'accès, clés API hachées |
-| 5 | **Visualiser** les indicateurs | vues de déduplication et de consentement (frontend optionnel) |
-| 6 | **Évaluer** la déduplication | vérité terrain, précision, rappel et F1 |
+Le cahier des charges fixe six objectifs, qui structurent l'ensemble du projet : **centraliser** les données dans une architecture Big Data, les **nettoyer et standardiser** selon un modèle commun, les **dédupliquer** avec une logique toujours explicable, **gouverner les accès**, **visualiser** les indicateurs et **évaluer** la déduplication. Leur traduction en exigences vérifiables figure au chapitre 5.
 
 ### Enjeux et risques
 
 La dispersion des données entraîne des risques d'erreurs médicales (dossier éclaté), des analyses faussées (agrégats comptant des fiches plutôt que des patients) et des failles de confidentialité. Chaque enjeu porte un risque que la solution doit maîtriser.
 
-Tableau: Les enjeux du sujet, le risque associé et la manière dont il est maîtrisé.
+Tableau: Enjeux, risques et maîtrise.
 | Enjeu | Risque à maîtriser | Maîtrise démontrée |
 |---|---|---|
 | Un dossier patient complet | fusionner à tort deux personnes distinctes, l'erreur la plus grave en santé | précision de 1,000, aucun faux positif sur les trois jeux évalués (section 8.4) |
@@ -192,7 +183,7 @@ Le processus générique se décompose en cinq étapes [1], [3], toutes appliqu�
 
 Les variantes *Jean Rakoto*, *Rakoto Jean* et *J. RAKOTO* imposent de comparer des chaînes de caractères et non de simples égalités. Les mesures classiques du domaine sont présentées dans le tableau ci-dessous.
 
-Tableau: Les mesures de similarité classiques et leur usage dans le rapprochement d'identités.
+Tableau: Mesures de similarité classiques.
 | Mesure | Principe | Usage typique |
 |---|---|---|
 | Levenshtein | nombre minimal d'insertions, suppressions et substitutions | nom, prénom |
@@ -200,7 +191,7 @@ Tableau: Les mesures de similarité classiques et leur usage dans le rapprocheme
 | Jaro-Winkler | similarité qui favorise un début de chaîne commun | initiales, noms tronqués |
 | Mesures par mots | comparaison des mots indépendamment de leur ordre | *Rakoto Jean* et *Jean Rakoto* |
 
-Le projet utilise **RapidFuzz** [4], bibliothèque libre qui implémente ces mesures de façon performante. Son intérêt est opérationnel : légère et compatible avec Python 3.8, elle évite les dépendances de traitement du langage lourdes, dont la bibliothèque `sentence_transformers`, qui plantait sous Python 3.8 dans l'environnement du stage.
+Le projet utilise **RapidFuzz** [4], bibliothèque libre qui implémente ces mesures de façon performante. Son intérêt est opérationnel : légère et compatible avec Python 3.8, elle évite les dépendances lourdes de traitement du langage.
 
 Comparer chaque enregistrement à tous les autres est quadratique : pour *n* patients, de l'ordre de *n²* comparaisons, soit 10¹² pour un million de patients. La pratique standard, le **blocking**, regroupe les enregistrements en blocs de candidats partageant une clé grossière — préfixe du nom, date de naissance, CIN — et ne compare qu'à l'intérieur de ces blocs [1], [3].
 
@@ -208,7 +199,7 @@ Comparer chaque enregistrement à tous les autres est quadratique : pour *n* pat
 
 En santé, le rapprochement aboutit à un **Master Patient Index** : chaque fiche des bases sources est rattachée à un identifiant unique, le *master patient*, par une **identity map** traçable.
 
-Tableau: Exemple d'identity map : trois fiches rattachées au même patient maître.
+Tableau: Exemple d'identity map.
 | Source | Identifiant source | Patient maître | Score | Méthode |
 |---|---|---|---:|---|
 | pharmacy | 15 | 102 | 1,000 | exacte |
@@ -221,7 +212,7 @@ Cette démarche rejoint le standard **FHIR** (HL7 *Fast Healthcare Interoperabil
 
 Les données de santé sont une catégorie particulière de données personnelles : leur traitement est **en principe interdit** par l'article 9 du RGPD, sauf exceptions, dont le **consentement explicite** de la personne [10]. La CNIL précise que la base légale (article 6) et l'exception propre aux données sensibles (article 9) se cumulent, et que le consentement au traitement des données diffère du consentement aux soins [11], [12]. Le projet traduit ces principes en mécanismes vérifiables.
 
-Tableau: Traduction des exigences du RGPD en mécanismes implémentés.
+Tableau: Du RGPD aux mécanismes implémentés.
 | Exigence | Mécanisme implémenté dans la plateforme |
 |---|---|
 | Finalité déterminée (art. 5.1.b) | la finalité est déclarée et obligatoire à chaque requête, dans une liste fermée : `api_access`, `research`, `analytics` |
@@ -269,15 +260,15 @@ Quatre familles de produits couvrent partiellement le besoin : les référentiel
 
 Le tableau suivant applique les six critères à chaque solution. Pour les produits, il s'agit de capacités annoncées par la documentation ; pour la solution du stage, la mention « testé » signale une mesure dans le dépôt et « conçu » un mécanisme vérifié par les tests mais sans données réelles en base au moment du run.
 
-Tableau: Comparaison des solutions existantes et de la solution du stage (✔ oui, ◐ partiel, ✖ non).
+Tableau: Comparaison des solutions.
 | Critère | EMPI | Talend | Azure | HAPI | Splink | Atlas | Stage |
 |---|:---:|:---:|:---:|:---:|:---:|:---:|:---:|
-| Déduplication explicable | ✔ | ✔ | ✖ | ✖ | ◐ | ✖ | ✔ testé |
-| Interopérabilité FHIR | ◐ | ✖ | ✔ | ✔ | ✖ | ✖ | ✔ testé |
-| Rôle, consentement et audit | ◐ | ◐ | ✔ | ✖ | ✖ | ◐ | ✔ conçu |
-| Montée en charge Big Data | ◐ | ✔ | ✔ | ✖ | ✔ | ✔ | ✔ testé |
-| Hébergement interne | ✔ | ✔ | ✖ | ✔ | ✔ | ✔ | ✔ testé |
-| VM 8 Go et Python 3.8 | ✖ | ✖ | ✖ | ✖ | ◐ | ✖ | ✔ testé |
+| Déduplication explicable | oui | oui | non | non | partiel | non | oui, testé |
+| Interopérabilité FHIR | partiel | non | oui | oui | non | non | oui, testé |
+| Rôle, consentement et audit | partiel | partiel | oui | non | non | partiel | oui, conçu |
+| Montée en charge Big Data | partiel | oui | oui | non | oui | oui | oui, testé |
+| Hébergement interne | oui | oui | non | oui | oui | oui | oui, testé |
+| VM 8 Go et Python 3.8 | non | non | non | non | partiel | non | oui, testé |
 
 Aucun produit ne satisfait les six critères. Les solutions les plus complètes sur l'identité (EMPI, Talend) sont les plus lourdes et les plus coûteuses ; les solutions compatibles avec l'hébergement interne ne résolvent ni le rapprochement, ni la gouvernance, ni l'explicabilité. Le délai de quatre mois et l'environnement entièrement interne achèvent d'écarter l'adoption d'un produit.
 
@@ -285,7 +276,7 @@ Aucun produit ne satisfait les six critères. Les solutions les plus complètes 
 
 Le projet ne réinvente pas les concepts : il **réutilise les standards et les algorithmes existants** et ne développe que la chaîne d'exécution et de gouvernance qu'aucune solution ne fournit dans le contexte imposé.
 
-Tableau: Ce que le projet reprend de l'état de l'art et comment il l'implémente.
+Tableau: Ce que le projet reprend de l'état de l'art.
 | Élément repris | Provenance | Implémentation retenue |
 |---|---|---|
 | Décision match / non-match | Fellegi-Sunter [2] | score pondéré explicable (0,5 / 0,3 / 0,1 / 0,1), seuil 0,80 |
@@ -295,7 +286,7 @@ Tableau: Ce que le projet reprend de l'état de l'art et comment il l'implément
 | Référentiel d'identité | MPI [13] | patient maître et identity map dans PostgreSQL |
 | Gouvernance | catalogue de métadonnées [18] | contrôle appliqué à chaque requête : rôle, consentement, audit |
 
-Trois écarts à l'existant sont assumés. Le projet n'utilise pas d'estimation automatique des poids comme Splink, afin que les poids restent lisibles et modifiables par un gestionnaire de données. Il n'utilise pas de référentiel externe comme EMPI, afin qu'aucune donnée tierce n'entre dans la plateforme. Il n'utilise pas de service managé comme Azure, le lac restant interne à la VM. Le risque propre à une chaîne sur mesure est la maintenabilité ; il est réduit en déclarant les poids, le seuil et la stratégie de blocking dans un fichier de configuration unique, lu à la fois par le moteur, sa version Spark et l'évaluation.
+Trois écarts à l'existant sont assumés. Le projet n'utilise pas d'estimation automatique des poids comme Splink, afin que les poids restent lisibles et modifiables par un gestionnaire de données. Il n'utilise pas de référentiel externe comme EMPI, afin qu'aucune donnée tierce n'entre dans la plateforme. Il n'utilise pas de service managé comme Azure, le lac restant interne à la VM. Le risque propre à une chaîne sur mesure est la maintenabilité ; il est réduit en déclarant poids, seuil et blocking dans un fichier de configuration unique (chapitre 7).
 
 # Étude de l'existant et solution envisagée
 
@@ -311,7 +302,7 @@ L'utilisateur ne peut pas, en revanche, passer d'un système à l'autre. Une rec
 
 Les schémas et volumes des systèmes rencontrés ont été capturés et consignés au cours du stage.
 
-Tableau: Les sources étudiées : socle technique, volume vérifié et particularités.
+Tableau: Les sources étudiées.
 | Source | Socle | Volume vérifié | Tables retenues | Particularités |
 |---|---|---|---|---|
 | MAVIS | Odoo et module hospitalier, PostgreSQL distant | 73 090 lignes en réplique locale ; 1 260 tables sur le nœud distant | 11, dont `hms_patient` et `res_partner` | nœud distant instable ; jointure patient–partenaire vérifiée sur 9 791 lignes sur 9 791 |
@@ -319,7 +310,7 @@ Tableau: Les sources étudiées : socle technique, volume vérifié et particula
 | CLINIQUE | SQLite | 54 582 lignes, aucune violation de clé | 4 : patients, visites, diagnostics, observations | seule source déjà alignée sur les entités FHIR |
 | Démonstration | fichiers CSV synthétiques | 76 / 76 / 62 au run de référence | patients et transactions | pharmacie, consultation, imagerie (graine 42) |
 
-Capture: C01 | Structure de la base MAVIS vue dans un client SQL (schéma uniquement). | C01_schema_mavis.png | Optionnel. Liste des tables ou diagramme du schéma MAVIS (DBeaver, pgAdmin) ; aucune ligne de données patient ne doit être visible.
+Capture: C01 | Schéma de la base MAVIS. | C01_schema_mavis.png | Optionnel. Liste des tables ou diagramme du schéma MAVIS (DBeaver, pgAdmin) ; aucune ligne de données patient ne doit être visible.
 
 Chaque base est cohérente avec elle-même : l'intégrité référentielle existe à l'intérieur d'une source. C'est l'absence d'équivalent **entre** sources qui pose problème. Les données réelles ne pouvant pas être utilisées, trois sources synthétiques reproduisent l'hétérogénéité observée, sur un triple plan :
 
@@ -337,7 +328,7 @@ L'analyse fait ressortir cinq manques :
 4. **Aucune gouvernance des accès.** Ni rôles, ni consentement par finalité, ni journal d'accès, alors que le cahier des charges exige un hébergement interne et un contrôle par le couple rôle et consentement.
 5. **Aucun espace de rejeu.** Sans zone brute de référence, une erreur de traitement ne peut pas être rejouée proprement ; un incident du prototype initial a ainsi laissé la table des patients avec les 9 791 patients d'une seule source au lieu de l'union de toutes les sources.
 
-Figure: L'existant à MMT : trois systèmes isolés, cinq manques et la réponse apportée par le projet. | documents/figures/fig-1.png | 15
+Figure: L'existant à MMT et la réponse du projet. | documents/figures/fig-1.png | 15
 
 ## Solutions envisagées
 
@@ -361,7 +352,7 @@ Les deux premiers niveaux proviennent d'un premier prototype consacré à la dé
 
 L'hétérogénéité relevée a été convertie en un **contrat de normalisation explicite**, appliqué à chaque champ avant toute comparaison.
 
-Tableau: Le contrat de normalisation : règle appliquée à chaque champ et comportement en cas d'échec.
+Tableau: Le contrat de normalisation.
 | Champ | Règle de normalisation | En cas d'échec |
 |---|---|---|
 | Genre | liste fermée de libellés masculins et féminins ramenés à `M` ou `F` | valeur vide, jamais devinée |
@@ -375,7 +366,7 @@ Une règle gouverne les quatre champs : **aucune valeur n'est devinée**. Un cha
 
 Les objectifs principaux sont les six objectifs du cahier des charges, traduits en exigences vérifiables au chapitre 5. Le périmètre couvert comprend : le pipeline ELT en cinq étapes avec reprise, ingestion incrémentale et planification ; le moteur de déduplication exact et probabiliste, en Pandas et en PySpark ; la gouvernance (rôles, consentement par finalité, audit, clés hachées) ; deux API REST ; et l'évaluation de la déduplication sur trois niveaux de difficulté. Les tableaux de bord d'analyse et le déploiement chez le commanditaire sont hors périmètre.
 
-Tableau: Les livrables prévus au cahier des charges et leur état à la fin du stage.
+Tableau: Livrables et état en fin de stage.
 | N° | Livrable | État à la fin du stage |
 |:---:|---|---|
 | 1 | Code source complet dans un dépôt unique | réalisé |
@@ -395,7 +386,7 @@ Tableau: Les livrables prévus au cahier des charges et leur état à la fin du 
 
 Le projet a mobilisé les cinq activités classiques de l'ingénierie logicielle, chacune ayant laissé une production vérifiable dans le dépôt.
 
-Tableau: Les activités d'ingénierie logicielle et leurs productions.
+Tableau: Activités d'ingénierie et productions.
 | Activité | Production |
 |---|---|
 | Analyse | cahier des charges consolidé, capture des schémas sources, exigences fonctionnelles |
@@ -419,13 +410,13 @@ Les parties prenantes sont au nombre de quatre :
 - **L'encadrant pédagogique**, M. Rojo RABENANAHARY, suit le stage du point de vue de la formation.
 - **Le stagiaire**, auteur du projet, conçoit, développe, teste et documente la plateforme.
 
-L'effectif réduit a une conséquence qu'il convient de mentionner : la revue de code croisée n'a pas eu lieu, ce qui limite la valeur des tests comme preuve externe. Ces rôles de projet sont distincts des rôles applicatifs (`admin`, `analyst`, `viewer`) qui régissent l'accès aux données une fois le logiciel livré (section 7.2.3).
+L'effectif réduit a une conséquence qu'il convient de mentionner : la revue de code croisée n'a pas eu lieu, ce qui limite la valeur des tests comme preuve externe. Ces rôles de projet sont distincts des rôles applicatifs (`admin`, `analyst`, `viewer`) qui régissent l'accès aux données une fois le logiciel livré (section 7.3.3).
 
 ### Outils
 
 Les outils retenus sont tous libres ou gratuits. Ils sont présentés par usage, avec la version effectivement employée.
 
-Tableau: Les outils du projet, regroupés par usage. {logos}
+Tableau: Les outils du projet. {logos}
 | Usage | Outil | Version | Description |
 |---|---|---|---|
 | Développement | logo:vscode Visual Studio Code | 1.139 | éditeur du code, des scripts du pipeline et de la documentation |
@@ -446,53 +437,37 @@ Tableau: Les outils du projet, regroupés par usage. {logos}
 | ^ | logo:fhir HL7 FHIR | R5 (5.0.0) | standard de référence du schéma pivot |
 | Exposition | logo:fastapi FastAPI | ≥ 0.115 | API de gouvernance : rôles, finalité, consentement, audit |
 | ^ | logo:flask Flask | non épinglée | API des indicateurs des zones SILVER et GOLD |
-| ^ | logo:nextjs Next.js | 15.4.6 | interface web optionnelle (React 19.1) |
-| ^ | logo:typescript TypeScript | 5.9 | langage de l'interface web |
-| ^ | logo:tailwind Tailwind CSS | 4 | mise en forme de l'interface web |
-| ^ | logo:d3 D3.js | 7.9 | graphiques de l'interface (carte de chaleur) |
+| ^ | logo:nextjs Next.js | 15.4.6 | interface web optionnelle (React, TypeScript, Tailwind CSS, D3.js) |
 | Qualité et documentation | logo:pytest pytest | ≥ 7.0 | 102 tests du moteur, de la gouvernance et de la planification |
 | ^ | logo:mermaid Mermaid | CLI (npx) | diagrammes de conception de ce rapport |
 
-Les versions ont trois origines : celles de Hadoop, Hive, Spark, Java et Ubuntu sont fixées par le provisionnement de la VM ; celles de l'interface web par son fichier de dépendances ; pour les bibliothèques Python, le signe « ≥ » indique la version minimale déclarée par le projet. Les autres sont celles installées sur le poste de développement.
+Les versions sont celles du provisionnement de la VM et des fichiers de dépendances ; « ≥ » indique une version minimale.
 
 ### Gestion de la configuration
 
-Trois principes rendent le projet rejouable à partir du seul dépôt.
-
-**Ce qui est versionné.** Le dépôt Git est la source de vérité : code, scripts du pipeline, configuration de référence, tests et documentation. Chaque jalon correspond à des commits identifiables, et un journal daté enregistre les décisions et leurs raisons. Les données patients ne sont pas versionnées : elles sont régénérées par le générateur synthétique avec une graine fixe, qui rend la génération reproductible. Les secrets sont exclus du dépôt et fournis par variables d'environnement ; un hook de pré-commit bloque les identifiants avant qu'ils n'atteignent l'historique.
-
-**Ce qui est déclaré.** Les sources, les chemins et les paramètres qui gouvernent le comportement — partitions Spark, seuil de 0,80, poids par champ, finalités autorisées — sont décrits dans des fichiers de configuration, jamais dans le code. Les modifier ne demande pas de toucher à la logique.
-
-**Ce qui est vérifié.** La suite de tests est exécutée à chaque jalon, et son succès conditionne le jalon suivant. Le journal du pipeline conserve les volumes traités à chaque étape, ce qui permet de comparer deux exécutions sans les rejouer. Le pipeline est idempotent : un traitement relancé ne duplique ni ne corrompt les zones en aval.
+Le projet est rejouable à partir du seul dépôt. Le dépôt Git est la source de vérité : code, pipeline, configuration, tests et documentation, avec un journal daté des décisions. Les données patients ne sont pas versionnées mais régénérées par le générateur synthétique à graine fixe ; les secrets sont fournis par variables d'environnement. Les paramètres qui gouvernent le comportement (seuil, poids, finalités, partitions Spark) sont déclarés en configuration, jamais dans le code. Enfin, la suite de tests est exécutée à chaque jalon, et son succès conditionne le jalon suivant.
 
 ## Contraintes et risques sur le projet
 
-Tableau: Les contraintes du stage et le traitement adopté pour chacune.
-| Contrainte | Nature | Traitement adopté |
+Tableau: Contraintes et risques du projet.
+| Contrainte ou risque | Traitement adopté | Constat |
 |---|---|---|
-| VM de 8 Go et 4 cœurs | mémoire limitée pour Spark | 4 Go pour l'exécuteur, 2 Go pour le driver, 8 partitions |
-| Nœud MAVIS distant instable | source inaccessible par moments | répliques locales, puis sources synthétiques pour le run final |
-| Python 3.8 imposé | bibliothèques NLP lourdes inutilisables | RapidFuzz et dictionnaire de synonymes |
-| Partage de fichiers de la VM | corruption des fichiers Parquet écrits par Spark | entrepôt Spark toujours écrit sur HDFS |
-| Reproductibilité | évaluation et déduplication déterministes | graine 42, seuil et pondérations fixés en configuration |
-| Données sensibles | RGPD, article 9 | données synthétiques uniquement et gouvernance intégrée au système |
+| VM de 8 Go et 4 cœurs | 4 Go pour l'exécuteur, 2 Go pour le driver, 8 partitions | maîtrisé : pipeline complet au run de référence |
+| Nœud MAVIS distant instable | répliques locales, puis sources synthétiques pour le run final | contourné |
+| Hétérogénéité des sources | synonymes et similarité pour le mapping FHIR | partiellement maîtrisé : table des événements GOLD vide |
+| Reproductibilité | graine 42, seuil et pondérations fixés en configuration | appliqué |
+| Données sensibles (RGPD, article 9) | données synthétiques uniquement ; rôles, audit et consentement | maîtrisé |
+| VM indisponible en fin de stage | tests hors VM avant toute exécution réelle | partiel : planification testée mais non rejouée sur la VM |
+
+Les contraintes techniques découvertes en cours de développement (Python 3.8, partage de fichiers de la VM) sont traitées avec les difficultés rencontrées, au chapitre 7.
 
 Le contexte local conditionne aussi l'applicabilité de la solution. En l'absence d'annuaire d'identité dans le service, l'accès à l'API repose sur des **clés d'API associées à un rôle** plutôt que sur des comptes nominatifs. Le réseau intermittent et l'absence de cluster ont conduit à une conception **mono-nœud et rejouable**. Enfin, le cadre juridique malgache des données de santé n'a pas été étudié : la conformité présentée s'appuie sur le RGPD, qui constitue un cadre de conception exigeant mais doit être transposé au droit local avant toute mise en production.
-
-Tableau: Les risques du projet, la parade prévue et le constat à la fin du stage.
-| Risque | Impact | Parade | Constat |
-|---|---|---|---|
-| Mémoire limitée de la VM | performance de Spark | paramétrage mémoire et partitions | maîtrisé : pipeline complet au run de référence |
-| Nœud MAVIS instable | blocage du pipeline | sources locales puis synthétiques | contourné |
-| Hétérogénéité des sources | mapping FHIR incomplet | synonymes et similarité | partiellement maîtrisé : table des événements GOLD vide |
-| Données sensibles | confidentialité | données synthétiques, rôles, audit, consentement | maîtrisé |
-| VM indisponible en fin de stage | re-validation impossible | tests hors VM avant toute exécution réelle | partiel : planification testée mais non rejouée sur la VM |
 
 ## Démarche projet mise en œuvre
 
 Le travail s'est organisé en cinq jalons, chacun validé par un critère de sortie vérifiable. Les deux prototypes d'origine ont avancé en parallèle avant d'être fusionnés dans le dépôt unique.
 
-Tableau: Les cinq jalons du stage et leur critère de sortie.
+Tableau: Les cinq jalons du stage.
 | Jalon | Contenu | Critère de sortie atteint | Dates |
 |---|---|---|---|
 | J1 — Socle | générateur de données synthétiques et vérité terrain | 44 tests verts, 500 patients maîtres, 3 niveaux de difficulté | 01/09/2026 |
@@ -505,9 +480,9 @@ Les premières semaines ont été consacrées à une analyse itérative : discus
 
 ## Planification
 
-Le diagramme de Gantt ci-dessous répartit les activités sur les quatre mois du stage, par quinzaine. Il distingue les périodes datées par le journal du dépôt, les périodes déclarées sans trace datée (les journaux commencent le 23/08/2026) et les périodes prévues.
+Le diagramme de Gantt ci-dessous répartit les activités sur les quatre mois du stage, par quinzaine. Il distingue les périodes datées par le journal du dépôt (bleu foncé), les périodes déclarées sans trace datée (bleu clair ; les journaux commencent le 23/08/2026) et les périodes prévues (gris).
 
-Tableau: Diagramme de Gantt du stage par quinzaine (bleu foncé : daté dans le journal ; bleu clair : déclaré ; gris : prévu). {gantt}
+Tableau: Diagramme de Gantt du stage. {gantt}
 | Phase | 06/07 | 20/07 | 03/08 | 17/08 | 31/08 | 14/09 | 28/09 | 12/10 |
 |---|---|---|---|---|---|---|---|---|
 | Cadrage du sujet | □ | □ | □ | | | | | |
@@ -518,46 +493,24 @@ Tableau: Diagramme de Gantt du stage par quinzaine (bleu foncé : daté dans le 
 | Rédaction du rapport | | | | | ■ | ■ | ■ | ○ |
 | Finalisation et soutenance | | | | | | | ○ | ○ |
 
-Capture: C02 | Suivi du projet dans le diagramme de Gantt détaillé. | C02_gantt.png | Optionnel. Capture de la feuille Gantt de documents/Gantt_suivi_projet.xlsx, zoom lisible, du 06/07 à fin octobre.
-
 Ce découpage a rendu chaque jalon démontrable indépendamment. Il a en revanche coûté du temps : la parité stricte entre Pandas et Spark a exigé d'écrire l'algorithme deux fois, ce qui aurait pu être évité si l'échelle cible avait été arrêtée plus tôt. C'est la principale leçon de conduite de projet tirée du stage.
 
 ## Budget du projet
 
 Le budget couvre la durée du stage (quatre mois) et le périmètre réalisé, un prototype reproductible sur la VM de développement ; aucun coût de production n'est compté. Les **coûts humains sont des hypothèses de travail**, établies sur l'ordre de grandeur des rapports de référence et non sur des comptes du commanditaire ; ils sont à remplacer par les chiffres réels avant toute diffusion. Les coûts matériels et logiciels, eux, sont réels.
 
-### Coûts humains
-
-Tableau: Coûts humains sur la durée du stage (hypothèses de travail).
-| Poste | Base de calcul | Coût mensuel (Ar) | Coût sur 4 mois (Ar) |
-|---|---|---:|---:|
-| Développeur (stagiaire) | 1 ETP | 1 000 000 | 4 000 000 |
-| Encadrement professionnel et pédagogique | 2 × 0,1 ETP | 150 000 | 600 000 |
-| **Sous-total** | | **1 150 000** | **4 600 000** |
-
-### Coûts matériels et logiciels
-
-Tableau: Coûts matériels et logiciels : matériel déjà acquis et logiciels libres.
-| Poste | Détail | Coût (Ar) |
+Tableau: Budget du projet sur quatre mois.
+| Poste | Base de calcul | Coût (Ar) |
 |---|---|---:|
+| Développeur (stagiaire) | 1 ETP à 1 000 000 Ar par mois (hypothèse) | 4 000 000 |
+| Encadrement professionnel et pédagogique | 2 × 0,1 ETP, 150 000 Ar par mois (hypothèse) | 600 000 |
 | Poste de travail et VM | matériel existant, VM hébergée sur le poste | 0 |
+| Logiciels | Hadoop, Hive, Spark, PostgreSQL, FastAPI, Flask, Next.js, Pandas, RapidFuzz, pytest, Vagrant, Git (open source) | 0 |
 | Serveur de production | non applicable : plateforme non déployée | 0 |
-| Big Data | Hadoop, Hive, Spark (open source) | 0 |
-| Bases, API et interface | PostgreSQL, FastAPI, Flask, Next.js (open source) | 0 |
-| Bibliothèques et outils | Pandas, PySpark, RapidFuzz, pytest, Vagrant, Git (open source) | 0 |
 | Solutions commerciales comparées | étudiées sur documentation, non acquises | 0 |
-| **Sous-total** | | **0** |
+| **Total** | | **4 600 000** |
 
-### Coût total
-
-Tableau: Coût total du projet sur la durée du stage.
-| Catégorie | Coût sur 4 mois (Ar) |
-|---|---:|
-| Coûts humains (hypothèses) | 4 600 000 |
-| Coûts matériels et logiciels (réels) | 0 |
-| **Total** | **4 600 000** |
-
-Le coût logiciel et matériel nul est un avantage décisif de l'open source dans un contexte aux moyens limités. Un déploiement en production ajouterait des postes non chiffrés ici : serveur, sauvegarde et exploitation.
+Le coût total, **4 600 000 Ar**, est entièrement humain. Ce coût logiciel et matériel nul est un avantage décisif de l'open source dans un contexte aux moyens limités. Un déploiement en production ajouterait des postes non chiffrés ici : serveur, sauvegarde et exploitation.
 
 # Exigences réalisées dans le projet (vision externe/utilisateur)
 
@@ -565,7 +518,7 @@ Le coût logiciel et matériel nul est un avantage décisif de l'open source dan
 
 Les six objectifs du cahier des charges sont traduits en exigences fonctionnelles vérifiables, organisées en quatre étapes qui suivent le chemin de la donnée, puis une activité transverse d'évaluation.
 
-Tableau: Les exigences fonctionnelles, leur critère de succès et les cas d'utilisation associés.
+Tableau: Exigences fonctionnelles.
 | N° | Exigence | Critère de succès | Cas d'utilisation |
 |---|---|---|---|
 | F1 | Centraliser les données dans un lac | pipeline Medallion RAW → SILVER → GOLD | CU1 |
@@ -583,7 +536,7 @@ Tableau: Les exigences fonctionnelles, leur critère de succès et les cas d'uti
 
 ### Étape 2 : Déduplication et MPI
 
-**CU3 — Décider qui est le même patient.** Le blocking réduit les comparaisons, le rapprochement exact s'applique d'abord, puis le rapprochement probabiliste pondéré au-dessus du seuil de 0,80. Le résultat est un patient maître par personne retenue, et une identity map qui relie chaque fiche d'origine à son patient maître avec le score et la méthode de décision. Aucune fusion n'est appliquée sans y être inscrite : aucune fusion n'est invisible.
+**CU3 — Décider qui est le même patient.** Le blocking réduit les comparaisons, le rapprochement exact s'applique d'abord, puis le rapprochement probabiliste pondéré au-dessus du seuil de 0,80. Le résultat est un patient maître par personne retenue, et une identity map qui relie chaque fiche d'origine à son patient maître avec le score et la méthode de décision. Aucune fusion n'est appliquée sans y être inscrite.
 
 ### Étape 3 : Gouvernance des accès
 
@@ -595,7 +548,7 @@ Tableau: Les exigences fonctionnelles, leur critère de succès et les cas d'uti
 
 **CU6 — Consulter les vues de gouvernance.** L'interface web affiche les indicateurs de déduplication (patients maîtres, doublons, méthodes) et de consentement (accords et refus par finalité), calculés sur des données dédupliquées. Si le lac ne répond pas, l'API se replie sur un jeu de démonstration, signalé comme tel à l'écran.
 
-**CU7 — Planifier et piloter le pipeline.** L'administrateur fixe la fréquence d'exécution (quotidienne, hebdomadaire ou mensuelle) par l'API ou un fichier de configuration. Le planificateur de la VM vérifie l'échéance chaque minute et lance le pipeline, sans jamais lancer deux exécutions simultanées. Un run échoué reprend à la première étape non terminée, et une source dont l'empreinte n'a pas changé n'est pas retraitée.
+**CU7 — Planifier et piloter le pipeline.** L'administrateur fixe la fréquence d'exécution (quotidienne, hebdomadaire ou mensuelle) par l'API ou un fichier de configuration ; le pipeline se lance alors seul, sans exécution simultanée, et reprend après un échec (chapitre 7).
 
 **CU8 — Consulter un dossier patient.** Un médecin authentifié recherche un patient en déclarant sa finalité. Les patients sans consentement pour cette finalité sont retirés de la liste ; la fiche affiche l'identité, l'identity map et les consentements par finalité.
 
@@ -610,7 +563,7 @@ Tableau: Les exigences fonctionnelles, leur critère de succès et les cas d'uti
 
 ## Exigences non fonctionnelles transverses
 
-Tableau: Les exigences non fonctionnelles : réalisation et preuve ou limite.
+Tableau: Exigences non fonctionnelles.
 | Qualité | Exigence | Réalisation | Preuve ou limite |
 |---|---|---|---|
 | Utilisabilité | un refus doit être compréhensible | finalité inconnue : code 422 avec la liste des valeurs autorisées ; refus : 403 avec motif journalisé | vérifié (section 8.3) |
@@ -627,7 +580,7 @@ Tableau: Les exigences non fonctionnelles : réalisation et preuve ou limite.
 
 L'interface web (Next.js) est **optionnelle** au sens du cahier des charges. Elle se limite au pilotage du pipeline, aux vues de gouvernance et à la consultation des patients. L'accès est contrôlé par jeton avec deux profils, administrateur et médecin, et la finalité reste un paramètre obligatoire des pages patients.
 
-Tableau: Les pages de l'interface web et la source de leurs données.
+Tableau: Pages de l'interface web.
 | Page | Contenu affiché | Source des données |
 |---|---|---|
 | Connexion | authentification (administrateur, médecin) | interface |
@@ -637,29 +590,19 @@ Tableau: Les pages de l'interface web et la source de leurs données.
 | Pipeline et tableau de bord | zones Medallion, étapes du dernier run, fraîcheur des sources, planification | API de gouvernance |
 | Patients | recherche, pagination, fiche d'identité, identity map, consentements | API de gouvernance |
 
-Chaque vue signale par un bandeau les données de démonstration : un indicateur de démonstration n'est jamais présenté comme une mesure réelle.
+Chaque vue signale par un bandeau les données de démonstration ; les figures suivantes en présentent trois écrans.
 
-Les figures suivantes présentent les principaux écrans, dans l'ordre d'un parcours type : connexion, synthèse, doublons, consentements, pilotage du pipeline, puis consultation des patients.
+Capture: C04 | Page de synthèse. | C04_synthese.png | Page /synthese avec les indicateurs (patients maîtres, doublons, taux, accords et refus).
 
-Capture: C03 | Écran de connexion de l'interface web. | C03_connexion.png | Page /login, formulaire vide ou identifiants de démonstration masqués.
+Capture: C07 | Tableau de bord du pipeline. | C07_pipeline.png | Page /dashboard (ou /pipeline) montrant les zones RAW, SILVER, GOLD, le dernier run et la prochaine échéance.
 
-Capture: C04 | Page de synthèse : qualité d'identité et consentement côte à côte. | C04_synthese.png | Page /synthese avec les indicateurs (patients maîtres, doublons, taux, accords et refus).
-
-Capture: C05 | Page des doublons : patients maîtres, doublons résolus et répartition par méthode. | C05_doublons.png | Page /doublons ; laisser visible le bandeau « données de démonstration » s'il apparaît.
-
-Capture: C06 | Page de gouvernance : consentements par patient et par finalité. | C06_gouvernance.png | Page /gouvernance, idéalement filtrée sur une finalité.
-
-Capture: C07 | Tableau de bord du pipeline : zones Medallion, étapes du dernier run et planification. | C07_pipeline.png | Page /dashboard (ou /pipeline) montrant les zones RAW, SILVER, GOLD, le dernier run et la prochaine échéance.
-
-Capture: C08 | Liste des patients filtrée par finalité déclarée. | C08_patients.png | Page /patients avec une recherche et la finalité choisie (ex. research).
-
-Capture: C09 | Fiche d'un patient : identité, identity map et consentements par finalité. | C09_fiche_patient.png | Page /patients/{id} d'un patient ayant plusieurs fiches sources (idéalement le cas « Jean Rakoto »).
+Capture: C09 | Fiche d'un patient. | C09_fiche_patient.png | Page /patients/{id} d'un patient ayant plusieurs fiches sources (idéalement le cas « Jean Rakoto »).
 
 ### Interfaces avec d'autres systèmes
 
 **L'API de gouvernance (FastAPI)** est le seul point d'application de la règle d'accès. Chaque appel présente une clé d'API, résolue en utilisateur et en rôle, et chaque appel est journalisé.
 
-Tableau: Les points d'entrée de l'API de gouvernance, les rôles autorisés et les contrôles.
+Tableau: Points d'entrée de l'API de gouvernance.
 | Point d'entrée | Méthode | Rôles | Contrôle et réponse |
 |---|---|---|---|
 | `/health` | GET | — | état du service |
@@ -671,7 +614,7 @@ Tableau: Les points d'entrée de l'API de gouvernance, les rôles autorisés et 
 | `/pipeline/status` | GET | admin, analyst | plan, prochain run, zones, dernier run |
 | `/audit` | GET | admin | journal des accès |
 
-Capture: C10 | Documentation interactive de l'API de gouvernance (FastAPI). | C10_swagger.png | Page /docs de l'API FastAPI (port 8000), liste des points d'entrée dépliée.
+Capture: C10 | Documentation interactive de l'API. | C10_swagger.png | Page /docs de l'API FastAPI (port 8000), liste des points d'entrée dépliée.
 
 Une clé absente ou inconnue produit un code 401, un rôle insuffisant un code 403. **L'API des indicateurs (Flask)** expose deux points d'entrée de reporting, sur la table SILVER des patients et sur la table GOLD des consentements ; elle ne contrôle pas l'accès, ce contrôle étant réservé à l'API de gouvernance. La plateforme échange enfin avec les sources (CSV, PostgreSQL, SQLite), avec le lac (HDFS et Hive), avec la base centrale PostgreSQL et avec le planificateur de la VM.
 
@@ -681,11 +624,11 @@ Une clé absente ou inconnue produit un code 401, un rôle insuffisant un code 4
 
 L'architecture suit la progression en trois niveaux : chaque niveau réutilise la **même logique métier**, seule l'infrastructure d'exécution change.
 
-Figure: L'architecture en trois niveaux : MVP Pandas, parité PySpark, puis lac de données Medallion portant le moteur et la gouvernance. | documents/figures/fig-4.png | 15
+Figure: L'architecture en trois niveaux. | documents/figures/fig-4.png | 15
 
 La chaîne retenue (niveau 3) va de la source hétérogène à l'API gouvernée. Les sources sont extraites vers la zone RAW en fichiers Parquet sur HDFS, décrites par des tables Hive externes. Le mapping FHIR produit les quatre tables de la zone SILVER, où le moteur de déduplication rattache chaque ligne à son patient maître. La zone GOLD porte les agrégats prêts à l'analyse et les consentements. La base centrale PostgreSQL conserve l'état de référence : patients maîtres, identity map, consentements, utilisateurs et journal d'audit. Les deux magasins ont des rôles distincts : le lac est **rejouable**, la base centrale est **de référence**.
 
-Tableau: Les briques de la chaîne et la conception adoptée pour chacune.
+Tableau: Briques de la chaîne et conception.
 | Brique | Conception |
 |---|---|
 | Extraction | couche d'extraction abstraite (CSV, PostgreSQL, SQLite) vers la zone RAW |
@@ -702,7 +645,7 @@ La traçabilité est assurée de bout en bout : chaque ligne SILVER conserve son
 
 L'ensemble est installé sur une **VM unique** (Ubuntu 20.04, 8 Go, 4 cœurs) décrite par Vagrant. L'ordre de démarrage des services est strict : HDFS, puis YARN, puis le catalogue Hive, puis HiveServer2, puis les traitements Spark et enfin les API. Toute inversion produit des erreurs d'écriture ou de métadonnées.
 
-Tableau: Les composants installés sur la VM et leur port.
+Tableau: Composants de la VM et ports.
 | Composant | Rôle | Port |
 |---|---|---:|
 | HDFS NameNode | stockage du lac (Parquet RAW, SILVER, GOLD) | 9000 |
@@ -714,7 +657,7 @@ Tableau: Les composants installés sur la VM et leur port.
 | Planificateur | déclenchement du pipeline selon la fréquence définie | cron |
 | Interface web (Next.js) | pilotage et consultation, sur l'hôte Windows | 3000 |
 
-Capture: C11 | Les trois zones du lac de données dans l'interface web de HDFS. | C11_hdfs_datalake.png | Interface HDFS (port 9870), menu Utilities > Browse the file system, dossier /datalake montrant raw, silver et gold.
+Capture: C11 | Les zones du lac dans HDFS. | C11_hdfs_datalake.png | Interface HDFS (port 9870), menu Utilities > Browse the file system, dossier /datalake montrant raw, silver et gold.
 
 Les versions installées sont Hadoop 3.3.6, Hive 3.1.3, Spark 3.4.2 et Java 8. Spark est configuré avec 4 Go pour l'exécuteur, 2 Go pour le driver et 8 partitions, afin de tenir dans la mémoire de la VM.
 
@@ -722,13 +665,11 @@ Les versions installées sont Hadoop 3.3.6, Hive 3.1.3, Spark 3.4.2 et Java 8. S
 
 ## Plate-forme technique
 
-Chaque concept de l'état de l'art est porté par une brique technique précise, comme le montre la figure suivante.
-
-Figure: Des concepts de l'état de l'art aux briques techniques livrées. | documents/figures/fig-6.png | 10
+Chaque concept de l'état de l'art est porté par une brique technique précise (section 2.5).
 
 Les choix technologiques ont été arbitrés sur cinq critères pondérés, issus des contraintes du stage : la compatibilité avec l'environnement (0,30, critère éliminatoire), l'explicabilité de la décision (0,25), le coût mémoire et la performance (0,20), la maturité et la documentation (0,15), et le coût de licence (0,10). Chaque option est notée de 1 à 5.
 
-Tableau: Notation pondérée des options pour les trois arbitrages structurants.
+Tableau: Notation pondérée des options.
 | Arbitrage | Option | Score | Verdict |
 |---|---|---:|---|
 | Moteur de similarité | **RapidFuzz** | **5,00** | retenu |
@@ -740,26 +681,17 @@ Tableau: Notation pondérée des options pour les trois arbitrages structurants.
 | API de gouvernance | **FastAPI** | **4,65** | retenu : finalité validée dans le schéma de l'API |
 | | Flask | 4,50 | écarté de peu |
 
-L'écart entre FastAPI et Flask est faible : le choix tient à ce que FastAPI permet d'exprimer le contrôle de finalité dans le schéma de l'API plutôt que dans le code de chaque route.
-
 ## Conception du logiciel développé
 
 ### Le code source : vue statique
 
-Le code est découpé selon la séparation entre ingestion, normalisation, déduplication, gouvernance et exposition :
-
-- **Moteur d'identité** : le modèle canonique et les deux implémentations du moteur de déduplication, Pandas et Spark.
-- **Gouvernance** : authentification par clé, consentement, audit et API FastAPI.
-- **Provisionnement et pipeline** : description de la VM, orchestrateur du pipeline, étapes ELT, gestion de l'état et planificateur.
-- **Exposition** : API des indicateurs et interface web optionnelle.
-- **Paramètres** : fichier de configuration de la déduplication (poids, seuil, blocking) et schéma SQL de la base centrale.
-- **Évaluation et tests** : générateur synthétique, évaluateur sur vérité terrain et suites de tests automatisés.
+Le code suit la séparation entre ingestion, normalisation, déduplication, gouvernance et exposition. Il se répartit en six blocs : le moteur d'identité (modèle canonique, déduplication Pandas et Spark), la gouvernance (clés, consentement, audit, API FastAPI), le provisionnement et le pipeline, l'exposition des indicateurs, les paramètres (configuration de la déduplication, schéma SQL) et l'évaluation avec les tests.
 
 ### Modélisation des données
 
 **Le modèle canonique.** Chaque source possède son vocabulaire ; la conception introduit une représentation unique du patient (source, identifiant source, prénom, nom, nom complet, date de naissance, CIN, ville de naissance, adresse, genre). Le mapping des colonnes source vers ce modèle est explicite et déterministe.
 
-Tableau: Le mapping des colonnes source vers le modèle canonique.
+Tableau: Mapping vers le modèle canonique.
 | Champ | pharmacy | consultation | imaging | Standardisation |
 |---|---|---|---|---|
 | Identifiant | `client_id` | `patient_code` | `id_personne` | — |
@@ -777,22 +709,11 @@ Code: X01 | Normalisation du CIN et du genre | engine/identity/canonical.py::_ci
 
 **La base centrale.** Tout converge vers le patient maître : chaque fiche d'origine, chaque consentement et chaque événement métier s'y rattache par clé étrangère.
 
-Figure: Le modèle de la base centrale : neuf tables organisées autour du patient maître. | documents/figures/fig-7.png | 24 | paysage
+Figure: Modèle de la base centrale. | documents/figures/fig-7.png | 24 | paysage
 
-Tableau: Les tables de la base centrale et leurs règles de conception.
-| Table | Rôle | Règles de conception |
-|---|---|---|
-| `raw_patient_record` | historique brut, jamais exposé | contenu JSONB, unicité par source et identifiant |
-| `master_patient` | identité unique | genre contraint à `M`, `F` ou vide |
-| `patient_identity_map` | lien fiche source → patient maître | méthode contrainte, score, explication |
-| `consent` | consentement par finalité | finalité en liste fermée, accord, date d'enregistrement |
-| `api_user` | utilisateurs de l'API | empreinte SHA-256 de la clé, rôle contraint |
-| `access_audit` | journal de toutes les tentatives | point d'entrée, statut, finalité, motif de refus, date |
-| Tables de transactions | achats, consultations, examens | rattachés au patient maître |
+Les règles de gouvernance sont portées par la base elle-même : méthode de rapprochement et finalité en listes fermées, score borné entre 0 et 1, clés d'API conservées sous forme d'empreinte SHA-256, données brutes jamais exposées.
 
-Les contraintes de l'identity map et de la table des consentements portent les règles de gouvernance dans la base elle-même : méthode de rapprochement et finalité en listes fermées, score borné entre 0 et 1.
-
-Code: X02 | Tables de l'identity map et des consentements | sql/schema.sql:30-65 | X02_schema.png
+Code: X02 | Identity map et consentements | sql/schema.sql:30-65 | X02_schema.png
 
 Le schéma est **idempotent** : tables et colonnes sont créées seulement si elles n'existent pas, et les insertions ignorent les doublons ; relancer le même traitement ne duplique rien.
 
@@ -805,7 +726,7 @@ Le schéma est **idempotent** : tables et colonnes sont créées seulement si el
 1. **Rapprochement exact** : le patient partage la clé de rapprochement d'un patient maître (nom normalisé, date de naissance, CIN), ou bien la même date de naissance et le même CIN non vide, ce qui absorbe les inversions de prénom et de nom. Décision « exacte », score 1,0.
 2. **Rapprochement probabiliste** : parmi les candidats, un score pondéré est calculé. Au-dessus de 0,80, la fiche est rattachée au patient maître ; en dessous, un nouveau patient maître est créé.
 
-Tableau: Le calcul du score de similarité probabiliste.
+Tableau: Calcul du score de similarité.
 | Critère | Similarité | Poids |
 |---|---|---:|
 | Nom | similarité de chaînes, indépendante de l'ordre des mots | 0,50 |
@@ -813,31 +734,15 @@ Tableau: Le calcul du score de similarité probabiliste.
 | CIN | égalité (si présent) | 0,10 |
 | Ville de naissance | égalité après normalisation | 0,10 |
 
-Les poids et le seuil ne sont pas écrits dans le code : ils sont déclarés dans un fichier de configuration unique, lu par le moteur Pandas, sa version Spark et l'évaluation.
+Les poids et le seuil ne sont pas écrits dans le code : ils sont déclarés dans un fichier de configuration unique (`config/deduplication.yaml`), lu par le moteur Pandas, sa version Spark et l'évaluation.
 
-Code: X03 | Paramètres de la déduplication | config/deduplication.yaml | X03_config.png
-
-Code: X04 | Calcul du score de similarité pondéré | engine/identity/matcher.py::_similarity | X04_score.png
+Code: X04 | Calcul du score pondéré | engine/identity/matcher.py::_similarity | X04_score.png
 
 Chaque décision porte l'identifiant du patient maître, la méthode, le score et une explication en clair. La règle « jamais de fusion sans logique explicable » est ainsi **structurelle** : elle est inscrite dans le modèle de données, pas seulement dans une convention.
 
-**La gouvernance.** Trois mécanismes s'appliquent dans cet ordre : on vérifie **qui** demande, **pourquoi** il demande, puis on **trace** ce qui s'est passé.
-
-- **Rôles** : `admin`, `analyst` et `viewer`, résolus à partir de la clé d'API présentée.
-- **Clés d'API** : seule leur empreinte SHA-256 est stockée ; la clé en clair n'est jamais conservée.
-- **Finalité déclarée** : paramètre obligatoire des requêtes sur les patients, validé contre une liste fermée ; une finalité inconnue produit un code 422.
-- **Consentement par finalité** : la décision ne dépend pas du rôle seul ; un utilisateur autorisé mais sans finalité consentie est refusé (403). Dans une liste, les patients non consentis sont retirés et le nombre d'exclusions est journalisé.
-- **Audit** : chaque requête est journalisée avec l'utilisateur, le point d'entrée, le statut, l'adresse, la finalité et le motif de refus, y compris pour les appels anonymes.
-
-La règle de consentement tient en deux fonctions : la première lit le dernier avis enregistré et vaut refus en son absence ; la seconde valide la finalité, prépare les informations d'audit et oppose le refus.
-
-Code: X05 | Vérification du consentement et refus explicite | engine/governance/consent.py::check_consent,enforce_consent | X05_consentement.png
-
-**La parité Spark.** L'algorithme est porté en PySpark sans changer sa sémantique : les groupes exacts sont construits par regroupement sur la clé, puis la résolution probabiliste ne compare que les représentants de ces groupes. Les deux implémentations partagent la normalisation et lisent les mêmes poids et le même seuil ; seule la stratégie de regroupement diffère.
-
 ### Déploiement
 
-La plateforme s'installe sur la VM de développement par Vagrant, qui décrit la machine et installe Hadoop, Hive, Spark et l'environnement Python. Les services démarrent dans l'ordre imposé, puis le pipeline se lance à la main ou par le planificateur. L'interface optionnelle tourne sur l'hôte Windows. Aucun déploiement n'a été réalisé sur un serveur du commanditaire : la plateforme est **reproductible depuis le dépôt**, pas mise en production.
+L'installation sur la VM et l'ordre de démarrage des services sont décrits au chapitre 6. La plateforme est **reproductible depuis le dépôt** ; elle n'a pas été déployée sur un serveur du commanditaire.
 
 ## Réalisation des étapes
 
@@ -845,7 +750,7 @@ La plateforme s'installe sur la VM de développement par Vagrant, qui décrit la
 
 Le pipeline est orchestré par un script unique qui s'arrête à la première erreur et journalise chaque étape. Chaque étape est un programme distinct : une étape qui échoue ne laisse pas la zone suivante dans un état intermédiaire, condition pour que le pipeline reste relançable.
 
-Tableau: Les cinq étapes du pipeline ELT et leur production.
+Tableau: Les étapes du pipeline ELT.
 | Étape | Traitement | Production |
 |---|---|---|
 | 1 — Préparation | régénère les sources de démonstration si elles sont absentes | fichiers CSV synthétiques (sans effet s'ils existent) |
@@ -856,9 +761,9 @@ Tableau: Les cinq étapes du pipeline ELT et leur production.
 
 Deux mécanismes évitent de retraiter en boucle. La **reprise** : l'état de chaque exécution et de chaque étape est persisté ; un run échoué repart de la première étape non terminée, et un run en cours verrouille tout lancement concurrent. L'**ingestion incrémentale** : chaque source conserve une empreinte (hachage, taille, date de modification) ; une source inchangée n'est pas ré-extraite. La **planification** confie le lancement régulier au planificateur de la VM, qui vérifie l'échéance chaque minute et lance le pipeline en arrière-plan. Cette mécanique est écrite et testée hors VM ; **elle n'a pas encore été rejouée sur la VM**, indisponible en fin de stage.
 
-Capture: C12 | Exécution du pipeline : enchaînement des étapes jusqu'à la zone GOLD. | C12_run_pipeline.png | Terminal de la VM : sortie de run_pipeline.sh (ou fin de elt.log) montrant chaque étape terminée avec succès.
+Capture: C12 | Exécution du pipeline. | C12_run_pipeline.png | Terminal de la VM : sortie de run_pipeline.sh (ou fin de elt.log) montrant chaque étape terminée avec succès.
 
-Tableau: Résultats du run de référence du 07/09/2026 (sources CSV synthétiques).
+Tableau: Run de référence du 07/09/2026.
 | Indicateur | Valeur |
 |---|---:|
 | Étapes réussies (orchestration de l'époque) | 4 sur 4 |
@@ -869,13 +774,11 @@ Tableau: Résultats du run de référence du 07/09/2026 (sources CSV synthétiqu
 | Lignes de la table GOLD des consentements | 145 |
 | Lignes de la table GOLD des événements | 0 |
 
-Capture: C13 | Contrôle des volumes dans le lac : 214 enregistrements et 145 patients maîtres. | C13_comptages.png | Résultat d'une requête Spark ou Hive (COUNT sur la table SILVER des patients, nombre de patients maîtres distincts).
-
 Le passage de 214 à 145 se vérifie par un simple comptage : 214 − 69 = 145. La table des consentements aligne 145 lignes sur 145 patients maîtres, mais la finalité et l'accord y sont vides, la base centrale n'ayant pas été peuplée au moment du run. La table des événements est vide : les consultations et pathologies ne sont pas encore rattachées au patient. La zone GOLD certifie donc aujourd'hui l'identité, pas encore les événements de soin.
 
 ### Moteur de déduplication : Pandas et Spark
 
-Tableau: Les deux implémentations du moteur : même sémantique, mécanique différente.
+Tableau: Implémentations Pandas et Spark.
 | Aspect | Pandas | PySpark |
 |---|---|---|
 | Normalisation | modèle canonique | même modèle canonique |
@@ -884,19 +787,27 @@ Tableau: Les deux implémentations du moteur : même sémantique, mécanique dif
 | Score et seuil | 0,5 / 0,3 / 0,1 / 0,1 ; 0,80 | identiques |
 | Décision | exacte, probabiliste ou nouveau maître | identique |
 
-La parité est vérifiée sur la démonstration (18 fiches ramenées à 11 patients maîtres dans les deux implémentations) et sur l'évaluation complète, où les deux produisent exactement les mêmes décisions (chapitre 8). Le protocole rejoue les deux chemins sur le même jeu et compare les décisions : c'est le seul moyen de détecter une dérive qu'aucune implémentation ne peut détecter seule.
+La parité est vérifiée sur la démonstration (18 fiches ramenées à 11 patients maîtres dans les deux implémentations) et sur l'évaluation complète, où les deux produisent exactement les mêmes décisions (chapitre 8).
 
 ### Gouvernance et API
 
-La gouvernance est implémentée dans le moteur par quatre composants : l'authentification par clé hachée et rôle, la décision de consentement par finalité, le journal d'audit sous forme de *middleware* qui enregistre chaque requête, et l'API FastAPI qui expose les points d'entrée décrits au chapitre 5. Les données brutes de la zone RAW ne sont jamais exposées : seuls les patients maîtres consolidés le sont.
+La gouvernance applique trois mécanismes dans cet ordre : on vérifie **qui** demande, **pourquoi** il demande, puis on **trace** ce qui s'est passé.
 
-Deux API portent le mot « gouvernance » sans jouer le même rôle. L'API Flask est une surface de consultation : elle lit les zones SILVER et GOLD et en rend des agrégats, sans authentification. L'API FastAPI est le seul point d'**application** de la règle : c'est là que se produisent les codes 401 (clé inconnue), 403 (rôle insuffisant ou finalité non consentie) et 422 (finalité absente ou inconnue), chacun journalisé.
+- **Rôles** : `admin`, `analyst` et `viewer`, résolus à partir de la clé d'API présentée.
+- **Clés d'API** : seule leur empreinte SHA-256 est stockée ; la clé en clair n'est jamais conservée.
+- **Finalité déclarée** : paramètre obligatoire des requêtes sur les patients, validé contre une liste fermée ; une finalité inconnue produit un code 422.
+- **Consentement par finalité** : la décision ne dépend pas du rôle seul ; un utilisateur autorisé mais sans finalité consentie est refusé (403). Dans une liste, les patients non consentis sont retirés et le nombre d'exclusions est journalisé.
+- **Audit** : un *middleware* journalise chaque requête avec l'utilisateur, le point d'entrée, le statut, l'adresse, la finalité et le motif de refus, y compris pour les appels anonymes.
 
-Capture: C14 | Refus d'accès pour finalité non consentie et trace correspondante dans le journal d'audit. | C14_refus_403.png | Optionnel, uniquement si la base centrale a été peuplée (seed de gouvernance) : réponse 403 dans /docs ou curl, puis la ligne de access_audit avec purpose et refusal_reason. Sinon, supprimer cet emplacement.
+La règle de consentement tient en deux fonctions : la première lit le dernier avis enregistré et vaut refus en son absence ; la seconde valide la finalité, prépare les informations d'audit et oppose le refus.
+
+Code: X05 | Vérification du consentement | engine/governance/consent.py::check_consent,enforce_consent | X05_consentement.png
+
+Seuls les patients maîtres consolidés sont exposés, jamais les données brutes de la zone RAW. La distinction avec l'API des indicateurs, qui ne contrôle pas l'accès, est présentée au chapitre 5.
 
 ### Difficultés rencontrées et résolutions
 
-Tableau: Les difficultés réellement rencontrées, leur cause et le correctif apporté.
+Tableau: Difficultés et correctifs.
 | Problème | Cause | Correctif |
 |---|---|---|
 | Table SILVER passée à 11 614 lignes | une colonne d'identifiant capturée par le mapping FHIR automatique rendait l'identifiant source vide, d'où une jointure 76 × 76 | colonne exclue du mapping automatique ; chaque colonne source utilisée une seule fois |
@@ -915,9 +826,7 @@ Ces incidents relèvent de trois familles. Les incidents de **données** ont don
 
 La validation suit une pyramide : des tests unitaires rapides (générateur, moteur, gouvernance), des tests d'intégration (MVP, pipeline) et des tests système (API, évaluation sur vérité terrain). L'ordre des niveaux suit le coût d'un échec : un test unitaire échoue en quelques secondes et désigne une ligne de code ; un test système n'échoue qu'après un pipeline complet et nécessite la VM. En l'absence d'intégration continue, hors périmètre du stage, chaque niveau est rejouable manuellement.
 
-Figure: La stratégie de test : tests unitaires, intégration, puis preuve système. | documents/figures/fig-9.png | 11
-
-Tableau: Les niveaux de test, leur périmètre et le résultat obtenu.
+Tableau: Niveaux de test et résultats.
 | Niveau | Périmètre | Résultat |
 |---|---|---|
 | Générateur | variations, distribution, identity mapping, construction des jeux | 44 tests réussis |
@@ -927,7 +836,7 @@ Tableau: Les niveaux de test, leur périmètre et le résultat obtenu.
 | API des indicateurs | trois vérifications sur données réelles | 3 sur 3 |
 | Pipeline | exécution complète RAW → SILVER → GOLD sur la VM | 4 étapes sur 4 (07/09/2026) |
 
-Capture: C15 | Exécution de la suite de tests automatisés. | C15_pytest.png | Terminal : fin de la sortie de pytest projet/code-source/tests avec « 102 passed ».
+Capture: C15 | Exécution des tests automatisés. | C15_pytest.png | Terminal : fin de la sortie de pytest projet/code-source/tests avec « 102 passed ».
 
 La suite principale réunit les tests du moteur, de la gouvernance et de la planification : **102 tests sur 102 réussis** (exécution du 28/09/2026), sans aucun échec.
 
@@ -941,7 +850,7 @@ Au niveau intégration, les 20 tests du MVP enchaînent pipeline, chargement en 
 
 Les tests de l'API de gouvernance empruntent le **chemin réel** d'authentification : clé présentée, résolution de l'utilisateur, contrôle du rôle, contrôle du consentement. Seul l'accès à la base de données est simulé ; le contrôle d'accès n'est jamais court-circuité.
 
-Tableau: Les cas de contrôle d'accès vérifiés et le comportement attendu.
+Tableau: Cas de contrôle d'accès vérifiés.
 | Cas vérifié | Résultat attendu |
 |---|---|
 | Aucune clé présentée | 401, appel journalisé comme anonyme |
@@ -961,14 +870,14 @@ La sensibilité du test de refus a été vérifiée par mutation : neutraliser l
 
 Trois jeux sont générés à partir **des mêmes 500 patients maîtres** ; seul le taux de variation change (10 %, 30 %, 50 %), de sorte que la dégradation de la qualité est attribuable à un seul facteur. Les métriques sont calculées par paires d'enregistrements : la **précision** mesure l'exactitude des fusions, le **rappel** la part des vrais doublons retrouvés, et le **F1** le compromis entre les deux.
 
-Tableau: Résultats de l'évaluation sur vérité terrain (run du 08/09/2026).
+Tableau: Évaluation sur vérité terrain (08/09/2026).
 | Niveau | Maîtres prédits | VP | FP | FN | Précision | Rappel | F1 |
 |---|---:|---:|---:|---:|---:|---:|---:|
 | Facile (10 %) | 500 | 727 | 0 | 0 | **1,000** | 1,000 | 1,000 |
 | Moyen (30 %) | 554 | 643 | 0 | 84 | **1,000** | 0,884 | 0,939 |
 | Difficile (50 %) | 804 | 307 | 0 | 420 | **1,000** | 0,422 | 0,594 |
 
-Capture: C16 | Sortie de l'évaluation sur vérité terrain (jeu difficile). | C16_evaluation.png | Terminal : sortie de evaluate_engine.py sur le jeu hard (précision, rappel, F1, VP/FP/FN).
+Capture: C16 | Évaluation sur le jeu difficile. | C16_evaluation.png | Terminal : sortie de evaluate_engine.py sur le jeu hard (précision, rappel, F1, VP/FP/FN).
 
 L'algorithme **ne fusionne jamais à tort** : aucun faux positif sur les trois niveaux, propriété essentielle en santé, où fusionner deux personnes est plus grave que de les laisser séparées. Sur le jeu difficile, il ne reconnaît pas toutes les variantes (rappel de 0,422). L'introduction du CIN dans la clé exacte a relevé ce rappel de 0,287 à 0,422 sans créer de faux positif.
 
@@ -992,7 +901,7 @@ Le prototype présente des limites identifiées et documentées :
 
 Ce stage avait pour objet de concevoir une plateforme capable d'intégrer, nettoyer, dédupliquer et centraliser des données patients issues de sources hétérogènes, tout en assurant la traçabilité des identités et la gouvernance des accès par le consentement du patient. Le tableau suivant reprend chaque volet de cette problématique avec la réponse apportée et sa preuve.
 
-Tableau: Réponse à la problématique, volet par volet.
+Tableau: Réponse à la problématique.
 | Volet | Réponse réalisée | Preuve |
 |---|---|---|
 | Intégrer | extraction abstraite vers la zone RAW (Parquet sur HDFS, tables Hive) | 3 sources de démonstration et 3 sources réelles capturées |
@@ -1083,17 +992,7 @@ Le planificateur ne lance le pipeline que si la planification est active, si l'�
 
 ##! Annexe B — Le générateur de données synthétiques
 
-Tableau: Les modules du générateur synthétique.
-| Module | Rôle |
-|---|---|
-| Générateur de patients | 500 patients maîtres, référence absolue de l'évaluation |
-| Moteur de distribution | répartition entre les trois sources (0,8 / 0,7 / 0,6) |
-| Moteur de variations | injection d'erreurs à 10 %, 30 % ou 50 % |
-| Générateurs de sources | fichiers patients et transactions de chaque source |
-| Table de vérité | correspondance enregistrement source → patient réel |
-| Constructeur d'expériences | jeux facile, moyen et difficile |
-
-Sur le jeu difficile, les transactions associées comptent 792 achats en pharmacie, 519 consultations et 450 examens d'imagerie. Le jeu complet se régénère en une commande, avec la même graine, ce qui rend l'évaluation reproductible.
+Le générateur est décrit à la section 5.1.5 : 500 patients maîtres, répartition entre les trois sources, variations à trois niveaux et table de vérité. Sur le jeu difficile, les transactions associées comptent 792 achats en pharmacie, 519 consultations et 450 examens d'imagerie. Le jeu complet se régénère en une commande, avec la même graine, ce qui rend l'évaluation reproductible.
 
 ##! Annexe C — Exemple de décision de déduplication
 

@@ -9,21 +9,23 @@ La validation suit une pyramide : unitaire (générateur et moteur), intégratio
 flowchart TD
     subgraph Unitaire
         G["Générateur : 44 tests<br/>variation, distribution, mapping"]
-        E["Moteur + gouvernance : 102/102<br/>matcher 12 · consent 21 · canonique 8<br/>API gouvernance 16 · planification 22<br/>watermark 10 · état pipeline 5 · API planif 8"]
+        E["Moteur et gouvernance : 57/57<br/>matcher 12 · consent 21 · canonique 8<br/>API de gouvernance 16"]
+        P["Planification et reprise : 45/45<br/>échéances 22 · empreintes 10<br/>état du pipeline 5 · API de planification 8"]
     end
     subgraph Intégration
         MVP["MVP : 20 tests<br/>pipeline, loader, auth, audit, api"]
     end
     subgraph Système
-        API["API gouvernance : 3/3 (données réelles)<br/>pipeline run 4/4 vert (07/09) · 5 étapes"]
-        EVAL["Évaluation ground truth<br/>P/R/F1 easy / medium / hard"]
+        API["API des indicateurs (Flask) : 3/3<br/>pipeline run 4/4 (07/09) · 5 étapes"]
+        EVAL["Évaluation sur vérité terrain<br/>P/R/F1 easy / medium / hard"]
     end
     G --> E --> MVP --> API
+    P --> MVP
     E --> EVAL
 ```
 
-> **Figure 9 — La stratégie de test : un socle hors ligne (générateur, moteur), puis le
-> MVP, et enfin la preuve système (API de gouvernance sur données réelles, évaluation ground truth).**
+> **Figure 9 — La stratégie de test : tests unitaires (générateur, moteur, planification), puis le
+> MVP, et enfin les tests système (API des indicateurs, évaluation sur vérité terrain).**
 
 **Tableau 44 — Les niveaux de test, leur périmètre et le résultat obtenu ; les 3 tests de l'API Flask ne prouvent que la joignabilité.**
 
@@ -33,7 +35,7 @@ flowchart TD
 | **Moteur `engine/`** | `test_matcher.py` (12 cas), `test_consent.py` (21 cas), `test_deduplication.py` (8 cas canonique), `test_governance_api.py` (16 cas) | **57/57 PASS** (`pytest projet/code-source/tests`, 28/09/2026) |
 | **Planification & reprise `provision/`** | `test_schedule_logic.py` (22 cas), `test_watermark.py` (10 cas), `test_pipeline_state.py` (5 cas), `test_pipeline_api.py` (8 cas) | **45/45 PASS** (même suite) |
 | **MVP** (`test_bigdata`) | pipeline, loader PostgreSQL, auth, audit, api | **20 tests PASS** [contexte_projet.md] |
-| **API** | `test_api.py` — 3 tests sur données réelles | **3/3 PASS** [logs.md] |
+| **API des indicateurs (Flask)** | `test_api.py` — 3 tests sur données réelles | **3/3 PASS** [logs.md] |
 | **Pipeline** | `run_pipeline.sh` RAW → SILVER → GOLD | **4/4 vert** (07/09/2026) ; orchestration actuelle en 5 étapes, re-validation VM en attente |
 
 L'ordre des niveaux n'est pas décoratif : il suit le **coût de retour à l'échec**. Un test

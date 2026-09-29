@@ -105,10 +105,6 @@ RESUME = (
     "assumés et bornés. Ce mémoire expose l'état réel du système : ce qui est "
     "démontré et testé, ce qui reste limité, et les corrections identifiées."
 )
-MOTS_CLES = (
-    "Données de santé, Lac de données, Medallion, Spark, Hive, HDFS, FHIR, "
-    "Déduplication, MPI, Consentement, Gouvernance, RGPD"
-)
 ABSTRACT = (
     "Patient data in a healthcare institution is spread across several information systems "
     "with no shared identity reference: the same person appears several times, weakening "
@@ -517,11 +513,14 @@ def add_justified(doc: Document, text: str, size: float = 12, space_after: float
     run.element.rPr.rFonts.set(qn("w:eastAsia"), "Times New Roman")
 
 
-def add_abstract(doc: Document, title: str, text: str, keywords_label: str,
-                 keywords: str) -> None:
-    """Section liminaire : texte justifié, puis ligne de mots-clés en gras."""
+def add_abstract(doc: Document, title: str, text: str, keywords_label: str = "",
+                 keywords: str = "") -> None:
+    """Section liminaire : texte justifié, puis ligne de mots-clés en gras (optionnelle)."""
     add_liminaire_title(doc, title)
     add_justified(doc, text, space_after=10)
+    if not keywords:
+        doc.add_page_break()
+        return
     paragraph = doc.add_paragraph()
     paragraph.alignment = WD_ALIGN_PARAGRAPH.JUSTIFY
     lead = paragraph.add_run("{0} : ".format(keywords_label))
@@ -742,7 +741,7 @@ def build(out_path: Path) -> None:
     # --- Pièce liminaire : numérotation romaine, corps en chiffres arabes ---
     add_cover(doc)
     add_liminaire_markdown(doc, REMERCIEMENTS, manifest)
-    add_abstract(doc, "Résumé", RESUME, "Mots-clés", MOTS_CLES)
+    add_abstract(doc, "Résumé", RESUME)
     add_abstract(doc, "Abstract", ABSTRACT, "Keywords", KEYWORDS)
     add_toc(doc)
     figure_captions, table_captions = collect_captions()

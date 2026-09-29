@@ -4,7 +4,7 @@
     {
       "number": 1,
       "file": "fig-1.png",
-      "source": "03-existant-solution.md:125",
+      "source": "03-existant-solution.md:117",
       "config": "compact",
       "width_px": 912,
       "height_px": 528,
@@ -14,7 +14,7 @@
     {
       "number": 2,
       "file": "fig-2.png",
-      "source": "03-existant-solution.md:170",
+      "source": "03-existant-solution.md:162",
       "config": "serre",
       "width_px": 1185,
       "height_px": 124,
@@ -24,7 +24,7 @@
     {
       "number": 3,
       "file": "fig-3.png",
-      "source": "05-exigences.md:135",
+      "source": "05-exigences.md:126",
       "config": "compact",
       "width_px": 1426,
       "height_px": 338,
@@ -34,7 +34,7 @@
     {
       "number": 4,
       "file": "fig-4.png",
-      "source": "06-architecture.md:18",
+      "source": "06-architecture.md:10",
       "config": "compact",
       "width_px": 1068,
       "height_px": 733,
@@ -44,7 +44,7 @@
     {
       "number": 5,
       "file": "fig-5.png",
-      "source": "06-architecture.md:64",
+      "source": "06-architecture.md:56",
       "config": "serre",
       "width_px": 2114,
       "height_px": 343,
@@ -54,7 +54,7 @@
     {
       "number": 6,
       "file": "fig-6.png",
-      "source": "07-conception.md:17",
+      "source": "07-conception.md:8",
       "config": "compact",
       "width_px": 600,
       "height_px": 822,
@@ -64,7 +64,7 @@
     {
       "number": 7,
       "file": "fig-7.png",
-      "source": "07-conception.md:164",
+      "source": "07-conception.md:167",
       "config": "compact",
       "width_px": 1518,
       "height_px": 1007,
@@ -74,7 +74,7 @@
     {
       "number": 8,
       "file": "fig-8.png",
-      "source": "07-conception.md:396",
+      "source": "07-conception.md:399",
       "config": "serre",
       "width_px": 1361,
       "height_px": 148,
@@ -84,12 +84,12 @@
     {
       "number": 9,
       "file": "fig-9.png",
-      "source": "08-tests.md:17",
+      "source": "08-tests.md:8",
       "config": "compact",
-      "width_px": 560,
-      "height_px": 752,
-      "pt_portrait_16cm": 13.0,
-      "pt_paysage_26cm": 21.6
+      "width_px": 590,
+      "height_px": 704,
+      "pt_portrait_16cm": 12.3,
+      "pt_paysage_26cm": 20.5
     }
   ]
 }

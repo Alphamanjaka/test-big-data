@@ -1,383 +1,341 @@
-# Script de passage oral — Soutenance M2 MBDS (20 min)
+# Script de passage oral — Soutenance M2 MBDS
 
-> **À quoi sert ce fichier.** C'est le **texte à dire**, pas le support projeté : le support reste
-> `slides_soutenance.md`. Débit de référence d'une soutenance : **140 mots/minute**.
-> Budget : **16:00 de contenu + 4:00 de marge**. Chaque section donne un objectif de mots ; un
-> tableau de contrôle en fin de fichier permet de vérifier l'adéquation.
-> Repères `[0:00] → [0:30]` = position dans le budget. `→` = transition, à dire en passant à la
-> slide suivante.
-> **Règle appliquée** : aucune affirmation non vérifiable ; les nuances d'honnêteté du mémoire
-> (précision = plancher, 16/16 = tests d'intégration, API Flask = reporting) sont **dites à l'oral**.
+> **À quoi sert ce fichier.** C'est le **texte à dire**, slide par slide, pour le deck
+> `documents/slide_soutenance/Soutenance_M2_MBDS_RANOMENJANAHARY.pptx` (20 slides). Le rapport et
+> le mémoire restent sobres ; le récit, la motivation et les nuances se disent ici.
+> Débit de référence : **130 à 140 mots par minute**. Repères `[0:00]` = position dans l'exposé.
+> `→` = phrase de transition, à dire en passant à la slide suivante.
+> **Règle** : aucune affirmation non vérifiable ; ce qui est limité ou en cours se dit comme tel.
 
 ---
 
 ## Avant de répéter
 
-**Les trois commandes de la démonstration** (à exécuter sur la VM, pas à dire) :
+**Trois choses à ne pas dire**
 
-```bash
-.venv\Scripts\python -m pytest projet/code-source/tests -q
-.venv\Scripts\python projet\code-source\evaluation\evaluate_engine.py --level hard
-bash projet/code-source/provision/scripts/run_pipeline.sh
-# plan 4 : ouvrir le tableau de bord /dashboard (front-optional + API FastAPI port 8000)
-```
+1. Que le consentement **par type de dossier** fonctionne : il est **en cours de développement** ;
+   ce qui est réalisé et testé, c'est le consentement **par finalité**.
+2. Que la base centrale PostgreSQL a été alimentée avec les données du run : elle **n'a pas été
+   peuplée** ; la mécanique de gouvernance est prouvée par les tests, pas par la donnée.
+3. Que la planification et la reprise ont été rejouées sur la VM : elles sont **testées hors VM**,
+   la VM n'étant plus disponible en fin de stage.
 
-**Vidéo** : 3:30 maximum, muette de préférence, à enregistrer à la maison avec la VM allumée ; ne
-pas filmer le poste actuel. Prévoir une capture d'écran pour chaque commande. Tester la lecture sur
-le poste de soutenance avant le jour J.
+**Trois phrases à placer quoi qu'il arrive** : « aucune fusion sans justification » (S13),
+« zéro fusion à tort, mais c'est un plancher » (S16), « je préfère nommer les limites » (S18).
 
-**Figures** : projetées `fig-1` (S2), `fig-2` (S4), `fig-4` (S5), `fig-8` (S7) ; en réserve `fig-6`,
-`fig-3`, `fig-9` ; **jamais projetée** `fig-5` (5,7 pt, illisible en projection).
-
-**Trois choses à ne pas dire** : que PostgreSQL a été validé en conditions réelles (le `.env` n'a
-pas été fourni) ; que les 16 tests de l'API de gouvernance prouvent le contrôle d'accès (ils prouvent
-la joignabilité et les statuts, le contrôle d'accès relevant de cas dédiés) ;
-que le pipeline a été exécuté sur ce poste (il ne l'est pas).
+**Vidéo** (S17) : 3 min 30, muette, enregistrée à l'avance ; la tester sur le poste de soutenance.
 
 ---
 
 ## Chronométrage
 
-| Repère | Fin de | Contenu |
+| Repère | Fin de | Slides |
 |---|---|---|
-| `[4:00]` | partie A | le problème, la promesse, la démarche |
-| `[10:00]` | partie B | architecture, déduplication, résultats, évaluation, limites |
-| `[14:00]` | partie C | démonstration |
-| `[16:00]` | partie D | réponse, perspectives, remerciements |
-| `[20:00]` | — | **arrêt impératif** (créneau questions distinct) |
+| `[3:30]` | ouverture : qui, où, quel problème | S1 à S6 |
+| `[6:00]` | état de l'art et existant | S7 à S10 |
+| `[11:00]` | solution, fonctionnalités, résultats | S11 à S16 |
+| `[14:30]` | démonstration | S17 |
+| `[16:30]` | limites, conclusion, merci | S18 à S20 |
+
+Il reste **environ 3 minutes de marge** sur 20 minutes : elles servent à ralentir, pas à ajouter.
 
 ---
 
-## S1. Titre — 0:30 · `[0:00] → [0:30]` · 72 mots mesurés
+## S1. Titre — 0:30 · `[0:00] → [0:30]`
 
-**À dire**
-> Bonjour à toutes et à tous. Je suis Ranomenjanahary Manjaka Alpha, en deuxième année de master
-> Big Data. Mon stage chez Madagascar Medical Technology a porté sur une plateforme de
-> centralisation et de gouvernance de données patients. Elle répond à deux besoins qu'on oppose
-> souvent : garantir la qualité de la donnée, et maîtriser qui peut y accéder. Vingt minutes : le
-> problème métier, la réalisation technique, une démonstration, puis mes limites assumées.
+> Bonjour à toutes et à tous. Je suis Ranomenjanahary Manjaka Alpha, en master MBDS. Je vais
+> vous présenter mon stage chez Madagascar Medical Technology : une plateforme qui rassemble les
+> dossiers d'un même patient dispersés entre plusieurs services, et qui ne laisse lire ces
+> dossiers que si le patient l'a accepté. Toutes les données que je vais montrer sont fictives.
 
-**À montrer** — page de garde du rapport.
-
-→ « Commençons par le problème que j'ai rencontré en entrant dans l'établissement. »
+→ « Quelques mots d'abord sur l'entreprise qui m'a accueilli. »
 
 ---
 
-## S2. Le problème — 1:15 · `[0:30] → [1:45]` · 146 mots mesurés
+## S2. L'entreprise — 0:45 · `[0:30] → [1:15]`
 
-**À dire**
-> Voici un même patient, tel qu'il apparaît dans les trois systèmes de l'établissement. En
-> pharmacie : « Jean Rakoto », CIN 101 02404 5. En consultation : « Rakoto Jean », 101024045. En
-> imagerie : « J. RAKOTO ». Trois systèmes, trois formats, et même pas le même nom de colonne pour
-> le genre — la pharmacie écrit `sexe`, la consultation `genre`, l'imagerie `sex`.
+> MMT a été créée en 2009. Son métier historique, c'est le matériel biomédical : distribution,
+> maintenance, consommables. Elle est Business Partner de Siemens Healthineers. Depuis 2024, elle
+> a un département Recherche et Développement, qui gère des systèmes d'information médicale :
+> c'est là que j'ai passé quatre mois, de juillet à fin octobre.
 >
-> Le point important, c'est que **chaque base est intègre avec elle-même** : dans MAVIS, j'ai vérifié
-> une jointure sur 9 791 lignes sur 9 791. Ce n'est donc pas un problème de qualité. C'est un problème
-> d'absence d'équivalent **entre** les bases.
->
-> La conséquence est directe : un dossier éclaté, des agrégats faux — un patient compté trois fois,
-> jamais compté une seule — et des accès que personne ne maîtrise. Sur la figure, vous voyez les
-> trois systèmes isolés, les cinq manques que j'ai identifiés, et les quatre réponses que le projet
-> apporte.
+> J'ai choisi ce sujet parce qu'il réunit les trois volets du master : les bases de données,
+> l'intégration de systèmes hétérogènes et le Big Data, que je voulais pratiquer et non plus
+> seulement étudier.
 
-**À montrer** — `figures/fig-1.png` : pointer successivement les 3 systèmes, les 5 manques, les
-4 réponses.
+**Geste** — ne pas lire les domaines d'activité, ils sont à l'écran.
 
-→ « Ces cinq manques, ce sont exactement les trois engagements de la plateforme. »
+→ « Voici le problème que j'ai trouvé en arrivant. »
 
 ---
 
-## S3. La promesse — 1:00 · `[1:45] → [2:45]` · 120 mots mesurés
+## S3. La question — 0:50 · `[1:15] → [2:05]`
 
-**À dire**
-> La plateforme tient donc trois engagements.
+> Imaginez un patient. Il passe à la pharmacie, puis en consultation, puis à l'imagerie. À chaque
+> étape, on l'enregistre de nouveau. En pharmacie, il s'appelle « Jean Rakoto ». En consultation,
+> « Rakoto Jean ». À l'imagerie, « J. RAKOTO ». Le CIN et la date de naissance sont écrits
+> autrement à chaque fois.
 >
-> Un : **centraliser**. Les trois sources convergent vers un Data Lake Medallion, trois zones de qualité
-> croissante, RAW, SILVER, GOLD.
->
-> Deux : **dédupliquer de façon explicable**. Je n'ai pas écrit « on regroupe les doublons » ; j'ai
-> écrit : chaque fusion porte une méthode, un score et une justification, et elle est consultable
-> dans le lac de données.
->
-> Trois : **gouverner**. Un accès n'est pas accordé parce qu'on est autorisé à entrer, mais parce
-> qu'une finalité a été déclarée et acceptée, et chaque accès est journalisé.
->
-> Un mot sur les données : elles sont **exclusivement synthétiques**, générées pour cette étude.
-> C'est ce qui permet de démontrer la confidentialité sur des cas réels sans exposer personne.
+> Aucun de ces services ne sait que c'est la même personne. Et personne ne lui a demandé ce qu'il
+> accepte que l'on fasse de ses données. Voilà les deux questions de mon stage : comment savoir
+> que c'est lui ? Et qui a le droit de lire son dossier, pour quoi faire ?
 
-**À montrer** — les 3 puces, une par une. *Support : `documents/cahier_des_charges.md` §3.*
+**Geste** — laisser 2 secondes de silence sur le point d'interrogation.
 
-→ « Pour atteindre cet objectif, j'ai choisi une démarche, et elle est visible sur la figure suivante. »
+→ « Derrière ce cas, il y a trois problèmes. »
 
 ---
 
-## S4. Démarche — 1:15 · `[2:45] → [4:00]` · 154 mots mesurés
+## S4. Contexte et problématique — 0:45 · `[2:05] → [2:50]`
 
-**À dire**
-> La figure montre six étapes, et je voudrais insister sur leur ordre : chaque technologie est
-> introduite par un besoin, jamais l'inverse.
+> Le premier, c'est la dispersion : le dossier d'un patient est éclaté entre plusieurs bases. Le
+> deuxième, l'hétérogénéité : même le genre s'écrit H/F, male/female ou Homme/femme. Et ces
+> sources ne sont pas figées : un service peut être séparé en plusieurs bases demain. Le
+> troisième, l'absence de gouvernance : rien ne dit qui accède à quoi, ni pourquoi.
 >
-> J'ai commencé par un MVP en Pandas avec PostgreSQL, parce qu'il fallait une réponse rapide à la
-> question « est-ce qu'une déduplication de patients est même possible ici ? ». Ensuite seulement,
-> j'ai validé avec une **vérité terrain** : un fichier qui dit, pour chaque enregistrement, quel
-> patient réel il désigne. Ce fichier n'est jamais donné à l'algorithme — il sert uniquement à le
-> noter.
->
-> Spark est arrivé après, pour une seule raison : le MVP tenait dans un seul nœud, la cible ne le
-> pouvait pas. Le Data Lake Medallion est donc venu avec Spark, et non avant. La gouvernance, enfin,
-> arrive en dernier mais conditionne l'accès : pas de contrôle, pas de plateforme.
->
-> J'ai aussi fusionné deux proofs of concept préexistants en un dépôt unique et autonome.
+> Ma problématique est donc la suivante : comment centraliser et dédupliquer ces données, tout en
+> gardant la trace des identités et en contrôlant chaque accès par le consentement du patient ?
 
-**À montrer** — `figures/fig-2.png`, suivre la chaîne de gauche à droite.
-
-→ « Voyons maintenant l'architecture qui organise ces six étapes. »
-
-Another garbled fragment. Must rewrite cleanly.
+→ « Le cahier des charges traduit cela en six objectifs. »
 
 ---
 
-## S5. Architecture cible — 1:30 · `[4:00] → [5:30]` · 168 mots mesurés
+## S5. Objectifs — 0:25 · `[2:50] → [3:15]`
 
-**À dire**
-> L'architecture tient en trois plans, comme la figure le montre.
->
-> Le plan machine : un Data Lake Medallion sur HDFS, Hive et Spark. Le générateur écrit en RAW, les
-> tables FHIR se construisent en SILVER, les vues de consommation en GOLD.
->
-> Le plan identité : c'est là que se trouve le cœur du projet. Un moteur de déduplication, écrit une
-> fois, décliné en deux implantations — Pandas pour le MVP, PySpark pour le lac. Les deux
-> implantations partagent le même code de normalisation, les mêmes poids et le même seuil, lus dans
-> un fichier de configuration. Elles ne diffèrent que par la façon de regrouper les enregistrements.
->
-> Le plan gouvernance : un PostgreSQL central qui porte la table des patients maîtres, les
-> consentements, le journal d'accès et les clés d'API, plus une API par finalité.
->
-> Je souligne un point : les poids et le seuil sont **déclarés en YAML, pas écrits dans le code**.
-> Modifier le comportement de la déduplication se fait par une seule édition de fichier.
+> Six objectifs : centraliser, nettoyer, dédupliquer de façon explicable, gouverner les accès,
+> visualiser et évaluer. Et deux contraintes non négociables : les données ne quittent pas
+> l'établissement, et je n'ai travaillé que sur des données synthétiques.
 
-**À montrer** — `figures/fig-4.png` : les trois niveaux. *Réserve : `fig-5.png` pour les questions.*
-
-→ « Le cœur du projet, c'est la déduplication. »
+→ (enchaîner directement sur le plan)
 
 ---
 
-## S6. Déduplication explicable (MPI) — 1:30 · `[5:30] → [7:00]` · 219 mots mesurés
+## S6. Plan — 0:15 · `[3:15] → [3:30]`
 
-**À dire**
-> Le principe tient en une phrase : **aucune fusion sans justification lisible**. C'est ce qu'on
-> appelle une MPI, une identification de master patient, et c'est le cœur du projet.
->
-> Le moteur travaille en deux temps. D'abord un **blocage** : trois index bornés — préfixe de nom,
-> date de naissance, CIN — qui évitent de comparer toutes les paires possibles. Le volume passe de
-> « tout contre tout » à un sous-ensemble, ce qui est la condition pour tenir sur une VM de 4 cœurs
-> et 8 gigaoctets.
->
-> Ensuite la décision. D'abord une voie **exacte**, par clé composite : date de naissance, CIN et nom
-> normalisé. Si elle échoue, une voie **probabiliste** : un score pondéré — 0,5 sur le nom, 0,3 sur
-> la naissance, 0,1 sur le CIN, 0,1 sur la ville — au-dessus de 0,80.
->
-> Un point de conception que je tiens à signaler : **aucune valeur n'est devinée**. Un genre qui
-> n'est pas dans la liste fermée, un CIN dont la longueur est incohérente, une date illisible : le
-> champ reste vide. L'enregistrement bascule alors vers la voie probabiliste. Un champ douteux ne
-> peut donc pas corrompre une clé de rapprochement exact.
->
-> Chaque décision sort avec quatre éléments : l'identifiant du patient maître, la méthode, le score
-> et l'explication. C'est ce qui permet à un gestionnaire de données de contester une fusion.
-
-**À montrer** — les 3 critères de blocage et les poids. *Réserve : `fig-6.png`.*
-
-→ « Sur cette base, voici ce que le pipeline a réellement produit. »
+> Je commence par l'état de l'art et l'existant, puis la solution et ses résultats, une
+> démonstration, et je termine par les limites.
 
 ---
 
-## S7. Résultats du run — 1:00 · `[7:00] → [8:00]` · 122 mots mesurés
+## S7. État de l'art : quatre notions — 0:45 · `[3:30] → [4:15]`
 
-**À dire**
-> Ce sont des chiffres de run, pas des chiffres de présentation. Sur la VM, le pipeline Medallion
-> s'est exécuté de bout en bout : quatre étapes sur quatre au run de référence ; l'orchestration en
-> compte cinq.
->
-> La zone SILVER compte 214 lignes patients : 76 en pharmacie, 76 en consultation, 62 en imagerie.
-> Après déduplication, cela donne 145 patients maîtres et 69 doublons liens, soit un taux de
-> duplication de 32,24 %.
->
-> Le contrôle de cohérence est la soustraction : 214 moins 69 égale bien 145, et je peux le vérifier
-> par un simple comptage sur le lac, sans consulter la logique de fusion. C'est la correspondance
-> « un patient maître = un enregistrement non dupliqué » qui est vérifiée, pas la décision.
->
-> L'API de gouvernance répond sur 16 tests sur données réelles, sans données de secours.
+> Quatre notions structurent tout le projet. L'ELT : on charge la donnée brute d'abord, on la
+> transforme ensuite. Le modèle Medallion : trois zones de qualité croissante, RAW, SILVER et
+> GOLD, qu'on peut rejouer. Le Master Patient Index : l'annuaire qui reconnaît un même patient et
+> lui donne un identifiant unique. Et le consentement par finalité : le patient autorise un usage
+> précis, jamais un accès global. Sans avis de sa part, c'est un refus.
 
-**À montrer** — `figures/fig-8.png` : les 5 étapes, puis le tableau de compteurs.
-
-→ « Est-ce que ces 145 patients maîtres sont les bons ? C'est la question suivante. »
+→ « Existe-t-il déjà un produit qui fasse tout cela ? »
 
 ---
 
-## S8. Évaluation ground-truth — 1:15 · `[8:00] → [9:15]` · 169 mots mesurés
+## S8. Comparatif — 0:50 · `[4:15] → [5:05]`
 
-**À dire**
-> Pour le vérifier, j'ai construit une **vérité terrain** : trois jeux synthétiques, easy, medium et
-> hard, tous issus des **mêmes 500 patients maîtres** avec la même graine aléatoire ; seul le taux de
-> variation change — 10, 30 puis 50 %.
+> J'ai comparé six solutions sur six critères, à partir de leur documentation : je ne les ai pas
+> installées. Les plus complètes sur l'identité, comme EMPI ou Talend, sont lourdes et sous
+> licence. Azure est un service cloud, donc exclu par l'hébergement interne. Splink est excellent
+> sur l'algorithme, mais ses poids sont difficiles à expliquer à un gestionnaire de données.
 >
-> Le résultat le plus important : **zéro faux positif sur les trois jeux**. Le moteur n'a jamais
-> fusionné à tort. En santé, c'est la propriété critique : une fusion erronée mélange deux personnes
-> et contamine tous les agrégats.
->
-> Mais je dois être précis sur sa portée. C'est un **plancher, pas une borne**. Mon générateur dégrade
-> des enregistrements existants — casse, espaces, faute de frappe, changement de format — mais il ne
-> crée jamais deux personnes distinctes qui se ressemblent. Le cas adversariaire des faux positifs
-> n'est donc pas sollicité par la vérité terrain. Le dire fait partie du résultat.
->
-> Côté rappel, l'ajout du CIN comme clé exacte a fait passer le jeu dur de 0,287 à **0,422**, toujours
-> sans faux positif. Et les deux implantations, Pandas et Spark, prennent des **décisions
-> identiques** sur les jeux testés.
+> Aucune ne coche les six critères. J'ai donc construit une chaîne sur mesure, mais adossée aux
+> standards : Fellegi-Sunter pour la décision, FHIR pour le format, Medallion pour le lac.
 
-**À montrer** — le tableau de métriques. *Réserve : `fig-9.png`.*
-
-→ « Venons-en aux points que je n'ai pas résolus. »
+→ « Côté établissement, qu'est-ce qui existait ? »
 
 ---
 
-## S9. Difficultés et honnêteté — 0:45 · `[9:15] → [10:00]` · 112 mots mesurés
+## S9. L'existant — 0:35 · `[5:05] → [5:40]`
 
-**À dire**
-> Quatre points, volontairement.
->
-> Un incident réel : la zone SILVER explosait à 11 614 lignes, parce qu'une colonne d'identifiant
-> était capturée par le mapping dynamique. Corrigé, et documenté comme piège anti-régression.
->
-> Deux dettes assumées : `patient_events_gold` est **vide**, et la table de consentement n'était pas
-> peuplée au moment du run. La **mécanique** est prouvée par les tests, pas la **donnée**.
->
-> Enfin une distinction : l'API de données est un *reporting*, elle ne filtre rien ; le contrôle par
-> rôle et consentement s'applique à l'API de gouvernance. Et les 16 de gouvernance sont des tests
-> d'intégration : ils prouvent la joignabilité, pas le contrôle d'accès, vérifié par des cas dédiés
-> — 401, 403, 422.
+> Trois systèmes : MAVIS, sous Odoo, avec 1 260 tables sur le serveur distant ; MMT_DB, sous GNU
+> Health ; et une base clinique en SQLite. Chacune est cohérente avec elle-même : la clinique n'a
+> aucune violation de clé. Le problème n'est donc pas la qualité de chaque base. C'est l'absence
+> de pont entre elles.
 
-**À montrer** — le tableau des dettes.
-
-→ « Pour montrer que ce n'est pas qu'une affirmation, voici la démonstration. »
+→ « Ce pont manquant se décompose en cinq manques. »
 
 ---
 
-## S10. Démonstration vidéo — 4:00 · `[10:00] → [14:00]` · 85 mots de narration + vidéo 3:30
+## S10. Cinq manques — 0:35 · `[5:40] → [6:15]`
 
-**Vidéo muette de 3:30 + narration à voix haute.** Si la vidéo est sonore, couper la narration et
-commenter au moment des plans 2 à 4.
+> Pas d'identifiant commun : le CIN manque pour environ un quart des patients. Pas de format
+> commun. Pas de rapprochement explicable. Pas de gouvernance. Et pas d'espace pour rejouer un
+> traitement. Le premier prototype comptait 24 872 marqueurs de doublon, mais sans jamais dire
+> pourquoi : on détectait, on n'expliquait pas.
 
-| Plan | Ce qu'on voit | **À dire pendant le plan** |
+→ « Ma réponse a commencé petit. »
+
+---
+
+## S11. Démarche en trois niveaux — 0:50 · `[6:15] → [7:05]`
+
+> Je n'ai pas commencé par le Big Data. Niveau 1 : un prototype simple, en Pandas et PostgreSQL,
+> pour vérifier que le problème métier se résout. Niveau 2 : le même moteur porté en Spark, avec
+> des résultats strictement identiques. Niveau 3 : le lac de données sur HDFS, Hive et Spark.
+>
+> Deux garde-fous : je n'ai changé d'échelle qu'après avoir validé la qualité sur une vérité
+> terrain, et je n'ai ouvert les accès qu'une fois la gouvernance en place. Chaque technologie
+> arrive parce qu'un besoin l'exige.
+
+→ « Voici le chemin d'une donnée dans l'architecture finale. »
+
+---
+
+## S12. Architecture — 0:50 · `[7:05] → [7:55]`
+
+> Les sources sont copiées telles quelles dans la zone RAW, sur HDFS. Elles sont ensuite
+> harmonisées au format FHIR dans la zone SILVER, où le moteur rattache chaque fiche à son patient
+> maître. La zone GOLD porte les agrégats et le consentement. PostgreSQL garde l'état de
+> référence : patients maîtres, consentements, journal d'audit. Et l'API de gouvernance est la
+> seule porte d'entrée : chaque appel y est journalisé. Le tout tourne sur une machine virtuelle
+> de 8 Go, avec des outils libres.
+
+**Geste** — suivre la flèche de gauche à droite avec la main.
+
+→ « Le cœur de cette architecture, c'est le moteur de déduplication. »
+
+---
+
+## S13. Déduplication explicable — 1:00 · `[7:55] → [8:55]`
+
+> Sa règle tient en une phrase : aucune fusion sans justification.
+>
+> Pour ne pas comparer tout le monde avec tout le monde, le moteur ne compare que des candidats
+> plausibles : même début de nom, même date de naissance ou même CIN. Puis deux passes. D'abord
+> une passe exacte : même nom normalisé, même date, même CIN. Sinon, un score pondéré : le nom
+> compte pour moitié, la date pour 0,3, le CIN et la ville pour 0,1 chacun. Au-dessus de 0,80, on
+> rattache ; en dessous, on crée un nouveau patient.
+>
+> Chaque décision porte sa méthode, son score et son explication. Un gestionnaire peut donc la
+> relire, et la contester.
+
+→ « Une fois l'identité établie, reste à savoir qui peut la lire. »
+
+---
+
+## S14. Gouvernance — 0:55 · `[8:55] → [9:50]`
+
+> Trois contrôles, dans cet ordre. Qui demande ? La clé d'API donne l'utilisateur et son rôle ;
+> une clé inconnue, c'est 401. Pourquoi ? La finalité est obligatoire ; si le patient ne l'a pas
+> acceptée, c'est 403, même pour un utilisateur autorisé. Et la trace : chaque appel, accepté ou
+> refusé, est journalisé avec son motif.
+>
+> Aujourd'hui, le patient choisit par finalité : consultation via l'API, recherche, statistiques.
+> L'étape suivante,
+> en cours de développement, c'est le choix par type de dossier : accepter qu'on lise ses
+> consultations, mais refuser l'imagerie.
+
+→ « Qu'est-ce que tout cela donne sur des données ? »
+
+---
+
+## S15. Résultats du run — 0:40 · `[9:50] → [10:30]`
+
+> Sur le jeu de démonstration du 7 septembre : 214 fiches, 145 patients distincts, 69 doublons
+> rattachés, soit 32 % de doublons. Et la cohérence se vérifie par une simple soustraction :
+> 214 moins 69, 145. Le pipeline a réussi toutes ses étapes, et les 102 tests passent.
+
+→ « Mais ces 145 patients sont-ils les bons ? »
+
+---
+
+## S16. Évaluation — 1:00 · `[10:30] → [11:30]`
+
+> Pour le savoir, il faut connaître la vérité. J'ai donc généré 500 patients fictifs, puis trois
+> jeux où 10, 30 ou 50 % des fiches sont abîmées : fautes de frappe, inversions, formats.
+>
+> Résultat principal : zéro fusion à tort, sur les trois niveaux. En santé, c'est la propriété
+> qui compte : confondre deux patients est plus grave que de les laisser séparés. Je dois être
+> honnête sur sa portée : c'est un plancher, car mon générateur ne crée pas de sosies, deux
+> personnes différentes qui se ressemblent.
+>
+> Le prix de cette prudence, c'est le rappel : 0,422 sur le jeu difficile, après être parti de
+> 0,287. Et Pandas et Spark donnent exactement les mêmes résultats.
+
+→ « Je vous montre maintenant la chaîne en fonctionnement. »
+
+---
+
+## S17. Démonstration — 3:30 (vidéo) · `[11:30] → [15:00]`
+
+**Avant de lancer (10 s)**
+> La vidéo suit l'ordre de construction du projet : les tests, l'évaluation, le pipeline, puis le
+> tableau de bord.
+
+| Plan | À l'écran | À dire pendant le plan |
 |---|---|---|
-| 1 · 0:45 | 102 tests qui passent | « 102 tests, aucun échec : moteur, gouvernance et planification. » |
-| 2 · 0:45 | métriques du jeu hard | « Zéro faux positif, rappel 0,422, décisions identiques en Pandas et en Spark. » |
-| 3 · 1:00 | pipeline Medallion 5 étapes | « Le pipeline : cinq étapes, de la préparation au GOLD, avec reprise et watermark. » |
-| 4 · 0:30 | tableau de bord `/dashboard` + planification cron | « Et le tableau de bord : le pipeline, sa planification cron, la fraîcheur des sources. » |
-| 5 · 0:30 | repli (captures figées) | « Si la vidéo échoue, les mêmes preuves sont ici : 214 lignes, 145 maîtres, 69 doublons, 32,24 %. » |
+| 0:45 | tests | « 102 tests, aucun échec : moteur, gouvernance, planification. » |
+| 0:45 | évaluation, jeu difficile | « Précision 1,000, rappel 0,422, mêmes décisions en Pandas et en Spark. » |
+| 1:00 | pipeline RAW → SILVER → GOLD | « Les étapes s'enchaînent jusqu'à la zone GOLD. » |
+| 0:30 | tableau de bord | « Les zones, le dernier run et la planification. » |
+| 0:30 | repli si la vidéo échoue | « Les mêmes preuves en chiffres : 214, 145, 69. » |
 
-**À dire en introduction, avant de lancer la vidéo (15 s)**
-> Quatre volets, dans l'ordre où le projet a été construit : les tests, l'évaluation, le lac de
-> données, puis son tableau de bord.
-
-→ « Après la démonstration, la synthèse. »
+→ « Ce que je n'ai pas résolu. »
 
 ---
 
-## S11. Réponse à la problématique — 1:00 · `[14:00] → [15:00]` · 138 mots mesurés
+## S18. Limites et perspectives — 0:50 · `[15:00] → [15:50]`
 
-**À dire**
-> Je reviens à la problématique. Sur des données synthétiques et une architecture Big Data, la
-> plateforme **centralise** trois systèmes hétérogènes dans un Data Lake Medallion, **normalise** par
-> un contrat explicite où aucune valeur n'est devinée, **déduplique** de façon explicable — chaque
-> fusion porte une méthode, un score et une justification, et toutes les décisions sont identiques
-> entre Pandas et Spark — et **gouverne** par consentement par finalité, avec authentification par
-> clé, rôles, et journalisation des accès y compris les refus.
+> Je préfère nommer les limites. Le rappel sur le jeu difficile reste à 0,422. La table des
+> événements de soin est vide : les consultations ne sont pas encore rattachées au patient. La
+> base centrale des consentements n'a pas été peuplée. Et la plateforme n'est pas déployée : c'est
+> un prototype reproductible.
 >
-> Le résultat mesuré : zéro faux positif sur les trois jeux évalués, un rappel dur de 0,422, et une
-> parité de décision vérifiée entre les deux implantations.
->
-> Et je revendique la limite : le produit de ces trois engagement n'est pas un système de production,
-> c'est une chaîne complète, testée et honnête sur ce qu'elle ne fait pas encore.
+> La suite : terminer le consentement par type de dossier, compléter le rattachement des
+> consultations, calibrer le seuil. Et avant toute mise en production, vérifier le droit malgache
+> des données de santé.
 
-**À montrer** — les 4 verbes, dans l'ordre.
-
-→ « Ce que je ferais ensuite. »
+→ « Pour conclure. »
 
 ---
 
-## S12. Perspectives — 0:45 · `[15:00] → [15:45]` · 104 mots mesurés
+## S19. Conclusion — 0:30 · `[15:50] → [16:20]`
 
-**À dire**
-> Quatre chantiers, par ordre de valeur.
->
-> Le premier est un correctif, pas une amélioration : rattacher les encounters, conditions et
-> observations aux patients, pour que la zone GOLD contienne enfin des événements de soin et pas
-> seulement des identités.
->
-> Le deuxième est d'alimenter la base centrale de consentements, ce qui rendrait la preuve de
-> gouvernance complète sur le jeu de données lui-même.
->
-> Le troisième est méthodologique : ajouter au générateur des homophones quasi identiques, pour
-> solliciter enfin le cas adversariaire des faux positifs.
->
-> Le quatrième est l'échelle : conteneurisation, intégration continue, export de la VM. Aucun n'est
-> dans le périmètre de ce stage.
-
-**À montrer** — les 4 puces. *Support : `chapters/09-conclusion.md`.*
-
-→ « Je vous remercie. »
+> La plateforme centralise, normalise, déduplique sans jamais fusionner à tort, et contrôle chaque
+> accès par le consentement. Changer d'échelle n'a pas changé la logique. Et derrière chaque
+> chiffre, il y a ce patient du début : reconnu comme une seule personne, et maître de l'usage de
+> ses données.
 
 ---
 
-## S13. Merci — 0:15 · `[15:45] → [16:00]` · 34 mots mesurés
+## S20. Merci — 0:10 · `[16:20] → [16:30]`
 
-**À dire**
-> Je vous remercie. Le dépôt unique et le rapport de stage sont disponibles. Je reste à votre
-> disposition pour vos questions, notamment sur les poids, le seuil, ou l'absence d'estimation par
-> EM.
-
-**À montrer** — contact / référence du dépôt.
+> Merci pour votre attention. Je suis à votre disposition pour vos questions.
 
 ---
 
-## Gestion du temps : que sacrifier si vous débordrez
+## Si le temps presse
 
 | Situation | Geste |
 |---|---|
-| `[4:00]` dépassé | raccourcir S5 et S6 : les figures portent déjà l'information, ralentir sur S9 |
-| `[10:00]` dépassé | réduire les plans 3 et 4 de la vidéo (pipeline accéléré, tableau de bord) plutôt que l'évaluation |
-| `[14:00]` dépassé | ne PAS toucher à S11 et S12 : ce ne sont que 2 minutes de synthèse |
-| Question du jury en cours d'exposé | noter, répondre, reprendre le fil au point suivant |
-| **Toujours** | ne jamais couper S2 (problème), S8 (évaluation), S9 (honnêteté) |
+| `[6:15]` dépassé | raccourcir S8 (garder la conclusion : aucune solution ne coche tout) et S9 |
+| `[11:30]` dépassé | couper le plan « tableau de bord » de la vidéo |
+| Question pendant l'exposé | noter, répondre brièvement, reprendre au point suivant |
+| **Jamais** | couper S3 (le patient), S16 (l'évaluation) ou S18 (les limites) |
 
-## Contrôle du débit (mesuré, pas estimé)
+## Questions probables du jury
 
-Comptage automatique des sections « À dire » : la colonne *mots* ne compte que ce qui est réellement
-prononcé, hors gestes et hors annotations.
+| Question | Réponse courte |
+|---|---|
+| Pourquoi une entreprise de matériel biomédical gère-t-elle des données patients ? | son département R&D gère depuis 2024 des systèmes d'information médicale (GNU Health, MAVIS, base clinique) |
+| Pourquoi 0,80 et ces poids ? | choix explicables, déclarés dans un fichier de configuration ; le calibrage fait partie des perspectives |
+| Pourquoi ne pas estimer les poids automatiquement, comme Splink ? | pour qu'un gestionnaire de données puisse lire et modifier chaque poids |
+| Pourquoi Spark, si Pandas est plus rapide sur vos volumes ? | Spark se justifie par le volume visé ; la parité montre que la logique ne change pas avec l'échelle |
+| Le consentement par type de dossier est-il fait ? | non, il est en cours ; le consentement par finalité est réalisé et testé (401, 403, 422) |
+| Et le RGPD à Madagascar ? | le RGPD sert de cadre de conception ; le droit malgache reste à étudier avant toute production |
 
-| Slide | Durée | Mots | Débit | Verdict |
-|---|---|---|---|---|
-| S1 | 0:30 | 72 | 144 /min | tenu |
-| S2 | 1:15 | 146 | 117 /min | large |
-| S3 | 1:00 | 120 | 120 /min | large |
-| S4 | 1:15 | 154 | 123 /min | large |
-| S5 | 1:30 | 168 | 112 /min | large |
-| S6 | 1:30 | 219 | 146 /min | tenu |
-| S7 | 1:00 | 122 | 122 /min | large |
-| S8 | 1:15 | 169 | 135 /min | tenu |
-| S9 | 0:45 | 112 | 149 /min | à la limite |
-| S10 | 4:00 | 85 + vidéo 3:30 | — | narration seulement |
-| S11 | 1:00 | 138 | 138 /min | tenu |
-| S12 | 0:45 | 104 | 139 /min | tenu |
-| S13 | 0:15 | 34 | 136 /min | tenu |
-| **Parole** | **12:00** | **1 558** | **130 /min** | — |
+## Contrôle du débit
 
-**Conclusion mesurée.** Les 12 slides de parole contiennent 1 558 mots, soit **11:08 à 140 mots/min**,
-auxquels s'ajoutent 12 transitions (121 mots, 0:52). Avec la vidéo de 3:30, l'exposé court
-**15:30 sur 16:00 planifiées** — 30 secondes de filet à l'intérieur du plan, plus les 4:00 de marge
-déclarée, soit environ **19:30 sur 20:00**.
+Mots réellement prononcés par slide (texte « à dire » et transitions), comptés par script le
+29/09/2026. La vidéo (S17) n'est comptée que pour sa narration.
 
-Conséquence pratique : il ne faut **pas** ajouter de texte avant la première répétition. Le temps
-disponible se dépense en **ralentir** sur S2, S8 et S9, et en laissant le temps de montrer les
-figures. Trois slides sont volontairement au-dessus du débit de comfortable parce que la figure ou le
-tableau projeté porte déjà le détail : S6 (146 /min), S9 (149 /min) et S1 (144 /min).
+| Slides | Durée prévue | Mots | Débit |
+|---|---|---|---|
+| S1 à S6 (ouverture) | 3:30 | 453 | 129 /min |
+| S7 à S10 (état de l'art, existant) | 2:45 | 308 | 112 /min |
+| S11 à S16 (solution, résultats) | 5:15 | 602 | 115 /min |
+| S17 (vidéo 3:30) | 3:30 | 72 | narration seule |
+| S18 à S20 (limites, conclusion) | 1:30 | 152 | 101 /min |
+| **Total** | **16:30** | **1 587** | — |
+
+Les slides S1 à S4 sont les plus denses (environ 140 mots par minute) : ce sont celles du récit,
+à dire posément. Les slides techniques laissent le temps de montrer l'écran. Avec la marge, l'exposé
+tient dans 20 minutes.

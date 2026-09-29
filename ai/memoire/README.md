@@ -22,7 +22,7 @@ Le mémoire suit le **plan imposé par le master MBDS** (modèle des rapports de
 | Fichier                     | Contenu cible                                                                                          |
 | --------------------------- | ------------------------------------------------------------------------------------------------------ |
 | `remerciements.md`          | Pièce liminaire (insérée après la page de garde par l'exporteur)                                       |
-| `00-introduction.md`        | Introduction générale : contexte du domaine, motivation personnelle, mission confiée, problématique, plan |
+| `00-introduction.md`        | Introduction générale, **une page avec le plan** : contexte, mission, problématique, plan (la motivation se dit à l'oral) |
 | `01-presentation-stage.md`  | 1.1 Entreprise (MMT) ; 1.2 Sujet : contexte métier, objectifs, enjeux et risques                       |
 | `02-etat-de-l-art.md`       | 2.1 Notions de référence + critères ; 2.2 Étude des solutions ; 2.3 Tableau comparatif ; 2.4 Pertinence |
 | `03-existant-solution.md`   | 3.1 Existant (vision utilisateur / développeur) ; 3.2 Critique ; 3.3 Solutions envisagées (3 niveaux) ; 3.4 Objectifs et livrables |

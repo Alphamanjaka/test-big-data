@@ -546,11 +546,12 @@ class Builder:
         where = f"{rel_file}, l. {numbered[0][0]}–{numbered[-1][0]}" if numbered else rel_file
         self.slots.append(("code", slot, image_rel, bool(image and image.exists())))
         if image and image.exists():
-            self.figure(f"{caption} ({where})", image, TEXT_WIDTH_CM)
+            self.figure(caption, image, TEXT_WIDTH_CM)
             return
         table, cell = self._boxed_cell(CODE_FILL, accent_left=True)
         first = True
-        for lineno, text in numbered:
+        # La source (fichier, lignes) ouvre l'encadré en gris : la légende reste courte.
+        for lineno, text in [(None, where)] + numbered:
             p = cell.paragraphs[0] if first else cell.add_paragraph()
             first = False
             pf = p.paragraph_format
@@ -571,7 +572,7 @@ class Builder:
             if lineno is None:
                 run.font.color.rgb = RGBColor(0x9A, 0xA3, 0xAE)
                 run.italic = True
-        self.caption("Extrait", f"{caption} ({where})", label="Extrait de code")
+        self.caption("Extrait", caption, label="Extrait de code")
 
     def _logo_cell(self, cell, text):
         """Cellule `logo:<id> Nom` : le logo normalisé, puis le nom de l'outil dessous."""
