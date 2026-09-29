@@ -7,7 +7,7 @@ demander ce qu'il accepte que l'on fasse de ses données.
 
 C'est la situation de nombreux établissements de santé : des **systèmes d'information
 indépendants**, chacun avec sa base, son format et ses identifiants, et des sources appelées à
-évoluer [cahier_des_charges.md §1]. Or les données de santé sont sensibles : leur usage doit être
+évoluer (cahier des charges, § 1). Or les données de santé sont sensibles : leur usage doit être
 **gouverné**, c'est-à-dire contrôlé selon qui les demande, pour quelle finalité et avec l'accord
 du patient.
 
@@ -16,14 +16,13 @@ Développement de **Madagascar Medical Technology (MMT)**. La mission était de 
 plateforme de centralisation et de gouvernance des données patients** : intégrer des sources
 hétérogènes, reconnaître un même patient d'une base à l'autre et n'ouvrir l'accès à ses données
 que selon son consentement, aujourd'hui **par finalité**, et **par type de dossier** en cours de
-développement [cahier_des_charges.md §3]. Deux contraintes encadrent ce travail : l'**hébergement
+développement (cahier des charges, § 3). Deux contraintes encadrent ce travail : l'**hébergement
 interne** et l'usage exclusif de **données synthétiques**. La plateforme est livrée comme
 prototype reproductible ; elle n'a pas été déployée en production.
 
 > **Problématique** : comment concevoir une plateforme capable d'intégrer, nettoyer, dédupliquer
 > et centraliser des données patients issues de sources hétérogènes, tout en assurant la
 > traçabilité des identités et la gouvernance des accès basée sur le consentement du patient ?
-> [cahier_des_charges.md §1]
 
 Le mémoire suit le plan de référence du master MBDS.
 

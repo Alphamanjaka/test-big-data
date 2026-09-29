@@ -94,7 +94,19 @@ plus simple à obtenir. C'est une contrainte du commanditaire, mais c'est aussi 
 le travail reproductible et partageable : le jeu complet se régénère en une
 commande.
 
-## Annexe G — Questions anticipées du jury
+## Annexe G — Couverture de la grille d'analyse de l'état de l'art
+
+La grille d'état de l'art du master comporte 20 axes répartis en cinq blocs (A à E). Pour chacun, le tableau indique la section du mémoire qui le traite, ou ce qui reste partiel ou hors périmètre.
+
+| Bloc de la grille | Axes et traitement dans le mémoire |
+|---|---|
+| **A — Cadrage du besoin** (0-2) | **0** veille : traité (§ 2.1.1) · **1** entreprise et existant interne : traité (§ 1.1, § 3.1) · **2** besoin métier et cadre réglementaire : traité (§ 1.2, § 2.1.6) |
+| **B — Existant et utilisateurs** (3-4) | **3** solutions existantes : traité (§ 2.2, § 2.3) · **4** utilisateurs et personas : **hors périmètre** (le commanditaire est le public cible du prototype, pas un utilisateur final observé) |
+| **C — Analyse technique** (5-13) | **5** architecture : traité (§ 6.1) · **6** écosystème technologique : traité (§ 2.2.2, § 7.1) · **7** données et flux : **partiel** (volumétrie cible inconnue, § 4.2) · **8** briques algorithmiques : traité (§ 2.1.2 à 2.1.4, § 2.2.2) · **9** interopérabilité : **partiel** (FHIR traité, reprise des sources réelles hors du run de référence) · **10** sécurité : **partiel** (rôles, consentement et audit conçus ; hachage non salé, journal non chiffré) · **11** performance : **partiel** (petits volumes mesurés, pas de test de charge) · **12** qualité et tests : traité (chapitre 8) · **13** déploiement : **partiel** (VM reproductible, ni conteneur ni intégration continue) |
+| **D — Contraintes et valeur** (14-18) | **14** contexte local : traité (§ 4.2) · **15** conduite de projet : traité (§ 4.1, § 4.3) · **16** coûts et dépendances : **partiel** (coût du stage et dépendance aux éditeurs traités, § 2.2.1, § 4.4 ; coût de possession sur trois ans non chiffré) · **17** protection des données : traité (§ 2.1.6) · **18** sobriété : **optionnel, non traité** |
+| **E — Synthèse et décision** (19) | **19** justification des choix : traité (§ 2.3, § 2.4, § 7.1, conclusion générale) |
+
+## Annexe H — Questions anticipées du jury
 
 Cette annexe recense les objections les plus probables du jury, avec la réponse **vérifiée** et
 l'endroit du mémoire où elle s'appuie.

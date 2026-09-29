@@ -312,7 +312,7 @@ Tableau: Les sources étudiées.
 
 Capture: C01 | Schéma de la base MAVIS. | C01_schema_mavis.png | Optionnel. Liste des tables ou diagramme du schéma MAVIS (DBeaver, pgAdmin) ; aucune ligne de données patient ne doit être visible.
 
-Chaque base est cohérente avec elle-même : l'intégrité référentielle existe à l'intérieur d'une source. C'est l'absence d'équivalent **entre** sources qui pose problème. Les données réelles ne pouvant pas être utilisées, trois sources synthétiques reproduisent l'hétérogénéité observée, sur un triple plan :
+Chaque base est cohérente avec elle-même : l'intégrité référentielle existe à l'intérieur d'une source. C'est l'absence d'équivalent **entre** sources qui pose problème. Les données réelles ne pouvant pas être utilisées, trois sources synthétiques reproduisent l'hétérogénéité observée. Ces fichiers CSV sont des **sources de test** : ils servent uniquement à exercer et à évaluer la plateforme sur des données fictives, générées avec une graine fixe. Ils ne représentent pas les sources de production : en établissement, la plateforme lirait directement les bases des services (PostgreSQL, SQLite ou autre), par la même couche d'extraction. L'hétérogénéité est reproduite sur un triple plan :
 
 - **Structure** : le nom tient en une colonne ou en deux (prénom et nom) ; l'identifiant change de nom et de format selon la source (`PH000001`, `MED000001`, `IMG000001`).
 - **Vocabulaire** : le genre s'écrit `H/F` en pharmacie, `male/female` en consultation, `Homme/femme` en imagerie.
@@ -775,6 +775,8 @@ Tableau: Run de référence du 07/09/2026.
 | Lignes de la table GOLD des événements | 0 |
 
 Le passage de 214 à 145 se vérifie par un simple comptage : 214 − 69 = 145. La table des consentements aligne 145 lignes sur 145 patients maîtres, mais la finalité et l'accord y sont vides, la base centrale n'ayant pas été peuplée au moment du run. La table des événements est vide : les consultations et pathologies ne sont pas encore rattachées au patient. La zone GOLD certifie donc aujourd'hui l'identité, pas encore les événements de soin.
+
+Ce jeu de 214 fiches a été généré sur la VM avec un nombre de patients plus petit que l'actuel ; ses paramètres n'ont pas été conservés dans le dépôt. Le script de préparation génère désormais 500 patients, soit **1 057 fiches** (404 / 353 / 300), le même volume que le jeu d'évaluation : le prochain run ne reproduira donc pas les chiffres 214 et 145.
 
 ### Moteur de déduplication : Pandas et Spark
 

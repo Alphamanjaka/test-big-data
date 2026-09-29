@@ -7,10 +7,10 @@ Je remercie la société **Madagascar Medical Technology (MMT)** de m'avoir accu
 département Recherche et Développement, et de m'avoir confié un sujet à la hauteur des ambitions
 de la formation.
 
-Je remercie tout particulièrement **M. Harena Ny Aina Rabemanoela**, mon encadrant professionnel,
+Je remercie tout particulièrement **M. Harena Ny Aina RABEMANOELA**, mon encadrant professionnel,
 pour sa disponibilité, ses conseils et la confiance qu'il m'a accordée tout au long du stage.
 
-J'adresse mes sincères remerciements à **M. RABENANAHARY Rojo**, mon encadrant pédagogique, pour
+J'adresse mes sincères remerciements à **M. Rojo RABENANAHARY**, mon encadrant pédagogique, pour
 son suivi et ses orientations dans la conduite de ce travail.
 
 Je remercie également l'ensemble de l'équipe pédagogique du **Master MBDS** pour la qualité des

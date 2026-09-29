@@ -66,7 +66,11 @@ locale** : ils prouvent l'ordre de grandeur, pas l'état temps réel du serveur 
 **Les sources de démonstration.** Les données réelles ne pouvant pas être utilisées, trois
 sources synthétiques reproduisent l'hétérogénéité observée, sur le modèle des systèmes
 réellement rencontrés en établissement (consultations, pharmacies, imagerie)
-[cahier_des_charges.md §1] :
+[cahier_des_charges.md §1]. Ces fichiers CSV sont des **sources de test** : ils servent
+uniquement à exercer et à évaluer la plateforme sur des données fictives, générées avec une
+graine fixe. Ils ne représentent pas les sources de production : en établissement, la
+plateforme lirait directement les bases des services (PostgreSQL, SQLite ou autre), par la
+même couche d'extraction.
 
 **Tableau 14 — Les trois sources synthétiques : nom de fichier et identifiant, qui portent des noms différents d'une source à l'autre. Le mapping champ par champ vers le modèle canonique est donné au § 7.2.2.**
 

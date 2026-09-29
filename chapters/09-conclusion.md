@@ -37,7 +37,7 @@ table est la réponse à la question « *qu'avez-vous choisi, et à la place de 
 | **Clé API + 3 rôles** | comptes nominatifs / annuaire | pas d'annuaire d'identité sur place (§ 4.2) | `api_user`, SHA-256, 401/403 vérifiés | pas de traçabilité nominative individuelle |
 | **Finalité en paramètre de requête** | finalité déduite du rôle | finalité déterminée (art. 5.1.b) | 422 hors liste fermée, 403 sinon | une finalité reste déclarative : elle repose sur l'honnêteté de l'appelant |
 | **FastAPI** | Flask | contrôle de finalité exprimé dans le schéma d'API | 4.65 vs 4.50 | écart faible : choix revisable |
-| **MPI local + pivot FHIR** | DMP / MPI réglementaire dédié | périmètre du stage, données synthétiques | `engine/identity/`, 4 entités `_fhir` | MPI non certifié, à valider avant tout usage réel |
+| **MPI local + pivot FHIR** | MPI commercial ou registre complet (OpenCR) | périmètre du stage, données synthétiques | `engine/identity/`, 4 entités `_fhir` | MPI non certifié, à valider avant tout usage réel |
 | **3 niveaux : MVP → Spark → Big Data** | Big Data direct | chaque technologie introduite par un besoin | `run_pipeline.sh`, 4/4 étapes vertes | chaque niveau ajoute un palier à maintenir |
 | **Parité Pandas = Spark vérifiée** | deux logiques divergentes | démontrer que le scale ne change pas la sémantique | `test_spark_parity` : TP=307, FP=0, FN=420 identiques | parité vérifiée sur 3 jeux, pas sur le volume réel |
 

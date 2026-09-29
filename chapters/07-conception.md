@@ -478,6 +478,11 @@ dans un format identique à celui attendu par le cron de la VM.
 **0 ligne** en intermédiaire (jointures FHIR non rattachées — dette identifiée au
 § 8.6).
 
+Ce jeu de 214 fiches a été généré sur la VM avec un nombre de patients plus petit que
+l'actuel ; ses paramètres n'ont pas été conservés dans le dépôt. Le script de préparation
+génère désormais 500 patients, soit **1 057 fiches** (404 / 353 / 300), le même volume que le
+jeu d'évaluation du chapitre 8 : le prochain run ne reproduira donc pas les chiffres 214 et 145.
+
 L'étape SILVER intègre la **fusion des doublons dans le Data Lake** : le moteur relit
 `patient_fhir`, réapplique `deduplicate()` et enrichit chaque ligne des colonnes
 `master_patient_id`, `match_method`, `match_score` et `is_duplicate` — la fusion

@@ -7,19 +7,18 @@
 
 ## 2.1 Notions de référence et critères de comparaison
 
-Les critères de comparaison ne se choisissent pas au hasard : ils découlent des notions du
-domaine, du droit applicable et des contraintes du stage.
+Cette section pose les notions du domaine et le droit applicable, puis en déduit les critères
+de comparaison.
 
 ### 2.1.1 Méthode de la veille
 
-**Protocole de recherche.** L'état de l'art n'est pas une juxtaposition de liens : chaque
-sous-section répond à une **question formulée à l'avance**, dérivée du cahier des charges, à
-laquelle on a cherché une réponse sourcée. Les recherches ont combiné des mots-clés anglais et
+**Protocole de recherche.** Chaque sous-section répond à une **question formulée à
+l'avance**, dérivée du cahier des charges, à laquelle on a cherché une réponse sourcée. Les recherches ont combiné des mots-clés anglais et
 français : *record linkage*, *entity resolution*, *entity matching*, *master patient index*,
 *client registry*, *FHIR Consent*, *lakehouse*, « protection des données à caractère personnel
 Madagascar ».
 
-**Tableau 4 — Les neuf questions de veille formulées à l'avance, le paragraphe qui y répond et les sources retenues.**
+**Tableau 4 — Les questions de veille et les sources retenues.**
 
 | Question de veille | Où c'est traité | Sources retenues |
 |---|---|---|
@@ -44,23 +43,13 @@ propriétaires sont donc citées pour leurs capacités annoncées [B13], [B14], 
 source en ligne porte sa **date de consultation** dans la bibliographie.
 
 **Période couverte** : des travaux fondateurs (1969) aux versions publiées en septembre 2026.
-Il ne s'agit pas d'une revue systématique, mais d'une revue **ciblée sur les décisions du
-projet** : une source n'est pas retenue « parce qu'elle est récente », mais « parce qu'elle
-permet de justifier ou de contester un choix ».
+Ce n'est pas une revue systématique, mais une revue **ciblée sur les décisions du projet** : une
+source est retenue parce qu'elle permet de justifier ou de contester un choix.
 
-**Couverture de la grille d'analyse.** La grille d'état de l'art du master comporte 20 axes
-répartis en cinq blocs (A à E). Le mémoire en traite 12 directement et 6 partiellement ; un axe
-est hors périmètre (les personas) et un axe optionnel n'est pas traité (la sobriété numérique).
-
-**Tableau 5 — Couverture de la grille d'analyse : traitement de chacun des 20 axes, et mention explicite de ce qui reste partiel ou hors périmètre.**
-
-| Bloc de la grille | Axes et traitement dans le mémoire |
-|---|---|
-| **A — Cadrage du besoin** (0-2) | **0** veille : traité (§ 2.1.1) · **1** entreprise et existant interne : traité (§ 1.1, § 3.1) · **2** besoin métier et cadre réglementaire : traité (§ 1.2, § 2.1.6) |
-| **B — Existant et utilisateurs** (3-4) | **3** solutions existantes : traité (§ 2.2, § 2.3) · **4** utilisateurs et personas : **hors périmètre** (le commanditaire est le public cible du prototype, pas un utilisateur final observé) |
-| **C — Analyse technique** (5-13) | **5** architecture : traité (§ 6.1) · **6** écosystème technologique : traité (§ 2.2.2, § 7.1) · **7** données et flux : **partiel** (volumétrie cible inconnue, § 4.2) · **8** briques algorithmiques : traité (§ 2.1.2 à 2.1.4, § 2.2.2) · **9** interopérabilité : **partiel** (FHIR traité, reprise des sources réelles hors du run de référence) · **10** sécurité : **partiel** (rôles, consentement et audit conçus ; hachage non salé, journal non chiffré) · **11** performance : **partiel** (petits volumes mesurés, pas de test de charge) · **12** qualité et tests : traité (chapitre 8) · **13** déploiement : **partiel** (VM reproductible, ni conteneur ni intégration continue) |
-| **D — Contraintes et valeur** (14-18) | **14** contexte local : traité (§ 4.2) · **15** conduite de projet : traité (§ 4.1, § 4.3) · **16** coûts et dépendances : **partiel** (coût du stage et dépendance aux éditeurs traités, § 2.2.1, § 4.4 ; coût de possession sur trois ans non chiffré) · **17** protection des données : traité (§ 2.1.6) · **18** sobriété : **optionnel, non traité** |
-| **E — Synthèse et décision** (19) | **19** justification des choix : traité (§ 2.3, § 2.4, § 7.1, conclusion générale) |
+**Couverture de la grille d'analyse.** La grille d'état de l'art du master compte 20 axes. Le
+mémoire en traite 12 directement et 6 partiellement ; un axe est hors périmètre (les personas)
+et un axe optionnel n'est pas traité (la sobriété numérique). Le détail, axe par axe, figure en
+annexe G.
 
 ### 2.1.2 Entity Resolution et Record Linkage
 
@@ -95,8 +84,8 @@ des poids par l'algorithme **EM** (*Expectation-Maximisation*, une méthode stat
 déduit les poids des données elles-mêmes, sans exemples étiquetés) est aujourd'hui outillée à
 grande échelle [B15]. Les approches par **apprentissage profond** vont plus loin : Ditto
 reformule l'appariement comme un problème de classification de paires de textes, résolu par un
-modèle de langage pré-entraîné (BERT, RoBERTa), et améliore le F1 jusqu'à 29 % sur les jeux de
-référence [B21]. Les travaux les plus récents emploient des **LLM** (grands modèles de langage
+modèle de langage pré-entraîné (BERT, RoBERTa) ; selon ses auteurs, il améliore le F1 jusqu'à
+29 % sur les jeux de référence [B21]. Les travaux les plus récents emploient des **LLM** (grands modèles de langage
 génératifs) interrogés directement, sans entraînement spécifique à la tâche [B22].
 
 Ces approches gagnent en qualité ce qu'elles perdent en **lisibilité** et en **sobriété** : elles
@@ -116,7 +105,7 @@ variantes *Jean Rakoto* / *Rakoto Jean* / *J. RAKOTO* imposent de mesurer une re
 seulement une égalité. Les mesures classiques du domaine se répartissent en trois familles
 [B1], [B3] :
 
-**Tableau 6 — Les mesures de similarité classiques du domaine et leur usage dans le rapprochement d'identités.**
+**Tableau 6 — Les mesures de similarité classiques.**
 
 | Famille | Mesure | Principe | Usage typique |
 |---|---|---|---|
@@ -138,8 +127,8 @@ documentation consultée décrit la version 3.14.5, qui exige Python 3.10 ; sous
 dernière version installable est la **3.9.7** (septembre 2024) [B31]. Le projet dépend donc d'une
 version figée, comme toute bibliothèque maintenue sur cette version de Python (§ 2.2.2).
 
-Le recours à `sentence_transformers`, une bibliothèque de comparaison sémantique par réseau de
-neurones, a été **écarté** : elle provoque un plantage sous Python 3.8 [bigdata_concepts.md §8].
+La bibliothèque `sentence_transformers`, qui compare des textes par réseau de neurones, a été
+**écartée** : elle plantait sous Python 3.8 dans l'environnement du stage.
 
 ### 2.1.4 Blocking et complexité
 
@@ -159,26 +148,27 @@ leur mise en œuvre est décrite au § 7.2.3.
 ### 2.1.5 Master Patient Index et interopérabilité FHIR
 
 En santé, l'ER aboutit à un référentiel d'identités : le **Master Patient Index (MPI)**. Chaque
-patient des bases sources y est rattaché à un identifiant unique, le *master patient*, par une
-**identity map** qui conserve la trace de chaque rattachement [deduplication.md §6] :
+fiche des bases sources y est rattachée à un identifiant unique, celui du **patient maître**
+(*master patient*), par une **identity map**, une table de correspondance qui conserve la trace
+de chaque rattachement :
 
-**Tableau 7 — Exemple d'identity map : trois enregistrements de sources différentes rattachés à un même master patient, chacun avec sa méthode et son score.**
+**Tableau 7 — Exemple d'identity map : trois fiches rattachées au même patient maître.**
 
-| Source | ID source | Master ID | Score | Méthode |
+| Source | Identifiant source | Patient maître | Score | Méthode |
 |---|---|---|---|---|
-| pharmacy | 15 | 102 | 1.000 | exact |
-| consultation | 88 | 102 | 0.950 | probabilistic |
-| imaging | IMG-20 | 102 | 0.920 | probabilistic |
+| pharmacy | 15 | 102 | 1,000 | exacte |
+| consultation | 88 | 102 | 0,950 | probabiliste |
+| imaging | IMG-20 | 102 | 0,920 | probabiliste |
 
-Cette démarche rejoint la norme d'interopérabilité **FHIR** (*Fast Healthcare Interoperability
-Resources*, publiée par l'organisme HL7), qui décrit au § 8.1.11 un service dédié. L'opération
-`$match` reçoit une liste de champs d'un patient et retourne les correspondances candidates, chacune
-avec un score explicite [B5]. Le projet reprend cette philosophie, rechercher puis apparier par
+Cette démarche rejoint le standard d'interopérabilité **FHIR** (*Fast Healthcare
+Interoperability Resources*, publié par l'organisme HL7), qui définit pour la ressource Patient
+une opération dédiée, `$match` : elle reçoit les champs d'un patient et retourne les
+correspondances candidates, chacune avec un score explicite [B5]. Le projet reprend cette philosophie, rechercher puis apparier par
 score, sans déployer de serveur FHIR.
 
 Côté format, FHIR sert de **schéma pivot** : un format commun vers lequel chaque source est
 traduite. Quatre ressources FHIR (`Patient`, `Encounter`, `Condition`, `Observation`) suffisent à
-harmoniser des sources structurées différemment [bigdata_concepts.md §8].
+harmoniser des sources structurées différemment.
 
 ### 2.1.6 Consentement et cadre juridique des données de santé
 
@@ -197,8 +187,8 @@ n'autorise le **transfert à l'étranger** que vers un pays offrant une protecti
 avec une autorisation de l'autorité de contrôle. La loi institue cette autorité : la **CMIL**
 (Commission Malagasy de l'Informatique et des Libertés, art. 28). Elle soumet en outre les
 traitements présentant des risques particuliers à son **autorisation préalable** (art. 46).
-Selon l'observatoire Law Lab Africa, la CMIL n'est pas encore opérationnelle en septembre 2026,
-et aucune décision de contrôle n'a été publiée [B25].
+Selon l'observatoire Law Lab Africa, consulté en septembre 2026, la CMIL n'était pas encore
+opérationnelle et aucune décision de contrôle n'avait été publiée [B25].
 
 **La référence de conception : le RGPD et la CNIL.** Le règlement européen (RGPD) et les
 recommandations de la CNIL française ont servi de cadre de conception, pour deux raisons. La loi
@@ -209,7 +199,7 @@ précise deux distinctions utiles : la base légale (art. 6) et la dérogation p
 sensibles (art. 9) se cumulent, et le consentement au **traitement** des données diffère du
 consentement aux **soins** [B11], [B12].
 
-**Tableau 8 — Ce que les deux textes exigent, et le principe de conception qui en découle pour la plateforme.**
+**Tableau 8 — Exigences des deux textes et principe de conception retenu.**
 
 | Exigence | Loi 2014-038 (Madagascar) | RGPD (référence de conception) | Principe de conception retenu |
 |---|---|---|---|
@@ -234,9 +224,9 @@ exprime une décision par défaut (*permit* ou *deny*) et des exceptions (*provi
 exception peut être limitée à une **finalité d'usage** (`provision.purpose`, codée dans le
 vocabulaire HL7 *PurposeOfUse*), à une période, à un acteur ou à un type de données. La
 spécification laisse volontairement l'**application** du consentement hors de son périmètre : elle
-la délègue aux mécanismes de contrôle d'accès (OAuth, XACML). En septembre 2026, la ressource est
-au niveau de maturité 2 (*Trial Use*), et seul le cas d'usage « vie privée » est entièrement
-modélisé [B26]. Le modèle du projet en est une version simplifiée : une décision par finalité,
+la délègue aux mécanismes de contrôle d'accès (OAuth, XACML). Dans la version 5.0.0 consultée, la
+ressource est au niveau de maturité 2 (*Trial Use*), et seul le cas d'usage « vie privée » est
+entièrement modélisé [B26]. Le modèle du projet en est une version simplifiée : une décision par finalité,
 refus par défaut, sans périmètre de données ni période. L'application du consentement relève de
 l'API, conformément à la répartition des rôles prévue par la norme.
 
@@ -268,8 +258,7 @@ service qui reçoit et exécute les requêtes SQL [B8].
 
 Ces briques sont conçues pour le volume. Sur de petits jeux, leur coût de démarrage domine : le
 projet a mesuré environ 1 à 2 ms en Pandas contre 0,4 à 4 s en Spark pour quelques dizaines de
-lignes, l'essentiel du temps Spark étant le lancement de la machine virtuelle Java
-[bigdata_concepts.md §2]. Spark se justifie donc par le **volume visé**, pas par le volume de
+lignes, l'essentiel du temps Spark étant le lancement de la machine virtuelle Java. Spark se justifie donc par le **volume visé**, pas par le volume de
 démonstration. Le § 2.2.2 discute les alternatives à ce socle, et le § 7.1 décrit la plate-forme
 retenue.
 
@@ -283,7 +272,7 @@ contient les données agrégées, prêtes à l'analyse.
 Chaque zone est un **état distinct de la donnée**, ce qui apporte trois choses : la
 **traçabilité** (on sait d'où vient chaque valeur), le **rejeu** (on relance un traitement depuis
 une zone propre, sans tout recommencer) et la **séparation** des responsabilités exigée par la
-gouvernance [bigdata_concepts.md §3].
+gouvernance.
 
 Le modèle Medallion est né dans le monde du ***lakehouse***, une architecture qui ajoute aux
 fichiers d'un lac de données les garanties d'un entrepôt [B27]. Ces garanties sont les
@@ -296,7 +285,7 @@ Hive, sans ces garanties. Le § 2.2.2 examine ce choix.
 Le pipeline suit la logique **ELT** (*Extract, Load, Transform*) : l'ingestion charge la donnée
 **telle quelle** dans RAW, et la transformation s'applique *a posteriori* dans les zones suivantes.
 C'est le **schema-on-read** : on décide du format au moment de lire, et non au moment d'écrire,
-ce qui caractérise le lac de données [bigdata_concepts.md §7].
+ce qui caractérise le lac de données.
 
 ### 2.1.9 Critères de comparaison retenus
 
@@ -336,16 +325,16 @@ dans les programmes de santé publique, on parle aussi de **registre de clients*
 registry*). Le **MDM** (*Master Data Management*) applique la même idée à toutes les données de
 référence d'une organisation, patients ou non.
 
-**Tableau 9 — Les sept solutions du domaine : ce qu'elles apportent au besoin et ce qui bloque leur adoption ici.**
+**Tableau 9 — Les sept solutions étudiées : apport et obstacle à l'adoption.**
 
 | Solution | Famille | Apport pour le besoin | Ce qui bloque l'adoption ici |
 |---|---|---|---|
-| **InterSystems EMPI** [B13] | MPI commercial | Moteur d'identité déterministe **et** probabiliste, rapprochement avec un référentiel externe de population (LexisNexis LexID), fiche composite par personne, services d'échange IHE **PIX** et **PDQ** | Produit **propriétaire, sous licence**, conçu pour les systèmes de santé nord-américains ; son atout, le référentiel externe, suppose de confronter les identités à des données tierces, ce qui contredit l'hébergement interne ; ne couvre ni le lac Medallion ni le consentement par finalité |
+| **InterSystems EMPI** [B13] | MPI commercial | Moteur d'identité déterministe **et** probabiliste, rapprochement avec un référentiel externe de population (LexisNexis LexID), fiche composite par personne, services d'échange IHE **PIX** et **PDQ** | Produit **propriétaire, sous licence** ; son atout, le référentiel externe, suppose de confronter les identités à des données tierces, ce qui contredit l'hébergement interne ; ne couvre ni le lac Medallion ni le consentement par finalité |
 | **Talend MDM** [B14] | MDM commercial | Rapprochement et règles de **survie** (*survivorship* : quelle valeur garder lors d'une fusion), **golden record**, fusions validées par des gestionnaires de données (*data stewards*), seuils de confiance paramétrables | Suite **commerciale**, dont l'édition gratuite a été retirée (voir ci-dessous) ; suppose une équipe de gestionnaires de données ; pas d'interopérabilité **FHIR** native ; ne traite pas la gouvernance des accès aux données patients |
-| **Azure Health Data Services** [B17] | Plateforme cloud santé | Services **FHIR** et **DICOM** gérés par Microsoft, export massif `$export` vers un stockage de lac, service de **dé-identification** (27 types d'entités, opérations de marquage, masquage ou substitution) | Service **cloud**, facturé à l'usage : incompatible avec l'hébergement interne et soumis à l'encadrement des transferts (§ 2.1.6) ; ne fournit **ni MPI ni déduplication** |
+| **Azure Health Data Services** [B17] | Plateforme cloud santé | Services **FHIR** et **DICOM** gérés par Microsoft, export massif `$export` vers un stockage de lac, service de **dé-identification** (marquage, masquage ou substitution des données identifiantes) | Service **cloud**, facturé à l'usage : incompatible avec l'hébergement interne et soumis à l'encadrement des transferts (§ 2.1.6) ; ne fournit **ni MPI ni déduplication** |
 | **HAPI FHIR** [B16] | Open source (Java, Apache 2.0) | Implémentation de référence d'un serveur FHIR : validation, stockage, opérations REST, recherche, `$match` | Fournit l'**interopérabilité** et un **cadre** d'intercepteurs d'autorisation et de consentement, que le développeur doit programmer lui-même (aucune politique fournie) ; **ni rapprochement d'identité maîtrisé, ni zones de qualité** : à lui seul, il ne résout aucun des trois problèmes du § 1.2.1 |
 | **OpenCR** [B29] | Open source (registre de clients, OpenHIE) | Registre de patients libre, conçu pour les systèmes de santé publics de pays à ressources limitées : règles de décision **déterministes et probabilistes configurables**, **revue humaine** des correspondances douteuses, échanges en **FHIR R4** | Le plus proche du besoin d'identité. Mais il repose sur un service Node.js, un serveur HAPI FHIR et Elasticsearch : trois services de plus sur une VM déjà occupée par Hadoop, Hive et Spark ; il n'offre ni lac Medallion ni consentement par finalité |
-| **Splink** [B15] | Open source (Python, MIT) | Appariement probabiliste à grande échelle : modèle **Fellegi-Sunter**, poids estimés par **EM**, exécution sur Spark ou DuckDB, environ un million d'enregistrements en une minute ; graphique « en cascade » qui détaille la contribution de chaque champ au score | Excellent sur le **cœur** algorithmique, et explicable. Mais les poids sont **appris sur les données** et changent à chaque réestimation, là où le projet veut des poids **fixés et validés par le métier** ; ni gouvernance, ni Medallion, ni journal d'accès (§ 2.2.2) |
+| **Splink** [B15] | Open source (Python, MIT) | Appariement probabiliste à grande échelle : modèle **Fellegi-Sunter**, poids estimés par **EM**, exécution sur Spark ou DuckDB, environ un million d'enregistrements en une minute selon sa documentation ; graphique « en cascade » qui détaille la contribution de chaque champ au score | Excellent sur le **cœur** algorithmique, et explicable. Mais les poids sont **appris sur les données** et changent à chaque réestimation, là où le projet veut des poids **fixés et validés par le métier** ; ni gouvernance, ni Medallion, ni journal d'accès (§ 2.2.2) |
 | **Apache Atlas** [B18] | Open source (gouvernance Hadoop) | Catalogue de métadonnées, **lignage** de bout en bout (d'où vient chaque donnée), étiquettes `PII` / `SENSITIVE` propagées le long des traitements | Gouvernance des **métadonnées**, pas des accès : Atlas ne filtre aucune requête à l'exécution et n'implémente ni consentement par finalité ni journal d'accès |
 
 **Coût et dépendance à l'éditeur.** Deux produits du tableau (EMPI, Azure) imposent une licence
@@ -370,7 +359,7 @@ composants retenus ne sont pas dépassés par une alternative disponible. Le tab
 confronte chaque brique du projet à ses alternatives, en vérifiant leur compatibilité avec
 Python 3.8 dans les métadonnées officielles des versions publiées [B31].
 
-**Tableau 10 — Les briques du projet face à leurs alternatives : ce que l'alternative apporte, sa compatibilité avec l'environnement, et la raison du choix.**
+**Tableau 10 — Les briques du projet face à leurs alternatives.**
 
 | Besoin | Brique retenue | Alternative | Ce que l'alternative apporte | Compatibilité Python 3.8 | Raison du choix |
 |---|---|---|---|---|---|
@@ -390,20 +379,21 @@ modifiables par le métier. Les options sont notées sur des critères pondéré
 
 ## 2.3 Tableau comparatif et synthèse
 
-Les sept critères du § 2.1.9 sont appliqués à chaque solution. `✔` = capacité annoncée par la
-documentation, `◐` = partielle, `✖` = absente. **Aucune mesure : lecture documentaire.**
+Les sept critères du § 2.1.9 sont appliqués à chaque solution : « oui » signifie capacité
+annoncée par la documentation, « partiel » capacité partielle, « non » capacité absente. Il s'agit
+d'une **lecture documentaire, sans mesure**.
 
-**Tableau 11 — Grille de comparaison des sept solutions et de la solution du stage : deux critères éliminatoires, puis cinq critères de qualité (lecture documentaire, aucune mesure).**
+**Tableau 11 — Comparaison des solutions sur les sept critères.**
 
 | Critère | EMPI | Talend MDM | Azure HDS | HAPI FHIR | OpenCR | Splink | Atlas | Solution du stage |
 |---|:---:|:---:|:---:|:---:|:---:|:---:|:---:|:---:|
-| **E1** Hébergement interne | ◐ | ✔ | ✖ | ✔ | ✔ | ✔ | ✔ | **✔ testé** |
-| **E2** Exploitable dans l'environnement du stage | ✖ | ✖ | ✖ | ◐ | ◐ | ◐ | ◐ | **✔ testé** |
-| **Q1** Déduplication explicable | ✔ | ✔ | ✖ | ✖ | ✔ | ✔ | ✖ | **✔ testé** |
-| **Q2** Interopérabilité FHIR | ◐ | ✖ | ✔ | ✔ | ✔ | ✖ | ✖ | **✔ testé** |
-| **Q3** Gouvernance rôle + consentement + audit | ◐ | ◐ | ◐ | ◐ | ✖ | ✖ | ◐ | **✔ conçu** |
-| **Q4** Montée en charge (stockage et calcul répartis) | ◐ | ✔ | ✔ | ✖ | ◐ | ✔ | ✔ | **◐ architecturé** |
-| **Q5** Coût et indépendance | ✖ | ✖ | ✖ | ✔ | ✔ | ✔ | ✔ | **✔** (dépendance reportée sur la maintenance, § 2.4) |
+| **E1** Hébergement interne | partiel | oui | non | oui | oui | oui | oui | **oui, testé** |
+| **E2** Exploitable dans l'environnement du stage | non | non | non | partiel | partiel | partiel | partiel | **oui, testé** |
+| **Q1** Déduplication explicable | oui | oui | non | non | oui | oui | non | **oui, testé** |
+| **Q2** Interopérabilité FHIR | partiel | non | oui | oui | oui | non | non | **oui, testé** |
+| **Q3** Gouvernance rôle + consentement + audit | partiel | partiel | partiel | partiel | non | non | partiel | **oui, conçu** |
+| **Q4** Montée en charge (stockage et calcul répartis) | partiel | oui | oui | non | partiel | oui | oui | **partiel, architecturé** |
+| **Q5** Coût et indépendance | non | non | non | oui | oui | oui | oui | **oui** (dépendance reportée sur la maintenance, § 2.4) |
 
 **Lecture.** Les critères éliminatoires écartent d'emblée EMPI, Talend et Azure : le premier
 repose sur un référentiel externe et une licence, le deuxième n'a plus d'édition gratuite, le
@@ -412,18 +402,18 @@ l'identité, la gouvernance et le lac de données**. OpenCR est la plus proche s
 n'offre ni lac ni consentement par finalité. Splink est la plus forte sur l'algorithme, mais ne
 fournit que cet algorithme. HAPI FHIR et Atlas ne traitent qu'une partie du problème. Le
 cahier des charges fixe en outre un délai de **4 mois** et un environnement **entièrement
-interne** [cahier_des_charges_stage_M2_MBDS.docx §1 et §3].
+interne** (cahier des charges, § 1 et § 3).
 
 Deux précautions de lecture. D'abord, la colonne du projet n'est **pas soumise au même régime de
 preuve** que les autres : les produits sont jugés sur des capacités *annoncées*, alors que la
-solution du stage est notée `✔ testé` lorsqu'une mesure existe et `✔ conçu` lorsqu'elle n'existe
-pas encore. C'est le cas de la ligne gouvernance, vérifiée mécaniquement par la suite de tests
+solution du stage est notée « oui, testé » lorsqu'une mesure existe et « oui, conçu » lorsqu'elle
+n'existe pas encore. C'est le cas de la ligne gouvernance, vérifiée mécaniquement par la suite de tests
 (§ 8.4), mais dont les données PostgreSQL n'étaient pas peuplées au moment de l'exécution
 (chapitre 8). De même, la montée en charge est **architecturée** et reproductible, mais n'a été
-démontrée que sur quelques centaines de lignes. Ensuite, un `◐` signifie « partiel selon la
+démontrée que sur un millier de fiches au plus. Ensuite, « partiel » signifie « partiel selon la
 documentation » : il signale une capacité réelle mais incomplète dans le contexte du stage, et non
-un doute sur l'existence de la fonction. En gouvernance, le `◐` de HAPI FHIR signale un cadre à
-programmer, pas une politique prête à l'emploi. Pour HAPI FHIR, OpenCR et Atlas, le `◐` en E2 traduit
+un doute sur l'existence de la fonction. En gouvernance, le « partiel » de HAPI FHIR signale un cadre à
+programmer, pas une politique prête à l'emploi. Pour HAPI FHIR, OpenCR et Atlas, le « partiel » en E2 traduit
 le poids de services Java ou Node.js supplémentaires sur une VM déjà chargée ; pour Splink, une
 version figée par Python 3.8.
 
@@ -433,7 +423,7 @@ version figée par Python 3.8.
 algorithmes de l'existant** et n'écrit que la chaîne d'exécution et de gouvernance, qu'aucune
 solution ne fournit dans le contexte imposé.
 
-**Tableau 12 — Ce que le projet reprend de l'état de l'art, d'où cela vient et comment cela a été implémenté.**
+**Tableau 12 — Ce que le projet reprend de l'état de l'art.**
 
 | Élément repris de l'existant | Provenance | Implémentation retenue |
 |---|---|---|
@@ -442,12 +432,12 @@ solution ne fournit dans le contexte imposé.
 | Interopérabilité par schéma pivot | FHIR [B5] | 4 ressources `Patient / Encounter / Condition / Observation` |
 | Consentement par finalité, refus par défaut | FHIR Consent [B26], loi 2014-038 art. 14 et 18 [B24] | une décision par finalité, contrôlée à chaque accès (§ 7.2.3) |
 | Stockage en zones de qualité croissante | Medallion [B9] | RAW / SILVER / GOLD sur HDFS et Hive |
-| Rapprochement multi-sources | MPI, identity map, registre de clients [B13], [B29] | master patient et table de correspondance en PostgreSQL |
+| Rapprochement multi-sources | MPI, identity map, registre de clients [B13], [B29] | patient maître et table de correspondance en PostgreSQL |
 | Gouvernance et traçabilité | catalogue de métadonnées [B18] | **l'inverse** : le contrôle est exercé *à l'exécution* (rôles, consentement, audit), pas seulement sur les métadonnées |
 
-Face à cet état de l'art, les choix du projet sont assumés et explicables. Cinq arbitrages
-structurent le positionnement. **RapidFuzz** et un dictionnaire de synonymes plutôt qu'un modèle
-de langage, qui plante sous Python 3.8 et exigerait des données étiquetées. Un **MPI local avec
+Cinq arbitrages structurent le positionnement du projet. **RapidFuzz** plutôt qu'un modèle de
+langage : la bibliothèque `sentence_transformers` plantait sous Python 3.8, et un modèle appris
+exigerait des données étiquetées. Un **MPI local avec
 pivot FHIR** plutôt qu'un MPI commercial ou un registre complet comme OpenCR, trop lourds pour
 l'environnement du stage. Un **score pondéré à seuil unique** plutôt que des poids estimés par EM,
 pour que la décision reste lisible par un gestionnaire de données. Une montée en complexité **par
@@ -461,7 +451,7 @@ Quatre écarts à l'existant sont assumés, justifiés par le besoin et non par 
 
 - **Pas d'estimation EM** (à la différence de Splink) : les poids restent **fixés, lisibles et
   modifiables** par un gestionnaire de données, condition posée par l'exigence « jamais fusionner
-  sans logique explicable » [deduplication.md — règle métier].
+  sans logique explicable ».
 - **Pas de référentiel externe** (à la différence d'EMPI) : aucune donnée de tiers n'entre dans
   la plateforme, conformément à l'hébergement interne.
 - **Pas de service géré dans le cloud** (à la différence d'Azure) : le lac de données est interne
@@ -479,7 +469,7 @@ Cette centralisation a un contrepoids assumé : le même fichier alimente l'éva
 modifier un poids **invalide les métriques publiées** tant que l'évaluation n'a pas été rejouée
 (chapitre 8).
 
-> **Limite honnête de l'étude.** Les produits et bibliothèques cités sont décrits **d'après leur
+> **Limite de l'étude.** Les produits et bibliothèques cités sont décrits **d'après leur
 > documentation** et n'ont **pas été installés ni exécutés** : la grille compare des capacités
 > annoncées, non des performances mesurées. Une évaluation comparative réelle, par exemple de
 > Splink et du moteur du projet sur la même vérité terrain, demanderait un banc d'essai hors du
@@ -497,30 +487,3 @@ hébergement externe, et donc une dépendance durable à un éditeur. La décisi
 une **chaîne sur mesure, adossée aux standards**, plutôt qu'un produit. Le chapitre 3 examine
 maintenant **l'existant propre à MMT** (les systèmes de l'établissement, vus par l'utilisateur et
 par le développeur), puis la solution envisagée.
-
-### Références citées
-
-[B1] Elmagarmid et al., *Duplicate Record Detection: A Survey*, IEEE TKDE 2007.
-[B2] Fellegi & Sunter, *A Theory for Record Linkage*, JASA 1969.
-[B3] Christen, *Data Matching*, Springer 2012.
-[B4] RapidFuzz documentation, rapidfuzz.github.io/RapidFuzz.
-[B5] HL7 FHIR §8.1.11, Resource Patient (v5.0.0), hl7.org/fhir/patient.html.
-[B6] Apache Hadoop, HDFS Design.
-[B7] Apache Spark, spark.apache.org.
-[B8] Apache Hive, hive.apache.org.
-[B9] Databricks, Lakehouse Medallion Architecture.
-[B10] RGPD, article 9.
-[B11] CNIL, *Quelles formalités pour les traitements de données de santé ?*
-[B12] CNIL, *RGPD et professionnels de santé libéraux*.
-[B13] InterSystems EMPI / IRIS for Health (PIX, PDQ).
-[B14] Talend MDM, *Integrated Matching*. [B15] Splink (Fellegi-Sunter, EM).
-[B16] HAPI FHIR. [B17] Azure Health Data Services. [B18] Apache Atlas.
-[B21] Li et al., *Deep Entity Matching with Pre-Trained Language Models* (Ditto), PVLDB 2020.
-[B22] Peeters, Steiner & Bizer, *Entity Matching using Large Language Models*, EDBT 2025.
-[B23] Schnell, Bachteler & Reiher, *Privacy-preserving record linkage using Bloom filters*, 2009.
-[B24] Loi n° 2014-038 du 9 janvier 2015 sur la protection des données à caractère personnel (Madagascar).
-[B25] Law Lab Africa, *Data Protection in Madagascar*.
-[B26] HL7 FHIR, Resource Consent (v5.0.0).
-[B27] Armbrust et al., *Lakehouse*, CIDR 2021. [B28] Armbrust et al., *Delta Lake*, PVLDB 2020.
-[B29] IntraHealth, OpenCR (Open Client Registry). [B30] Qlik, retrait de Talend Open Studio.
-[B31] Python Package Index, métadonnées des versions (splink, recordlinkage, dedupe, duckdb, polars, rapidfuzz).

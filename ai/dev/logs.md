@@ -2085,3 +2085,52 @@ indisponible affiche un avertissement sans masquer l'état du pipeline ; histori
 
 **Vérifications.** `npx tsc --noEmit` : aucune erreur ; ESLint sur les deux fichiers : aucune remarque. Rendu
 **non vu à l'écran** (demande l'API, la base et une session connectée). Pas de commit.
+
+## 29/09/2026 — Jeu de données vérifié ; sources CSV précisées comme sources de test
+
+Vérification des CSV du dépôt (`evaluation/synthetic-patient-generator/data/experiments/`) : par niveau (easy,
+medium, hard), 404 / 353 / 300 fiches patient (1 057), 792 achats, 519 consultations, 450 examens ; vérité terrain
+1 057 lignes, 500 groupes (113 patients dans 1 source, 217 dans 2, 170 dans 3) ; CIN absent 111 / 101 / 80.
+Les fichiers du run de référence (76 / 76 / 62) ne sont pas dans le dépôt (générés sur la VM) ; le script actuel
+(`ensure_generator_data.sh`, 500 patients) produirait 1 057 fiches.
+- `chapters/03-existant-solution.md` et rapport (chap. 3) : les CSV sont des **sources de test**, fictives, qui ne
+  représentent pas les sources de production.
+- `chapters/07-conception.md` et rapport (chap. 7) : écart entre le jeu du run de référence (214) et le jeu actuel
+  (1 057) expliqué.
+
+**À trancher par l'auteur :** MAVIS, MMT_DB et CLINIQUE « ne sont pas dans ses plans et n'ont jamais été utilisés »,
+alors que le mémoire, le rapport, le script oral et la slide 9 en font l'existant étudié (le rapport écrit
+« 3 sources réelles capturées »). Origine dans le dépôt : `documents/journal_poc_datalake_mavis.md` et les entrées
+du 24/08 au 01/09 de ce journal (PoC `datalake_mavis`, retiré le 28/09). L'auteur vérifie avant toute réécriture.
+Pas de commit.
+
+## 29/09/2026 — Relecture du mémoire, étape 1/9 : introduction, chapitre 1, remerciements, glossaire
+
+Plan validé : `C:\Users\alpha\.claude\plans\dans-chaque-section-de-snazzy-cupcake.md` (relecture chapitre par
+chapitre, pièges vérifiés contre le code). Étape 1 :
+- introduction : renvois `[cahier_des_charges.md §n]` → « (cahier des charges, § n) » ; toujours sur une page
+  (page 13 du .docx, contrôlé dans Word) ;
+- chapitre 1 : « équipe dynamique et passionnée » retiré ; phrase « en donne un exemple » rendue autonome ;
+  « trois enjeux » → **quatre** (le tableau en compte quatre) ; notions et tableau 2 sans renvois internes ni
+  anglicismes ; décimale française (1,000) ; slogan sur la confidentialité retiré. Paragraphe MAVIS / GNU Health
+  **non modifié** (décision en attente de l'auteur) ;
+- remerciements : noms au format du rapport (Prénom NOM) ;
+- glossaire : DMP retiré (sigle mal défini : en santé, DMP = Dossier Médical Partagé) et sa seule occurrence au
+  chapitre 9 remplacée ; définitions ER, EMPI, RBAC, MPI corrigées. Spark (stack technique) laissé, à proposer.
+Mots : 1 932 → 1 853. Pas de commit.
+
+## 29/09/2026 — Relecture du mémoire, étape 2/9 : chapitre 2 (état de l'art)
+
+`chapters/02-etat-de-l-art.md` : aucune source, aucun produit ni aucun critère retiré. Pièges corrigés :
+« un modèle de langage plante sous Python 3.8 » → c'est `sentence_transformers` ; « RapidFuzz et un dictionnaire
+de synonymes » (les synonymes servent au mapping FHIR, pas au rapprochement) ; FHIR « § 8.1.11 » retiré (opération
+`$match` de la ressource Patient) ; dates absolues → « consulté en septembre 2026 » / « version 5.0.0 consultée » ;
+Splink et Ditto : « selon sa documentation / ses auteurs » ; EMPI « conçu pour les systèmes nord-américains » et
+Azure « 27 types d'entités » retirés (non indispensables, difficiles à défendre) ; « quelques centaines de lignes »
+→ « un millier de fiches au plus ». Forme : symboles ✔ ◐ ✖ du tableau 11 → oui / partiel / non ; décimales à la
+française ; renvois internes `[*.md]` retirés ; légendes raccourcies ; méta-phrases d'ouverture retirées ; liste
+« Références citées » supprimée (doublon de la bibliographie). Tableau 5 (grille des 20 axes) déplacé en
+**annexe G** (`references/annexes.md`), une phrase le résume ; l'ancienne annexe G devient H (à retirer à
+l'étape 9). Glossaire : Spark retiré (validé par l'auteur).
+Mots du chapitre : 6 727 → 6 065. Export .docx OK (48 tableaux ; renumérotation prévue en fin de relecture).
+Pas de commit.

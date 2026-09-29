@@ -4,22 +4,20 @@
 - **CIN (Carte d'Identité Nationale)** : numéro d'identité malgache, l'identifiant le plus stable d'un patient.
 - **CNIL (Commission Nationale de l'Informatique et des Libertés)** : autorité française de protection des données personnelles.
 - **CU** : cas d'utilisation.
-- **DMP (Data Management Platform)** : plateforme qui pilote la qualité des données d'un établissement.
 - **ELT (Extract, Load, Transform)** : extraction, chargement, puis transformation ; la donnée est d'abord déposée telle quelle, la transformation vient ensuite.
 - **EM (Expectation-Maximisation)** : algorithme qui estime automatiquement des paramètres, par exemple les poids d'un rapprochement.
-- **EMPI (Enterprise Master Patient Index)** : référentiel d'identité patient à l'échelle d'une organisation (produit InterSystems).
-- **ER (Entity Resolution)** : rapprochement des enregistrements qui désignent la même entité ; nom savant de la déduplication.
+- **EMPI (Enterprise Master Patient Index)** : référentiel d'identité patient à l'échelle d'une organisation ; InterSystems commercialise un produit sous ce nom.
+- **ER (Entity Resolution)** : rapprochement des enregistrements qui désignent la même entité ; nom donné à ce problème dans la littérature.
 - **ETP** : équivalent temps plein, unité de charge de travail.
 - **FHIR (Fast Healthcare Interoperability Resources)** : standard d'échange de données de santé, utilisé ici comme format commun entre les sources.
 - **FN, FP** : faux négatif (deux fiches d'une même personne non rapprochées) et faux positif (deux personnes différentes fusionnées à tort).
 - **Identity map** : table qui relie chaque fiche d'origine à son patient maître, avec la méthode et le score de la décision.
 - **MAVIS** : système de gestion hospitalière de l'établissement (Odoo), répliqué localement pour le prototype.
-- **MPI (Master Patient Index)** : annuaire qui attribue à chaque personne un identifiant unique, le master patient, quel que soit le système d'origine de ses fiches.
+- **MPI (Master Patient Index)** : annuaire qui attribue à chaque personne un identifiant unique, celui du patient maître (*master patient*), quel que soit le système d'origine de ses fiches.
 - **MVP (Minimum Viable Product)** : première version minimale ; ici, le prototype Pandas et PostgreSQL.
 - **NLP (Natural Language Processing)** : traitement automatique du langage.
 - **PoC (Proof of Concept)** : prototype de démonstration.
 - **Précision, rappel, F1** : la précision mesure la part des fusions correctes, le rappel la part des doublons retrouvés, le F1 le compromis des deux.
-- **RBAC (Role-Based Access Control)** : droits attachés à un rôle (`admin`, `analyst`, `viewer`) plutôt qu'à une personne ; chaque accès, y compris refusé, est journalisé.
+- **RBAC (Role-Based Access Control)** : droits attachés à un rôle (`admin`, `analyst`, `viewer`) plutôt qu'à une personne.
 - **RGPD (Règlement Général sur la Protection des Données)** : règlement européen ; son article 9 encadre le traitement des données de santé.
-- **Spark** : moteur de calcul qui traite les données en mémoire et répartit le travail sur plusieurs machines.
 - **VM** : machine virtuelle ; ici, la machine Vagrant qui héberge la plateforme Big Data.
