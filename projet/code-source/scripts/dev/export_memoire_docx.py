@@ -85,6 +85,11 @@ DIAGRAM_FONT_PX = 16
 PT_PER_CM = 28.35
 
 CAPTION_RE = re.compile(r"^>\s*\*\*Figure\s+(\d+)\b")
+# Diagramme de Gantt : marqueur de légende et couleurs des cellules (mêmes teintes que le
+# rapport de stage) — daté dans les journaux, déclaré, prévu.
+GANTT_MARK = "{gantt}"
+GANTT_FILLS = {"■": "1F3864", "□": "8EAADB", "○": "D9D9D9"}
+
 TABLE_CAPTION_RE = re.compile(r"\*\*Tableau\s+(\d+)\s*[—–-]\s*([^*]+)\*\*")
 
 # Pièces liminaires : le texte est ici, et nulle part ailleurs, pour rester la source unique.
@@ -311,14 +316,30 @@ def add_figure(doc: Document, number: int, caption: str, entry) -> None:
     set_page(doc.add_section(WD_SECTION.NEW_PAGE), landscape=False)
 
 
+def shade_cell(cell, fill: str) -> None:
+    """Colore le fond d'une cellule de tableau (diagramme de Gantt)."""
+    shd = OxmlElement("w:shd")
+    shd.set(qn("w:val"), "clear")
+    shd.set(qn("w:color"), "auto")
+    shd.set(qn("w:fill"), fill)
+    cell._tc.get_or_add_tcPr().append(shd)
+
+
 def add_markdown(doc: Document, md: str, manifest: dict, figure_number: int = 0) -> int:
     """Convertit du Markdown en Word. Retourne le prochain numéro de figure."""
     lines = merge_lines(md.splitlines())
     i = 0
     n = len(lines)
+    gantt_next = False
     while i < n:
         line = lines[i]
         stripped = line.strip()
+        # Une légende portant {gantt} annonce un diagramme de Gantt : le marqueur est retiré
+        # du texte et le tableau suivant voit ses cellules ■ / □ / ○ colorées.
+        if GANTT_MARK in stripped:
+            gantt_next = True
+            stripped = re.sub(r"\s*" + re.escape(GANTT_MARK), "", stripped)
+            line = stripped
 
         if stripped.startswith("```"):
             code_start = i
@@ -378,11 +399,15 @@ def add_markdown(doc: Document, md: str, manifest: dict, figure_number: int = 0)
             for r_idx, row in enumerate(t_rows):
                 for c_idx in range(ncols):
                     cell = row[c_idx] if c_idx < len(row) else ""
+                    if gantt_next and r_idx > 0 and c_idx > 0 and cell in GANTT_FILLS:
+                        shade_cell(table.cell(r_idx, c_idx), GANTT_FILLS[cell])
+                        continue
                     para = table.cell(r_idx, c_idx).paragraphs[0]
                     add_runs(para, cell)
                     if r_idx == 0:
                         for run in para.runs:
                             run.bold = True
+            gantt_next = False
             doc.add_paragraph()
             continue
 
@@ -618,7 +643,7 @@ def collect_captions() -> "tuple[list, list]":
                 joined = re.sub(r"\*\*Figure\s+\d+\s*[—–-]\s*", " ", joined)
                 joined = joined.replace("**", " ")
                 figures.append((start.group(1), first_sentence(joined)))
-            table = TABLE_CAPTION_RE.search(line)
+            table = TABLE_CAPTION_RE.search(line.replace(" " + GANTT_MARK, ""))
             if table:
                 tables.append((table.group(1), first_sentence(table.group(2))))
             index += 1

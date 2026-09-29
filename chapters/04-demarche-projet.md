@@ -5,10 +5,9 @@
 ### 4.1.1 Activités d'ingénierie logicielle
 
 Le projet a mobilisé les cinq activités classiques de l'ingénierie logicielle. Chacune a laissé
-une production vérifiable dans le dépôt, ce qui permet de la relire sans dépendre de la mémoire
-du stagiaire.
+une production vérifiable dans le dépôt.
 
-**Tableau 17 — Les activités d'ingénierie logicielle du projet, ce que chacune a produit, et où le trouver.**
+**Tableau 17 — Les activités d'ingénierie logicielle et leurs productions.**
 
 | Activité | Ce qu'elle a produit | Où le trouver |
 |---|---|---|
@@ -23,50 +22,35 @@ du stagiaire.
 Le stage a suivi une **démarche itérative et incrémentale par jalons**. Elle emprunte aux
 méthodes agiles l'idée d'**incréments démontrables** — chaque jalon livre quelque chose qui
 fonctionne et se vérifie — et celle d'un **critère de sortie** explicite, qui joue le rôle de
-la « définition de terminé ». Elle n'en reprend pas les cérémonies (sprints, revues d'équipe) :
-l'équipe de développement tient en une seule personne (§ 4.1.3).
+la « définition de terminé ». Elle n'en reprend pas les cérémonies (sprints, revues d'équipe),
+l'équipe de développement se limitant à une personne.
 
-**Règles de pilotage appliquées** : ne pas engager une évolution avant que le
-contrôle ciblé du niveau précédent soit vert ; toute décision d'architecture est
-tracée avec sa raison (ce mémoire) ; chaque limite constatée est écrite dans le
-chapitre des limites plutôt que passée sous silence ; les données de test ne sont
-jamais remplacées par des données réelles, y compris quand elles seraient
-plus commodes à obtenir.
+**Règles de pilotage appliquées** : ne pas engager une évolution avant que les tests du niveau
+précédent réussissent ; tracer chaque décision d'architecture avec sa raison ; écrire chaque
+limite constatée plutôt que la passer sous silence ; ne jamais remplacer les données de test par
+des données réelles.
 
 ### 4.1.3 Rôles et responsabilités
 
-Avant toute notion de rôle applicatif, il faut distinguer deux plans qui se ressemblent et
-que les rapports de référence traitent séparément : **les rôles du projet**, qui décident de
-quoi pendant le stage, et **les rôles d'exécution** (`admin`, `analyst`, `viewer`), qui
-régissent ce qu'un utilisateur de l'API a le droit de lire une fois le logiciel livré. Les
-premiers sont décrits ici, les seconds au § 2.1.6 et au § 7.2.3.
-
-Les parties prenantes du projet sont au nombre de quatre, et l'équipe de développement
-tient en une seule personne :
+Les **rôles du projet**, décrits ici, sont distincts des **rôles applicatifs** (`admin`,
+`analyst`, `viewer`), qui régissent ce qu'un utilisateur de l'API peut lire (§ 7.2.3). Les
+parties prenantes sont au nombre de quatre :
 
 - **Le commanditaire**, Madagascar Medical Technology (MMT), représenté par l'encadrant
   professionnel. Il porte les deux contraintes structurantes du stage : l'**hébergement
   interne** — les données ne doivent pas quitter les machines de l'établissement, donc aucun
-  service cloud externe — et l'usage de **données synthétiques** uniquement, aucune donnée
-  réelle de patient ne devant être mobilisée, y compris quand elle serait plus facile à
-  obtenir. Il valide par ailleurs les trois finalités déclarées à l'API.
-- **L'encadrant professionnel**, M. Harena Ny Aina Rabemanoela, fait le lien entre le besoin
-  métier et sa formulation technique : c'est lui qui arbitre, entre les options présentées en
-  conclusion générale, celle que le commanditaire valide.
-- **L'encadrant pédagogique**, M. RABENANAHARY Rojo, encadre le stage du point de vue de la
-  formation et évalue ce mémoire au regard du plan imposé.
+  service cloud externe — et l'usage exclusif de **données synthétiques**. Il valide les trois
+  finalités d'accès déclarées à l'API.
+- **L'encadrant professionnel**, M. Harena Ny Aina RABEMANOELA, fait le lien entre le besoin
+  métier et sa formulation technique, et arbitre entre les options proposées.
+- **L'encadrant pédagogique**, M. Rojo RABENANAHARY, suit le stage du point de vue de la
+  formation.
 - **Le stagiaire**, RANOMENJANAHARY Manjaka Alpha, auteur du projet, conçoit, développe, teste
-  et documente. Il n'a pas d'équipe de développement : toute décision technique qu'il n'a pas pu
-  trancher avec ses encadrants est écrite comme une question ouverte, pas comme un choix assumé.
+  et documente la plateforme.
 
-> **Point d'honnêteté sur la taille de l'équipe.** Le stage a été mené à effectif constant
-> et réduit : un développeur, deux encadrants, un commanditaire. Cela a des effets
-> mesurables. D'abord, la revue de code et les tests de revue mutuelle, qui supposent au moins
-> deux personnes, n'ont pas eu lieu : la seule relecture est celle que j'ai faite moi-même, ce
-> qui limite la valeur de mes tests comme preuve externe. Ensuite, la séparation des rôles
-> décrite plus haut n'a pas de contrepartie technique : il n'existe pas, dans le dépôt,
-> d'outil de revue de code ni de piste d'audit permettant de distinguer une modification faite sous une
-> consigne de celle prise en autonomie.
+> **Conséquence d'une équipe réduite.** Avec un seul développeur, la revue de code croisée n'a
+> pas eu lieu : la seule relecture est celle de l'auteur, ce qui limite la valeur des tests
+> comme preuve externe.
 
 ### 4.1.4 Outils
 
@@ -84,9 +68,8 @@ tient en une seule personne :
 
 ### 4.1.5 Gestion de configuration
 
-Trois objets rendent le projet rejouable : ce qui est versionné, ce qui est déclaré, et ce
-qui est vérifié. Les séparer est ce qui permet à un tiers de reconstruire un résultat à
-partir du dépôt seul, sans dépendre d'une machine encore allumée.
+Trois principes rendent le projet rejouable à partir du seul dépôt, sans dépendre d'une
+machine encore allumée : ce qui est versionné, ce qui est déclaré, et ce qui est vérifié.
 
 **Ce qui est versionné.** Le dépôt Git est la source de vérité du projet : code, scripts du
 pipeline, configuration de référence, tests, et ce mémoire. Chaque jalon correspond à des
@@ -96,16 +79,13 @@ patients ne sont pas versionnées : elles sont régénérées par le générateu
 une graine fixe (`RANDOM_SEED = 42`) qui rend la génération reproductible. Les secrets et les
 fichiers de configuration contenant des identifiants sont exclus du dépôt et fournis par
 variables d'environnement ; un hook de pré-commit bloque les identifiants connus avant qu'ils
-n'atteignent l'historique. C'est une contrainte de sécurité, pas une commodité.
+n'atteignent l'historique.
 
 **Ce qui est déclaré, et non codé en dur.** Les sources de données, les chemins et les
 identifiants sont décrits dans des fichiers de configuration lus au démarrage, jamais
 écrits dans le code. Les paramètres qui gouvernent le comportement — le nombre de partitions,
 le seuil de rapprochement à 0,80, les poids par champ, les finalités autorisées — sont
-explicites et regroupés : les modifier ne demande pas de toucher à la logique, et le chapitre 8
-peut ainsi annoncer des résultats reproductibles. Le manifeste des figures
-(`documents/figures/manifest.json`) joue le même rôle pour la documentation : il associe chaque
-diagramme à son chapitre et à sa ligne, et il est revérifié à chaque export.
+explicites et regroupés : les modifier ne demande pas de toucher à la logique.
 
 **Ce qui est vérifié.** La suite de tests est exécutée à chaque jalon, et son résultat vert
 constitue le critère de sortie du jalon suivant : on n'engage pas une évolution sur un niveau
@@ -115,37 +95,26 @@ rejouabilité est également une propriété du code : le pipeline est idempoten
 traitement peut être relancé depuis la zone SILVER sans dupliquer ni corrompre les zones
 en aval.
 
-> **Ce que cette gestion de la configuration ne fait pas.** Elle ne garantit pas
-> l'exploitabilité en conditions de production : les fichiers de configuration contenant les
-> identifiants sont locaux au poste de développement, et le déploiement automatisé sur un
-> serveur du commanditaire n'a pas été réalisé. Ce qui est démontré ici, c'est la
-> reproductibilité depuis le dépôt, pas la mise en production.
+> **Limite.** Cette gestion démontre la reproductibilité depuis le dépôt, pas la mise en
+> production : aucun déploiement automatisé sur un serveur du commanditaire n'a été réalisé.
 
 ## 4.2 Contraintes et risques
 
-**Contraintes techniques et environnementales.**
-
-**Tableau 19 — Les six contraintes du stage et le traitement adopté pour chacune.**
+**Tableau 19 — Les contraintes du stage et leur traitement.**
 
 | Contrainte | Nature | Traitement adopté |
 |---|---|---|
-| **VM 8 Go / 4 cœurs** | mémoire limitée (Spark gourmand) | `executor 4g / driver 2g`, `shuffle.partitions=8` [cahier_des_charges.md §11] |
+| **VM de 8 Go et 4 cœurs** | mémoire limitée pour Spark | 4 Go pour l'exécuteur, 2 Go pour le driver, 8 partitions |
 | **Nœud distant MAVIS instable** | source PostgreSQL distante (`mavis_notheme`, 11 tables, tunnel SSH) | répliques locales de dev (`rebuild_mavis_db.py`, 73 090 lignes) ; données finales synthétiques |
-| **Interdiction NLP lourd** | `sentence_transformers` crash sous **Python 3.8** | RapidFuzz + dictionnaire de synonymes (`fhir_synonyms.py`) |
-| **Stockage Spark sur partage vboxsf interdit** | corruption `part-*.snappy.parquet` | warehouse toujours `hdfs://localhost:9000` |
-| **Reproductibilité** | évaluation et dédup déterministes | seed 42, seuil 0.80, pondérations 0.5/0.3/0.1/0.1 fixes |
-| **Données sensibles** | RGPD art. 9 | **synthétiques uniquement** + gouvernance implémentée dans le système |
+| **Python 3.8 imposé** | `sentence_transformers` plante sous Python 3.8 | RapidFuzz pour la similarité des noms ; dictionnaire de synonymes pour le mapping des colonnes |
+| **Dossier partagé de la VM** | fichiers Parquet corrompus quand Spark y écrit | entrepôt Spark toujours sur HDFS |
+| **Reproductibilité** | évaluation et déduplication déterministes | graine 42 ; seuil et poids fixés en configuration |
+| **Données sensibles** | loi n° 2014-038, art. 18 ; RGPD, art. 9 | données **synthétiques** uniquement ; gouvernance intégrée au système |
 
-Environnement de référence : VM `ubuntu/focal64` (Vagrant) — Hadoop 3.3.6, Hive
-3.1.3, Spark 3.4.2, venv Python, ports redirigés (9870 HDFS, 10000 Hive, 5000 API)
-[provision/Vagrantfile].
+**Contexte local.** Quatre réalités du terrain conditionnent l'applicabilité du projet ; la
+dernière n'est que **partiellement** traitée dans le périmètre du stage.
 
-**Contexte local et conditions d'applicabilité.** Un prototype reproductible sur sa VM ne
-devient un outil utilisable que si les contraintes du terrain ont été regardées. Quatre plans
-de la réalité malgache conditionnent l'applicabilité du projet ; l'un d'entre eux n'est
-que **partiellement** traité dans le périmètre du stage.
-
-**Tableau 20 — Les quatre plans de réalité du contexte local, et ce que chacun change à la solution ; le dernier n'est que partiellement traité.**
+**Tableau 20 — Le contexte local et ce qu'il change à la solution.**
 
 | Plan de réalité | Observation de terrain | Conséquence sur la solution | État |
 |---|---|---|---|
@@ -166,30 +135,28 @@ Deux points restent ouverts :
    démarche reste à mener avant toute mise en production, même si l'autorité n'est
    pas encore opérationnelle [B25].
 2. **La volumétrie réelle n'a pas été utilisée.** Toutes les données sont
-   synthétiques, générées à l'échelle du prototype (quelques centaines de lignes
-   en SILVER, § 5.1.5). Le dimensionnement réel de l'établissement — volumétrie,
+   synthétiques, générées à l'échelle du prototype (214 fiches au run de référence,
+   1 057 dans le jeu d'évaluation, § 5.1.5). Le dimensionnement réel de l'établissement — volumétrie,
    cardinalité, taux de doublons observé — est **inconnu** et conditionne le choix
    du seuil de similarité (§ 7.2.3) comme le partitionnement du blocking.
 
-> **Ce que le contexte local change concrètement.** Sans annuaire d'identité, la
-> gestion des accès par clé API avec trois rôles est un compromis pragmatique et
-> non un choix esthétique. Avec un annuaire, elle serait remplacée par du vrai
-> RBAC nominatif ; le travail sur le consentement (§ 2.1.6, § 7.2.3) resterait
-> inchangé, car il est indépendant du mode d'authentification.
+> **Conséquence concrète.** Sans annuaire d'identité, la gestion des accès par clé d'API et
+> trois rôles est un compromis pragmatique. Avec un annuaire, elle passerait à des comptes
+> nominatifs ; le contrôle du consentement (§ 7.2.3) resterait inchangé, car il ne dépend pas du
+> mode d'authentification.
 
-**Risques du projet.** Le cahier des charges identifie les risques qui pouvaient bloquer le
-projet ; le tableau ci-dessous les reprend avec la parade prévue et ce qu'il en est à la fin
-du stage.
+**Risques du projet.** Le cahier des charges (§ 11) identifie les risques qui pouvaient bloquer
+le projet ; le tableau les reprend avec la parade prévue et le constat à la fin du stage.
 
-**Tableau 21 — Les risques du projet, leur impact, la parade prévue et le constat à la fin du stage.**
+**Tableau 21 — Les risques du projet et leur traitement.**
 
-| Risque | Impact | Parade [cahier_des_charges.md §11] | Constat à la fin du stage |
+| Risque | Impact | Parade | Constat à la fin du stage |
 |---|---|---|---|
-| Mémoire limitée de la VM (8 Go) | performance Spark | `executor 4g / driver 2g`, `shuffle.partitions=8` | maîtrisé : pipeline 4/4 au run de référence |
+| Mémoire limitée de la VM (8 Go) | performance de Spark | paramétrage de la mémoire et des partitions | maîtrisé au volume du prototype : pipeline complet au run de référence |
 | Nœud distant MAVIS instable | blocage du pipeline | sources locales de développement (Laragon, SQLite) puis synthétiques | contourné : le run de référence n'utilise que les sources CSV |
-| Hétérogénéité des sources | mapping FHIR incomplet | synonymes + RapidFuzz, liens de clés étrangères à enrichir | partiellement maîtrisé : `patient_events_gold` reste vide (§ 8.6) |
-| Données sensibles | confidentialité | données **synthétiques** uniquement, RBAC + audit + consentement | maîtrisé : aucune donnée réelle manipulée |
-| Indisponibilité de la VM en fin de stage | re-validation impossible | tests hors VM (`pytest`) avant toute exécution réelle | réalisé en partie : planification et incrémental testés, **non rejoués** sur la VM (§ 7.3.2) |
+| Hétérogénéité des sources | mapping FHIR incomplet | synonymes et similarité pour le mapping des colonnes | partiellement maîtrisé : table GOLD des événements vide (§ 8.6) |
+| Données sensibles | confidentialité | données **synthétiques** uniquement ; rôles, audit et consentement | maîtrisé : aucune donnée réelle manipulée |
+| Indisponibilité de la VM en fin de stage | re-validation impossible | tests hors VM avant toute exécution réelle | en partie : planification et incrémental testés hors VM (§ 7.3.2) |
 
 ## 4.3 Démarche mise en œuvre
 
@@ -198,19 +165,19 @@ critère de sortie vérifiable. Les deux PoC d'origine ont avancé en parallèle
 pour le moteur métier, `datalake_mavis` pour l'architecture Big Data — avant d'être fusionnés
 dans le dépôt unique ; la règle du critère de sortie s'applique à l'intérieur de chaque chaîne.
 
-**Tableau 22 — Les cinq jalons du stage : contenu, critère de sortie atteint, preuve correspondante et traces datées dans les journaux.**
+**Tableau 22 — Les cinq jalons du stage.**
 
 | Jalon | Contenu | Critère de sortie | Preuve | Traces datées |
 |---|---|---|---|---|
-| **J1 — Socle** | générateur de données synthétiques + vérité terrain | 44 tests verts, 500 masters, 3 niveaux de difficulté | `evaluation/synthetic-patient-generator/` | MVP : 01/09/2026 |
-| **J2 — Moteur** | canonique + blocking + exact/probabiliste (Pandas) | précision 1.000, parité Pandas = Spark | `engine/identity/`, `evaluation_truth.md` | 07–08/09/2026 |
-| **J3 — Big Data** | pipeline ELT Medallion RAW → SILVER → GOLD | 4/4 étapes vertes, 214 lignes SILVER, 145 masters, 69 doublons | `run_pipeline.sh`, `elt.log` | PoC : 23/08–01/09 ; fusion : 07/09/2026 |
-| **J4 — Gouvernance** | RBAC, clés API, consentement *purpose-by-purpose*, audit, refus 403 journalisé ; planification et reprise du pipeline | suite de tests complète verte, dont 403 et 401 vérifiés | `engine/governance/`, `tests/` | 01/09, 27–28/09/2026 |
-| **J5 — Mémoire** | structuration selon le plan MBDS (introduction, huit chapitres, conclusion, glossaire en liminaire), état de l'art sourcé, mise en cohérence de la preuve | 20 références citées, aucun chiffre non vérifiable | ce dépôt | 08/09–28/09/2026 |
+| **J1 — Socle** | générateur de données synthétiques et vérité terrain | 44 tests réussis, 500 patients maîtres, 3 niveaux de difficulté | `evaluation/synthetic-patient-generator/` | MVP : 01/09/2026 |
+| **J2 — Moteur** | modèle canonique, blocking, passes exacte et probabiliste | précision de 1,000 ; parité Pandas et Spark | `engine/identity/`, `evaluation_truth.md` | 07–08/09/2026 |
+| **J3 — Big Data** | pipeline ELT Medallion RAW → SILVER → GOLD | 4 étapes sur 4, 214 lignes SILVER, 145 patients maîtres, 69 doublons | `run_pipeline.sh`, `elt.log` | PoC : 23/08–01/09 ; fusion : 07/09/2026 |
+| **J4 — Gouvernance** | rôles, clés d'API, consentement par finalité, audit, refus 403 journalisé ; planification et reprise du pipeline | suite de tests complète réussie, dont 401 et 403 vérifiés | `engine/governance/`, `tests/` | 01/09, 27–28/09/2026 |
+| **J5 — Mémoire** | structuration selon le plan MBDS, état de l'art sourcé, mise en cohérence des résultats | 31 références citées ; chaque chiffre rattaché à un résultat du dépôt | ce dépôt | 08/09–28/09/2026 |
 
 Le planning ci-dessous répartit ces jalons sur la durée du stage (6 juillet – fin octobre
-2026, soit quatre mois). Il distingue ce qui est **daté** par les journaux du dépôt de ce qui
-est **déclaré** sans trace datée, et de ce qui est **prévu**.
+2026, soit quatre mois). Il distingue ce qui est **daté** par les journaux du dépôt (bleu foncé),
+ce qui est **déclaré** sans trace datée (bleu clair) et ce qui est **prévu** (gris).
 
 **Les premières semaines : une analyse itérative.** Avant toute ligne de code, le stage a
 commencé par une phase d'analyse qui ne laisse pas de trace dans le dépôt : discussions avec
@@ -222,108 +189,57 @@ contrainte découverte relançant une discussion, une relecture de l'existant ou
 documentaire. C'est ce qui justifie une démarche itérative plutôt qu'un cycle en cascade
 (§ 4.1.2).
 
-**Tableau 23 — Diagramme de Gantt du stage, par quinzaine : ■ période datée dans les journaux du dépôt, □ période déclarée, sans trace datée dans le dépôt, ○ prévu.**
+**Tableau 23 — Diagramme de Gantt du stage, par quinzaine. {gantt}**
 
 | Phase | 06/07–19/07 | 20/07–02/08 | 03/08–16/08 | 17/08–30/08 | 31/08–13/09 | 14/09–27/09 | 28/09–11/10 | 12/10–31/10 |
 |---|:---:|:---:|:---:|:---:|:---:|:---:|:---:|:---:|
-| **Cadrage** — discussions avec l'encadrant, compréhension du sujet | □ | □ | □ | | | | | |
-| **Existant et contraintes réelles** — analyse des systèmes, capture des schémas, contraintes | □ | □ | □ | ■ | ■ | | | |
-| **Documentation et état de l'art** (au moins 3 semaines) | | □ | □ | □ | ■ | ■ | | |
-| **Développement** — PoC Big Data, MVP, fusion, moteur, gouvernance | | | | ■ | ■ | ■ | ■ | |
-| **Tests** — évaluation ground-truth, suites `pytest`, runs VM | | | | ■ | ■ | ■ | ■ | |
-| **Rédaction du mémoire** | | | | | ■ | ■ | ■ | ○ |
-| **Finalisation et soutenance** | | | | | | | ○ | ○ |
+| Cadrage du sujet | □ | □ | □ | | | | | |
+| Existant et contraintes | □ | □ | □ | ■ | ■ | | | |
+| Documentation et état de l'art | | □ | □ | □ | ■ | ■ | | |
+| Développement | | | | ■ | ■ | ■ | ■ | |
+| Tests et évaluation | | | | ■ | ■ | ■ | ■ | |
+| Rédaction du mémoire | | | | | ■ | ■ | ■ | ○ |
+| Finalisation et soutenance | | | | | | | ○ | ○ |
 
-> **Lecture honnête du planning.** Les journaux du dépôt commencent le 23/08/2026
-> (`documents/journal_poc_datalake_mavis.md`) ; les semaines antérieures sont **déclarées** par le
-> stagiaire et figurées comme telles, sans dates reconstituées. Le dépôt consolidé
-> (`ai/dev/logs.md`) couvre ensuite la période du 07/09 au 28/09/2026. Les dernières
-> quinzaines (finalisation, soutenance) sont **prévues**, non réalisées à la date de rédaction.
+> **Lecture du planning.** Les journaux du dépôt commencent le 23/08/2026 ; les semaines
+> antérieures sont **déclarées** et figurées comme telles, sans dates reconstituées. Les
+> dernières quinzaines (finalisation, soutenance) sont **prévues**.
 
-> **Ce que ce découpage a permis, et ce qu'il a coûté.** Il a rendu chaque jalon
-> démontrable indépendamment, donc présentable en soutenance sans dépendre de la
-> disponibilité de la VM. Il a en revanche consommé du temps de réintégration
-> entre Pandas et Spark : la parité stricte exigeait de porter l'algorithme deux
-> fois, ce qui n'aurait pas été nécessaire si le choix de l'échelle avait été
-> arrêté plus tôt. C'est la principale leçon de conduite de projet tirée du stage
-> (conclusion générale).
+> **Ce que ce découpage a permis, et ce qu'il a coûté.** Chaque jalon est démontrable
+> indépendamment. En revanche, la parité stricte entre Pandas et Spark a exigé d'écrire
+> l'algorithme deux fois, ce qui aurait pu être évité si l'échelle cible avait été arrêtée plus
+> tôt. C'est la principale leçon de conduite de projet tirée du stage.
 
 ## 4.4 Budget
 
-**Avertissement méthodologique.** Les montants ci-dessous sont des **hypothèses de travail
-étiquetées**, construites sur l'ordre de grandeur des rapports de référence, et non des
-comptes réels. Aucun de ces chiffres ne provient d'une facture ou d'un document comptable du
-commanditaire. Ils sont présentés dans cette forme parce que les deux rapports de référence
-comportent un budget, et qu'un mémoire sans cette rubrique laisserait cette question ouverte
-au jury ; ils doivent être remplacés par les chiffres réels du commanditaire avant toute
-diffusion. Ce qui est réel, en revanche, est indiqué séparément : les licences sont
-réellement nulles, et le matériel est réellement déjà acquis.
-
-Le budget couvre la **durée du stage, soit 4 mois** (6 juillet – fin octobre 2026), et le
+Le budget couvre la **durée du stage, soit quatre mois** (6 juillet – fin octobre 2026), et le
 **périmètre réalisé** : un prototype reproductible sur la VM de développement. La plateforme
-n'ayant **pas été déployée** chez le commanditaire (§ 3.4), aucun coût de serveur de
-production, d'hébergement ou d'exploitation n'est compté.
+n'ayant pas été déployée chez le commanditaire (§ 3.4), aucun coût de serveur de production,
+d'hébergement ou d'exploitation n'est compté. Les **coûts humains sont une estimation** : ils
+valorisent le temps consacré au projet sur la base d'un coût mensuel de référence, et non des
+montants facturés. Les coûts matériels et logiciels, eux, sont réels.
 
-### 4.4.1 Coûts humains
+**Tableau 24 — Budget du projet sur quatre mois.**
 
-**Tableau 24 — Coûts humains sur la durée du stage (hypothèses de travail, à remplacer par les chiffres réels du commanditaire).**
-
-| Poste | Base de calcul | Coût mensuel (Ar) | Coût sur 4 mois (Ar) |
-|---|---|---:|---:|
-| Développeur (stagiaire) | 1 ETP sur la durée du stage | 1 000 000 | 4 000 000 |
-| Encadrement professionnel et pédagogique | 2 × 0,1 ETP | 150 000 | 600 000 |
-| **Sous-total coûts humains** | | **1 150 000** | **4 600 000** |
-
-### 4.4.2 Coûts matériels et logiciels
-
-**Tableau 25 — Coûts matériels et logiciels : le matériel est déjà acquis et les logiciels sont libres ; aucun achat n'a été nécessaire.**
-
-| Poste | Détail | Coût (Ar) |
+| Poste | Base de calcul | Coût (Ar) |
 |---|---|---:|
-| Poste de travail du développeur | matériel déjà acquis, aucun achat | 0 |
-| Machine virtuelle du projet | fournie par le commanditaire, hébergée sur le poste existant | 0 |
+| Développeur (stagiaire) | 1 ETP à 1 000 000 Ar par mois (estimation) | 4 000 000 |
+| Encadrement professionnel et pédagogique | 2 × 0,1 ETP, 150 000 Ar par mois (estimation) | 600 000 |
+| Poste de travail et connexion | matériel et abonnement existants | 0 |
+| Machine virtuelle | créée par Vagrant sur le poste de développement | 0 |
+| Logiciels | Hadoop, Hive, Spark, PostgreSQL, FastAPI, Flask, Next.js, Pandas, RapidFuzz, `pytest`, Vagrant, VirtualBox, Git (open source) | 0 |
 | Serveur de production | non applicable : plateforme non déployée | 0 |
-| Connexion Internet | déjà acquise | 0 |
-| Big Data | Hadoop, Hive, Spark — open source | 0 |
-| Bases et API | PostgreSQL, FastAPI, Flask, Next.js — open source | 0 |
-| Bibliothèques et outils | Pandas, PySpark, RapidFuzz, `pytest`, Vagrant, VirtualBox, Git — open source | 0 |
-| Solutions commerciales comparées (§ 2.2) | InterSystems EMPI, Talend MDM, Azure Health Data Services — étudiées sur documentation, non acquises | 0 |
-| **Sous-total matériel et logiciel** | | **0** |
+| Solutions commerciales comparées (§ 2.2) | étudiées sur documentation, non acquises | 0 |
+| **Total** | | **4 600 000** |
 
-### 4.4.3 Coût total
-
-**Tableau 26 — Coût total du projet sur la durée du stage.**
-
-| Catégorie | Coût sur 4 mois (Ar) |
-|---|---:|
-| Coûts humains (hypothèses) | 4 600 000 |
-| Coûts matériels et logiciels (réels) | 0 |
-| **Total** | **4 600 000** |
-
-> **Ce qui est vérifiable, et ce qui ne l'est pas.** Le **budget logiciel et matériel réel
-> est zéro** : Hadoop, Spark, Hive, PostgreSQL, Next.js et l'ensemble des dépendances sont
-> libres, aucune licence n'a été achetée, et le développement s'est fait sur un poste de
-> travail et une machine virtuelle déjà existants, dont le commanditaire est le fournisseur.
-> C'est un avantage décisif de l'open source dans un contexte où les moyens sont limités, et
-> il est attesté par les fichiers de dépendances du dépôt. Le **coût humain ne l'est pas** :
-> les montants du tableau sont des hypothèses, et le stage n'a pas été rémunéré, donc sa
-> valorisation n'a de sens que par rapport à un coût de recrutement équivalent. Un déploiement
-> en production ajouterait des postes non chiffrés ici (serveur, sauvegarde, exploitation). La
-> ligne la plus sous-estimée de tout projet de ce type n'est d'ailleurs pas l'infrastructure,
-> mais le temps passé à réconcilier deux implémentations d'un même algorithme, dont la parité
-> stricte (§ 7.2.3) a fait un choix d'architecture et non un simple contrôle.
+Le coût total, **4 600 000 Ar**, est entièrement humain : aucune licence n'a été achetée, ce
+que confirment les fichiers de dépendances du dépôt. C'est un avantage de l'open source dans un
+contexte aux moyens limités. Un déploiement en production ajouterait des postes non chiffrés ici
+(serveur, sauvegarde, exploitation).
 
 ## Conclusion et transition
 
 La démarche est posée : une méthode incrémentale à critères de sortie vérifiables, des rôles
 clairs, des outils libres, une configuration rejouable, des contraintes traitées une à une et
-un budget dont la part réelle est nulle. Le chapitre 5 décrit les **exigences réalisées**, vues
+un budget dont la part matérielle et logicielle est nulle. Le chapitre 5 décrit les **exigences réalisées**, vues
 par l'utilisateur : ce que la plateforme fait, avec quelle qualité, et par quelles interfaces.
-
-### Références
-
-- `documents/cahier_des_charges.md` §9, §10, §11.
-- `provision/Vagrantfile`, `bootstrap.sh`.
-- `ai/dev/logs.md`, `ai/dev/suivi_avancement.md`, `documents/journal_poc_datalake_mavis.md`
-  (dates des jalons J1 à J5).
-- `documents/budget.md` (budget détaillé).

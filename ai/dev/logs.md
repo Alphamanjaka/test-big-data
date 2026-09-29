@@ -2134,3 +2134,21 @@ française ; renvois internes `[*.md]` retirés ; légendes raccourcies ; méta-
 l'étape 9). Glossaire : Spark retiré (validé par l'auteur).
 Mots du chapitre : 6 727 → 6 065. Export .docx OK (48 tableaux ; renumérotation prévue en fin de relecture).
 Pas de commit.
+
+## 29/09/2026 — Relecture du mémoire, étapes 3 et 4 : chapitres 3 et 4 ; Gantt coloré dans le mémoire
+
+L'auteur, absent environ six heures, a confié la suite (relecture, VM, captures, commits) ; passages MAVIS /
+MMT_DB / CLINIQUE toujours laissés en l'état (décision en attente).
+- Chapitre 3 (2 784 → 2 504 mots) : « six critères » → **sept** ; API FastAPI « lecture seule » corrigée (elle
+  enregistre consentements et planification, réservés à l'administrateur) ; « API Flask pour traiter des volumes
+  réels » retiré ; paragraphe redisant la figure 2 fusionné ; « Repères chiffrés » (doublon des chapitres 5 à 8,
+  dont « 3/3 sur données réelles ») supprimé ; conclusion et liste de références internes allégées.
+- Chapitre 4 (3 741 → 2 864 mots) : rôles sans formules invérifiables (« évalue ce mémoire », « question
+  ouverte ») ; encadré sur la taille de l'équipe réduit à la revue de code (phrase sur la « piste d'audit
+  consigne / autonomie » retirée) ; « 20 références, aucun chiffre non vérifiable » → 31 références ; contraintes
+  reformulées (synonymes = mapping des colonnes) ; budget : **estimation neutre** validée par l'auteur (plus de
+  « à remplacer », de renvoi aux rapports de référence, de « non rémunéré » ni de « VM fournie par le
+  commanditaire »), trois tableaux fusionnés en un ; manifeste des figures et environnement redondant retirés.
+- `scripts/dev/export_memoire_docx.py` : marqueur `{gantt}` dans la légende → cellules ■ / □ / ○ colorées (mêmes
+  teintes que le rapport) ; rendu contrôlé sur PDF (page 45).
+Pas de commit à ce stade (commit groupé ci-après).

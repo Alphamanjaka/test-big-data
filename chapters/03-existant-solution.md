@@ -65,14 +65,13 @@ locale** : ils prouvent l'ordre de grandeur, pas l'état temps réel du serveur 
 
 **Les sources de démonstration.** Les données réelles ne pouvant pas être utilisées, trois
 sources synthétiques reproduisent l'hétérogénéité observée, sur le modèle des systèmes
-réellement rencontrés en établissement (consultations, pharmacies, imagerie)
-[cahier_des_charges.md §1]. Ces fichiers CSV sont des **sources de test** : ils servent
+réellement rencontrés en établissement (consultations, pharmacies, imagerie). Ces fichiers CSV sont des **sources de test** : ils servent
 uniquement à exercer et à évaluer la plateforme sur des données fictives, générées avec une
 graine fixe. Ils ne représentent pas les sources de production : en établissement, la
 plateforme lirait directement les bases des services (PostgreSQL, SQLite ou autre), par la
 même couche d'extraction.
 
-**Tableau 14 — Les trois sources synthétiques : nom de fichier et identifiant, qui portent des noms différents d'une source à l'autre. Le mapping champ par champ vers le modèle canonique est donné au § 7.2.2.**
+**Tableau 14 — Les trois sources synthétiques et leur identifiant.**
 
 | Source | Fichier | Identifiant |
 |---|---|---|
@@ -85,22 +84,19 @@ L'hétérogénéité est **triple** et volontaire :
 1. **Structure** : nom dans une seule colonne (`nom_complet`, `patient_name`) ou deux
    (`prenom + nom`) ; identifiants différents (`client_id` / `patient_code` /
    `id_personne` — `PH000001` / `MED000001` / `IMG000001`).
-2. **Vocabulaire** : le genre apparaît sous les formes `H`/`F` (pharmacy),
-   `male`/`female` (consultation), `Homme`/`femme` (imaging)
-   [deduplication.md §2] — source des générateurs `SEXE_LABELS` / `GENRE_LABELS` /
-   `SEX_LABELS`.
-3. **Formats** : dates `01/02/1934`, `08-06-1943`, `YYYY-MM-DD` ; CIN
-   `101 02404 5`, `101024045` (espacé ou compact), ou **absent** (~25 % des
-   patients maîtres) ; ville de naissance en toutes lettres.
+2. **Vocabulaire** : le genre s'écrit `H`/`F` (pharmacy), `male`/`female` (consultation)
+   ou `Homme`/`femme` (imaging).
+3. **Formats** : dates `01/02/1934`, `08-06-1943` ou `1934-02-01` ; CIN espacé
+   (`101 02404 5`), compact (`101024045`) ou **absent** (environ un patient sur quatre) ;
+   ville de naissance en toutes lettres.
 
-Le même patient réel apparaît donc sous des formes différentes, par exemple le cas
-de référence « Jean Rakoto » des trois sources [deduplication.md §7] (§ 1.2.1).
-Chaque source adjoint ses transactions métier : achats (pharmacy), consultations
-(consultation), examens (imaging).
+Un même patient apparaît donc sous des formes différentes, comme dans le cas de référence
+« Jean Rakoto » (§ 1.2.1). Chaque source a aussi ses transactions : achats (pharmacy),
+consultations (consultation), examens (imaging).
 
 ## 3.2 Critique de l'existant
 
-1. **Aucun identifiant patient transversal.** Chaque base a son propre namespace
+1. **Aucun identifiant patient transversal.** Chaque base a son propre espace d'identifiants
    (`hms_patient`, `gnuhealth_patient`, `client_id`, `patient_code`, `id_personne`). Le CIN, seul
    identifiant métier stable, est **absent d'environ un quart des patients** et n'est pas
    stocké dans les mêmes colonnes selon la source.
@@ -109,14 +105,14 @@ Chaque source adjoint ses transactions métier : achats (pharmacy), consultation
    des formats différents. Chaque base est cohérente avec elle-même, pas avec les autres.
 3. **Aucun rapprochement d'identité.** Le PoC d'origine a compté **24 872 marqueurs de doublon**
    dans ses tables Silver (run du 24/08) — un constat de volume, sans référentiel patient ni
-   justification de fusion traçable [ai/memoire/contexte_projet.md].
+   justification de fusion traçable.
 4. **Aucune gouvernance des accès.** Ni rôles, ni consentement par finalité, ni journal d'accès ;
    le cahier des charges exige au contraire un hébergement **interne** des données et un contrôle
-   par couple **rôle + consentement** [cahier_des_charges_stage_M2_MBDS.docx §2.2 et §3].
+   par couple **rôle + consentement** (cahier des charges, § 2.2 et § 3).
 5. **Aucun espace de rejeu.** Les bases sont isolées : pas de zone RAW de référence, pas de
    traçabilité transformation → résultat. L'incident 11 du PoC l'a montré — un `overwrite`
    exécuté dans la boucle par source a laissé `patient_fhir` avec **9 791 patients seulement**
-   au lieu de l'union des sources [pipeline_elt.md — pièges anti-régression].
+   au lieu de l'union des sources.
 
 ```mermaid
 flowchart LR
@@ -155,7 +151,7 @@ flowchart LR
 ## 3.3 Solutions envisagées
 
 Deux voies étaient ouvertes. La première — **adopter un produit** — a été écartée par l'état de
-l'art : aucune solution ne couvre les six critères dans les contraintes du stage (§ 2.3). La
+l'art : aucune solution ne couvre les sept critères dans les contraintes du stage (§ 2.3). La
 seconde — **une chaîne sur mesure adossée aux standards** — a été retenue, et construite
 progressivement.
 
@@ -177,25 +173,21 @@ flowchart LR
 > s'appuyer sur la zone GOLD.**
 
 Le **niveau 1 — MVP** utilise CSV, Pandas et PostgreSQL pour l'extraction, le nettoyage, la
-déduplication et le master patient, afin de résoudre le problème métier d'abord, au plus
+déduplication et le patient maître, afin de résoudre le problème métier d'abord, au plus
 simple. Le **niveau 2 — Spark** passe à PySpark local avec des résultats **strictement
 identiques** au MVP, la parité étant vérifiée : passer à l'échelle sans changer la logique
-métier. Le **niveau 3 — Big Data** mobilise le Data Lake, HDFS, Hive et Spark, un pipeline
-ELT Medallion en 5 étapes (planifiable et rejouable) et une API Flask, pour traiter des volumes réels dans une
-architecture médicale. Deux volets sont enfin **transverses** : la validation des
-algorithmes (vérité terrain, précision / rappel / F1), puis la gouvernance (consentement,
-audit, API) — on ne passe pas à l'échelle ni on n'ouvre les accès avant que la preuve soit
-verte.
-
-Le schéma ci-dessus détaille ces deux étapes transverses : la **validation des algorithmes**, qui
-conditionne le passage à Spark, et la **gouvernance**, traitée en dernier car elle s'appuie sur
-la zone GOLD. Ce ne sont pas des niveaux de technologie, mais deux moments où l'on s'arrête
-pour vérifier avant d'aller plus loin.
+métier. Le **niveau 3 — Big Data** mobilise le Data Lake (HDFS, Hive, Spark), un pipeline
+ELT Medallion en cinq étapes, planifiable et rejouable, et des API d'exposition, pour préparer
+des volumes plus importants. Deux étapes sont **transverses** : la validation des algorithmes
+sur une vérité terrain, qui conditionne le passage à Spark, et la gouvernance (consentement,
+audit, API), traitée en dernier car elle s'appuie sur la zone GOLD. Ce ne sont pas des niveaux
+de technologie, mais deux moments où l'on vérifie avant d'aller plus loin : on ne passe à
+l'échelle et on n'ouvre les accès qu'une fois les tests réussis.
 
 Les deux premiers niveaux proviennent du PoC `test_bigdata`, le troisième du PoC `datalake_mavis`.
 Ce dépôt unique en est la **fusion consolidée** : un seul dépôt, une seule
-documentation, le moteur de déduplication porté dans `engine/`, l'évaluation ground-truth et le
-consentement intégré à la couche GOLD [cahier_des_charges.md §10].
+documentation, le moteur de déduplication porté dans `engine/`, l'évaluation sur vérité terrain et le
+consentement intégré à la couche GOLD.
 
 **Première réponse : un contrat de normalisation.** Le point 2 de la critique a une conséquence
 de conception directe : l'hétérogénéité relevée a été convertie en un **contrat de normalisation
@@ -205,7 +197,7 @@ consultation, `sex` en imagerie) : elles **encodent le genre différemment** (`H
 `male/female`, `Homme/femme`). Le moteur y répond par des listes fermées, dans
 `engine/identity/canonical.py` :
 
-**Tableau 15 — Le contrat de normalisation : règle appliquée à chaque champ et comportement quand la règle échoue.**
+**Tableau 15 — Le contrat de normalisation.**
 
 | Champ | Règle de normalisation appliquée | Comportement en cas d'échec |
 |---|---|---|
@@ -228,54 +220,36 @@ traduits en exigences vérifiables F1 à F6 au chapitre 5.
 
 **Périmètre fonctionnel** couvert par ce stage :
 
-- pipeline ELT Big Data en 5 étapes (préparation des sources → RAW → mapping FHIR →
-  SILVER → GOLD), orchestré par `run_pipeline.sh`, logs `elt.log`, avec **reprise de
-  run** (`pipeline_state.json`), **ingestion incrémentale** (watermark) et
-  **planification cron** (`schedule.yaml`) [cahier_des_charges.md §4.1] ;
-- moteur de déduplication exact + probabiliste (seuil 0.80, pondération nom 0.5 / naissance 0.3 /
-  CIN 0.1 / ville de naissance 0.1), implémenté en Pandas **et** en PySpark [cahier_des_charges.md §4.2] ;
-- gouvernance : RBAC, consentement par finalité, audit d'accès, clés API hachées SHA-256
-  [cahier_des_charges.md §4.3] ;
-- deux API REST : indicateurs du warehouse (**Flask**, endpoints `/api/governance/*`, lecture des
-  tables SILVER/GOLD via PySpark/Hive) et gouvernance plateforme (**FastAPI**, lecture seule, avec
-  contrôle de consentement) ;
-- évaluation de la déduplication sur données synthétiques easy / medium / hard.
+- pipeline ELT Big Data en cinq étapes (préparation des sources → RAW → mapping FHIR →
+  SILVER → GOLD), orchestré par `run_pipeline.sh`, avec **reprise** d'un run échoué,
+  **ingestion incrémentale**, **planification** et **historique chiffré** de chaque run
+  conservé en base ;
+- moteur de déduplication exact et probabiliste (seuil 0,80 ; poids : nom 0,5, naissance 0,3,
+  CIN 0,1, ville de naissance 0,1), implémenté en Pandas **et** en PySpark ;
+- gouvernance : rôles, consentement par finalité, journal d'accès, clés d'API hachées (SHA-256) ;
+- deux API REST : l'API des **indicateurs** (Flask), qui lit les zones SILVER et GOLD, et l'API
+  de **gouvernance** (FastAPI), qui sert les patients sous contrôle du consentement et réserve à
+  l'administrateur l'enregistrement des consentements et de la planification ;
+- évaluation de la déduplication sur trois jeux synthétiques (facile, moyen, difficile).
 
-**Hors périmètre** (assumés comme tels) : les **dashboards d'analyse du PoC**
-(`visualisation_app`, tableau de bord RMA) ne sont pas repris ; l'interface
-`front-optional/` se limite au **pilotage du pipeline** (statut, planification)
-et à la consultation des patients, et reste optionnelle au sens du cahier des
-charges. Le **déploiement** chez le commanditaire (serveur de production, export VM `.box`,
+**Hors périmètre** : les tableaux de bord d'analyse du prototype d'origine ne sont pas repris ;
+l'interface web se limite au **pilotage du pipeline** et à la consultation des patients, et reste
+optionnelle au sens du cahier des charges. Le **déploiement** chez le commanditaire (serveur de production, export VM `.box`,
 Docker/CI) n'entre pas dans le stage : la plateforme est livrée comme un prototype reproductible
 sur sa VM de développement.
 
-**Tableau 16 — Les livrables prévus au cahier des charges et leur état à la fin du stage.**
+**Tableau 16 — Les livrables et leur état à la fin du stage.**
 
-| # | Livrable [cahier_des_charges.md §10] | État |
+| # | Livrable (cahier des charges, § 10) | État |
 |---|---|---|
 | 1 | Code source complet (dépôt unique `Mon_Memoire`) | réalisé |
-| 2 | Pipeline ELT Big Data (provision + scripts PySpark) | réalisé — 4/4 au run de référence du 07/09/2026, orchestration actuelle en 5 étapes |
-| 3 | Moteur de déduplication + évaluation ground-truth | réalisé |
-| 4 | PostgreSQL central (master patient, consentement, audit) | schéma réalisé et testé ; base **non peuplée** pendant le stage (seed fourni, non exécuté) |
-| 5 | API données + API gouvernance | réalisé |
-| 6 | Documentation technique + manuel conceptuel (`documents/`) | réalisé |
+| 2 | Pipeline ELT Big Data (provision et scripts PySpark) | réalisé — 4 étapes sur 4 au run de référence du 07/09/2026 ; orchestration actuelle en 5 étapes |
+| 3 | Moteur de déduplication et évaluation sur vérité terrain | réalisé |
+| 4 | PostgreSQL central (patients maîtres, consentement, audit) | schéma réalisé et testé ; base **non peuplée** pendant le stage (seed fourni, non exécuté) |
+| 5 | API des indicateurs et API de gouvernance | réalisé |
+| 6 | Documentation technique et manuel conceptuel (`documents/`) | réalisé |
 | 7 | Frontend optionnel (Next.js) | réalisé partiellement (pilotage du pipeline, consultation des patients) — optionnel |
-| 8 | Rapport de stage + slides de soutenance | ce mémoire ; support de soutenance |
-
-**Repères chiffrés.** Les principaux chiffres vérifiables, détaillés dans les chapitres 5 à 8,
-sont :
-
-- **Générateur** : 500 patients maîtres, 1 057 enregistrements répartis sur 3 sources
-  (pharmacy 404, consultation 353, imaging 300), 3 niveaux de difficulté (easy 10 % / medium 30 % /
-  hard 50 % de variations) [synthetic-patient-generator].
-- **Évaluation (dataset hard)** : Precision **1.000**, Recall **0.422**, F1 **0.594**, zéro faux
-  positif, parité MVP = Spark parfaite [evaluation_truth.md].
-- **Pipeline fusion** (run 07/09/2026, sources CSV synthétiques) : 4/4 vert à ce run,
-  orchestration actuelle en 5 étapes avec reprise et planification ; SILVER `patient_fhir`
-  **214** lignes, **145** masters, **69** doublons liés, GOLD consentements 145, API gouvernance
-  **3/3 PASS** sur données réelles [ai/memoire/contexte_projet.md].
-- **Tests** : moteur + gouvernance + planification à **102/102** (57 moteur, 45
-  reprise/incrémental), zéro échec [chapitre 8].
+| 8 | Rapport de stage et support de soutenance | réalisé |
 
 ## Conclusion et transition
 
@@ -283,24 +257,12 @@ L'existant fournit trois systèmes riches mais **isolés**, sans identité trans
 normalisation, sans gouvernance ni espace de rejeu. L'analyse en dégage trois besoins
 dominants :
 
-1. **Interpréter des formats divergents** → un modèle canonique + un pivot FHIR.
-2. **Dédupliquer sans vérité** → mesures de similarité + seuil, évaluées sur
-   ground truth (chapitres 2, 7 et 8).
-3. **Pouvoir passer à l'échelle** → choix Spark + Data Lake Medallion.
+1. **Interpréter des formats divergents** → un modèle canonique et un pivot FHIR.
+2. **Reconnaître un même patient sans identifiant commun** → mesures de similarité et seuil,
+   évalués sur une vérité terrain (chapitres 2, 7 et 8).
+3. **Pouvoir passer à l'échelle** → Spark et un Data Lake Medallion.
 
-À ces trois besoins s'ajoutent deux exigences transverses que le contexte local
-rend non négociables : **l'explicabilité** de toute décision (§ 7.1) et la
-**gouvernance par consentement** (§ 2.1.6, § 7.2.3), qui ne peuvent être traitées après
-coup — une fois les données dédupliquées sans elle, la traçabilité du refus est
-perdue. Le chapitre 4 décrit la **démarche projet** qui a permis de construire cette réponse :
+S'y ajoutent deux exigences transverses : **l'explicabilité** de toute décision (§ 7.1) et la
+**gouvernance par consentement** (§ 2.1.6, § 7.2.3), qu'il faut concevoir dès le départ plutôt
+qu'ajouter après coup. Le chapitre 4 décrit la **démarche projet** qui a permis de construire cette réponse :
 méthode, rôles, contraintes, planning et budget.
-
-### Références citées
-
-- [B19] GNU Health. [B20] Odoo, applications hospitalières.
-- `documents/journal_poc_datalake_mavis.md` (captures de schéma, incidents) ;
-  `documents/documentation/bases_de_donnees.md` (recension des couches) ;
-  `documents/documentation/architecture.md` (services, ports) ;
-  `documents/Cahier_des_charges_stage_M2_MBDS.docx` (exigences d'hébergement et de sécurité).
-- `documents/cahier_des_charges.md` §1, §3, §6, §10 ; `documents/documentation/deduplication.md`
-  §2, §7.
