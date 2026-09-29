@@ -2048,3 +2048,40 @@ l'API Flask (port 5000). La légende de la figure et la ligne « API » du table
 **Vérifications.** `render_mermaid_figures.py` : 9 figures rendues, figure 9 relue. Les autres PNG, régénérés sans
 changement de contenu, ont été remis à leur version commitée ; seuls `fig-9.png` et `manifest.json` (numéros de
 ligne des sources) changent. Mémoire régénéré (9 figures, 49 tableaux). Pas de commit.
+
+## 29/09/2026 — Pipeline : historique chiffré des runs conservé en base (nouvelle fonctionnalité)
+
+Demande de l'auteur : savoir, pour un run daté, combien de lignes ont été lues dans chaque source et combien
+de patients maîtres en sont sortis, et **conserver ces chiffres en base**. Constat préalable : aucun historique
+n'existait (`pipeline_state.json` et les rapports d'extraction sont écrasés à chaque run ; le seul run reconstituable
+est celui du 07/09, par ce journal).
+
+| # | Fichier | Détail |
+| - | ------- | ------ |
+| 1 | `projet/code-source/sql/schema.sql` | tables `pipeline_run` (un run par ligne, statut contraint) et `pipeline_run_source` (détail par source), idempotentes |
+| 2 | `provision/scripts/utils/run_metrics.py` (nouveau) | résumés `summarize_extract` / `summarize_dedup` ; tampon local `provision/metadata/run_metrics.json` rangé par `PIPELINE_RUN_ID` ; `flush` : enregistrement en base (upsert) si `DATABASE_URL`, sinon run conservé en attente ; ne lève jamais |
+| 3 | `gen_extract_raw.py`, `create_silver.py`, `create_gold.py` | dépôt des compteurs de chaque étape via `record_safely` |
+| 4 | `create_silver.py` | **correctif** : le log « maîtrisés » comptait les lignes rattachées à un maître (214 au run du 07/09) au lieu des maîtres distincts (145) ; compteurs désormais tirés des décisions du moteur |
+| 5 | `provision/scripts/run_pipeline.sh` | `run_metrics flush` en fin de run, succès comme échec (sortie dans `elt.log`, jamais bloquant) |
+| 6 | `engine/governance/pipeline.py`, `app.py` | `GET /pipeline/runs?limit=` (admin, analyst) : runs du plus récent au plus ancien, avec leurs sources |
+| 7 | tests | `tests/test_run_metrics.py` (12) ; `tests/test_pipeline_api.py` (+3 : lecture, historique vide, refus viewer) |
+| 8 | documentation | `pipeline_elt.md` (section « Historique des runs »), `api.md`, `bases_de_donnees.md` (tables 10 et 11), `ai/dev/suivi_avancement.md` (point 18) |
+
+**Vérifications.** `pytest projet/code-source/tests` : **117 passed** (102 + 15). Un premier passage a révélé un
+défaut réel (colonne `run_id` absente de la requête des sources), corrigé. Syntaxe Python 3.8 contrôlée (`ast`,
+`feature_version=(3, 8)`) ; `bash -n run_pipeline.sh` OK.
+**Non fait / limites :** `schema.sql` non appliqué sur une base ; **aucun run réel enregistré** (VM indisponible) ;
+pas d'affichage dans `/dashboard`. Le mémoire et le rapport parlent encore de « neuf tables » pour la base centrale.
+Pas de commit.
+
+## 29/09/2026 — Tableau de bord : carte « Historique des runs »
+
+`front-optional/src/lib/api.ts` : types `PipelineRun`, `PipelineRunSource` et appel `getPipelineRuns(limit)`
+(`GET /pipeline/runs`). `front-optional/src/app/dashboard/DashboardClient.tsx` : carte « Historique des runs »
+(10 derniers runs : début, mode, statut et étape en échec, lignes SILVER, patients maîtres distincts, doublons
+exacts / probabilistes, taux, volumes GOLD) ; un clic déplie le détail par source (lignes extraites, lignes non
+relues, tables extraites / sautées / en échec, lignes patient en SILVER). L'historique est chargé à part : une base
+indisponible affiche un avertissement sans masquer l'état du pipeline ; historique vide → message explicite.
+
+**Vérifications.** `npx tsc --noEmit` : aucune erreur ; ESLint sur les deux fichiers : aucune remarque. Rendu
+**non vu à l'écran** (demande l'API, la base et une session connectée). Pas de commit.

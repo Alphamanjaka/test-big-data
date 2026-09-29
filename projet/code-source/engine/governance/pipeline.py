@@ -10,6 +10,9 @@ hôte<->VM, lisible par l'API hôte comme par le cron VM.
     provision/metadata/sync_metadata.json   état des zones Medallion
     provision/metadata/scheduler_runs.json  derniers déclenchements du cron
 
+L'historique chiffré des runs est lu dans PostgreSQL (tables pipeline_run et
+pipeline_run_source, alimentées par provision/scripts/utils/run_metrics.py).
+
 Le moteur dépend de PyYAML (déclaré) : lecture/écriture YAML ici, alors que le
 planificateur VM (provision/scripts/scheduler) garde son mini-lecteur sans
 dépendance.
@@ -25,9 +28,9 @@ import datetime
 import json
 import os
 from pathlib import Path
-from typing import Any, Dict, Optional
+from typing import Any, Dict, List, Optional
 
-from provision.scripts.utils import schedule_logic
+from provision.scripts.utils import run_metrics, schedule_logic
 
 ROOT = Path(__file__).resolve().parents[2]
 
@@ -156,3 +159,36 @@ def read_status() -> Dict[str, Any]:
         "zones": _read_json(sync_metadata_path()),
         "sources": sources,
     }
+
+# ---------------------------------------------------------------------------
+# Historique des runs (tables pipeline_run / pipeline_run_source)
+# ---------------------------------------------------------------------------
+RUN_FIELDS = run_metrics.RUN_COLUMNS + ("recorded_at",)
+SOURCE_FIELDS = run_metrics.SOURCE_COLUMNS  # run_id en tête, retiré à la lecture
+
+
+def list_runs(conn, limit: int = 20) -> List[Dict[str, Any]]:
+    """Derniers runs enregistrés, du plus récent au plus ancien, avec leurs sources."""
+    with conn.cursor() as cur:
+        cur.execute(
+            "SELECT " + ", ".join(RUN_FIELDS) + " FROM pipeline_run "
+            "ORDER BY started_at DESC NULLS LAST, run_id DESC LIMIT %s",
+            (limit,),
+        )
+        runs = [dict(zip(RUN_FIELDS, row)) for row in cur.fetchall()]
+        if not runs:
+            return []
+        cur.execute(
+            "SELECT " + ", ".join(SOURCE_FIELDS) + " FROM pipeline_run_source "
+            "WHERE run_id = ANY(%s) ORDER BY run_id, source_system",
+            ([r["run_id"] for r in runs],),
+        )
+        sources: Dict[str, List[Dict[str, Any]]] = {}
+        for row in cur.fetchall():
+            entry = dict(zip(SOURCE_FIELDS, row))
+            sources.setdefault(entry.pop("run_id"), []).append(entry)
+    for run in runs:
+        if run.get("duplicate_rate") is not None:
+            run["duplicate_rate"] = float(run["duplicate_rate"])
+        run["sources"] = sources.get(run["run_id"], [])
+    return runs

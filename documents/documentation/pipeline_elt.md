@@ -164,6 +164,30 @@ data_sources.json ─> [Step 1] ─> extract_raw_report.json + data_sources.json
 | `provision/db/rebuild_mmt_db.py` | Générateur de données synthétiques pour MMT_DB |
 | `provision/scripts/run_pipeline.sh` | Orchestration 5 étapes + logs |
 | `provision/scripts/ensure_generator_data.sh` | Étape 0 : régénère les CSV du générateur (seed 42) |
+| `provision/scripts/utils/run_metrics.py` | Historique chiffré des runs, conservé en base (voir ci-dessous) |
+
+## Historique des runs (en base)
+
+Chaque run laisse une trace chiffrée qui n'est jamais écrasée par le suivant : on peut répondre à
+« le run du 07/09 a lu combien de lignes dans chaque source, et combien de patients maîtres en
+sont sortis ? ».
+
+| Étape | Compteurs déposés |
+|---|---|
+| Étape 1 — extraction | par source : tables extraites, sautées (empreinte inchangée) ou en échec ; lignes extraites ; lignes des tables sautées (non relues) |
+| Étape 3 — SILVER | lignes patient, **patients maîtres distincts**, doublons (exacts, probabilistes), taux, lignes par source |
+| Étape 4 — GOLD | lignes de `patient_events_gold` et de `patient_consent_gold` |
+
+Pendant le run, les compteurs vont dans un tampon local (`provision/metadata/run_metrics.json`, non
+versionné), rangés par `PIPELINE_RUN_ID`. En fin de run, succès ou échec, `run_pipeline.sh` appelle
+`python -m provision.scripts.utils.run_metrics flush`, qui enregistre chaque run en attente dans
+PostgreSQL (tables `pipeline_run` et `pipeline_run_source`, `sql/schema.sql`) si `DATABASE_URL`
+est définie. Sans base joignable, le run reste en attente et sera enregistré au flush suivant :
+l'historique ne fait jamais échouer le pipeline. Lecture : `GET /pipeline/runs` (admin, analyst),
+affiché dans la page `/dashboard` (carte « Historique des runs », détail par source au clic).
+
+État au 29/09/2026 : mécanique testée hors VM (`tests/test_run_metrics.py`, `tests/test_pipeline_api.py`) ;
+**aucun run réel encore enregistré** (VM indisponible, `schema.sql` à appliquer sur la base).
 
 ## Pièges connus (règles anti-régression)
 

@@ -231,3 +231,70 @@ def test_pipeline_status_with_watermark(pipeline_env, monkeypatch, audit_sink):
     assert resp.status_code == 200
     assert resp.json()["sources"]["pharmacy"]["tables"] == 1
     assert resp.json()["sources"]["pharmacy"]["last_extracted_at"] == "2026-09-28T03:00:00"
+
+# --- Historique des runs (base PostgreSQL) ---
+
+class _RunsCursor(FakeCursor):
+    """Renvoie un jeu de lignes par requête : runs, puis sources."""
+
+    def __init__(self, batches):
+        super().__init__()
+        self._batches = list(batches)
+
+    def fetchall(self):
+        return self._batches.pop(0) if self._batches else []
+
+
+class _RunsConnection(FakeConnection):
+    def __init__(self, batches):
+        super().__init__()
+        self._batches = batches
+
+    def cursor(self, row_factory=None):
+        return _RunsCursor(self._batches)
+
+
+def _run_row(run_id, started_at, masters):
+    # Ordre de engine.governance.pipeline.RUN_FIELDS.
+    return (run_id, "full", "ok", started_at, None, None, 214, masters, 69, 69, 0,
+            32.24, 0, 145, started_at)
+
+
+def test_pipeline_runs_returns_history_with_sources(monkeypatch, audit_sink):
+    _patch_auth(monkeypatch, ANALYST_ROW)
+    runs = [_run_row("20260907T030000", "2026-09-07T03:00:00", 145)]
+    sources = [
+        ("20260907T030000", "consultation", 1, 0, 0, 76, 0, 76),
+        ("20260907T030000", "pharmacy", 1, 0, 0, 76, 0, 76),
+    ]
+    monkeypatch.setattr(
+        "engine.governance.app.connection_factory",
+        lambda: _RunsConnection([runs, sources]),
+    )
+    client = TestClient(app)
+    resp = client.get("/pipeline/runs", headers=_HEADERS)
+    assert resp.status_code == 200
+    body = resp.json()
+    assert len(body) == 1
+    assert body[0]["master_count"] == 145
+    assert body[0]["duplicate_rate"] == 32.24
+    assert [s["source_system"] for s in body[0]["sources"]] == ["consultation", "pharmacy"]
+    assert body[0]["sources"][1]["rows_extracted"] == 76
+
+
+def test_pipeline_runs_empty_history(monkeypatch, audit_sink):
+    _patch_auth(monkeypatch, ADMIN_ROW)
+    monkeypatch.setattr(
+        "engine.governance.app.connection_factory", lambda: _RunsConnection([[]])
+    )
+    client = TestClient(app)
+    resp = client.get("/pipeline/runs", headers=_HEADERS)
+    assert resp.status_code == 200
+    assert resp.json() == []
+
+
+def test_pipeline_runs_denied_for_viewer(monkeypatch, audit_sink):
+    _patch_auth(monkeypatch, VIEWER_ROW)
+    client = TestClient(app)
+    resp = client.get("/pipeline/runs", headers=_HEADERS)
+    assert resp.status_code == 403

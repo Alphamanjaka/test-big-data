@@ -161,6 +161,17 @@ dans `Mon_Memoire` (subtree → `projet/code-source/`, `projet/mvp/`, `archives/
     éliminatoires + 5 de qualité ; arbitrage 4 ajouté à la matrice du § 7.1 ; B21-B31 ajoutées.
     **Preuves :** sources consultées le 28/09 (URL et DOI dans `references/bibliographie.md`) ;
     49 tableaux renumérotés sans trou ; export DOCX de contrôle OK. Reste : relecture, commit.
+18. **[Pipeline — historique des runs]** Fonctionnalité **implémentée et testée hors VM** (29/09) :
+    chaque run est conservé **en base** (tables `pipeline_run` et `pipeline_run_source` de
+    `sql/schema.sql`) avec, par source, les lignes extraites ou sautées, puis les lignes SILVER, les
+    **patients maîtres distincts**, les doublons (exacts / probabilistes), le taux, et les volumes
+    GOLD. Tampon local `provision/metadata/run_metrics.json` si `DATABASE_URL` absente ou base
+    injoignable (le pipeline n'échoue jamais pour l'historique) ; lecture par `GET /pipeline/runs`
+    (admin / analyst), affichée dans `/dashboard` (carte « Historique des runs », détail par source
+    au clic). Correctif associé : le log SILVER comptait les lignes rattachées au lieu des maîtres
+    distincts. **Preuves :** `pytest projet/code-source/tests` **117/117** (dont 15 nouveaux) ;
+    `tsc --noEmit` et ESLint sans erreur. **Reste :** appliquer `schema.sql` sur la base, puis un
+    **run réel sur la VM** (aucun run n'est encore enregistré) ; rendu de la carte non vu à l'écran.
 
 ## Dettes techniques connues
 

@@ -22,6 +22,7 @@ from pyspark.sql.types import StringType, IntegerType, DoubleType, DateType
 from pyspark.sql.window import Window
 from ..utils.fhir_schema import FHIR_FIELDS, FHIR_SYNONYMS
 from ..utils.sync_utils import update_sync_metadata
+from ..utils.run_metrics import record_safely, summarize_dedup
 from ..utils.paths import (
     METADATA_DIR, LOG_DIR, HIVE_SILVER,
     HDFS_BASE, hdfs_warehouse, FUZZY_THRESHOLD,
@@ -162,8 +163,12 @@ def enrichir_dedup_moteur():
     # de la table après drop/rename sont susceptibles de compter des fichiers
     # périmés encore dans le cache de listing de la session.
     nb_total = df_patient.count()
-    nb_doublons = df_patient.filter(F.col("iso_dup") == 1).count()
-    nb_masters = df_patient.filter(F.col("master_patient_id").isNotNull()).count()
+    # Compteurs du run tirés des décisions du moteur : patients maîtres
+    # DISTINCTS (et non lignes rattachées à un maître), doublons par méthode.
+    resume_dedup = summarize_dedup(decisions)
+    nb_doublons = resume_dedup["duplicate_count"]
+    nb_masters = resume_dedup["master_count"]
+    record_safely("create_silver", resume_dedup, logging.getLogger(__name__))
 
     # Écriture via table temporaire + rename pour éviter l'erreur Spark
     # "Cannot overwrite table ... that is also being read from"
@@ -172,8 +177,8 @@ def enrichir_dedup_moteur():
     spark.sql(f"DROP TABLE IF EXISTS {table_patient}")
     spark.sql(f"ALTER TABLE {tmp_table} RENAME TO {table_patient}")
 
-    logging.info(f"🔗 Moteur : {len(patients)} patients analysés, {nb_masters} maîtrisés "
-                 f"({nb_doublons} doublons liés à un master existant, total {nb_total}).")
+    logging.info(f"🔗 Moteur : {len(patients)} patients analysés, {nb_masters} patients maîtres "
+                 f"distincts ({nb_doublons} doublons liés à un master existant, total {nb_total}).")
 
 # -----------------------------
 # 🪵 CONFIGURATION DU LOGGING (console + fichier)

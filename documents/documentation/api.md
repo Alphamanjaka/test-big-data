@@ -79,6 +79,7 @@ Auth : clés API (Bearer token, SHA-256 côté serveur).
 | `GET /consent` | Liste consentements | admin, analyst |
 | `GET /consent/{master_patient_id}` | Consentements d'un patient | admin, analyst |
 | `POST /consent` | Créer un consentement | admin |
+| `GET /pipeline/runs` | Historique des runs ELT (`limit`, défaut 20) : lignes par source, patients maîtres distincts, doublons, volumes GOLD (tables `pipeline_run`, `pipeline_run_source`) | admin, analyst |
 
 `GET /patients` accepte `purpose` (obligatoire, fermé) ainsi que `search` (nom complet / CIN /
 identifiant master), `page` et `page_size` (défaut 25, max 100). Le filtrage par consentement

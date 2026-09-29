@@ -14,6 +14,7 @@ from pyspark.sql import SparkSession, functions as F
 from pyspark.sql.types import StringType, BooleanType
 
 from ..utils.sync_utils import update_sync_metadata
+from ..utils.run_metrics import record_safely
 from ..utils.paths import (
     HIVE_SILVER, HIVE_GOLD, GOLD_TABLE, CONSENT_GOLD_TABLE,
     hdfs_warehouse, AGE_TRANCHES,
@@ -171,8 +172,9 @@ df_gold_final = df_gold.select(
 # -----------------------------
 # 📝 ÉCRITURE TABLE GOLD
 # -----------------------------
+gold_event_rows = df_gold_final.count()
 df_gold_final.write.mode("overwrite").saveAsTable(GOLD_TABLE)
-logging.info(f"🎯 Table GOLD créée : {GOLD_TABLE}")
+logging.info(f"🎯 Table GOLD créée : {GOLD_TABLE} ({gold_event_rows} lignes)")
 
 # -----------------------------
 # 🪪 CONSENTEMENT (GOLD)
@@ -224,11 +226,20 @@ def charger_consent_gold():
         "master_patient_id", "patient_uuid", "name", "purpose", "granted", "recorded_at"
     )
 
+    nb_consent = df_consent.count()
     df_consent.write.mode("overwrite").saveAsTable(CONSENT_GOLD_TABLE)
     logging.info(f"🪪 Table GOLD consent créée : {CONSENT_GOLD_TABLE} "
-                 f"({df_consent.count()} lignes, source={consent_source or 'vide'})")
+                 f"({nb_consent} lignes, source={consent_source or 'vide'})")
+    return nb_consent
 
-charger_consent_gold()
+gold_consent_rows = charger_consent_gold()
+
+# Historique du run : volumes de la zone GOLD.
+record_safely(
+    "create_gold",
+    {"gold_event_rows": gold_event_rows, "gold_consent_rows": gold_consent_rows},
+    logging.getLogger(__name__),
+)
 
 update_sync_metadata("GOLD", status="ok")
 logging.info(f"🎯 Table GOLD créée : {GOLD_TABLE}")

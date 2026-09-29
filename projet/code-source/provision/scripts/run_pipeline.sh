@@ -21,6 +21,7 @@
 # : après un échec, `--resume` repart de la première étape non terminée au lieu
 # de tout rejouer. Le run en cours est signalé par status=running : le
 # planificateur ne lance pas de doublon tant qu'un run n'est pas fini.
+# Les compteurs de chaque run sont conservés en base (table pipeline_run).
 
 set -u
 
@@ -53,6 +54,14 @@ STEPS=(
 
 state_cli() {
     "$PYTHON" -m provision.scripts.utils.pipeline_state "$@"
+}
+
+# Historique chiffré du run (lignes par source, patients maîtres, GOLD) :
+# enregistré dans PostgreSQL (pipeline_run) si DATABASE_URL est définie,
+# sinon conservé en attente dans provision/metadata/run_metrics.json.
+# Ne fait jamais échouer le pipeline.
+record_run_history() {
+    "$PYTHON" -m provision.scripts.utils.run_metrics flush >> "$LOG_FILE" 2>&1 || true
 }
 
 # ---------------------------------------------------------------------
@@ -164,6 +173,7 @@ for ((i=START_INDEX; i<${#STEPS[@]}; i++)); do
         echo "------------------------------------------------------------" >> "$LOG_FILE"
         state_cli step failed "$STEP" "code $RC" >/dev/null
         state_cli finish failed >/dev/null
+        record_run_history
         echo "" >&2
         echo "❌ Pipeline interrompu ($RC) : $STEP — voir $LOG_FILE" >&2
         echo "  Reprenez avec : bash $SCRIPT_DIR/run_pipeline.sh --resume" >&2
@@ -173,6 +183,7 @@ for ((i=START_INDEX; i<${#STEPS[@]}; i++)); do
 done
 
 state_cli finish ok >/dev/null
+record_run_history
 END_DATE=$(date '+%Y-%m-%d %H:%M:%S')
 echo "✅ Pipeline ELT FHIR terminé avec succès à $END_DATE" >> "$LOG_FILE"
 echo "------------------------------------------------------------" >> "$LOG_FILE"

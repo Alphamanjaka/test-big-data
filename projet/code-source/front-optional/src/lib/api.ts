@@ -200,6 +200,44 @@ export async function getPipelineStatus(): Promise<PipelineStatus> {
   return (await res.json()) as PipelineStatus;
 }
 
+/** Détail d'un run par source (table pipeline_run_source). */
+export interface PipelineRunSource {
+  source_system: string;
+  tables_extracted: number;
+  tables_skipped: number;
+  tables_failed: number;
+  rows_extracted: number;
+  rows_skipped: number;
+  silver_patient_rows: number | null;
+}
+
+/** Un run ELT enregistré en base (table pipeline_run). */
+export interface PipelineRun {
+  run_id: string;
+  mode: string;
+  status: "running" | "ok" | "failed";
+  started_at: string | null;
+  finished_at: string | null;
+  failed_step: string | null;
+  silver_rows: number | null;
+  master_count: number | null;
+  duplicate_count: number | null;
+  exact_count: number | null;
+  probabilistic_count: number | null;
+  duplicate_rate: number | null;
+  gold_event_rows: number | null;
+  gold_consent_rows: number | null;
+  recorded_at: string | null;
+  sources: PipelineRunSource[];
+}
+
+/** Historique chiffré des runs, du plus récent au plus ancien. */
+export async function getPipelineRuns(limit = 10): Promise<PipelineRun[]> {
+  const res = await fetchGovernance(`/pipeline/runs?limit=${limit}`);
+  if (!res.ok) throw new Error(`/pipeline/runs → HTTP ${res.status}`);
+  return (await res.json()) as PipelineRun[];
+}
+
 export async function putPipelineSchedule(
   schedule: PipelineSchedule
 ): Promise<PipelineSchedule> {

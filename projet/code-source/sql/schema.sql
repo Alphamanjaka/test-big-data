@@ -129,3 +129,40 @@ ALTER TABLE access_audit
 
 ALTER TABLE access_audit
     ADD COLUMN IF NOT EXISTS refusal_reason TEXT;
+
+-- Historique chiffré des runs ELT (provision/scripts/utils/run_metrics.py).
+-- Un run par ligne, jamais écrasé par le suivant ; un run réenregistré est mis
+-- à jour (ON CONFLICT). master_count compte les patients maîtres DISTINCTS.
+CREATE TABLE
+    IF NOT EXISTS pipeline_run (
+        run_id TEXT PRIMARY KEY,
+        mode TEXT NOT NULL,
+        status TEXT NOT NULL CHECK (status IN ('running', 'ok', 'failed')),
+        started_at TIMESTAMPTZ,
+        finished_at TIMESTAMPTZ,
+        failed_step TEXT,
+        silver_rows INTEGER,
+        master_count INTEGER,
+        duplicate_count INTEGER,
+        exact_count INTEGER,
+        probabilistic_count INTEGER,
+        duplicate_rate NUMERIC(5, 2),
+        gold_event_rows INTEGER,
+        gold_consent_rows INTEGER,
+        recorded_at TIMESTAMPTZ NOT NULL DEFAULT NOW ()
+    );
+
+-- Détail par source : lignes réellement extraites, ou sautées (empreinte
+-- inchangée), et lignes patient de la source présentes en SILVER.
+CREATE TABLE
+    IF NOT EXISTS pipeline_run_source (
+        run_id TEXT NOT NULL REFERENCES pipeline_run (run_id),
+        source_system TEXT NOT NULL,
+        tables_extracted INTEGER NOT NULL DEFAULT 0,
+        tables_skipped INTEGER NOT NULL DEFAULT 0,
+        tables_failed INTEGER NOT NULL DEFAULT 0,
+        rows_extracted BIGINT NOT NULL DEFAULT 0,
+        rows_skipped BIGINT NOT NULL DEFAULT 0,
+        silver_patient_rows INTEGER,
+        PRIMARY KEY (run_id, source_system)
+    );

@@ -43,6 +43,8 @@ erDiagram
 | 7 | `imaging_exam` (`exam_id` BIGSERIAL) | `source_record_id`, `master_patient_id` FK, `source_system`, `source_patient_id`, `payload` JSONB | `UNIQUE (source_system, source_record_id)` |
 | 8 | `api_user` (`user_id` SERIAL) | `username` UNIQUE, `api_key_hash` (SHA-256), `role`, `active`, `created_at` | `role IN ('admin','analyst','viewer')` |
 | 9 | `access_audit` (`audit_id` BIGSERIAL) | `user_id` FK, `username`, `endpoint`, `method`, `response_status`, `ip_address`, `accessed_at` | journal d'accès des endpoints |
+| 10 | `pipeline_run` (`run_id` TEXT) | `mode`, `status`, `started_at`, `finished_at`, `failed_step`, `silver_rows`, `master_count`, `duplicate_count`, `exact_count`, `probabilistic_count`, `duplicate_rate`, `gold_event_rows`, `gold_consent_rows`, `recorded_at` | historique des runs ELT ; `status IN ('running','ok','failed')` ; `master_count` = patients maîtres **distincts** |
+| 11 | `pipeline_run_source` (`run_id`, `source_system`) | `run_id` FK, `tables_extracted`, `tables_skipped`, `tables_failed`, `rows_extracted`, `rows_skipped`, `silver_patient_rows` | détail par source d'un run |
 
 ---
 

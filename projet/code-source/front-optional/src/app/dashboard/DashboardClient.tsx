@@ -1,19 +1,27 @@
 "use client";
 
-import { useCallback, useEffect, useState } from "react";
+import { Fragment, useCallback, useEffect, useState } from "react";
 import {
   AlertTriangle,
   CalendarClock,
   CheckCircle2,
+  ChevronDown,
+  ChevronRight,
   Database,
   Gauge,
   History,
   Info,
+  ListOrdered,
   RefreshCw,
   XCircle,
 } from "lucide-react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { getPipelineStatus, type PipelineStatus } from "@/lib/api";
+import {
+  getPipelineRuns,
+  getPipelineStatus,
+  type PipelineRun,
+  type PipelineStatus,
+} from "@/lib/api";
 
 const STEP_LABELS: Record<string, string> = {
   ensure_generator_data: "Données générées",
@@ -156,6 +164,10 @@ export default function DashboardClient({ userName }: Props) {
   const [error, setError] = useState<string | null>(null);
   const [autoRefresh, setAutoRefresh] = useState(true);
   const [lastUpdated, setLastUpdated] = useState<Date | null>(null);
+  // Historique des runs (base PostgreSQL) : chargé à part, pour qu'une base
+  // indisponible n'empêche pas d'afficher l'état du pipeline.
+  const [runs, setRuns] = useState<PipelineRun[] | null>(null);
+  const [runsError, setRunsError] = useState<string | null>(null);
 
   const load = useCallback(async () => {
     try {
@@ -171,6 +183,12 @@ export default function DashboardClient({ userName }: Props) {
     } finally {
       setLoading(false);
       setLastUpdated(new Date());
+    }
+    try {
+      setRuns(await getPipelineRuns(10));
+      setRunsError(null);
+    } catch (e) {
+      setRunsError(e instanceof Error ? e.message : "historique indisponible");
     }
   }, []);
 
@@ -342,6 +360,8 @@ export default function DashboardClient({ userName }: Props) {
             </CardContent>
           </Card>
 
+          <RunHistory runs={runs} error={runsError} />
+
           <div className="grid md:grid-cols-2 gap-6">
             {/* Fraîcheur des sources */}
             <Card>
@@ -500,7 +520,7 @@ export default function DashboardClient({ userName }: Props) {
 
           <div className="text-xs text-gray-400">
             Connecté : {userName} · mis à jour à {lastUpdated?.toLocaleTimeString("fr-FR")} —
-            source : API gouvernance :8000 (<code>/pipeline/status</code>), données fictives.
+            source : API gouvernance :8000 (<code>/pipeline/status</code>, <code>/pipeline/runs</code>), données fictives.
           </div>
         </>
       )}
@@ -616,5 +636,151 @@ function FreshnessBar({
         <div className={`h-2 rounded-full ${tone}`} style={{ width: `${width}%` }} />
       </div>
     </div>
+  );
+}
+
+const RUN_STATUS: Record<string, { label: string; tone: string }> = {
+  ok: { label: "réussi", tone: "bg-emerald-100 text-emerald-700" },
+  failed: { label: "en échec", tone: "bg-red-100 text-red-700" },
+  running: { label: "en cours", tone: "bg-yellow-100 text-yellow-700" },
+};
+
+function fmtCount(value: number | null | undefined): string {
+  return value === null || value === undefined ? "—" : value.toLocaleString("fr-FR");
+}
+
+/** Historique chiffré des runs, conservé en base (API /pipeline/runs). */
+function RunHistory({ runs, error }: { runs: PipelineRun[] | null; error: string | null }) {
+  const [open, setOpen] = useState<string | null>(null);
+
+  return (
+    <Card>
+      <CardHeader>
+        <CardTitle className="flex items-center space-x-2">
+          <ListOrdered className="w-5 h-5 text-blue-600" />
+          <span>Historique des runs</span>
+        </CardTitle>
+        <CardDescription>
+          Chaque run conservé en base : lignes extraites par source, puis patients maîtres distincts,
+          doublons et volumes GOLD. Cliquez un run pour le détail par source.
+        </CardDescription>
+      </CardHeader>
+      <CardContent>
+        {error ? (
+          <div className="bg-amber-50 border border-amber-200 text-amber-800 p-3 rounded-md text-sm">
+            Historique indisponible ({error}) — la base centrale est-elle joignable et le schéma
+            (<code>sql/schema.sql</code>) appliqué ?
+          </div>
+        ) : runs === null ? (
+          <p className="text-sm text-gray-500">Chargement…</p>
+        ) : runs.length === 0 ? (
+          <p className="text-sm text-gray-500">
+            Aucun run enregistré en base pour l&apos;instant : l&apos;historique commence au prochain run
+            lancé avec <code>DATABASE_URL</code> définie.
+          </p>
+        ) : (
+          <div className="overflow-x-auto">
+            <table className="w-full text-sm">
+              <thead>
+                <tr className="border-b border-gray-200 text-left text-gray-500">
+                  <th className="py-2 pr-2 font-medium" />
+                  <th className="py-2 pr-4 font-medium">Début</th>
+                  <th className="py-2 pr-4 font-medium">Mode</th>
+                  <th className="py-2 pr-4 font-medium">Statut</th>
+                  <th className="py-2 pr-4 font-medium text-right">Lignes SILVER</th>
+                  <th className="py-2 pr-4 font-medium text-right">Patients maîtres</th>
+                  <th className="py-2 pr-4 font-medium text-right">Doublons (exact / proba.)</th>
+                  <th className="py-2 pr-4 font-medium text-right">Taux</th>
+                  <th className="py-2 font-medium text-right">GOLD (événements / consent.)</th>
+                </tr>
+              </thead>
+              <tbody>
+                {runs.map((run) => {
+                  const expanded = open === run.run_id;
+                  const badge = RUN_STATUS[run.status] ?? RUN_STATUS.running;
+                  return (
+                    <Fragment key={run.run_id}>
+                      <tr
+                        className="border-b border-gray-100 cursor-pointer hover:bg-gray-50"
+                        onClick={() => setOpen(expanded ? null : run.run_id)}
+                      >
+                        <td className="py-2 pr-2 text-gray-400">
+                          {expanded ? <ChevronDown className="w-4 h-4" /> : <ChevronRight className="w-4 h-4" />}
+                        </td>
+                        <td className="py-2 pr-4 text-gray-800">
+                          {fmtTime(run.started_at)}
+                          <span className="block text-xs text-gray-400">{run.run_id}</span>
+                        </td>
+                        <td className="py-2 pr-4 text-gray-600">{MODE_LABELS[run.mode] ?? run.mode}</td>
+                        <td className="py-2 pr-4">
+                          <span className={`text-xs px-2 py-0.5 rounded ${badge.tone}`}>{badge.label}</span>
+                          {run.failed_step && (
+                            <span className="block text-xs text-red-600 mt-1">
+                              {STEP_LABELS[run.failed_step] ?? run.failed_step}
+                            </span>
+                          )}
+                        </td>
+                        <td className="py-2 pr-4 text-right">{fmtCount(run.silver_rows)}</td>
+                        <td className="py-2 pr-4 text-right font-semibold">{fmtCount(run.master_count)}</td>
+                        <td className="py-2 pr-4 text-right">
+                          {fmtCount(run.duplicate_count)}
+                          <span className="text-xs text-gray-400">
+                            {" "}({fmtCount(run.exact_count)} / {fmtCount(run.probabilistic_count)})
+                          </span>
+                        </td>
+                        <td className="py-2 pr-4 text-right">
+                          {run.duplicate_rate === null ? "—" : `${run.duplicate_rate.toLocaleString("fr-FR")} %`}
+                        </td>
+                        <td className="py-2 text-right">
+                          {fmtCount(run.gold_event_rows)} / {fmtCount(run.gold_consent_rows)}
+                        </td>
+                      </tr>
+                      {expanded && (
+                        <tr className="bg-gray-50">
+                          <td />
+                          <td colSpan={8} className="py-3 pr-4">
+                            {run.sources.length === 0 ? (
+                              <p className="text-xs text-gray-500">Aucun détail par source pour ce run.</p>
+                            ) : (
+                              <table className="w-full text-xs">
+                                <thead>
+                                  <tr className="text-left text-gray-500">
+                                    <th className="py-1 pr-4 font-medium">Source</th>
+                                    <th className="py-1 pr-4 font-medium text-right">Lignes extraites</th>
+                                    <th className="py-1 pr-4 font-medium text-right">Lignes non relues (inchangées)</th>
+                                    <th className="py-1 pr-4 font-medium text-right">Tables (extraites / sautées / échec)</th>
+                                    <th className="py-1 font-medium text-right">Lignes patient en SILVER</th>
+                                  </tr>
+                                </thead>
+                                <tbody>
+                                  {run.sources.map((src) => (
+                                    <tr key={src.source_system} className="border-t border-gray-200">
+                                      <td className="py-1 pr-4 font-medium text-gray-800">{src.source_system}</td>
+                                      <td className="py-1 pr-4 text-right">{fmtCount(src.rows_extracted)}</td>
+                                      <td className="py-1 pr-4 text-right">{fmtCount(src.rows_skipped)}</td>
+                                      <td className="py-1 pr-4 text-right">
+                                        {src.tables_extracted} / {src.tables_skipped} /{" "}
+                                        <span className={src.tables_failed ? "text-red-600 font-semibold" : ""}>
+                                          {src.tables_failed}
+                                        </span>
+                                      </td>
+                                      <td className="py-1 text-right">{fmtCount(src.silver_patient_rows)}</td>
+                                    </tr>
+                                  ))}
+                                </tbody>
+                              </table>
+                            )}
+                          </td>
+                        </tr>
+                      )}
+                    </Fragment>
+                  );
+                })}
+              </tbody>
+            </table>
+          </div>
+        )}
+      </CardContent>
+    </Card>
   );
 }

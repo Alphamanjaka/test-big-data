@@ -24,6 +24,7 @@ from ..utils.watermark import (
     file_signature, should_extract, remember, report_from_watermark,
     load as load_watermark, save as save_watermark,
 )
+from ..utils.run_metrics import record_safely, summarize_extract
 
 # Mode d'ingestion demandé par le pipeline (run_pipeline.sh exporte
 # PIPELINE_MODE) : full (rechargement, comportement historique par défaut),
@@ -708,6 +709,11 @@ def main():
     output = os.path.join(METADATA_DIR, "extract_raw_report.json")
     with open(output, "w") as f:
         json.dump(extract_raw_report, f, indent=2, default=json_serial)
+
+    # Historique du run : lignes extraites ou sautées, par source.
+    record_safely(
+        "gen_extract_raw", {"sources": summarize_extract(extract_raw_report)}, logger
+    )
 
     elapsed = round(time.time() - start, 2)
     update_sync_metadata("RAW", status="ok")

@@ -9,6 +9,7 @@ Endpoints :
 - GET /pipeline/schedule — planification ELT (admin/analyst)
 - PUT /pipeline/schedule — écriture de la planification (admin uniquement)
 - GET /pipeline/status   — état du pipeline (admin/analyst)
+- GET /pipeline/runs     — historique chiffré des runs (admin/analyst)
 - /consent/*          — monté depuis engine.governance.consent.router
 
 Les patients exposés proviennent du schéma canonique `sql/schema.sql` : l'identité
@@ -231,6 +232,19 @@ def pipeline_status_endpoint(
 ):
     """État du pipeline : plan, prochain run, sources suivies, zones."""
     return pipeline_status.read_status()
+
+
+@app.get("/pipeline/runs")
+def pipeline_runs(
+    limit: int = Query(20, ge=1, le=200),
+    user: UserContext = Depends(require_role("admin", "analyst")),
+):
+    """Historique des runs : lignes par source, patients maîtres, volumes GOLD."""
+    conn = connection_factory()
+    try:
+        return pipeline_status.list_runs(conn, limit)
+    finally:
+        conn.close()
 
 
 @app.get("/audit")
