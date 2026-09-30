@@ -2262,3 +2262,16 @@ ch. 8 : 2 221 → 2 103 ; ch. 9 : 2 251 → 2 200). Export : 100 pages, 18 figur
 - `README.md` : ligne `documents/` et « Documents clés » complétées (rapport de stage, soutenance).
 - Non traités, laissés à la décision de l'auteur : `references/V2soutenance_m2_hasina.pptx` (7 Mo, versionné)
   et le dossier vide `documents/articles/` (encore cité par `ai/memoire/methode.md`).
+
+## 30/09/2026 — Redémarrage des services après redémarrage du PC ; jeu « facile » de 12 000 patients
+
+- Services relancés : base PostgreSQL de test (port 5433, données conservées : 803 patients maîtres, 5 runs),
+  VM (`vagrant up`), HDFS, YARN, metastore Hive, HiveServer2, API Flask (5000, `mocked: false`), API de gouvernance
+  (8000), interface web (3000). **HDFS a conservé le lac après redémarrage** (`/datalake/raw|silver|gold`
+  présents) : le correctif `hadoop.tmp.dir` hors de `/tmp` est validé.
+- Demande de l'auteur : générer 12 000 patients, niveau facile. La commande par défaut
+  (`experiment_builder`) réécrit les trois jeux de référence (500 patients) cités dans le mémoire : appel direct de
+  `build_experiment('easy', …)` vers `data/experiments_12000/easy/` (non versionné, graine 42), en 54 s.
+  Résultat : 12 000 patients maîtres, **25 587 fiches** (pharmacy 9 765, consultation 8 543, imaging 7 279),
+  transactions 19 488 achats, 12 762 consultations, 10 891 examens ; patients présents dans 1 / 2 / 3 sources :
+  2 541 / 5 331 / 4 128 ; vérité terrain `ground_truth/identity_mapping.csv` et `master_patients.csv`.
