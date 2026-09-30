@@ -2224,5 +2224,5 @@ Relecture critique poursuivie, en intégrant les faits établis sur la VM le 29�
   de chapitre supprimés, légendes raccourcies, auto-labels « honnête » retirés.
 - **Numérotation** : 47 tableaux renumérotés dans l'ordre de lecture, renvois compris, aucun orphelin (script).
   Figures 3, 4, 5, 6 et 9 re-rendues ; les autres PNG inchangés.
-Mots (ch. 5 à 9) : 13 183 → 12 740 (ch. 5 : 2 714 → 2 655 ; ch. 7 : 5 131 → 4 924 ; ch. 8 : 2 221 → 2 103 ;
-ch. 9 : 2 251 → 2 200). Export : 100 pages, 18 figures, 47 tableaux.
+Mots (ch. 5 à 9) : 13 245 → 12 804 (ch. 5 : 2 714 → 2 646 ; ch. 6 : 928 → 928 ; ch. 7 : 5 131 → 4 927 ;
+ch. 8 : 2 221 → 2 103 ; ch. 9 : 2 251 → 2 200). Export : 100 pages, 18 figures, 47 tableaux.
