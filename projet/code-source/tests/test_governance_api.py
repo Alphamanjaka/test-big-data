@@ -203,12 +203,14 @@ def test_role_insufficient_returns_403(monkeypatch, audit_sink):
 
 def test_metrics(monkeypatch, audit_sink):
     _patch_auth(monkeypatch, ADMIN_ROW)
-    _patch_db(monkeypatch, [(100,), (15,)])
+    # 85 patients maîtres ; 100 fiches dont 15 rattachées à une fiche fondatrice.
+    _patch_db(monkeypatch, [(85,), (100, 15)])
     client = TestClient(app)
     resp = client.get("/metrics", headers=_HEADERS)
     assert resp.status_code == 200
     data = resp.json()
     assert data["total_patients"] == 100
+    assert data["total_masters"] == 85
     assert data["duplicates"] == 15
     assert data["duplicate_rate"] == 15.0
 

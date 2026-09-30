@@ -65,13 +65,18 @@ def health():
 def metrics(user: UserContext = Depends(require_role("admin", "analyst"))):
     conn = connection_factory()
     try:
+        # Fiches et doublons viennent de la table de correspondance : `master_patient`
+        # ne porte pas d'indicateur de doublon (une ligne par patient maître).
         with conn.cursor() as cur:
             cur.execute("SELECT COUNT(*) FROM master_patient")
-            total = cur.fetchone()[0]
-            cur.execute("SELECT COUNT(*) FROM master_patient WHERE is_duplicate")
-            dups = cur.fetchone()[0]
-        return {"total_patients": total, "duplicates": dups,
-                "duplicate_rate": round(dups * 100 / total, 2) if total else 0}
+            masters = cur.fetchone()[0]
+            cur.execute(
+                "SELECT COUNT(*), COUNT(*) FILTER (WHERE match_method <> 'new_master') "
+                "FROM patient_identity_map"
+            )
+            records, dups = cur.fetchone()
+        return {"total_patients": records, "total_masters": masters, "duplicates": dups,
+                "duplicate_rate": round(dups * 100 / records, 2) if records else 0}
     finally:
         conn.close()
 

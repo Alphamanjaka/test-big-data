@@ -2416,3 +2416,22 @@ ch. 8 : 2 221 → 2 103 ; ch. 9 : 2 251 → 2 200). Export : 100 pages, 18 figur
   FP 0, R 1,000 ; **parité : 212 523 fiches, 0 différence** d'identifiant entre Spark et la référence.
 - Run VM **20260930T092111** (jeu difficile → `demo`, `data/raw/` remis sur le jeu difficile) : 1 min 30 s ;
   942 maîtres, 115 rattachements ; P 1,000, R 0,179 ; parité 1 057 fiches, 0 différence.
+
+## 30/09/2026 — Démonstration sur la base `patient_platform_demo` ; deux défauts d'API corrigés ; captures v2
+
+- `seed_governance` sur `patient_platform_demo` : 3 utilisateurs, 942 × 3 = 2 826 consentements. Clés dans le
+  scratchpad (`seed_output_demo.txt`) et `front-optional/.env` (non versionné) ; FastAPI relancé sur `demo`.
+  Run `--from create_gold` (20260930T092710) : consentements GOLD 2 826.
+- **Défaut 1 — `/metrics` (FastAPI) en erreur 500** : la requête lisait `master_patient.is_duplicate`, colonne
+  absente de `sql/schema.sql` (et de l'ancienne base) ; l'endpoint n'avait donc jamais fonctionné sur une base
+  réelle (le test simulait la base). Corrigé : fiches et doublons lus dans `patient_identity_map`
+  (`total_patients`, `total_masters`, `duplicates`, `duplicate_rate`) ; test adapté. Vérifié : 1 057 / 942 /
+  115 / 10,88 %.
+- **Défaut 2 — API Flask retombée sur le mock après un run** : sa session Spark gardait la liste des fichiers
+  de `patient_consent_gold` réécrite par le pipeline (`SparkFileNotFoundException`). Corrigé : `refresh(table)`
+  (`spark.catalog.refreshTable`) avant chaque lecture. Vérifié : consentements réels (`mocked: false`).
+- Contrôle d'accès rejoué sur `demo` : 401 / 422 / 422 / 403 (rôle) / 200 (395 patients, analytics) / 403
+  (finalité refusée, motif en audit) / 200 (fiche à 3 fiches source).
+- Front : sous-titre de `/synthese` (« règle d'identité stricte »). Captures refaites : C04, C07, C09, C12, C14,
+  C15 (131 réussis, 1 ignoré), C16 (évaluation + parité). Première tentative web ratée (connexion non
+  terminée au bout de 4 s) : attente explicite de la sortie de `/login`.

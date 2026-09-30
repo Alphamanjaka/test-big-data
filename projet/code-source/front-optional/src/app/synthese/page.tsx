@@ -84,7 +84,7 @@ export default function SynthesePage() {
               <CopyCheck className="w-4 h-4 text-emerald-600" aria-hidden="true" />
               Qualité d&apos;identité
             </CardTitle>
-            <CardDescription>Résultat de la déduplication exacte et probabiliste.</CardDescription>
+            <CardDescription>Résultat de la règle d&apos;identité stricte : CIN, genre, date et ville de naissance identiques.</CardDescription>
           </CardHeader>
           <CardContent>
             <dl className="space-y-2 text-sm">

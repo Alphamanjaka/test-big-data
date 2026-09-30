@@ -67,6 +67,19 @@ def is_empty(data):
     return False
 
 
+def refresh(table):
+    """Invalide le cache de listing de la table avant lecture.
+
+    La session Spark de l'API vit plus longtemps qu'un run du pipeline : après une
+    réécriture de la table, elle lirait des fichiers supprimés et retomberait sur le
+    mock jusqu'au redémarrage de l'API.
+    """
+    try:
+        spark.catalog.refreshTable(table)
+    except Exception as e:  # noqa: BLE001 — table absente : la requête échouera plus loin
+        logging.info(f"Rafraîchissement impossible pour {table} ({e}).")
+
+
 def respond(data, filters=None, mocked=False, **meta):
     """Construit une réponse uniforme, avec indication si les données sont mockées."""
     body = {
@@ -91,6 +104,7 @@ def governance_duplicates():
     is_duplicate, match_method). Fallback MOCK si Spark/Hive indisponible.
     """
     try:
+        refresh(SILVER_PATIENT_TABLE)
         row = spark.sql(f"""
             SELECT
                 COUNT(*) AS total_patients,
@@ -132,6 +146,7 @@ def governance_consent():
     """
     limit = int(request.args.get("limit", 200))
     try:
+        refresh(CONSENT_GOLD_TABLE)
         rows = spark.sql(f"""
             SELECT master_patient_id, patient_uuid, name, purpose, granted, recorded_at
             FROM {CONSENT_GOLD_TABLE}
