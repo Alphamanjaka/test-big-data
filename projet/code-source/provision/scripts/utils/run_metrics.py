@@ -127,25 +127,35 @@ def summarize_extract(report: Dict[str, List[Dict[str, Any]]]) -> Dict[str, Dict
     return summary
 
 
-def summarize_dedup(decisions: Iterable[Any]) -> Dict[str, Any]:
-    """Compteurs SILVER à partir des décisions du moteur (MatchDecision).
+def summarize_counts(method_counts: Dict[str, int], master_count: int,
+                     rows_by_source: Dict[str, int]) -> Dict[str, Any]:
+    """Compteurs SILVER à partir de comptes agrégés (voie Spark : rien n'est rapatrié).
 
     `master_count` compte les patients maîtres DISTINCTS, pas les lignes
-    rattachées à un maître.
+    rattachées à un maître. `probabilistic_count` reste à 0 depuis la règle
+    stricte (v2) ; la colonne garde l'historique des runs de la v1.
     """
-    decisions = list(decisions)
-    methods = Counter(d.method for d in decisions)
-    rows = len(decisions)
-    duplicates = rows - methods.get("new_master", 0)
+    rows = sum(method_counts.values())
+    duplicates = rows - method_counts.get("new_master", 0)
     return {
         "silver_rows": rows,
-        "master_count": len({d.master_patient_id for d in decisions}),
+        "master_count": master_count,
         "duplicate_count": duplicates,
-        "exact_count": methods.get("exact", 0),
-        "probabilistic_count": methods.get("probabilistic", 0),
+        "exact_count": method_counts.get("exact", 0),
+        "probabilistic_count": method_counts.get("probabilistic", 0),
         "duplicate_rate": round(duplicates * 100.0 / rows, 2) if rows else 0.0,
-        "rows_by_source": dict(Counter(d.source_system for d in decisions)),
+        "rows_by_source": dict(rows_by_source),
     }
+
+
+def summarize_dedup(decisions: Iterable[Any]) -> Dict[str, Any]:
+    """Compteurs SILVER à partir des décisions du moteur (MatchDecision)."""
+    decisions = list(decisions)
+    return summarize_counts(
+        dict(Counter(d.method for d in decisions)),
+        len({d.master_patient_id for d in decisions}),
+        dict(Counter(d.source_system for d in decisions)),
+    )
 
 
 # ---------------------------------------------------------------------------

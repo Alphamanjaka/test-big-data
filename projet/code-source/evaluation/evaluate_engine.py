@@ -1,15 +1,20 @@
 """
-Évaluateur Ground Truth — compare la de-duplication du moteur `engine`
-(matcher Pandas N1 et/ou spark_dedup driver-side) à la vérité de référence
-(identity_mapping.csv) d'un niveau de difficulté (easy / medium / hard).
+Évaluateur par vérité terrain — compare la déduplication du moteur `engine`
+(règle d'identité stricte, `engine.identity.matcher`) à la vérité de référence
+(identity_mapping.csv) d'un jeu synthétique : niveaux easy / medium / hard, ou
+tout dossier de jeu produit par le générateur (`--dir`).
 
 Métriques par paires (standard Entity Resolution) :
-    Precision (Pair Quality)     = TP / (TP + FP)
-    Recall   (Pair Completeness) = TP / (TP + FN)
+    Précision (Pair Quality)     = VP / (VP + FP)
+    Rappel   (Pair Completeness) = VP / (VP + FN)
     F1                             = 2.P.R / (P + R)
 
+La variante Spark (`engine.identity.spark_dedup`) applique les mêmes fonctions
+de règle ; sa parité se vérifie sur la VM (`evaluate_pipeline_run.py --parity`).
+
 Usage :
-    python evaluation/evaluate_engine.py --level medium [--only mvp|spark]
+    python evaluation/evaluate_engine.py --level hard
+    python evaluation/evaluate_engine.py --dir evaluation/synthetic-patient-generator/data/experiments_100000/easy
 """
 
 from __future__ import annotations
@@ -17,14 +22,11 @@ from __future__ import annotations
 import argparse
 import sys
 from pathlib import Path
-from typing import Callable
 
 import pandas as pd
 
 import engine.identity.matcher as matcher
-import engine.identity.spark_dedup as spark_dedup
 from engine.identity.canonical import map_patient
-from engine.identity.config import load_dedup_config
 
 ROOT = Path(__file__).resolve().parent.parent
 GENERATOR_ROOT = ROOT / "evaluation" / "synthetic-patient-generator"
@@ -34,8 +36,6 @@ COLS = {
     "imaging": ["id_personne", "patient_name", "dob", "cin_number", "birth_place", "sex"],
 }
 SOURCE_ORDER = ["pharmacy", "consultation", "imaging"]
-
-DEDUP_CFG = load_dedup_config()
 
 
 def experiment_dir(level: str) -> Path:
@@ -56,7 +56,7 @@ def ensure_dataset(level: str, patients: int, seed: int) -> None:
 
 
 # ---------------------------------------------------------------------------
-# Chargement des sources → patients canoniques (ordre d'ingestion MVP)
+# Chargement des sources → patients canoniques (ordre d'ingestion)
 # ---------------------------------------------------------------------------
 def load_canonical(level: str) -> list:
     root = experiment_dir(level)
@@ -73,46 +73,11 @@ def load_canonical(level: str) -> list:
 # ---------------------------------------------------------------------------
 # Prédictions
 # ---------------------------------------------------------------------------
-def predictions_mvp(level: str, only: str | None = None):
-    if only == "spark":
-        return None
-    patients = load_canonical(level)
-    decisions = matcher.deduplicate(
-        patients,
-        probabilistic_threshold=DEDUP_CFG.threshold,
-        weights=DEDUP_CFG.weights,
-        name_prefix_len=DEDUP_CFG.name_prefix_len,
-    )
+def predictions(level: str):
+    decisions = matcher.deduplicate(load_canonical(level))
     pred = {(d.source_system, d.source_patient_id): d.master_patient_id for d in decisions}
     methods = {(d.source_system, d.source_patient_id): d.method for d in decisions}
-    print(f"[MVP] {len(decisions)} decisions")
-    return pred, methods
-
-
-def predictions_spark(level: str, only: str | None = None):
-    if only == "mvp":
-        return None
-    patients = load_canonical(level)
-    rows = [
-        {
-            "source_system": p.source_system,
-            "source_patient_id": p.source_patient_id,
-            "full_name": p.full_name,
-            "birth_date": p.birth_date,
-            "cin": p.cin,
-            "birth_city": p.birth_city,
-        }
-        for p in patients
-    ]
-    decisions = spark_dedup.deduplicate(
-        rows,
-        probabilistic_threshold=DEDUP_CFG.threshold,
-        weights=DEDUP_CFG.weights,
-        name_prefix_len=DEDUP_CFG.name_prefix_len,
-    )
-    pred = {(d["source_system"], d["source_patient_id"]): d["master_patient_id"] for d in decisions}
-    methods = {(d["source_system"], d["source_patient_id"]): d["method"] for d in decisions}
-    print(f"[Spark] {len(decisions)} decisions")
+    print(f"[moteur] {len(decisions)} décisions")
     return pred, methods
 
 
@@ -201,88 +166,67 @@ def source_breakdown(truth: dict, pred: dict) -> dict[str, dict]:
 # ---------------------------------------------------------------------------
 # Rapport
 # ---------------------------------------------------------------------------
-def build_report(level: str, only: str | None = None) -> str:
+def build_report(level: str) -> str:
     frame = pd.read_csv(ground_truth_path(level), dtype=str)
     truth = {(r["source"], r["source_patient_id"]): r["ground_truth_id"] for _, r in frame.iterrows()}
-
-    mvp = predictions_mvp(level, only)
-    spark = predictions_spark(level, only)
-    mvp_m = pairs_metrics(truth, mvp[0]) if mvp else None
-    spark_m = pairs_metrics(truth, spark[0]) if spark else None
-
-    def fmt(cell, nd=3) -> str:
-        return "—" if cell is None else f"{cell:.{nd}f}"
-
-    def fmt_count(cell) -> str:
-        return "—" if cell is None else str(cell)
+    pred, methods = predictions(level)
+    m = pairs_metrics(truth, pred)
 
     lines = [
-        f"# Évaluation Ground Truth — Niveau `{level}`",
+        f"# Évaluation par vérité terrain — jeu `{level}`",
         "",
         f"- Date : {pd.Timestamp.now().strftime('%Y-%m-%d %H:%M')}",
-        f"- Ground Truth : {ground_truth_path(level)}",
-        f"- Data root : {experiment_dir(level)}",
-        f"- Mode : {'MVP' if only == 'mvp' else ('Spark' if only == 'spark' else 'MVP + Spark')}",
-        f"- Enregistrements : {len(truth)}",
+        f"- Vérité terrain : {ground_truth_path(level)}",
+        "- Moteur : règle d'identité stricte (CIN, genre, date et ville de naissance identiques ; "
+        "sans CIN, nom identique en plus)",
+        f"- Fiches : {len(truth)}",
         "",
-        "## Comparaison MVP (Pandas) vs Spark",
+        "| Métrique | Valeur |",
+        "|---|---|",
+        f"| Patients maîtres prédits | {m['n_masters']} |",
+        f"| Groupes de la vérité | {m['n_groups_truth']} |",
+        f"| Vrais positifs (paires) | {m['tp']} |",
+        f"| Faux positifs (fusions à tort) | {m['fp']} |",
+        f"| Faux négatifs (fusions manquées) | {m['fn']} |",
+        f"| Précision | {m['precision']:.3f} |",
+        f"| Rappel | {m['recall']:.3f} |",
+        f"| F1 | {m['f1']:.3f} |",
         "",
-        "| Métrique | MVP (Pandas) | Spark |",
-        "|---|---|---|",
+        "## Rappel par source",
+        "",
+        "> Rappel = fraction des paires de référence impliquant la source, correctement regroupées.",
+        "",
+        "| Source | Rappel |",
+        "|---|---|",
     ]
-    for key, label in [
-        ("n_masters", "Masters prédits"),
-        ("n_groups_truth", "Groupes vérité"),
-        ("tp", "Vrais positifs (paires)"),
-        ("fp", "Faux positifs (fusion à tort)"),
-        ("fn", "Faux négatifs (non-fusion)"),
-        ("precision", "Precision (Pair Quality)"),
-        ("recall", "Recall (Pair Completeness)"),
-        ("f1", "F1"),
-    ]:
-        if key in ("precision", "recall", "f1"):
-            lines.append(f"| {label} | {fmt(mvp_m[key]) if mvp_m else '—'} | {fmt(spark_m[key]) if spark_m else '—'} |")
-        else:
-            lines.append(f"| {label} | {fmt_count(mvp_m[key]) if mvp_m else '—'} | {fmt_count(spark_m[key]) if spark_m else '—'} |")
-
-    lines += ["", "## Precision / Rappel / F1 par type de match", "", "| Méthode | MVP | Spark |", "|---|---|---|"]
-    mvp_bm = method_breakdown(truth, mvp[0], mvp[1]) if mvp else {}
-    spark_bm = method_breakdown(truth, spark[0], spark[1]) if spark else {}
-    for method in sorted(set(list(mvp_bm) + list(spark_bm))):
-        if method == "new_master":
-            continue
-        m = mvp_bm.get(method)
-        s = spark_bm.get(method)
-        m_str = f"{m['precision']:.3f}/{m['recall']:.3f}/{m['f1']:.3f}" if m else "—"
-        s_str = f"{s['precision']:.3f}/{s['recall']:.3f}/{s['f1']:.3f}" if s else "—"
-        lines.append(f"| {method} | {m_str} | {s_str} |")
-
-    lines += ["", "## Contribution par source (rappel)", "", "> Rappel = fraction des paires de reference impliquant la source, correctement regroupees.", "", "| Source | MVP | Spark |", "|---|---|---|"]
-    mvp_src = source_breakdown(truth, mvp[0]) if mvp else {}
-    spark_src = source_breakdown(truth, spark[0]) if spark else {}
-    for source in SOURCE_ORDER:
-        mvp_r = f"{mvp_src[source]['recall']:.3f}" if source in mvp_src else "—"
-        spark_r = f"{spark_src[source]['recall']:.3f}" if source in spark_src else "—"
-        lines.append(f"| {source} | {mvp_r} | {spark_r} |")
-
-    lines.append("")
-    if mvp_m:
-        lines.append(f"- MVP  : TP={mvp_m['tp']} FP={mvp_m['fp']} FN={mvp_m['fn']} | Precision={mvp_m['precision']:.3f} Recall={mvp_m['recall']:.3f} F1={mvp_m['f1']:.3f}")
-    if spark_m:
-        lines.append(f"- Spark: TP={spark_m['tp']} FP={spark_m['fp']} FN={spark_m['fn']} | Precision={spark_m['precision']:.3f} Recall={spark_m['recall']:.3f} F1={spark_m['f1']:.3f}")
+    for source, sm in source_breakdown(truth, pred).items():
+        lines.append(f"| {source} | {sm['recall']:.3f} |")
+    counts = {}
+    for method in methods.values():
+        counts[method] = counts.get(method, 0) + 1
+    lines += ["", "Décisions : " + ", ".join(f"{k}={v}" for k, v in sorted(counts.items())),
+              "", f"VP={m['tp']} FP={m['fp']} FN={m['fn']} | Précision={m['precision']:.3f} "
+              f"Rappel={m['recall']:.3f} F1={m['f1']:.3f}"]
     return "\n".join(lines)
 
 
 def main() -> None:
-    parser = argparse.ArgumentParser(description="Évalue la déduplication vs Ground Truth.")
+    parser = argparse.ArgumentParser(description="Évalue la déduplication sur la vérité terrain.")
     parser.add_argument("--level", choices=["easy", "medium", "hard"], default="medium")
-    parser.add_argument("--only", choices=["mvp", "spark"], default=None)
+    parser.add_argument("--dir", type=Path, default=None,
+                        help="dossier d'un autre jeu du générateur (ex. data/experiments_100000/easy)")
     parser.add_argument("--patients", type=int, default=500)
     parser.add_argument("--seed", type=int, default=42)
     args = parser.parse_args()
 
+    if args.dir is not None:
+        global experiment_dir
+        experiment_dir = lambda level: args.dir  # noqa: E731
+        level = str(args.dir)
+        print(build_report(level))
+        return
     ensure_dataset(args.level, args.patients, args.seed)
-    report = build_report(args.level, only=args.only)
+    report = build_report(args.level)
     out = ROOT / "evaluation" / "evaluation_truth.md"
     out.write_text(report, encoding="utf-8")
     print(report)

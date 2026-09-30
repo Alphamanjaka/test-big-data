@@ -2386,3 +2386,33 @@ ch. 8 : 2 221 → 2 103 ; ch. 9 : 2 251 → 2 200). Export : 100 pages, 18 figur
 - Exports : mémoire (47 tableaux, 18 figures, résumé 227 mots) ; rapport 71 pages. `pytest` 130/130.
 - État laissé : `data/raw/` contient le jeu de 100 000 patients ; base de test : 99 998 patients maîtres
   (anciens numéros réattribués). Retour au jeu difficile de la démonstration : à décider par l'auteur.
+
+## 30/09/2026 — Règle d'identité stricte (v2), exécutée dans Spark ; identifiants dérivés de la clé
+
+- Demande de l'auteur : « le CIN, genre, birthday, ville d'origine doivent être exactement pareils, pas de
+  probabilité ». Choix (questions) : sans CIN des deux côtés, nom identique en plus ; score supprimé ; règle
+  dans Spark ; mémoire en « évolution mesurée » ; identifiant de patient maître dérivé de la clé.
+- Simulation préalable (lecture seule) puis moteur v2 sur l'hôte (`evaluate_engine.py`) :
+  easy P 1,000 R 1,000 (500 maîtres) ; medium P 1,000 R 0,824 (589) ; hard P 1,000 R **0,179** (942 ;
+  VP 130, FN 597) ; 12 000 : P = R = 1,000 ; **100 000 : 100 000 maîtres, FP 0** (v1 : 13). La baisse de
+  rappel vient des dates et villes effacées par le générateur (jeu difficile) : une valeur manquante n'est
+  jamais identique.
+- Code : `engine/identity/rules.py` (clé, `master_id` = `PAT-` + 20 hexa de SHA-256 de la clé, ou HMAC si
+  `PATIENT_ID_SECRET` ; explications) ; `matcher.deduplicate(patients)` réécrit (référence Python, sans
+  score) ; `spark_dedup.deduplicate_df` en vrai Spark (UDF appelant `from_dict` + `rules`, `row_number` par
+  clé, aucun `collect()`) ; `config/deduplication.yaml` et `engine/identity/config.py` supprimés ;
+  `matching_key` retiré. `create_silver.py` : décisions par Spark, compteurs agrégés
+  (`run_metrics.summarize_counts`), base centrale en flux (`central_db.load_central_db_rows`,
+  `toLocalIterator`, lots de 5 000) ; `PYTHONPATH` et `PYSPARK_PYTHON` des processus UDF fixés.
+  `evaluate_engine.py` (option `--dir`, variante Spark retirée de l'hôte) ; `evaluate_pipeline_run.py
+  --parity` ; `evaluation_truth.md` régénéré (hard). README du code mis à jour.
+- Tests : hôte **131** réussis (`test_matcher.py` réécrit : 10 cas ; `test_central_db.py` +2 ;
+  `test_run_metrics.py` +1 ; `test_spark_dedup.py` ignoré sans PySpark). VM : `pytest` installé dans
+  `api-venv` (8.3.5) ; `test_spark_dedup.py` + `test_matcher.py` : 11 réussis (parité Spark = Python).
+- Nouvelles bases de test (PostgreSQL 5433) : `patient_platform_scale`, `patient_platform_demo` ; l'ancienne
+  `patient_platform` est conservée intacte (historique, consentements, audit).
+- Run VM **20260930T091617** (100 000 patients → `scale`) : **2 min 48 s** (v1 : 7 min 03 s) ; SILVER ≈ 1 min 30
+  (base centrale comprise) ; 100 000 maîtres, 112 523 rattachements ; pic VM 4,46 Go ; aucun gel. Évaluation :
+  FP 0, R 1,000 ; **parité : 212 523 fiches, 0 différence** d'identifiant entre Spark et la référence.
+- Run VM **20260930T092111** (jeu difficile → `demo`, `data/raw/` remis sur le jeu difficile) : 1 min 30 s ;
+  942 maîtres, 115 rattachements ; P 1,000, R 0,179 ; parité 1 057 fiches, 0 différence.

@@ -2,17 +2,16 @@
 
 from __future__ import annotations
 
-from engine.identity.canonical import CanonicalPatient, matching_key, _normalized, _cin, _text, _gender, _birth_date
+from engine.identity.canonical import CanonicalPatient, _normalized, _cin, _text, _gender, _birth_date
 from engine.identity.matcher import MatchDecision, deduplicate
-from engine.identity.config import DedupConfig, load_dedup_config
+from engine.identity.rules import identity_key, master_id
 
 __all__ = [
     "CanonicalPatient",
     "MatchDecision",
-    "DedupConfig",
-    "matching_key",
+    "identity_key",
+    "master_id",
     "deduplicate",
-    "load_dedup_config",
     "_normalized",
     "_cin",
     "_text",

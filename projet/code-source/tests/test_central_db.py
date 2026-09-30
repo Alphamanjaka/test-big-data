@@ -18,9 +18,9 @@ from provision.scripts.utils import central_db  # noqa: E402
 def _patients():
     rows = [
         {"source_system": "pharmacy", "source_patient_id": "PH1", "full_name": "Jean Rakoto",
-         "birth_date": "1990-01-10", "cin": "101 02404 5", "gender": "H"},
+         "birth_date": "1990-01-10", "cin": "101 02404 5", "birth_city": "Antananarivo", "gender": "H"},
         {"source_system": "consultation", "source_patient_id": "MED1", "full_name": "Rakoto Jean",
-         "birth_date": "10/01/1990", "cin": "101024045", "gender": "male"},
+         "birth_date": "10/01/1990", "cin": "101024045", "birth_city": "ANTANANARIVO", "gender": "male"},
         {"source_system": "imaging", "source_patient_id": "IMG1", "full_name": "Hery Rasoa",
          "birth_date": "1975-05-02", "cin": "", "gender": "Femme"},
     ]
@@ -114,3 +114,31 @@ def test_load_never_raises_when_database_unreachable():
         raise ConnectionError("connexion refusée")
 
     assert central_db.load_central_db(_patients(), [], connect=refuse) is None
+
+
+def test_save_rows_streams_generators_in_bounded_batches():
+    # Flux (générateurs) écrits par lots : maîtres d'abord, puis correspondances.
+    masters = (("PAT-%d" % i, "", "", "", None, None, "", "", "") for i in range(5))
+    identities = (("PAT-%d" % i, "pharmacy", "PH%d" % i, "new_master", 1.0, "") for i in range(5))
+    conn = RecordingConnection()
+    counts = central_db.save_rows(conn, masters, identities, batch_size=2)
+    sizes = [(entry[1].split()[2], len(entry[2])) for entry in conn.log]
+    assert sizes == [("master_patient", 2), ("master_patient", 2), ("master_patient", 1),
+                     ("patient_identity_map", 2), ("patient_identity_map", 2),
+                     ("patient_identity_map", 1)]
+    assert counts == {"master_patient": 5, "patient_identity_map": 5}
+    assert conn.committed
+
+
+def test_load_rows_does_not_consume_streams_when_database_unreachable():
+    consumed = []
+
+    def stream():
+        consumed.append(True)
+        yield ("PAT-1", "pharmacy", "PH1", "new_master", 1.0, "")
+
+    def refuse():
+        raise ConnectionError("connexion refusée")
+
+    assert central_db.load_central_db_rows(stream(), stream(), connect=refuse) is None
+    assert consumed == []

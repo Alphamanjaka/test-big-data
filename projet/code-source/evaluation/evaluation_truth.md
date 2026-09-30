@@ -1,40 +1,31 @@
-# Évaluation Ground Truth — Niveau `hard`
+# Évaluation par vérité terrain — jeu `hard`
 
-- Date : 2026-09-08 10:36
-- Ground Truth : F:\MBDS\STAGE\PROJECT\Mon_Memoire\projet\code-source\evaluation\synthetic-patient-generator\data\experiments\hard\ground_truth\identity_mapping.csv
-- Data root : F:\MBDS\STAGE\PROJECT\Mon_Memoire\projet\code-source\evaluation\synthetic-patient-generator\data\experiments\hard
-- Mode : MVP + Spark
-- Enregistrements : 1057
+- Date : 2026-09-30 12:08
+- Vérité terrain : F:\MBDS\STAGE\PROJECT\Mon_Memoire\projet\code-source\evaluation\synthetic-patient-generator\data\experiments\hard\ground_truth\identity_mapping.csv
+- Moteur : règle d'identité stricte (CIN, genre, date et ville de naissance identiques ; sans CIN, nom identique en plus)
+- Fiches : 1057
 
-## Comparaison MVP (Pandas) vs Spark
+| Métrique | Valeur |
+|---|---|
+| Patients maîtres prédits | 942 |
+| Groupes de la vérité | 500 |
+| Vrais positifs (paires) | 130 |
+| Faux positifs (fusions à tort) | 0 |
+| Faux négatifs (fusions manquées) | 597 |
+| Précision | 1.000 |
+| Rappel | 0.179 |
+| F1 | 0.303 |
 
-| Métrique | MVP (Pandas) | Spark |
-|---|---|---|
-| Masters prédits | 804 | 804 |
-| Groupes vérité | 500 | 500 |
-| Vrais positifs (paires) | 307 | 307 |
-| Faux positifs (fusion à tort) | 0 | 0 |
-| Faux négatifs (non-fusion) | 420 | 420 |
-| Precision (Pair Quality) | 1.000 | 1.000 |
-| Recall (Pair Completeness) | 0.422 | 0.422 |
-| F1 | 0.594 | 0.594 |
+## Rappel par source
 
-## Precision / Rappel / F1 par type de match
+> Rappel = fraction des paires de référence impliquant la source, correctement regroupées.
 
-| Méthode | MVP | Spark |
-|---|---|---|
-| exact | 1.000/0.854/0.921 | 1.000/0.854/0.921 |
-| probabilistic | 1.000/0.533/0.696 | 1.000/0.533/0.696 |
+| Source | Rappel |
+|---|---|
+| pharmacy | 0.181 |
+| consultation | 0.175 |
+| imaging | 0.180 |
 
-## Contribution par source (rappel)
+Décisions : exact=115, new_master=942
 
-> Rappel = fraction des paires de reference impliquant la source, correctement regroupees.
-
-| Source | MVP | Spark |
-|---|---|---|
-| pharmacy | 0.422 | 0.422 |
-| consultation | 0.422 | 0.422 |
-| imaging | 0.423 | 0.423 |
-
-- MVP  : TP=307 FP=0 FN=420 | Precision=1.000 Recall=0.422 F1=0.594
-- Spark: TP=307 FP=0 FN=420 | Precision=1.000 Recall=0.422 F1=0.594
+VP=130 FP=0 FN=597 | Précision=1.000 Rappel=0.179 F1=0.303

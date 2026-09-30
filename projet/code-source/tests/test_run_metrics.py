@@ -225,3 +225,18 @@ def test_flush_unreachable_database_keeps_buffer(run_env):
     assert run_metrics.flush(connect=refuse, out=out) == 0
     assert "20260907T030000" in run_metrics.load()
     assert "injoignable" in out.getvalue()
+
+
+def test_summarize_counts_matches_summarize_dedup():
+    # Voie Spark (comptes agrégés) et voie Python (décisions) donnent le même résumé.
+    from engine.identity.matcher import MatchDecision
+
+    decisions = [
+        MatchDecision("PAT-A", "pharmacy", "PH1", "new_master", 1.0, ""),
+        MatchDecision("PAT-A", "imaging", "IMG1", "exact", 1.0, ""),
+        MatchDecision("PAT-B", "imaging", "IMG2", "new_master", 1.0, ""),
+    ]
+    aggregated = run_metrics.summarize_counts(
+        {"new_master": 2, "exact": 1}, 2, {"pharmacy": 1, "imaging": 2})
+    assert aggregated == run_metrics.summarize_dedup(decisions)
+    assert aggregated["duplicate_count"] == 1 and aggregated["probabilistic_count"] == 0

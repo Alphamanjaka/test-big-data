@@ -4,7 +4,7 @@ Code fusionné de la plateforme de centralisation et de gouvernance des données
 (dépôt unique consolidé). Deux volets :
 
 - **Big Data (Medallion)** : VM Hadoop/Hive/Spark + pipeline ELT (via `provision/`) — porté de `datalake_mavis`.
-- **Déduplication + gouvernance** : moteur `engine/` (canonique, matching exact/probabiliste, master
+- **Déduplication + gouvernance** : moteur `engine/` (canonique, règle d'identité stricte, master
   patient, consentement, audit) — porté de `test_bigdata` et rendu autonome.
 
 ## Structure
@@ -24,7 +24,7 @@ projet/code-source/
 │   ├── jars/             postgresql-42.7.3.jar
 │   └── test_startup.sh   health check MAVIS/Hive/API/métadonnées
 ├── engine/               moteur de déduplication + gouvernance (Python 3.8+, autonome)
-│   ├── identity/         canonical.py · matcher.py (Pandas) · spark_dedup.py (Spark)
+│   ├── identity/         canonical.py · rules.py (règle stricte) · matcher.py (référence Python) · spark_dedup.py (Spark)
 │   └── governance/       database.py · auth.py (clés SHA-256) · consent.py · audit.py
 ├── evaluation/           ground-truth P/R/F1
 │   ├── synthetic-patient-generator/   générateur easy/medium/hard (+ ground truth)
@@ -90,12 +90,16 @@ versionner cette sortie.
 
 ```python
 from engine.identity.canonical import CanonicalPatient
-from engine.identity.matcher import deduplicate            # Pandas (explicable)
-from engine.identity.spark_dedup import deduplicate as s_dedup  # Spark (parité stricte)
+from engine.identity.rules import identity_key, master_id  # règle stricte et identifiant dérivé
+from engine.identity.matcher import deduplicate            # référence Python (liste de fiches)
+from engine.identity.spark_dedup import deduplicate_df     # même règle dans Spark (DataFrame)
 ```
 
-Chaque décision expose `master_patient_id`, `method` (exact|probabilistic|new_master), `score` et
-`explanation` — logique toujours **explicable**.
+Règle (v2, 30/09/2026) : deux fiches sont réunies si et seulement si CIN, genre, date et ville de
+naissance sont identiques (sans CIN des deux côtés : nom identique en plus). Aucun score ni seuil ; une
+identité incomplète n'est jamais fusionnée. Chaque décision expose `master_patient_id` (dérivé de la clé,
+permanent ; HMAC si `PATIENT_ID_SECRET` est défini), `method` (exact|new_master), `score` (1,0) et
+`explanation`.
 
 ## API de gouvernance — contrôle d'accès et consentement
 

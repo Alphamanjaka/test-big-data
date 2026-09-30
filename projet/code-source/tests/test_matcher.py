@@ -1,15 +1,17 @@
-"""Tests du moteur d'identite (exact + probabiliste) et parite Spark."""
+"""Tests de la règle d'identité stricte (v2) : aucune fusion sans champs identiques."""
 
+import random
 import sys
 from datetime import date
 from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 
-from engine.identity.canonical import CanonicalPatient, _cin, _text
-from engine.identity.matcher import deduplicate, _similarity
-from engine.identity.spark_dedup import deduplicate as spark_dedup
-from engine.identity.config import DEFAULT_THRESHOLD, DEFAULT_WEIGHTS, load_dedup_config
+from engine.identity.canonical import CanonicalPatient, _cin, _text  # noqa: E402
+from engine.identity.matcher import deduplicate  # noqa: E402
+from engine.identity.rules import (  # noqa: E402
+    EXPLANATION_INCOMPLETE, ID_LENGTH, ID_PREFIX, identity_key, master_id,
+)
 
 
 def _patient(source_system, source_patient_id, full_name, birth_date, cin, birth_city, gender="F"):
@@ -19,7 +21,7 @@ def _patient(source_system, source_patient_id, full_name, birth_date, cin, birth
         first_name=full_name.split(" ")[0],
         last_name=full_name.split(" ", 1)[1] if " " in full_name else "",
         full_name=full_name,
-        birth_date=date.fromisoformat(birth_date),
+        birth_date=date.fromisoformat(birth_date) if birth_date else None,
         cin=_cin(cin),
         birth_city=_text(birth_city),
         address="",
@@ -28,113 +30,105 @@ def _patient(source_system, source_patient_id, full_name, birth_date, cin, birth
     )
 
 
-def _decisions(patients):
+def _masters(patients):
     return {(d.source_system, d.source_patient_id): d.master_patient_id for d in deduplicate(patients)}
 
 
-def _spark_decisions(patients):
-    rows = [
-        {"source_system": p.source_system, "source_patient_id": p.source_patient_id,
-         "full_name": p.full_name, "birth_date": p.birth_date,
-         "cin": p.cin, "birth_city": p.birth_city}
-        for p in patients
-    ]
-    return {(d["source_system"], d["source_patient_id"]): d["master_patient_id"] for d in spark_dedup(rows)}
+def _same(patients):
+    return len(set(_masters(patients).values())) == 1
 
 
-def test_exact_duplicate():
-    p1 = _patient("pharmacy", "PH001", "Jean Rakoto", "1990-05-12", "101024045", "Antananarivo")
-    p2 = _patient("consultation", "MED001", "Jean Rakoto", "1990-05-12", "101024045", "Antananarivo")
-    dec = _decisions([p1, p2])
-    assert dec[("pharmacy", "PH001")] == dec[("consultation", "MED001")]
-    assert dec[("pharmacy", "PH001")].startswith("PAT-")
+def test_same_cin_gender_date_city_merges_even_if_names_differ():
+    # Faute de frappe et inversion du nom : les quatre champs d'identité suffisent.
+    p1 = _patient("pharmacy", "PH001", "Jean Rakoto", "1990-05-12", "101 02404 5", "Antananarivo", "M")
+    p2 = _patient("consultation", "MED001", "Rakotto Jean", "1990-05-12", "101024045", "ANTANANARIVO", "M")
+    assert _same([p1, p2])
+    decisions = deduplicate([p1, p2])
+    assert [d.method for d in decisions] == ["new_master", "exact"]
+    assert all(d.score == 1.0 for d in decisions)
 
 
-def test_exact_inverted_name_same_birth_cin():
-    p1 = _patient("pharmacy", "PH001", "Jean Rakoto", "1990-05-12", "101024045", "Antananarivo")
-    p2 = _patient("pharmacy", "PH002", "Rakoto Jean", "1990-05-12", "101024045", "Fianarantsoa")
-    dec = _decisions([p1, p2])
-    assert dec[("pharmacy", "PH001")] == dec[("pharmacy", "PH002")]
+def test_different_cin_never_merges():
+    # Homonymes parfaits du test à 100 000 patients : même nom, même date, CIN différents.
+    p1 = _patient("pharmacy", "PH014461", "Georges Grenier", "2022-04-27", "106867407", "Leclercq-la-Forêt", "M")
+    p2 = _patient("pharmacy", "PH014926", "Georges Grenier", "2022-04-27", "106388848", "BonninVille", "M")
+    assert not _same([p1, p2])
 
 
-def test_cin_format_normalization():
-    p1 = _patient("pharmacy", "PH001", "Jean Rakoto", "1990-05-12", "101 02404 5", "")
-    p2 = _patient("consultation", "MED001", "Jean Rakoto", "1990-05-12", "101024045", "")
-    dec = _decisions([p1, p2])
-    assert dec[("pharmacy", "PH001")] == dec[("consultation", "MED001")]
+def test_different_gender_never_merges():
+    p1 = _patient("pharmacy", "PH001", "Dominique Rabe", "1990-05-12", "101024045", "Toamasina", "M")
+    p2 = _patient("imaging", "IMG001", "Dominique Rabe", "1990-05-12", "101024045", "Toamasina", "F")
+    assert not _same([p1, p2])
 
 
-def test_probabilistic_threshold():
-    p1 = _patient("pharmacy", "PH001", "Jean Rakoto", "1990-05-12", "101024045", "")
-    p2 = _patient("consultation", "MED001", "Jean Rakoto", "1990-05-12", "102077713", "")
-    dec = _decisions([p1, p2])
-    # nom 0.5 + date 0.3 = 0.8 : exactement au seuil.
-    assert dec[("pharmacy", "PH001")] == dec[("consultation", "MED001")]
+def test_different_birth_date_or_city_never_merges():
+    base = _patient("pharmacy", "PH001", "Jean Rakoto", "1990-05-12", "101024045", "Antananarivo", "M")
+    other_date = _patient("consultation", "MED001", "Jean Rakoto", "1990-05-13", "101024045", "Antananarivo", "M")
+    other_city = _patient("imaging", "IMG001", "Jean Rakoto", "1990-05-12", "101024045", "Fianarantsoa", "M")
+    assert not _same([base, other_date])
+    assert not _same([base, other_city])
 
 
-def test_probabilistic_below_threshold_stays_separate():
-    p1 = _patient("pharmacy", "PH001", "Jean Rakoto", "1990-05-12", "", "")
-    p2 = _patient("pharmacy", "PH002", "Jean Rakoto", "1985-01-01", "", "")
-    dec = _decisions([p1, p2])
-    # nom seul = 0.5, sous le seuil : deux masters distincts.
-    assert dec[("pharmacy", "PH001")] != dec[("pharmacy", "PH002")]
+def test_missing_field_means_incomplete_identity_and_no_merge():
+    p1 = _patient("pharmacy", "PH001", "Jean Rakoto", "1990-05-12", "101024045", "", "M")
+    p2 = _patient("consultation", "MED001", "Jean Rakoto", "1990-05-12", "101024045", "", "M")
+    p3 = _patient("imaging", "IMG001", "Jean Rakoto", "", "101024045", "Antananarivo", "M")
+    assert identity_key(p1) is None and identity_key(p3) is None
+    decisions = deduplicate([p1, p2, p3])
+    assert len({d.master_patient_id for d in decisions}) == 3
+    assert all(d.method == "new_master" and d.explanation == EXPLANATION_INCOMPLETE for d in decisions)
 
 
-def test_distinct_patients_stay_separate():
-    p1 = _patient("pharmacy", "PH001", "Jean Rakoto", "1990-05-12", "101024045", "")
-    p2 = _patient("pharmacy", "PH002", "Marie Rasoa", "1985-01-01", "", "Toamasina")
-    dec = _decisions([p1, p2])
-    assert dec[("pharmacy", "PH001")] != dec[("pharmacy", "PH002")]
+def test_without_cin_the_name_must_also_be_identical():
+    p1 = _patient("pharmacy", "PH001", "Hery Rasoa", "1975-05-02", "", "Mahajanga", "F")
+    p2 = _patient("imaging", "IMG001", "HERY  RASOA", "1975-05-02", "", "mahajanga", "F")
+    p3 = _patient("consultation", "MED001", "Hery Rasoanirina", "1975-05-02", "", "Mahajanga", "F")
+    masters = _masters([p1, p2, p3])
+    assert masters[("pharmacy", "PH001")] == masters[("imaging", "IMG001")]
+    assert masters[("consultation", "MED001")] != masters[("pharmacy", "PH001")]
 
 
-def test_birth_city_increases_score():
-    base = _patient("pharmacy", "PH001", "Jean Rakoto", "1990-05-12", "", "Antananarivo")
-    same_city = _patient("consultation", "MED001", "Jean Rakoto", "1990-05-12", "", "antananarivo")
-    no_city = _patient("consultation", "MED002", "Jean Rakoto", "1990-05-12", "", "")
-    assert _similarity(base, same_city) > _similarity(base, no_city)
+def test_cin_on_one_side_only_never_merges():
+    # Cas « Émile Marty » : CIN absent d'un côté ; même nom, même date, ville identique ici.
+    p1 = _patient("pharmacy", "PH049519", "Émile Marty", "1988-02-27", "", "Fischernec", "M")
+    p2 = _patient("pharmacy", "PH058109", "Émile Marty", "1988-02-27", "122985195", "Fischernec", "M")
+    assert not _same([p1, p2])
 
 
-def test_spark_parity():
+def test_master_id_is_derived_from_key_and_order_independent():
     patients = [
-        _patient("pharmacy", "PH001", "Jean Rakoto", "1990-05-12", "101 02404 5", "Antananarivo"),
-        _patient("pharmacy", "PH002", "Rakoto Jean", "1990-05-12", "101024045", "Fianarantsoa"),
-        _patient("consultation", "MED001", "Jean Rakoto", "1990-05-12", "102077713", ""),
-        _patient("pharmacy", "PH003", "Marie Rasoa", "1985-01-01", "", "Toamasina"),
+        _patient("pharmacy", "PH001", "Jean Rakoto", "1990-05-12", "101024045", "Antananarivo", "M"),
+        _patient("consultation", "MED001", "Rakoto Jean", "1990-05-12", "101024045", "Antananarivo", "M"),
+        _patient("imaging", "IMG001", "Hery Rasoa", "1975-05-02", "", "Mahajanga", "F"),
+        _patient("imaging", "IMG002", "Solo Vola", "", "", "", "F"),
     ]
-    mvp = _decisions(patients)
-    spark = _spark_decisions(patients)
-    for key in mvp:
-        assert spark[key] == mvp[key], f"parite cassée pour {key}"
+    reference = _masters(patients)
+    shuffled = list(patients)
+    random.Random(7).shuffle(shuffled)
+    assert _masters(shuffled) == reference
+    mid = reference[("pharmacy", "PH001")]
+    assert mid.startswith(ID_PREFIX) and len(mid) == len(ID_PREFIX) + ID_LENGTH
+    assert mid == master_id(identity_key(patients[0]), "pharmacy", "PH001")
 
 
-def test_no_match_creates_new_master():
-    p1 = _patient("pharmacy", "PH001", "Jean Rakoto", "1990-05-12", "101024045", "")
-    p2 = _patient("pharmacy", "PH002", "Solo Vola", "1980-03-03", "", "")
-    dec = _decisions([p1, p2])
-    assert dec[("pharmacy", "PH001")] != dec[("pharmacy", "PH002")]
-    assert len({dec[("pharmacy", "PH001")], dec[("pharmacy", "PH002")]}) == 2
+def test_master_id_uses_secret_when_configured(monkeypatch):
+    key = ("cin", "101024045", "M", "1990-05-12", "antananarivo")
+    monkeypatch.delenv("PATIENT_ID_SECRET", raising=False)
+    plain = master_id(key, "pharmacy", "PH001")
+    monkeypatch.setenv("PATIENT_ID_SECRET", "secret-de-test")
+    assert master_id(key, "pharmacy", "PH001") != plain
 
 
-def test_load_dedup_config_from_yaml():
-    cfg = load_dedup_config()
-    assert cfg.threshold == 0.80
-    assert cfg.name_prefix_len == 4
-    assert dict(cfg.weights) == {"name": 0.5, "birth_date": 0.3, "cin": 0.1, "birth_city": 0.1}
+def test_spark_identity_function_matches_python_rule():
+    # La fonction appelée par l'UDF Spark donne la même clé et le même identifiant.
+    from engine.identity.canonical import from_dict
+    from engine.identity.spark_dedup import _identity
 
-
-def test_load_dedup_config_fallback_on_missing_file():
-    cfg = load_dedup_config("C:/aucun/chemin/deduplication.yaml")
-    assert cfg.threshold == DEFAULT_THRESHOLD
-    assert dict(cfg.weights) == dict(DEFAULT_WEIGHTS)
-
-
-def test_weights_override_changes_decision():
-    p1 = _patient("pharmacy", "PH001", "Jean Rakoto", "1990-05-12", "101024045", "")
-    p2 = _patient("pharmacy", "PH002", "Jean Rakoto", "1990-05-12", "102077713", "")
-    # Défauts : nom 0.5 + date 0.3 = 0.8 -> fusion au seuil.
-    assert _decisions([p1, p2])[("pharmacy", "PH001")] == _decisions([p1, p2])[("pharmacy", "PH002")]
-    # Poids reconfigurés (YAML recommande de les changer ici) : nom 0.4 + date 0.35 = 0.75 -> non fusion.
-    custom_weights = {"name": 0.4, "birth_date": 0.35, "cin": 0.05, "birth_city": 0.2}
-    dec = deduplicate([p1, p2], weights=custom_weights)
-    pairs = {(d.source_system, d.source_patient_id): d.master_patient_id for d in dec}
-    assert pairs[("pharmacy", "PH001")] != pairs[("pharmacy", "PH002")]
+    row = {"source_system": "pharmacy", "source_patient_id": "pharmacy_PH001", "full_name": "Jean Rakoto",
+           "birth_date": "1990-05-12", "cin": "101 02404 5", "birth_city": "Antananarivo", "gender": "male"}
+    key_text, mid, rule = _identity(row["source_system"], row["source_patient_id"], row["full_name"],
+                                    date(1990, 5, 12), row["cin"], row["birth_city"], row["gender"])
+    patient = from_dict(row)
+    assert key_text == "|".join(identity_key(patient))
+    assert mid == master_id(identity_key(patient), "pharmacy", "pharmacy_PH001")
+    assert rule == "cin"

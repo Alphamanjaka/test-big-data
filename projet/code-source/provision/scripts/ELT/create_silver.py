@@ -22,8 +22,7 @@ from pyspark.sql.types import StringType, IntegerType, DoubleType, DateType
 from pyspark.sql.window import Window
 from ..utils.fhir_schema import FHIR_FIELDS, FHIR_SYNONYMS
 from ..utils.sync_utils import update_sync_metadata
-from ..utils.run_metrics import record_safely, summarize_dedup
-from ..utils.central_db import load_central_db
+from ..utils.run_metrics import record_safely, summarize_counts
 from ..utils.paths import (
     METADATA_DIR, LOG_DIR, HIVE_SILVER,
     HDFS_BASE, hdfs_warehouse, FUZZY_THRESHOLD,
@@ -56,6 +55,13 @@ RAW_PARQUET_BASE = f"{HDFS_BASE}/raw"
 ENGINE_PATH = os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "..", "..", "engine")
 if ENGINE_PATH not in sys.path:
     sys.path.insert(0, ENGINE_PATH)
+# Les UDF de la règle d'identité s'exécutent dans des processus Python lancés par
+# Spark : ils doivent importer le paquet `engine` (racine du projet) avec le même
+# interpréteur que le driver.
+PROJECT_ROOT_PATH = os.path.normpath(os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "..", ".."))
+os.environ["PYTHONPATH"] = os.pathsep.join(
+    p for p in (PROJECT_ROOT_PATH, os.environ.get("PYTHONPATH", "")) if p)
+os.environ.setdefault("PYSPARK_PYTHON", sys.executable)
 
 # -----------------------------
 # 🎚️ NORMALISATION DES VALEURS (MVP Étape 1)
@@ -97,12 +103,32 @@ def marquer_doublons_patients(df):
 # -----------------------------
 # 🔗 DÉDUPLICATION EXPLICABLE (moteur engine — master patient)
 # -----------------------------
+def _fiche_canonique(r):
+    """Fiche SILVER -> modèle canonique (mêmes conventions que la règle d'identité)."""
+    from engine.identity.canonical import from_dict
+
+    return from_dict({
+        "source_system": r["_source_system"] or "",
+        "source_patient_id": r["source_patient_id"] or "",
+        "full_name": r["name"] or "",
+        "birth_date": r["birth_date"],
+        "cin": r["cin"],
+        "birth_city": r["birth_city"] or "",
+        "address": "",
+        "gender": r["gender"] or "",  # male/female -> M/F (modèle canonique)
+        "source_file": "",
+    })
+
+
 def enrichir_dedup_moteur():
     """
-    Enrichit patient_fhir AVEC le master patient explicable du moteur engine.
-    Colonnes ajoutées : master_patient_id, match_method, match_score.
-    is_duplicate est recalculé côté moteur (une seule occurrence = master,
-    les autres = doublons liés à un master existant).
+    Enrichit patient_fhir avec la règle d'identité stricte (v2), exécutée dans Spark.
+    Colonnes ajoutées : master_patient_id (dérivé de la clé d'identité), match_method,
+    match_score ; is_duplicate = fiche rattachée à une fiche fondatrice.
+
+    Les décisions sont calculées par Spark (engine.identity.spark_dedup), sans
+    rapatrier les fiches sur le driver. Seule l'écriture de la base centrale lit
+    les décisions en flux (toLocalIterator), par lots.
 
     Si le moteur n'est pas importable (environnement sans engine), les colonnes
     SILVER brutes (is_duplicate par clé name/birth_date/gender) sont conservées.
@@ -110,69 +136,59 @@ def enrichir_dedup_moteur():
     table_patient = f"{HIVE_SILVER}.patient_fhir"
     df_patient = spark.table(table_patient)
     try:
-        from engine.identity.canonical import from_dict
-        from engine.identity.matcher import deduplicate
-        from engine.identity.config import load_dedup_config
+        from engine.identity.canonical import _text
+        from engine.identity.spark_dedup import deduplicate_df
+        from ..utils.central_db import identity_row, load_central_db_rows, master_row
     except ImportError as e:
         logging.warning(f"Moteur engine indisponible ({e}) — enrichissement dédup sauté.")
         return
 
-    dedup_cfg = load_dedup_config()
     colonnes = ["_source_system", "source_patient_id", "name", "birth_date", "cin", "birth_city", "gender"]
-    presentes = [c for c in colonnes if c in df_patient.columns]
-    rows = [r.asDict() for r in df_patient.select(*presentes).collect()]
-
-    patients = [
-        from_dict({
-            "source_system": r.get("_source_system") or "",
-            "source_patient_id": r.get("source_patient_id") or "",
-            "full_name": r.get("name") or "",
-            "birth_date": r.get("birth_date"),
-            "cin": r.get("cin"),
-            "birth_city": r.get("birth_city") or "",
-            "address": "",
-            "gender": r.get("gender") or "",  # male/female -> M/F (modèle canonique)
-            "source_file": "",
-        })
-        for r in rows
-    ]
-    if not patients:
+    source = df_patient.select(*[
+        F.col(c) if c in df_patient.columns else F.lit(None).cast("string").alias(c) for c in colonnes
+    ])
+    decisions = deduplicate_df(source).cache()
+    nb_patients = decisions.count()
+    if not nb_patients:
         logging.warning("Aucun patient SILVER à analyser — enrichissement dédup sauté.")
+        decisions.unpersist()
         return
 
-    decisions = deduplicate(
-        patients,
-        probabilistic_threshold=dedup_cfg.threshold,
-        weights=dedup_cfg.weights,
-        name_prefix_len=dedup_cfg.name_prefix_len,
-    )
-    dedup_rows = [
-        (d.source_system, d.source_patient_id, d.master_patient_id, d.method,
-         float(d.score), 1 if d.method != "new_master" else 0)
-        for d in decisions
-    ]
-    df_dedup = spark.createDataFrame(
-        dedup_rows,
-        ["_source_system", "source_patient_id", "master_patient_id",
-         "match_method", "match_score", "iso_dup"],
-    )
-
-    df_patient = df_patient.join(df_dedup, on=["_source_system", "source_patient_id"], how="left")
-    df_patient = df_patient.withColumn("is_duplicate", F.col("iso_dup") == 1) \
-                           .drop("iso_dup")
-    # Compteurs calculés sur le DataFrame enrichi (avant écriture) : les relectures
-    # de la table après drop/rename sont susceptibles de compter des fichiers
-    # périmés encore dans le cache de listing de la session.
-    nb_total = df_patient.count()
-    # Compteurs du run tirés des décisions du moteur : patients maîtres
-    # DISTINCTS (et non lignes rattachées à un maître), doublons par méthode.
-    resume_dedup = summarize_dedup(decisions)
-    nb_doublons = resume_dedup["duplicate_count"]
-    nb_masters = resume_dedup["master_count"]
+    # Compteurs du run agrégés par Spark : patients maîtres DISTINCTS (et non lignes
+    # rattachées à un maître), doublons par méthode, fiches par source.
+    par_methode = {r["match_method"]: r["count"] for r in decisions.groupBy("match_method").count().collect()}
+    par_source = {r["_source_system"]: r["count"] for r in decisions.groupBy("_source_system").count().collect()}
+    nb_masters = decisions.select("master_patient_id").distinct().count()
+    resume_dedup = summarize_counts(par_methode, nb_masters, par_source)
     record_safely("create_silver", resume_dedup, logging.getLogger(__name__))
-    # Base centrale : patients maîtres et correspondances, lus ensuite par l'API de
-    # gouvernance (sans DATABASE_URL, le pipeline continue sans l'alimenter).
-    load_central_db(patients, decisions, logger=logging.getLogger(__name__))
+
+    # Base centrale : patients maîtres (fiches fondatrices) puis correspondances, lus
+    # en flux ; sans DATABASE_URL, le pipeline continue sans l'alimenter.
+    def lignes_maitres():
+        fondateurs = source.join(
+            decisions.filter(F.col("match_method") == "new_master")
+                     .select("_source_system", "source_patient_id", "master_patient_id"),
+            on=["_source_system", "source_patient_id"], how="inner")
+        for r in fondateurs.toLocalIterator():
+            yield master_row(r["master_patient_id"], _fiche_canonique(r))
+
+    def lignes_correspondances():
+        for r in decisions.toLocalIterator():
+            yield identity_row(r["master_patient_id"], _text(r["_source_system"]),
+                               _text(r["source_patient_id"]), r["match_method"],
+                               r["match_score"], r["explanation"])
+
+    load_central_db_rows(lignes_maitres(), lignes_correspondances(), logger=logging.getLogger(__name__))
+
+    df_patient = df_patient.join(
+        decisions.select("_source_system", "source_patient_id", "master_patient_id",
+                         "match_method", "match_score"),
+        on=["_source_system", "source_patient_id"], how="left")
+    df_patient = df_patient.withColumn("is_duplicate", F.col("match_method") == "exact")
+    # Compteur calculé sur le DataFrame enrichi (avant écriture) : les relectures de
+    # la table après drop/rename sont susceptibles de compter des fichiers périmés
+    # encore dans le cache de listing de la session.
+    nb_total = df_patient.count()
 
     # Écriture via table temporaire + rename pour éviter l'erreur Spark
     # "Cannot overwrite table ... that is also being read from"
@@ -180,9 +196,11 @@ def enrichir_dedup_moteur():
     df_patient.write.mode("overwrite").saveAsTable(tmp_table)
     spark.sql(f"DROP TABLE IF EXISTS {table_patient}")
     spark.sql(f"ALTER TABLE {tmp_table} RENAME TO {table_patient}")
+    decisions.unpersist()
 
-    logging.info(f"🔗 Moteur : {len(patients)} patients analysés, {nb_masters} patients maîtres "
-                 f"distincts ({nb_doublons} doublons liés à un master existant, total {nb_total}).")
+    logging.info(f"🔗 Moteur (Spark) : {nb_patients} patients analysés, {nb_masters} patients maîtres "
+                 f"distincts ({resume_dedup['duplicate_count']} doublons liés à une fiche fondatrice, "
+                 f"total {nb_total}).")
 
 # -----------------------------
 # 🪵 CONFIGURATION DU LOGGING (console + fichier)

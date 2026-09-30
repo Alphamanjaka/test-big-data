@@ -71,20 +71,6 @@ def _birth_date(value) -> date | None:
     return None if pd.isna(parsed) else parsed.date()
 
 
-def matching_key(patient: CanonicalPatient) -> tuple[str, str, str]:
-    """Clé composite de matching exact : (birth_date, cin, nom normalisé).
-
-    Ordre volontaire : la date de naissance et le CIN sont des identifiants
-    plus discriminants que le nom ; les deux variantes d'écriture d'un même
-    nom (inversion prénom/nom) aboutissent à la même clé après normalisation.
-    Utilisée par le matching exact de `matcher` et par le clustering Spark de
-    `spark_dedup` — les deux implémentations doivent rester strictement à
-    l'identique (parité testée dans `tests/test_matcher.py`).
-    """
-    birth_date = patient.birth_date.isoformat() if patient.birth_date else ""
-    return (birth_date, patient.cin, _normalized(patient.full_name))
-
-
 def map_patient(row, source_system: str, source_file: str = "") -> CanonicalPatient:
     """Convertit une ligne brute d'une source en `CanonicalPatient`.
 
@@ -98,7 +84,7 @@ def map_patient(row, source_system: str, source_file: str = "") -> CanonicalPati
 
     Les valeurs passent systématiquement par les normalisations partagées
     (_text, _cin, _gender, _birth_date) afin d'obtenir un référentiel commun
-    des le RAW, indispensable a un matching exact/probabiliste fiable ensuite.
+    des le RAW, indispensable a la regle d'identite stricte ensuite.
     """
     if source_system == "pharmacy":
         name_parts = _text(row["nom_complet"]).split(" ", 1)
