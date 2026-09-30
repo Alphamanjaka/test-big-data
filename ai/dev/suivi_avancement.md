@@ -161,6 +161,15 @@ dans `Mon_Memoire` (subtree → `projet/code-source/`, `projet/mvp/`, `archives/
     éliminatoires + 5 de qualité ; arbitrage 4 ajouté à la matrice du § 7.1 ; B21-B31 ajoutées.
     **Preuves :** sources consultées le 28/09 (URL et DOI dans `references/bibliographie.md`) ;
     49 tableaux renumérotés sans trou ; export DOCX de contrôle OK. Reste : relecture, commit.
+21. **[Moteur v2 — règle d'identité stricte, 30/09]** Demande de l'auteur : CIN, genre, date et ville de naissance
+    identiques, sans probabilité (sans CIN : nom en plus). Score, seuil et poids supprimés ; règle exécutée dans
+    Spark (UDF + `row_number`, sans `collect()`) ; identifiant du patient maître dérivé de la clé (permanent, HMAC
+    si `PATIENT_ID_SECRET`). Résultats : aucune fusion à tort sur tous les jeux (100 000 patients : 13 paires à
+    tort en v1, 0 en v2) ; rappel 1,000 (facile, 12 000, 100 000), 0,824 (moyen), 0,179 (difficile). Parité
+    Spark = Python : 0 différence sur 212 523 et 1 057 fiches. Run de 100 000 patients : 2 min 48 s (v1 : 7 min 03 s).
+    Bases de test `patient_platform_demo` / `patient_platform_scale` ; `/metrics` et cache Flask corrigés ; captures,
+    mémoire, rapport, oral, deck et documentation alignés. **Preuves :** `pytest` 131/131 (+ parité Spark dans la VM),
+    journal du 30/09. **Reste :** validation humaine des fiches incomplètes ; secret d'identifiant hors démonstration.
 20. **[Passage à l'échelle — 30/09]** Pipeline complet sur un jeu facile de **12 000 patients** (25 587 fiches) :
     12 000 patients maîtres, P = R = F1 = 1,000. Défaut quadratique de la passe exacte corrigé
     (`matcher._MasterIndex.exact`, `spark_dedup._BoundedMasterIndex.exact_birth_cin`) : moteur seul 887 s → 13 s,

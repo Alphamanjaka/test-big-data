@@ -55,7 +55,7 @@ fonction (il reste juste si le code bouge). Une capture est **facultative** : si
 | X01 | `X01_normalisation.png` | 7.2.2 | `canonical.py` : `_cin`, `_gender` |
 | X02 | `X02_schema.png` | 7.2.2 | `sql/schema.sql` : tables `patient_identity_map` et `consent` |
 | X03 | `X03_config.png` | 7.2.3 | retiré du rapport (29/09/2026) |
-| X04 | `X04_score.png` | 7.2.3 | `matcher.py` : `_similarity` |
+| X04 | `X04_score.png` | 7.2.3 | `rules.py` : `identity_key`, `master_id` |
 | X05 | `X05_consentement.png` | 7.2.3 | `consent.py` : `check_consent`, `enforce_consent` |
 | X06 | `X06_deduplicate.png` | Annexe D | `matcher.py` : `deduplicate` |
 | X07 | `X07_audit.png` | Annexe D | `audit.py` : `AuditMiddleware` |

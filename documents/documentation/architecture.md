@@ -6,7 +6,7 @@ Plateforme Big Data **Medallion** (RAW → SILVER → GOLD) pour la centralisati
 données patients synthétiques. Deux voies complémentaires cohabitent :
 
 1. **Pipeline ELT Big Data** (VM Hadoop/Hive/Spark) : ingestion multi-sources → FHIR → GOLD → API Flask.
-2. **Moteur de déduplication** (`engine/`) : canonicalisation + matching exact/probabiliste → master
+2. **Moteur de déduplication** (`engine/`) : canonicalisation + règle d'identité stricte (v2) → master
    patient + identity map → PostgreSQL central → API gouvernance + évaluation ground-truth.
 
 ```mermaid
@@ -23,7 +23,7 @@ flowchart TB
 
     subgraph ENG["MOTEUR DE DÉDUPLICATION · engine/"]
         direction TB
-        CAN["canonical.py → matcher.py<br/>(exact + probabiliste · seuil 0.80)"]
+        CAN["canonical.py → rules.py<br/>matcher.py · spark_dedup.py (règle stricte)"]
         SPK["spark_dedup.py (driver-side, parité)"]
     end
 

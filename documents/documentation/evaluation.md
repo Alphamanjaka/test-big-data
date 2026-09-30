@@ -60,7 +60,28 @@ flowchart TB
     TN --> M
 ```
 
-## 3. Résultats de référence (moteur porté `engine/`)
+## 3. Résultats — règle d'identité stricte (v2, 30/09/2026)
+
+`evaluate_engine.py --level {easy|medium|hard}` et `--dir` pour les jeux de 12 000 et 100 000 patients
+(`data/experiments_12000/easy`, `data/experiments_100000/easy`, non versionnés, graine 42) :
+
+| Jeu | Fiches | Masters prédits (vérité) | TP | FP | FN | Precision | Recall | F1 |
+|---|---:|---|---:|---:|---:|---|---|---|
+| easy | 1 057 | 500 (500) | 727 | 0 | 0 | 1.000 | 1.000 | 1.000 |
+| medium | 1 057 | 589 (500) | 599 | 0 | 128 | 1.000 | 0.824 | 0.903 |
+| hard | 1 057 | 942 (500) | 130 | 0 | 597 | 1.000 | 0.179 | 0.303 |
+| easy 12 000 | 25 587 | 12 000 (12 000) | 17 715 | 0 | 0 | 1.000 | 1.000 | 1.000 |
+| easy 100 000 | 212 523 | 100 000 (100 000) | 146 186 | 0 | 0 | 1.000 | 1.000 | 1.000 |
+
+Rappel par source (hard) : pharmacy 0.181 · consultation 0.175 · imaging 0.180. Pipeline complet (VM,
+`evaluate_pipeline_run.py --parity`) : mêmes chiffres que le moteur seul, **0 différence d'identifiant**
+sur 1 057 (hard) et 212 523 fiches (100 000 patients).
+
+**Lecture :** aucune fusion à tort sur aucun jeu ; la v1 fusionnait deux homonymes parfaits à
+100 000 patients (13 paires, précision 0.99991). Le rappel baisse dès que la saisie se dégrade : une date
+ou une ville effacée par le générateur, ou un nom mal saisi sans CIN, empêche tout rattachement.
+
+### v1 — score pondéré (historique)
 
 Run 2026-09-08 — `evaluate_engine.py --level {easy|medium|hard}` (500 masters par niveau,
 ~1 000 enregistrements, seed 42), parité **MVP (Pandas) = Spark** vérifiée à chaque niveau :
@@ -125,7 +146,8 @@ cd ..
 
 # 3. lancer l'évaluation du moteur
 ..\.venv\Scripts\python evaluation\evaluate_engine.py --level hard
-# arguments : --level easy|medium|hard (défaut medium) · --only mvp|spark · --patients/--seed
+# arguments : --level easy|medium|hard (défaut medium) · --dir <jeu> · --patients/--seed
+# pipeline complet (VM) : DATABASE_URL=... python evaluation/evaluate_pipeline_run.py --level hard --parity
 
 # 4. lire le rapport dans evaluation/evaluation_truth.md
 ```
@@ -139,7 +161,8 @@ l'évaluateur porté `evaluation/evaluate_engine.py` qui teste le moteur `engine
 |---|---|
 | `evaluation/synthetic-patient-generator/` | Générateur de données + ground truth (easy/medium/hard) |
 | `evaluation/evaluation_truth.py` | Calcul P/R/F1 + breakdown par méthode et source |
-| `evaluation/evaluate_engine.py` | Évaluateur adapté au moteur `engine/` (`--level`, `--only`) |
+| `evaluation/evaluate_engine.py` | Évaluateur du moteur `engine/` (`--level`, `--dir`) |
+| `evaluation/evaluate_pipeline_run.py` | Évaluation du pipeline complet sur la base centrale (`--truth`, `--parity`) |
 | `evaluation/EVALUATION_GUIDE.md` | Guide pas à pas |
 
 ## 6. Règles

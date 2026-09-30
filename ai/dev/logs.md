@@ -2435,3 +2435,31 @@ ch. 8 : 2 221 → 2 103 ; ch. 9 : 2 251 → 2 200). Export : 100 pages, 18 figur
 - Front : sous-titre de `/synthese` (« règle d'identité stricte »). Captures refaites : C04, C07, C09, C12, C14,
   C15 (131 réussis, 1 ignoré), C16 (évaluation + parité). Première tentative web ratée (connexion non
   terminée au bout de 4 s) : attente explicite de la sortie de `/login`.
+
+## 30/09/2026 — Mémoire, rapport, soutenance et documentation : règle stricte (v2) en « évolution mesurée »
+
+- Principe retenu avec l'auteur : la v1 (voie exacte + score pondéré, seuil 0,80) est présentée comme
+  première version, résultats conservés en comparaison ; la v2 (règle stricte, 30/09) est le moteur actuel.
+  État de l'art du ch2 inchangé, sauf les phrases énonçant le choix du projet.
+- Mémoire : résumé et abstract ; ch1 (objectif 3) ; ch2 (blocking, `$match`, arbitrages, EM, maintenance) ;
+  ch3 (figure 1, contrat « aucune valeur devinée », périmètre, réponse 2) ; ch4 (paramètres, contraintes,
+  volumétrie) ; ch5 (F3, CU3, qualité : scalabilité, maintenance, fiabilité 76 tests, `/doublons`) ; ch6
+  (tableau 29, figure 5) ; ch7 (figure 6, révision de l'arbitrage 4, arborescence sans `config/`, clé
+  d'identité, § 7.2.3 v1 → v2 avec tableau 36 renommé « score de la v1 », Spark sans `collect()`, runs v2,
+  tableau 40 réécrit, 12e incident « homonymes », familles) ; ch8 (figure 9 et tableau 42 : 55 + 76 = 131
+  tests, tableau 44 v1 / v2 avec la ligne 100 000 patients, lecture, pipeline v2, homonymes → v2, décomposition,
+  cas de référence du PoC, limites) ; ch9 (bilan, arbitrages dont « règle stricte », « CIN au cœur de la
+  clé », « identifiant dérivé de la clé », démonstrations, 12 incidents, limites : rappel 0,179, identifiant
+  dérivé, précision optimiste, déduplication recalculée ; perspectives 2, 4, 7) ; annexes (C, figures 15, 17,
+  18) ; glossaire (+ HMAC, UDF). Figures re-rendues : 1, 5, 6, 9 (3, 4, 7, 8 remises à leur version
+  commitée). Export : 47 tableaux, 18 figures, résumé 222 mots.
+- Rapport : mêmes points ; extraits X04 (`rules.py::identity_key,master_id`) et X06 régénérés ; 72 pages.
+- Script oral : S13, S15, S16, S17, S18 et questions du jury ; tableau du débit recompté avec une seule
+  méthode (1 501 mots ; l'ancien décompte de 1 608 n'était pas reproductible). Deck : S13 (cases égales,
+  trait de seuil retiré, exemple des homonymes), S15, S16 (données du graphique et étiquettes figées
+  régénérées), S17, S18 et notes ; vérifié par export PNG (PowerPoint).
+- Documentation : `deduplication.md` (section 0 « règle en vigueur », v1 en historique, implémentation,
+  tests), `evaluation.md` (résultats v2 sur 5 jeux, v1 en historique, options), `architecture.md`,
+  `bases_de_donnees.md`, `api.md` (`/metrics`), README des captures (X04).
+- Non modifiable ici : la vidéo de démonstration (S17), si elle a déjà été enregistrée avec les anciens
+  chiffres.

@@ -69,7 +69,7 @@ Le cahier des charges (§ 3) fixe six objectifs :
 |---|---|---|
 | 1 | **Centraliser** les données dans une architecture Big Data | pipeline ELT Medallion RAW → SILVER → GOLD |
 | 2 | **Nettoyer et standardiser** selon un modèle commun | modèle canonique du patient pour la déduplication, schéma pivot FHIR pour le pipeline |
-| 3 | **Dédupliquer** avec une logique toujours explicable | patient maître, table de correspondance, score, méthode et seuil |
+| 3 | **Dédupliquer** avec une logique toujours explicable | patient maître, table de correspondance, méthode et règle appliquée |
 | 4 | **Gouverner les accès** | rôles (RBAC), consentement par finalité, journal d'accès, clés d'API hachées |
 | 5 | **Visualiser** les indicateurs | vues de déduplication et de consentement (interface web optionnelle) |
 | 6 | **Évaluer** la déduplication | vérité terrain, précision, rappel et F1 |

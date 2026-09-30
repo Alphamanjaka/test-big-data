@@ -197,16 +197,15 @@ Il reste **environ 3 minutes de marge** sur 20 minutes : elles servent à ralent
 
 ## S13. Déduplication explicable — 1:00 · `[7:55] → [8:55]`
 
-> Sa règle tient en une phrase : aucune fusion sans justification.
+> Sa règle tient en une phrase : aucune fusion sans identité identique.
 >
-> Pour ne pas comparer tout le monde avec tout le monde, le moteur ne compare que des candidats
-> plausibles : même début de nom, même date de naissance ou même CIN. Puis deux passes. D'abord
-> une passe exacte : même nom normalisé, même date, même CIN. Sinon, un score pondéré : le nom
-> compte pour moitié, la date pour 0,3, le CIN et la ville pour 0,1 chacun. Au-dessus de 0,80, on
-> rattache ; en dessous, on crée un nouveau patient.
+> Deux fiches sont réunies si, et seulement si, elles ont le même CIN, le même genre, la même date
+> et la même ville de naissance. Sans CIN, le nom doit être identique en plus. Il n'y a ni score
+> ni seuil : qu'un champ manque, et la fiche reste seule.
 >
-> Chaque décision porte sa méthode, son score et son explication. Un gestionnaire peut donc la
-> relire, et la contester.
+> J'ai d'abord utilisé un score pondéré. Sur 100 000 patients, il a réuni deux homonymes parfaits,
+> aux CIN différents. J'ai donc choisi la règle stricte. Chaque décision porte sa méthode et son
+> explication, et l'identifiant du patient, dérivé de sa clé, ne change pas d'un run à l'autre.
 
 → « Une fois l'identité établie, reste à savoir qui peut la lire. »
 
@@ -230,28 +229,27 @@ Il reste **environ 3 minutes de marge** sur 20 minutes : elles servent à ralent
 
 ## S15. Résultats du run — 0:40 · `[9:50] → [10:30]`
 
-> Sur le jeu difficile, rejoué dans la VM le 29 septembre : 1 057 fiches, 803 patients distincts,
-> 254 doublons rattachés, soit 24 % de doublons. La cohérence se vérifie par une soustraction :
-> 1 057 moins 254, 803. Les cinq étapes réussissent, et les 123 tests passent.
+> Sur le jeu difficile, rejoué dans la VM : 1 057 fiches, 942 patients distincts, 115 doublons
+> rattachés. La cohérence se vérifie par une soustraction : 1 057 moins 115, 942. Sur 100 000
+> patients, le run complet prend moins de trois minutes. Et les 131 tests passent.
 
-→ « Mais ces 803 patients sont-ils les bons ? »
+→ « Mais ces 942 patients sont-ils les bons ? »
 
 ---
 
 ## S16. Évaluation — 1:00 · `[10:30] → [11:30]`
 
-> Pour le savoir, il faut connaître la vérité. J'ai donc généré 500 patients fictifs, puis trois
-> jeux où 10, 30 ou 50 % des fiches sont abîmées : fautes de frappe, inversions, formats.
+> Pour le savoir, il faut connaître la vérité. J'ai donc généré des patients fictifs, puis des
+> jeux où 10, 30 ou 50 % des fiches sont abîmées : fautes de frappe, inversions, champs effacés.
 >
-> Résultat principal : zéro fusion à tort, sur les trois niveaux. En santé, c'est la propriété
-> qui compte : confondre deux patients est plus grave que de les laisser séparés. Sa portée a
-> une limite : mon générateur ne crée pas de sosies, deux personnes différentes qui se
-> ressemblent. Ce résultat vaut donc pour les erreurs que j'ai simulées ; face à de vrais
-> homonymes, c'est une estimation optimiste.
+> Résultat principal : zéro fusion à tort, sur tous les jeux, y compris à 100 000 patients. En
+> santé, c'est la propriété qui compte : confondre deux patients est plus grave que de les laisser
+> séparés. Sa portée a une limite : mes données ne contiennent pas de CIN partagé par deux
+> personnes. C'est donc une estimation optimiste.
 >
-> Le prix de cette prudence, c'est le rappel : 0,422 sur le jeu difficile, après être parti de
-> 0,287. Pandas et Spark donnent exactement les mêmes résultats, et le pipeline complet, mesuré
-> sur la même vérité terrain, aussi : précision 1,000, rappel 0,424.
+> Le prix de cette prudence, c'est le rappel : 0,18 sur le jeu difficile, car une fiche dont la
+> date ou la ville a été effacée n'est jamais rattachée. Python et Spark donnent exactement les
+> mêmes identifiants, fiche par fiche.
 
 → « Je vous montre maintenant la chaîne en fonctionnement. »
 
@@ -265,11 +263,11 @@ Il reste **environ 3 minutes de marge** sur 20 minutes : elles servent à ralent
 
 | Plan | À l'écran | À dire pendant le plan |
 |---|---|---|
-| 0:45 | tests | « 123 tests, aucun échec : moteur, gouvernance, pipeline. » |
-| 0:45 | évaluation, jeu difficile | « Précision 1,000, rappel 0,422, mêmes décisions en Pandas et en Spark. » |
+| 0:45 | tests | « 131 tests, aucun échec : moteur, gouvernance, pipeline. » |
+| 0:45 | évaluation, jeu difficile | « Précision 1,000, rappel 0,179, mêmes identifiants en Python et dans Spark. » |
 | 1:00 | pipeline RAW → SILVER → GOLD | « Les étapes s'enchaînent jusqu'à la zone GOLD. » |
 | 0:30 | tableau de bord | « Les zones, le dernier run et la planification. » |
-| 0:30 | repli si la vidéo échoue | « Les mêmes preuves en chiffres : 1 057, 803, 254. » |
+| 0:30 | repli si la vidéo échoue | « Les mêmes preuves en chiffres : 1 057, 942, 115. » |
 
 → « Ce que je n'ai pas résolu. »
 
@@ -277,13 +275,13 @@ Il reste **environ 3 minutes de marge** sur 20 minutes : elles servent à ralent
 
 ## S18. Limites et perspectives — 0:50 · `[15:00] → [15:50]`
 
-> Je préfère nommer les limites. Le rappel sur le jeu difficile reste à 0,42. La planification
+> Je préfère nommer les limites. Le rappel sur le jeu difficile est de 0,18. La planification
 > automatique n'a pas encore été activée. La base centrale est une base de test, avec des
 > consentements de démonstration. Et la plateforme n'est pas déployée : c'est un prototype
 > reproductible.
 >
-> La suite : terminer le consentement par type de dossier, calibrer le seuil, activer la
-> planification. Et avant toute mise en production, vérifier le droit malgache des données de
+> La suite : terminer le consentement par type de dossier, valider à la main les fiches
+> incomplètes, activer la planification. Et avant toute mise en production, vérifier le droit malgache des données de
 > santé.
 
 → « Pour conclure. »
@@ -319,29 +317,29 @@ Il reste **environ 3 minutes de marge** sur 20 minutes : elles servent à ralent
 | Question | Réponse courte |
 |---|---|
 | Pourquoi une entreprise de matériel biomédical gère-t-elle des données patients ? | son département R&D gère depuis 2024 des systèmes d'information médicale (GNU Health, MAVIS, base clinique) |
-| Pourquoi 0,80 et ces poids ? | choix explicables, déclarés dans un fichier de configuration ; le calibrage fait partie des perspectives |
-| Pourquoi ne pas estimer les poids automatiquement, comme Splink ? | pour qu'un gestionnaire de données puisse lire et modifier chaque poids |
-| Pourquoi Spark, si Pandas est plus rapide sur vos volumes ? | Spark porte l'extraction, le lac et GOLD, qui se répartissent en ajoutant des nœuds ; la déduplication, elle, tourne encore sur une seule machine : c'est la limite principale, et la voie de sortie est connue |
+| Pourquoi une règle stricte plutôt qu'un score ? | le score de la première version a réuni deux homonymes aux CIN différents, sur 100 000 patients ; la règle stricte ne fusionne jamais à tort, au prix du rappel |
+| Pourquoi ne pas estimer des poids automatiquement, comme Splink ? | pour qu'un gestionnaire de données puisse lire la règle ; il n'y a d'ailleurs plus de poids du tout |
+| Pourquoi Spark, si Pandas est plus rapide sur vos volumes ? | Spark porte l'extraction, le lac, GOLD et désormais la déduplication : tout se répartit en ajoutant des nœuds |
 | Que se passe-t-il si la VM s'arrête pendant un run ? | le run est reconnu orphelin (processus disparu) : il est marqué en échec et repris à l'étape interrompue, sans bloquer la planification |
-| Et avec des millions de lignes ? La VM est-elle assez puissante ? | la VM limite la démonstration (8 Go, gels observés), mais un plus gros serveur ne suffirait pas : l'extraction, le lac et GOLD passent sous Spark, alors que la déduplication est centralisée sur une machine et refaite à chaque run (212 523 fiches : 8 fois plus de fiches, 26 fois plus de temps). La voie : déduplication incrémentale avec identifiants permanents, puis blocage réparti sur un cluster |
-| Votre précision est-elle vraiment de 1 ? | sur les jeux de référence, oui ; à 100 000 patients, deux homonymes parfaits ont été fusionnés (0,9999) : c'est la limite d'un score seul. Un veto sur deux CIN différents en évite un ; l'autre demande une validation humaine |
+| Et avec des millions de lignes ? La VM est-elle assez puissante ? | la VM limite la démonstration (8 Go, gels observés). La règle stricte s'exécute dans Spark sans tout rapatrier : 212 523 fiches en moins de trois minutes. Pour des millions, il faut extraire les seules lignes nouvelles et ajouter des nœuds |
+| Votre précision est-elle vraiment de 1 ? | sur tous nos jeux, oui, 100 000 patients compris ; la première version à score y réunissait deux homonymes. Reste le cas d'un CIN partagé par erreur, que nos données ne contiennent pas |
 | Le consentement par type de dossier est-il fait ? | non, il est en cours ; le consentement par finalité est réalisé et testé (401, 403, 422) |
 | Et le RGPD à Madagascar ? | le RGPD sert de cadre de conception ; le droit malgache reste à étudier avant toute production |
 
 ## Contrôle du débit
 
-Mots réellement prononcés par slide (texte « à dire » et transitions), comptés par script le
-30/09/2026. La vidéo (S17) n'est comptée que pour sa narration.
+Mots réellement prononcés par slide (texte « à dire » et transitions), recomptés par script le
+30/09/2026 après le passage à la règle stricte. La vidéo (S17) n'est comptée que pour sa narration.
 
 | Slides | Durée prévue | Mots | Débit |
 |---|---|---|---|
-| S1 à S6 (ouverture) | 3:30 | 453 | 129 /min |
-| S7 à S10 (état de l'art, existant) | 2:45 | 308 | 112 /min |
-| S11 à S16 (solution, résultats) | 5:15 | 632 | 120 /min |
-| S17 (vidéo 3:30) | 3:30 | 73 | narration seule |
-| S18 à S20 (limites, conclusion) | 1:30 | 142 | 95 /min |
-| **Total** | **16:30** | **1 608** | — |
+| S1 à S6 (ouverture) | 3:30 | 421 | 120 /min |
+| S7 à S10 (état de l'art, existant) | 2:45 | 285 | 104 /min |
+| S11 à S16 (solution, résultats) | 5:15 | 580 | 110 /min |
+| S17 (vidéo 3:30) | 3:30 | 68 | narration seule |
+| S18 à S20 (limites, conclusion) | 1:30 | 147 | 98 /min |
+| **Total** | **16:30** | **1 501** | — |
 
-Les slides S1 à S4 sont les plus denses (environ 140 mots par minute) : ce sont celles du récit,
+Les slides S1 à S4 sont les plus denses (environ 130 mots par minute) : ce sont celles du récit,
 à dire posément. Les slides techniques laissent le temps de montrer l'écran. Avec la marge, l'exposé
 tient dans 20 minutes.

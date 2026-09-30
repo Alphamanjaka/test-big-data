@@ -39,18 +39,18 @@ le score et la méthode, sans quoi une fusion serait inexplicable.
 
 ## Annexe C — Le moteur de rapprochement
 
-Le moteur tient dans trois fichiers de `engine/identity/`. `canonical.py` définit le modèle
-canonique et la normalisation des champs, notamment la fonction `matching_key`, qui produit la
-clé de rapprochement. `matcher.py` porte l'algorithme : la similarité entre deux valeurs, la
-comparaison par préfixe de nom, et la fonction `deduplicate`, qui enchaîne rapprochement exact
-puis rapprochement probabiliste pondéré par champ, au-dessus du seuil de 0,80.
-`spark_dedup.py` est le même algorithme réécrit pour Spark, dont la parité stricte avec la
-version Pandas est l'un des résultats vérifiés du projet.
+Le moteur tient dans quatre fichiers de `engine/identity/`. `canonical.py` définit le modèle
+canonique et la normalisation des champs. `rules.py` porte la règle d'identité stricte : la clé
+(CIN, genre, date et ville de naissance ; le nom en plus sans CIN) et l'identifiant du patient
+maître, dérivé de cette clé. `matcher.py` applique la règle à une liste de fiches (référence
+Python, utilisée par l'évaluation et les tests) ; `spark_dedup.py` l'applique à un DataFrame
+Spark avec les mêmes fonctions, ce qui garantit la parité. La v1 enchaînait un rapprochement
+exact et un score pondéré par champ (seuil 0,80) ; elle a été abandonnée le 30/09/2026 (§ 7.2.3).
 
-Cette duplication de l'algorithme est le prix d'un choix fait tard : comparer deux
-implémentations plutôt que décider plus tôt de l'échelle. Cette décision et
-son coût sont discutés au § 7.2.3 et retenus comme leçon de conduite de projet au § 4.3 et
-dans la conclusion générale.
+En v1, l'algorithme existait en deux écritures, prix d'un choix fait tard : comparer deux
+implémentations plutôt que décider plus tôt de l'échelle. Cette décision et son coût sont
+discutés au § 7.2.3 et retenus comme leçon de conduite de projet au § 4.3 et dans la conclusion
+générale ; la v2 réduit ce coût, les deux chemins partageant les fonctions de la règle.
 
 ## Annexe D — L'API de gouvernance
 
@@ -137,7 +137,7 @@ des sorties réelles, sans modification ; les clés d'API y sont masquées.
 
 ![](documents/captures/C12_run_pipeline.png)
 
-> **Figure 15 — Run du pipeline en mode reprise (extraits du journal).**
+> **Figure 15 — Run complet du pipeline avec la règle stricte (extraits du journal).**
 
 ![](documents/captures/C14_refus_403.png)
 
@@ -145,8 +145,8 @@ des sorties réelles, sans modification ; les clés d'API y sont masquées.
 
 ![](documents/captures/C15_pytest.png)
 
-> **Figure 17 — Suite de tests automatisés : 123 tests réussis.**
+> **Figure 17 — Suite de tests automatisés : 131 tests réussis.**
 
 ![](documents/captures/C16_evaluation.png)
 
-> **Figure 18 — Évaluation du run du pipeline sur la vérité terrain (jeu difficile).**
+> **Figure 18 — Évaluation du run du pipeline sur la vérité terrain et parité avec la référence.**

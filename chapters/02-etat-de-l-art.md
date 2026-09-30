@@ -142,8 +142,9 @@ Le choix des clés est un compromis. Une clé trop fine laisse échapper des dou
 graphies du même nom tombent dans deux blocs différents) ; une clé trop large ramène vers le
 coût quadratique. La littérature recommande donc plusieurs clés combinées, chacune rattrapant les
 erreurs des autres [B3]. Sans blocking, un volume de l'ordre du million de patients imposerait
-environ 10¹² comparaisons. Le projet combine trois clés (préfixe du nom, date de naissance, CIN) ;
-leur mise en œuvre est décrite au § 7.2.3.
+environ 10¹² comparaisons. Le projet a d'abord combiné trois clés (préfixe du nom, date de
+naissance, CIN) ; sa règle finale pousse le blocking à l'extrême en exigeant une clé d'identité
+identique (§ 7.2.3).
 
 ### 2.1.5 Master Patient Index et interopérabilité FHIR
 
@@ -163,8 +164,8 @@ de chaque rattachement :
 Cette démarche rejoint le standard d'interopérabilité **FHIR** (*Fast Healthcare
 Interoperability Resources*, publié par l'organisme HL7), qui définit pour la ressource Patient
 une opération dédiée, `$match` : elle reçoit les champs d'un patient et retourne les
-correspondances candidates, chacune avec un score explicite [B5]. Le projet reprend cette philosophie, rechercher puis apparier par
-score, sans déployer de serveur FHIR.
+correspondances candidates, chacune avec un score explicite [B5]. Le projet en a repris la philosophie, rechercher puis apparier par
+score, sans déployer de serveur FHIR, avant de lui préférer une règle stricte (§ 7.2.3).
 
 Côté format, FHIR sert de **schéma pivot** : un format commun vers lequel chaque source est
 traduite. Quatre ressources FHIR (`Patient`, `Encounter`, `Condition`, `Observation`) suffisent à
@@ -374,8 +375,8 @@ Deux constats se dégagent. D'abord, la brique Big Data n'est pas imposée par l
 démonstration, mais par le sujet et par le volume visé ; le tableau le dit, et désigne DuckDB ou
 Polars comme alternatives crédibles si ce volume se révèle faible. Ensuite, l'alternative la plus
 sérieuse au moteur d'appariement est **Splink**. Le choix d'un moteur propre ne repose pas sur une
-supériorité technique, mais sur une exigence du cahier des charges : des poids lisibles, fixés et
-modifiables par le métier. Les options sont notées sur des critères pondérés au § 7.1.
+supériorité technique, mais sur une exigence du cahier des charges : une règle lisible, fixée et
+modifiable par le métier (des poids en v1, des champs à comparer à l'identique en v2). Les options sont notées sur des critères pondérés au § 7.1.
 
 ## 2.3 Tableau comparatif et synthèse
 
@@ -439,19 +440,20 @@ Cinq arbitrages structurent le positionnement du projet. **RapidFuzz** plutôt q
 langage : la bibliothèque `sentence_transformers` plantait sous Python 3.8, et un modèle appris
 exigerait des données étiquetées. Un **MPI local avec
 pivot FHIR** plutôt qu'un MPI commercial ou un registre complet comme OpenCR, trop lourds pour
-l'environnement du stage. Un **score pondéré à seuil unique** plutôt que des poids estimés par EM,
-pour que la décision reste lisible par un gestionnaire de données. Une montée en complexité **par
+l'environnement du stage. Un **score pondéré à seuil unique**, puis une **règle d'identité
+stricte**, plutôt que des poids estimés par EM, pour que la décision reste lisible par un
+gestionnaire de données. Une montée en complexité **par
 paliers** (MVP, puis Spark, puis Big Data) plutôt qu'un Big Data direct, pour introduire chaque
-technologie par un besoin. Enfin, une **parité Pandas = Spark vérifiée** plutôt que deux logiques
+technologie par un besoin. Enfin, une **parité Python = Spark vérifiée** plutôt que deux logiques
 divergentes, pour montrer que le passage à l'échelle ne change pas le résultat. L'inventaire
 complet des arbitrages, avec pour chacun la preuve et le risque résiduel assumé, est donné dans la
 conclusion générale.
 
 Quatre écarts à l'existant sont assumés, justifiés par le besoin et non par la commodité :
 
-- **Pas d'estimation EM** (à la différence de Splink) : les poids restent **fixés, lisibles et
-  modifiables** par un gestionnaire de données, condition posée par l'exigence « jamais fusionner
-  sans logique explicable ».
+- **Pas d'estimation EM** (à la différence de Splink) : la règle reste **fixée et lisible** par un
+  gestionnaire de données (d'abord des poids fixés, puis des champs à comparer à l'identique),
+  condition posée par l'exigence « jamais fusionner sans logique explicable ».
 - **Pas de référentiel externe** (à la différence d'EMPI) : aucune donnée de tiers n'entre dans
   la plateforme, conformément à l'hébergement interne.
 - **Pas de service géré dans le cloud** (à la différence d'Azure) : le lac de données est interne
@@ -462,12 +464,11 @@ Quatre écarts à l'existant sont assumés, justifiés par le besoin et non par 
 **Le risque déplacé : la maintenance.** Construire plutôt qu'acheter supprime la licence et la
 dépendance à un éditeur ; cela ne supprime pas toute dépendance. Le risque se déplace vers la
 **maintenabilité** du code écrit, qui devra être repris par l'équipe de MMT. Il a été réduit en
-rendant les décisions paramétrables plutôt qu'écrites dans la logique : poids, seuil et stratégie
-de blocking sont déclarés dans un seul fichier de configuration, lu par toutes les étapes
-(§ 7.2.3). Une évolution du comportement se fait donc par **une** modification de configuration.
-Cette centralisation a un contrepoids assumé : le même fichier alimente l'évaluation, si bien que
-modifier un poids **invalide les métriques publiées** tant que l'évaluation n'a pas été rejouée
-(chapitre 8).
+isolant les décisions : la règle d'identité tient dans un seul module (`rules.py`), appelé à
+l'identique par le moteur Python, par Spark et par l'évaluation (§ 7.2.3) ; en v1, poids, seuil
+et blocking étaient déclarés dans un fichier de configuration. Cette centralisation a un
+contrepoids assumé : modifier la règle **invalide les métriques publiées** tant que l'évaluation
+n'a pas été rejouée (chapitre 8).
 
 > **Limite de l'étude.** Les produits et bibliothèques cités sont décrits **d'après leur
 > documentation** et n'ont **pas été installés ni exécutés** : la grille compare des capacités

@@ -10,7 +10,7 @@ Les six objectifs du cahier des charges (§ 3) sont traduits en exigences vérif
 |---|---|---|
 | F1 | **Centraliser** les données hétérogènes dans un Data Lake | pipeline ELT Medallion RAW → SILVER → GOLD |
 | F2 | **Nettoyer et standardiser** selon un modèle commun | modèle canonique et pivot FHIR |
-| F3 | **Dédupliquer** de façon **explicable** | patient maître et table de correspondance (score, méthode, seuil) |
+| F3 | **Dédupliquer** de façon **explicable** | patient maître et table de correspondance (méthode, règle appliquée) |
 | F4 | **Gouverner les accès** | rôles, consentement par finalité, audit, clés d'API hachées |
 | F5 | **Visualiser** les indicateurs | vues de déduplication et de consentement (optionnel) |
 | F6 | **Évaluer** la déduplication | vérité terrain, précision / rappel / F1 |
@@ -52,14 +52,14 @@ programme.
 ### 5.1.2 Étape 2 — Déduplication et MPI
 
 **CU3 — Décider qui est le même patient.** *Acteur* : le processus automatique.
-*Prérequis* : la zone SILVER alimentée. *Déroulement* : le blocking réduit les comparaisons, le
-rapprochement exact s'applique d'abord, puis le rapprochement probabiliste pondéré par champ,
-au-dessus du seuil de 0,80. *Résultat attendu* : un patient maître par personne reconnue, et une
-table de correspondance qui relie **chaque** fiche d'origine à son patient maître, avec le score
-et la méthode de décision ; les deux sont chargés dans la base centrale. *Cas limite* : deux
-fiches proches mais sous le seuil restent séparées, faux négatif possible que mesure la vérité
-terrain (§ 8.5) ; aucune fusion n'est appliquée sans être inscrite dans la table de
-correspondance.
+*Prérequis* : la zone SILVER alimentée. *Déroulement* : chaque fiche reçoit sa clé d'identité
+(CIN, genre, date et ville de naissance ; sans CIN, le nom en plus) et les fiches de même clé sont
+réunies, sans score ni seuil. *Résultat attendu* : un patient maître par personne reconnue, et
+une table de correspondance qui relie **chaque** fiche d'origine à son patient maître, avec la
+méthode et la règle appliquée ; les deux sont chargés dans la base centrale. *Cas limite* : une
+fiche dont un champ manque, ou diffère d'une seule lettre, reste séparée : faux négatif possible,
+que mesure la vérité terrain (§ 8.5) ; aucune fusion n'est appliquée sans être inscrite dans la
+table de correspondance.
 
 ### 5.1.3 Étape 3 — Gouvernance des accès
 
@@ -168,10 +168,10 @@ lancement régulier est **planifiable** (fréquence `daily` / `weekly` / `monthl
 |---|---|---|---|
 | **Utilisabilité** | un refus ou une erreur doit être compréhensible | `purpose` hors liste → **422** avec la liste des valeurs autorisées ; refus → **403** avec motif en audit ; bandeau « données de démonstration » à l'écran quand l'API se replie | cas vérifiés en § 8.4 ; frontend optionnel |
 | **Performance** | pipeline bout en bout en moins de 30 minutes | run complet sur la VM : 2 min 56 s pour 1 057 fiches, 4 min 57 s pour 25 587, 7 min 03 s pour 212 523 (29–30/09/2026) | volume réel de l'établissement non mesuré (§ 4.2) |
-| **Scalabilité** | changer d'échelle sans changer la sémantique | moteur porté en PySpark avec **parité stricte** ; comparaisons bornées par le blocking ; stockage HDFS | résultats identiques en Pandas et en Spark sur les trois jeux (§ 8.5) ; **déduplication exécutée sur une seule machine** : volume limité (conclusion générale) |
+| **Scalabilité** | changer d'échelle sans changer la sémantique | règle d'identité exécutée dans Spark (regroupement par clé, sans comparaison deux à deux) ; stockage HDFS | identifiants identiques en Python et dans Spark (212 523 fiches, 0 différence) ; volume démontré limité à la VM (conclusion générale) |
 | **Sécurité** | aucun accès sans rôle, finalité et consentement | RBAC, clés API hachées SHA-256, consentement par finalité, audit de chaque appel, secrets hors du dépôt | 401/403/422 vérifiés (§ 8.4) ; dettes déclarées : hachage non salé, API Flask sans authentification |
-| **Maintenance** | faire évoluer le comportement sans toucher la logique | poids, seuil et blocking déclarés dans `config/deduplication.yaml` ; schéma idempotent ; pièges anti-régression documentés | 123 tests réussis (§ 8.1) |
-| **Fiabilité d'exploitation** | ne pas retraiter en boucle, reprendre après échec | empreinte des sources, reprise à la première étape non terminée, anti-double-run, historique des runs | 66 tests (§ 8.2) ; run en reprise sur la VM : 6 tables sur 6 sautées (30/09/2026) ; cron non exécuté |
+| **Maintenance** | faire évoluer le comportement sans toucher la logique | règle d'identité isolée dans un module (`rules.py`), partagée par Python et Spark ; schéma idempotent ; pièges anti-régression documentés | 131 tests réussis (§ 8.1) |
+| **Fiabilité d'exploitation** | ne pas retraiter en boucle, reprendre après échec | empreinte des sources, reprise à la première étape non terminée, anti-double-run, historique des runs | 76 tests (§ 8.2) ; run en reprise sur la VM : 6 tables sur 6 sautées (30/09/2026) ; cron non exécuté |
 | **Confidentialité** | aucune donnée réelle | générateur synthétique à graine fixe | `RANDOM_SEED = 42` ; aucune donnée réelle dans le dépôt |
 
 ## 5.3 Interfaces détaillées
@@ -189,7 +189,7 @@ consultation des patients ; l'accès est contrôlé par jeton (JWT) avec les rô
 |---|---|---|
 | `/login` | authentification (rôles ADMIN, MEDECIN) | frontend |
 | `/synthese` (page d'accueil) | qualité d'identité (masters, doublons, taux) et consentement (accords, refus) côte à côte | `/api/governance/duplicates`, `/api/governance/consent` |
-| `/doublons` | patients en base, masters, doublons résolus, taux ; répartition par méthode (exacte, probabiliste) | `/api/governance/duplicates` |
+| `/doublons` | patients en base, masters, doublons résolus, taux ; répartition par méthode (fiche fondatrice, rattachement) | `/api/governance/duplicates` |
 | `/gouvernance` | consentements par couple (patient, finalité), filtrables par finalité ; taux d'accord | `/api/governance/consent` |
 | `/pipeline` | statut du pipeline en badges texte, planification | `/pipeline/status`, `/pipeline/schedule` |
 | `/dashboard` | vue d'exploitation : zones Medallion, étapes du run, historique des runs, fraîcheur des sources, planification | `/pipeline/status`, `/pipeline/runs` |

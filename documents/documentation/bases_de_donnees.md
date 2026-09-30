@@ -103,7 +103,7 @@ fusionnées via `unionByName`). Schéma = `fields` de l'entité (config `fhir_en
 ### Enrichissement déduplication (uniquement `patient_fhir`)
 
 Après écriture, `create_silver.enrichir_dedup_moteur()` joint les décisions du moteur `engine/`
-explicable (exact + probabiliste) sur `("_source_system", "source_patient_id")` et ajoute :
+explicable (règle d'identité stricte, v2, calculée dans Spark) sur `("_source_system", "source_patient_id")` et ajoute :
 `master_patient_id`, `match_method`, `match_score`, `is_duplicate` (booléen). La règle :
 chaque master patient est justifié par un `match_method` (jamais de fusion sans match).
 

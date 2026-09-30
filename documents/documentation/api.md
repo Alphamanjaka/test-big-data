@@ -72,7 +72,7 @@ Auth : clés API (Bearer token, SHA-256 côté serveur).
 | Endpoint | Description | Rôle requis |
 |---|---|---|
 | `GET /health` | Liveness probe | — |
-| `GET /metrics` | KPIs déduplication (total, doublons, taux) | admin, analyst |
+| `GET /metrics` | KPIs déduplication tirés de `patient_identity_map` : fiches, patients maîtres, doublons, taux (corrigé le 30/09/2026 : lisait une colonne inexistante) | admin, analyst |
 | `GET /patients` | Liste master patients (identité, triée par nom) | admin, analyst |
 | `GET /patients/{master_patient_id}` | Détail : identité + `identity_map` + `consents` | admin, analyst |
 | `GET /audit` | Journal d'accès (200 dernières lignes) | admin |

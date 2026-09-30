@@ -23,17 +23,17 @@ Enfin, je remercie ma famille et mes proches pour leur soutien constant.
 
 Dans un établissement de santé, les données des patients sont réparties entre plusieurs systèmes d'information indépendants — consultations, pharmacie, imagerie, gestion hospitalière — qui ne partagent aucun identifiant commun. Une même personne y apparaît plusieurs fois, sous des formes différentes, et aucun système ne contrôle qui accède à ses données ni pour quelle finalité.
 
-Ce stage, réalisé chez Madagascar Medical Technology (MMT), a porté sur la conception d'une plateforme de centralisation et de gouvernance de ces données. L'architecture retenue est un lac de données organisé en trois zones de qualité croissante (RAW, SILVER, GOLD) sur HDFS, Hive et Spark, alimenté par un pipeline ELT rejouable, incrémental et planifiable. Elle est complétée par un moteur de déduplication explicable, qui combine une passe exacte sur clés normalisées et une passe probabiliste par score pondéré, et par une gouvernance des accès associant rôles, consentement du patient par finalité et journal d'audit.
+Ce stage, réalisé chez Madagascar Medical Technology (MMT), a porté sur la conception d'une plateforme de centralisation et de gouvernance de ces données. L'architecture retenue est un lac de données organisé en trois zones de qualité croissante (RAW, SILVER, GOLD) sur HDFS, Hive et Spark, alimenté par un pipeline ELT rejouable, incrémental et planifiable. Elle est complétée par un moteur de déduplication explicable, qui ne réunit deux fiches que si leur CIN, leur genre, leur date et leur ville de naissance sont identiques, sans score ni seuil, et par une gouvernance des accès associant rôles, consentement du patient par finalité et journal d'audit.
 
-Rejouée sur la VM avec un jeu synthétique difficile, la plateforme ramène 1 057 fiches à 803 patients. Évaluée sur trois jeux synthétiques dont la vérité est connue, la déduplication atteint une précision de 1,000 sur tous les niveaux — aucune fusion à tort — et un rappel de 0,422 sur le jeu le plus difficile ; le pipeline complet, mesuré de la même façon, obtient le même résultat. Sur 100 000 patients, traités en 7 minutes, deux homonymes parfaits sont fusionnés à tort, limite analysée dans le rapport. Les implémentations Pandas et Spark produisent des résultats strictement identiques. Toutes les données manipulées sont fictives.
+Cette règle stricte est issue d'une mesure : sur 100 000 patients, une première version à score réunissait deux homonymes. Évaluée sur des jeux synthétiques dont la vérité est connue, la déduplication ne fusionne à tort sur aucun jeu, 100 000 patients compris, traités en moins de trois minutes dans Spark ; le rappel vaut 1,000 sur le jeu facile et 0,179 sur le jeu difficile, où les fiches incomplètes restent séparées. Les implémentations Python et Spark attribuent les mêmes identifiants, fiche par fiche. Toutes les données manipulées sont fictives.
 
 #= Abstract
 
 In a healthcare institution, patient data is spread across several independent information systems — consultations, pharmacy, imaging, hospital management — that share no common identifier. The same person appears several times in different forms, and no system controls who accesses their data or for what purpose.
 
-This internship, carried out at Madagascar Medical Technology (MMT), focused on designing a platform to centralise and govern this data. The chosen architecture is a data lake organised in three zones of increasing quality (RAW, SILVER, GOLD) on HDFS, Hive and Spark, fed by a replayable, incremental and schedulable ELT pipeline. It is complemented by an explainable deduplication engine, combining an exact pass on normalised keys with a probabilistic pass based on a weighted score, and by access governance that associates roles, purpose-based patient consent and an audit log.
+This internship, carried out at Madagascar Medical Technology (MMT), focused on designing a platform to centralise and govern this data. The chosen architecture is a data lake organised in three zones of increasing quality (RAW, SILVER, GOLD) on HDFS, Hive and Spark, fed by a replayable, incremental and schedulable ELT pipeline. It is complemented by an explainable deduplication engine, which merges two records only if their national ID, gender, birth date and birth city are identical, with no score or threshold, and by access governance that associates roles, purpose-based patient consent and an audit log.
 
-Run on the virtual machine with a hard synthetic dataset, the platform reduces 1,057 records to 803 patients. Evaluated on three synthetic datasets with known ground truth, deduplication reaches a precision of 1.000 at every level — no false merge — and a recall of 0.422 on the hardest dataset; the full pipeline, measured the same way, achieves the same result. On 100,000 patients, processed in 7 minutes, two perfect homonyms are wrongly merged, a limit analysed in the report. The Pandas and Spark implementations produce strictly identical results. All data used is fictitious.
+This strict rule came from a measurement: on 100,000 patients, a first score-based version merged two homonyms. Evaluated on synthetic datasets with known ground truth, deduplication wrongly merges no pair on any dataset, 100,000 patients included, processed in under three minutes in Spark; recall is 1.000 on the easy set and 0.179 on the hard set, where incomplete records stay separate. The Python and Spark implementations assign the same identifiers, record by record. All data used is fictitious.
 
 **Keywords**: healthcare data, data lake, Medallion architecture, Spark, Hive, FHIR, deduplication, Master Patient Index, consent, GDPR.
 
@@ -191,7 +191,7 @@ Tableau: Mesures de similarité classiques.
 | Jaro-Winkler | similarité qui favorise un début de chaîne commun | initiales, noms tronqués |
 | Mesures par mots | comparaison des mots indépendamment de leur ordre | *Rakoto Jean* et *Jean Rakoto* |
 
-Le projet utilise **RapidFuzz** [4], bibliothèque libre qui implémente ces mesures de façon performante. Son intérêt est opérationnel : légère et compatible avec Python 3.8, elle évite les dépendances lourdes de traitement du langage.
+Le projet utilise **RapidFuzz** [4], bibliothèque libre qui implémente ces mesures de façon performante. Son intérêt est opérationnel : légère et compatible avec Python 3.8, elle évite les dépendances lourdes de traitement du langage. La version finale du moteur ne l'utilise plus que pour le mapping des colonnes (chapitre 7).
 
 Comparer chaque enregistrement à tous les autres est quadratique : pour *n* patients, de l'ordre de *n²* comparaisons, soit 10¹² pour un million de patients. La pratique standard, le **blocking**, regroupe les enregistrements en blocs de candidats partageant une clé grossière — préfixe du nom, date de naissance, CIN — et ne compare qu'à l'intérieur de ces blocs [1], [3].
 
@@ -206,7 +206,7 @@ Tableau: Exemple d'identity map.
 | consultation | 88 | 102 | 0,950 | probabiliste |
 | imaging | IMG-20 | 102 | 0,920 | probabiliste |
 
-Cette démarche rejoint le standard **FHIR** (HL7 *Fast Healthcare Interoperability Resources*), qui prévoit une opération dédiée, `$match` : à partir des champs d'un patient, elle retourne les correspondances candidates avec un score explicite [5]. Le projet en reprend la philosophie — rechercher puis apparier par score — sans serveur FHIR. FHIR sert aussi de **schéma pivot** : quatre ressources (`Patient`, `Encounter`, `Condition`, `Observation`) harmonisent des sources structurées différemment.
+Cette démarche rejoint le standard **FHIR** (HL7 *Fast Healthcare Interoperability Resources*), qui prévoit une opération dédiée, `$match` : à partir des champs d'un patient, elle retourne les correspondances candidates avec un score explicite [5]. Le projet en a repris la philosophie — rechercher puis apparier par score — sans serveur FHIR, avant de lui préférer une règle stricte (chapitre 7). FHIR sert aussi de **schéma pivot** : quatre ressources (`Patient`, `Encounter`, `Condition`, `Observation`) harmonisent des sources structurées différemment.
 
 ### Consentement et RGPD
 
@@ -279,14 +279,14 @@ Le projet ne réinvente pas les concepts : il **réutilise les standards et les 
 Tableau: Ce que le projet reprend de l'état de l'art.
 | Élément repris | Provenance | Implémentation retenue |
 |---|---|---|
-| Décision match / non-match | Fellegi-Sunter [2] | score pondéré explicable (0,5 / 0,3 / 0,1 / 0,1), seuil 0,80 |
-| Appariement par score | FHIR `$match` [5] | même principe dans le moteur, sans serveur FHIR |
+| Décision match / non-match | Fellegi-Sunter [2] | v1 : score pondéré explicable, seuil 0,80 ; v2 : règle d'identité stricte, sans score |
+| Appariement par score | FHIR `$match` [5] | principe repris en v1, sans serveur FHIR |
 | Schéma pivot | FHIR [5] | quatre entités : patient, rencontre, pathologie, observation |
 | Zones de qualité croissante | Medallion [9] | RAW, SILVER, GOLD sur HDFS et Hive |
 | Référentiel d'identité | MPI [13] | patient maître et identity map dans PostgreSQL |
 | Gouvernance | catalogue de métadonnées [18] | contrôle appliqué à chaque requête : rôle, consentement, audit |
 
-Trois écarts à l'existant sont assumés. Le projet n'utilise pas d'estimation automatique des poids comme Splink, afin que les poids restent lisibles et modifiables par un gestionnaire de données. Il n'utilise pas de référentiel externe comme EMPI, afin qu'aucune donnée tierce n'entre dans la plateforme. Il n'utilise pas de service managé comme Azure, le lac restant interne à la VM. Le risque propre à une chaîne sur mesure est la maintenabilité ; il est réduit en déclarant poids, seuil et blocking dans un fichier de configuration unique (chapitre 7).
+Trois écarts à l'existant sont assumés. Le projet n'utilise pas d'estimation automatique des poids comme Splink, afin que la règle reste lisible par un gestionnaire de données. Il n'utilise pas de référentiel externe comme EMPI, afin qu'aucune donnée tierce n'entre dans la plateforme. Il n'utilise pas de service managé comme Azure, le lac restant interne à la VM. Le risque propre à une chaîne sur mesure est la maintenabilité ; il est réduit en isolant la règle d'identité dans un module unique, partagé par Python, Spark et l'évaluation (chapitre 7).
 
 # Étude de l'existant et solution envisagée
 
@@ -360,11 +360,11 @@ Tableau: Le contrat de normalisation.
 | Date de naissance | format ISO, sinon lecture jour-mois-année | date inconnue |
 | Nom | accents, casse et ponctuation supprimés | chaîne vide si le nom est absent |
 
-Une règle gouverne les quatre champs : **aucune valeur n'est devinée**. Un champ douteux produit une valeur vide, qui exclut l'enregistrement du rapprochement exact et le renvoie vers la voie probabiliste ; il ne peut donc pas provoquer une fusion exacte erronée.
+Une règle gouverne les quatre champs : **aucune valeur n'est devinée**. Un champ douteux produit une valeur vide, qui exclut l'enregistrement de toute fusion ; il ne peut donc pas provoquer un rapprochement erroné.
 
 ## Objectifs principaux et livrables
 
-Les objectifs principaux sont les six objectifs du cahier des charges, traduits en exigences vérifiables au chapitre 5. Le périmètre couvert comprend : le pipeline ELT en cinq étapes avec reprise, ingestion incrémentale et planification ; le moteur de déduplication exact et probabiliste, en Pandas et en PySpark ; la gouvernance (rôles, consentement par finalité, audit, clés hachées) ; deux API REST ; et l'évaluation de la déduplication sur trois niveaux de difficulté. Les tableaux de bord d'analyse et le déploiement chez le commanditaire sont hors périmètre.
+Les objectifs principaux sont les six objectifs du cahier des charges, traduits en exigences vérifiables au chapitre 5. Le périmètre couvert comprend : le pipeline ELT en cinq étapes avec reprise, ingestion incrémentale et planification ; le moteur de déduplication par règle d'identité stricte, en Python et dans Spark ; la gouvernance (rôles, consentement par finalité, audit, clés hachées) ; deux API REST ; et l'évaluation de la déduplication sur trois niveaux de difficulté. Les tableaux de bord d'analyse et le déploiement chez le commanditaire sont hors périmètre.
 
 Tableau: Livrables et état en fin de stage.
 | N° | Livrable | État à la fin du stage |
@@ -391,7 +391,7 @@ Tableau: Activités d'ingénierie et productions.
 |---|---|
 | Analyse | cahier des charges consolidé, capture des schémas sources, exigences fonctionnelles |
 | Conception | architecture en trois niveaux, modèle canonique, schéma de la base centrale, règles de gouvernance |
-| Développement | générateur de données synthétiques, moteur de déduplication (Pandas et Spark), pipeline ELT, API, frontend optionnel |
+| Développement | générateur de données synthétiques, moteur de déduplication (Python et Spark), pipeline ELT, API, frontend optionnel |
 | Tests et évaluation | suites de tests automatisés, évaluation sur vérité terrain, exécutions du pipeline |
 | Documentation et suivi | journal daté, suivi d'avancement, manuel conceptuel, rapport |
 
@@ -433,19 +433,19 @@ Tableau: Les outils du projet. {logos}
 | ^ | logo:openjdk OpenJDK | 8 | machine Java requise par Hadoop, Hive et Spark |
 | Données et moteur | logo:postgresql PostgreSQL | 18.2 | base centrale : patients maîtres, consentements, audit |
 | ^ | logo:pandas pandas | ≥ 2.0 | MVP et implémentation Pandas du moteur |
-| ^ | logo:rapidfuzz RapidFuzz | ≥ 3.0 | similarité des noms dans le score de rapprochement |
+| ^ | logo:rapidfuzz RapidFuzz | ≥ 3.0 | mapping des colonnes (similarité des noms dans la v1 du moteur) |
 | ^ | logo:fhir HL7 FHIR | R5 (5.0.0) | standard de référence du schéma pivot |
 | Exposition | logo:fastapi FastAPI | ≥ 0.115 | API de gouvernance : rôles, finalité, consentement, audit |
 | ^ | logo:flask Flask | non épinglée | API des indicateurs des zones SILVER et GOLD |
 | ^ | logo:nextjs Next.js | 15.4.6 | interface web optionnelle (React, TypeScript, Tailwind CSS, D3.js) |
-| Qualité et documentation | logo:pytest pytest | ≥ 7.0 | 123 tests du moteur, de la gouvernance et du pipeline |
+| Qualité et documentation | logo:pytest pytest | ≥ 7.0 | 131 tests du moteur, de la gouvernance et du pipeline |
 | ^ | logo:mermaid Mermaid | CLI (npx) | diagrammes de conception de ce rapport |
 
 Les versions sont celles du provisionnement de la VM et des fichiers de dépendances ; « ≥ » indique une version minimale.
 
 ### Gestion de la configuration
 
-Le projet est rejouable à partir du seul dépôt. Le dépôt Git est la source de vérité : code, pipeline, configuration, tests et documentation, avec un journal daté des décisions. Les données patients ne sont pas versionnées mais régénérées par le générateur synthétique à graine fixe ; les secrets sont fournis par variables d'environnement. Les paramètres qui gouvernent le comportement (seuil, poids, finalités, partitions Spark) sont déclarés en configuration, jamais dans le code. Enfin, la suite de tests est exécutée à chaque jalon, et son succès conditionne le jalon suivant.
+Le projet est rejouable à partir du seul dépôt. Le dépôt Git est la source de vérité : code, pipeline, configuration, tests et documentation, avec un journal daté des décisions. Les données patients ne sont pas versionnées mais régénérées par le générateur synthétique à graine fixe ; les secrets sont fournis par variables d'environnement. Les paramètres qui gouvernent le comportement (finalités, partitions Spark ; en v1, seuil et poids) sont déclarés en configuration, jamais dans le code. Enfin, la suite de tests est exécutée à chaque jalon, et son succès conditionne le jalon suivant.
 
 ## Contraintes et risques sur le projet
 
@@ -455,7 +455,7 @@ Tableau: Contraintes et risques du projet.
 | VM de 8 Go et 4 cœurs | Spark en mode local : un processus de 2 Go, 8 partitions | maîtrisé au volume du prototype ; gels de la VM observés à 25 587 fiches |
 | Nœud MAVIS distant instable | répliques locales, puis sources synthétiques pour le run final | contourné |
 | Hétérogénéité des sources | synonymes et similarité pour le mapping FHIR | maîtrisé au 30/09/2026 : dates et noms corrigés, 1 761 événements en GOLD |
-| Reproductibilité | graine 42, seuil et pondérations fixés en configuration | appliqué |
+| Reproductibilité | graine 42, règle d'identité sans paramètre | appliqué |
 | Données sensibles (RGPD, article 9) | données synthétiques uniquement ; rôles, audit et consentement | maîtrisé |
 | VM indisponible en fin de stage | tests hors VM avant toute exécution réelle | VM relancée le 30/09/2026 : runs complets et en reprise réussis ; cron non activé |
 
@@ -523,7 +523,7 @@ Tableau: Exigences fonctionnelles.
 |---|---|---|---|
 | F1 | Centraliser les données dans un lac | pipeline Medallion RAW → SILVER → GOLD | CU1 |
 | F2 | Nettoyer et standardiser | modèle canonique et pivot FHIR | CU2 |
-| F3 | Dédupliquer de façon explicable | patient maître et identity map (score, méthode, seuil) | CU3 |
+| F3 | Dédupliquer de façon explicable | patient maître et identity map (méthode, règle appliquée) | CU3 |
 | F4 | Gouverner les accès | rôles, consentement par finalité, audit, clés hachées | CU4, CU5 |
 | F5 | Visualiser les indicateurs | vues de déduplication et de consentement | CU6, CU7, CU8 |
 | F6 | Évaluer la déduplication | précision, rappel et F1 sur vérité terrain | section 5.1.5 |
@@ -536,7 +536,7 @@ Tableau: Exigences fonctionnelles.
 
 ### Étape 2 : Déduplication et MPI
 
-**CU3 — Décider qui est le même patient.** Le blocking réduit les comparaisons, le rapprochement exact s'applique d'abord, puis le rapprochement probabiliste pondéré au-dessus du seuil de 0,80. Le résultat est un patient maître par personne retenue, et une identity map qui relie chaque fiche d'origine à son patient maître avec le score et la méthode de décision. Aucune fusion n'est appliquée sans y être inscrite.
+**CU3 — Décider qui est le même patient.** Chaque fiche reçoit sa clé d'identité (CIN, genre, date et ville de naissance ; sans CIN, le nom en plus), et les fiches de même clé sont réunies, sans score ni seuil. Le résultat est un patient maître par personne retenue, et une identity map qui relie chaque fiche d'origine à son patient maître avec la méthode et la règle appliquée. Une fiche dont un champ manque reste séparée. Aucune fusion n'est appliquée sans y être inscrite.
 
 ### Étape 3 : Gouvernance des accès
 
@@ -567,11 +567,11 @@ Tableau: Exigences non fonctionnelles.
 | Qualité | Exigence | Réalisation | Preuve ou limite |
 |---|---|---|---|
 | Utilisabilité | un refus doit être compréhensible | finalité inconnue : code 422 avec la liste des valeurs autorisées ; refus : 403 avec motif journalisé | vérifié (section 8.3) |
-| Performance | pipeline complet en moins de 30 minutes | cible atteinte au run de référence | volume réel non mesuré |
-| Scalabilité | changer d'échelle sans changer la logique | moteur porté en PySpark avec parité stricte, comparaisons bornées | résultats identiques Pandas et Spark (section 8.4) ; déduplication exécutée sur une seule machine |
+| Performance | pipeline complet en moins de 30 minutes | cible atteinte : 1 min 30 s sur le jeu difficile, 2 min 48 s sur 212 523 fiches | volume réel non mesuré |
+| Scalabilité | changer d'échelle sans changer la logique | règle d'identité exécutée dans Spark, par regroupement sur la clé | identifiants identiques en Python et dans Spark (212 523 fiches) |
 | Sécurité | aucun accès sans rôle, finalité et consentement | rôles, clés hachées, consentement, audit, secrets hors dépôt | codes 401, 403 et 422 vérifiés ; hachage non salé |
-| Maintenabilité | faire évoluer le comportement sans toucher la logique | poids, seuil et blocking en configuration ; schéma idempotent | 123 tests sur 123 réussis |
-| Fiabilité | ne pas retraiter en boucle, reprendre après échec | empreinte des sources, reprise, verrou anti-double exécution, historique des runs | 66 tests ; reprise validée sur la VM (6 tables sur 6 sautées) ; cron non exécuté |
+| Maintenabilité | faire évoluer le comportement sans toucher la logique | règle d'identité isolée dans un module partagé par Python et Spark ; schéma idempotent | 131 tests sur 131 réussis |
+| Fiabilité | ne pas retraiter en boucle, reprendre après échec | empreinte des sources, reprise, verrou anti-double exécution, historique des runs | 76 tests ; reprise validée sur la VM (6 tables sur 6 sautées) ; cron non exécuté |
 | Confidentialité | aucune donnée réelle | générateur synthétique à graine fixe | aucune donnée réelle dans le dépôt |
 
 ## Interfaces détaillées
@@ -634,7 +634,7 @@ Tableau: Briques de la chaîne et conception.
 | Extraction | couche d'extraction abstraite (CSV, PostgreSQL, SQLite) vers la zone RAW |
 | Normalisation | modèle canonique du patient |
 | Interopérabilité | schéma pivot FHIR à quatre entités |
-| Déduplication | blocking, passe exacte, passe probabiliste, seuil de 0,80 |
+| Déduplication | règle d'identité stricte (CIN, genre, date et ville identiques), exécutée dans Spark |
 | Consolidation | patient maître et identity map traçable |
 | Chargement | base PostgreSQL centrale à écriture idempotente |
 | Exposition | API REST et espace de gouvernance |
@@ -681,11 +681,13 @@ Tableau: Notation pondérée des options.
 | API de gouvernance | **FastAPI** | **4,65** | retenu : finalité validée dans le schéma de l'API |
 | | Flask | 4,50 | écarté de peu |
 
+Le score RapidFuzz de la première version du moteur a été abandonné le 30/09/2026 au profit d'une règle d'identité stricte (section suivante) ; RapidFuzz reste utilisé pour le mapping des colonnes.
+
 ## Conception du logiciel développé
 
 ### Le code source : vue statique
 
-Le code suit la séparation entre ingestion, normalisation, déduplication, gouvernance et exposition. Il se répartit en six blocs : le moteur d'identité (modèle canonique, déduplication Pandas et Spark), la gouvernance (clés, consentement, audit, API FastAPI), le provisionnement et le pipeline, l'exposition des indicateurs, les paramètres (configuration de la déduplication, schéma SQL) et l'évaluation avec les tests.
+Le code suit la séparation entre ingestion, normalisation, déduplication, gouvernance et exposition. Il se répartit en six blocs : le moteur d'identité (modèle canonique, règle d'identité, implémentations Python et Spark), la gouvernance (clés, consentement, audit, API FastAPI), le provisionnement et le pipeline, l'exposition des indicateurs, les paramètres (schéma SQL) et l'évaluation avec les tests.
 
 ### Modélisation des données
 
@@ -721,12 +723,9 @@ Le schéma est **idempotent** : tables et colonnes sont créées seulement si el
 
 ### Composants
 
-**Le moteur de déduplication.** Pour éviter la comparaison de toutes les paires, le moteur indexe les patients maîtres selon trois clés de blocking : les quatre premières lettres du nom normalisé, la date de naissance et le CIN. Seuls les candidats partageant l'une de ces clés sont comparés. La déduplication procède en deux passes :
+**Le moteur de déduplication.** La première version du moteur (v1) indexait les patients maîtres selon trois clés de blocking (préfixe du nom, date de naissance, CIN), puis enchaînait un rapprochement exact et un rapprochement probabiliste : un score pondéré, comparé à un seuil de 0,80.
 
-1. **Rapprochement exact** : le patient partage la clé de rapprochement d'un patient maître (nom normalisé, date de naissance, CIN), ou bien la même date de naissance et le même CIN non vide, ce qui absorbe les inversions de prénom et de nom. Décision « exacte », score 1,0.
-2. **Rapprochement probabiliste** : parmi les candidats, un score pondéré est calculé. Au-dessus de 0,80, la fiche est rattachée au patient maître ; en dessous, un nouveau patient maître est créé.
-
-Tableau: Calcul du score de similarité.
+Tableau: Score de similarité de la v1 (abandonné le 30/09/2026).
 | Critère | Similarité | Poids |
 |---|---|---:|
 | Nom | similarité de chaînes, sensible à l'ordre des mots (l'inversion est rattrapée par la règle exacte) | 0,50 |
@@ -734,11 +733,15 @@ Tableau: Calcul du score de similarité.
 | CIN | égalité (si présent) | 0,10 |
 | Ville de naissance | égalité après normalisation | 0,10 |
 
-Les poids et le seuil ne sont pas écrits dans le code : ils sont déclarés dans un fichier de configuration unique (`config/deduplication.yaml`), lu par le moteur Pandas, sa version Spark et l'évaluation.
+Sur 100 000 patients, ce score a réuni deux homonymes parfaits : le nom et la date suffisaient à atteindre le seuil, même avec des CIN différents. La version finale (v2, 30/09/2026) le remplace par une **règle d'identité stricte**, sans score, sans seuil et sans poids :
 
-Code: X04 | Calcul du score pondéré | engine/identity/matcher.py::_similarity | X04_score.png
+1. **Clé d'identité** : deux fiches désignent la même personne si et seulement si elles ont le même CIN, le même genre, la même date et la même ville de naissance, après normalisation ; sans CIN des deux côtés, le nom normalisé doit être identique en plus.
+2. **Identité incomplète** : si un de ces champs manque, la fiche reste seule ; deux CIN différents ne peuvent donc jamais être réunis.
+3. **Identifiant dérivé de la clé** : le patient maître reçoit `PAT-` suivi de l'empreinte SHA-256 de sa clé ; il est le même à chaque run, et les consentements restent attachés à la bonne personne.
 
-Chaque décision porte l'identifiant du patient maître, la méthode, le score et une explication en clair. La règle « jamais de fusion sans logique explicable » est ainsi **structurelle** : elle est inscrite dans le modèle de données, pas seulement dans une convention.
+Code: X04 | Clé d'identité et identifiant du patient maître | engine/identity/rules.py::identity_key,master_id | X04_score.png
+
+Chaque décision porte l'identifiant du patient maître, la méthode, le score (1,0) et une explication en clair. La règle « jamais de fusion sans logique explicable » est ainsi **structurelle** : elle est inscrite dans le modèle de données, pas seulement dans une convention.
 
 ### Déploiement
 
@@ -778,7 +781,7 @@ Le passage de 214 à 145 se vérifie par un simple comptage : 214 − 69 = 145. 
 
 Le pipeline a été rejoué sur la VM les 29 et 30/09/2026, avec en source le jeu d'évaluation difficile, dont la vérité terrain est connue. Ces runs ont révélé deux défauts de données, corrigés depuis : des dates de naissance perdues à l'extraction et des noms tronqués pour la source consultation.
 
-Tableau: Runs réels du pipeline sur la VM (jeu difficile, 29–30/09/2026).
+Tableau: Runs réels du pipeline sur la VM (jeu difficile, 29–30/09/2026, moteur v1).
 | Indicateur | Valeur |
 |---|---:|
 | Fiches SILVER (404 + 353 + 300) | 1 057 |
@@ -794,18 +797,19 @@ Mesuré sur la vérité terrain, le run complet obtient une précision de 1,000,
 
 Pour éprouver le volume, le pipeline a ensuite traité un jeu facile de 12 000 patients synthétiques (25 587 fiches, sans variation de saisie). Il retrouve les 12 000 patients maîtres, avec une précision et un rappel de 1,000, et produit 43 141 événements en GOLD. Ce run a révélé un défaut de passage à l'échelle, décrit plus loin : une fois corrigé, le run complet passe de 15 min 15 s à 4 min 57 s. Sur 100 000 patients (212 523 fiches, 359 299 transactions), le run complet dure 7 min 03 s, dont environ 5 minutes de déduplication, et retrouve 99 998 patients maîtres : deux homonymes parfaits ont été fusionnés à tort (voir l'évaluation). Ce run a traversé trois gels de la VM ; sur 12 000 patients, un premier run avait échoué pour cette raison.
 
-### Moteur de déduplication : Pandas et Spark
+Avec la règle stricte exécutée dans Spark (v2), le run complet traite les 212 523 fiches en 2 min 48 s, sans aucune fusion à tort ni gel de la VM. Sur le jeu difficile, il dure 1 min 30 s : 942 patients maîtres pour 1 057 fiches, précision de 1,000 et rappel de 0,179. Sur les deux jeux, la table de correspondance écrite par Spark est identique, fiche par fiche, à celle de la référence Python. Cette base sert la démonstration.
 
-Tableau: Implémentations Pandas et Spark.
-| Aspect | Pandas | PySpark |
+### Moteur de déduplication : référence Python et Spark
+
+Tableau: Implémentations de la règle stricte.
+| Aspect | Référence Python | Spark |
 |---|---|---|
-| Normalisation | modèle canonique | même modèle canonique |
-| Passe exacte | clé de rapprochement, ou naissance et CIN | regroupement par clé |
-| Passe probabiliste | index à trois clés de blocking | index borné sur les représentants de groupes |
-| Score et seuil | 0,5 / 0,3 / 0,1 / 0,1 ; 0,80 | identiques |
-| Décision | exacte, probabiliste ou nouveau maître | identique |
+| Normalisation | modèle canonique | même modèle canonique, appelé par une UDF |
+| Règle et identifiant | clé d'identité, empreinte de la clé | mêmes fonctions |
+| Fiche fondatrice | première fiche de la clé | `row_number` par clé |
+| Exécution | liste en mémoire (évaluation, tests) | DataFrame réparti, sans rapatrier les fiches |
 
-La parité est vérifiée sur la démonstration (18 fiches ramenées à 11 patients maîtres dans les deux implémentations) et sur l'évaluation complète, où les deux produisent exactement les mêmes décisions (chapitre 8).
+La parité est vérifiée fiche par fiche : un test exécuté dans la VM compare les deux chemins sur des cas choisis, et les runs de la VM donnent les mêmes identifiants que la référence sur 212 523 et 1 057 fiches. En v1, elle n'était qu'approchée : le pipeline trouvait 803 patients maîtres sur le jeu difficile, et le moteur seul 804.
 
 ### Gouvernance et API
 
@@ -841,8 +845,9 @@ Tableau: Difficultés et correctifs.
 | Environ 20 % des dates de naissance perdues (30/09) | quatre formats mêlés dans une colonne ; seul le dominant était lu | lecture valeur par valeur, format par format |
 | Noms tronqués pour la source consultation (30/09) | nom en deux colonnes, dont une seule était retenue | nom complet reconstitué avant le mapping |
 | Déduplication de 25 587 fiches en près de 15 minutes (30/09) | la passe exacte comparait chaque fiche à tous les patients maîtres déjà créés | recherche directe par dictionnaire : moteur seul de 887 s à 13 s, décisions identiques |
+| Deux homonymes parfaits fusionnés à 100 000 patients (30/09) | le nom et la date atteignaient seuls le seuil de 0,80, même avec des CIN différents | règle d'identité stricte (v2), sans score |
 
-Ces incidents relèvent de quatre familles. Les incidents de **données** ont donné lieu à des correctifs documentés comme pièges à ne pas reproduire. Les incidents d'**infrastructure** ont été contournés par des règles de configuration. L'incident d'**outillage** est le seul qui ait changé la méthode : l'approche par vecteurs a été abandonnée au profit d'un score pondéré, plus léger et plus explicable. Le dernier relève du **passage à l'échelle** : invisible sur un millier de fiches, il n'est apparu qu'avec 25 587.
+Ces incidents relèvent de quatre familles. Les incidents de **données** ont donné lieu à des correctifs documentés comme pièges à ne pas reproduire. Les incidents d'**infrastructure** ont été contournés par des règles de configuration. L'incident d'**outillage** a changé la méthode une première fois : l'approche par vecteurs a été abandonnée au profit d'un score pondéré, plus léger et plus explicable. Les deux derniers relèvent du **passage à l'échelle** : invisibles sur un millier de fiches, ils ne sont apparus qu'avec 25 587 puis 212 523 fiches ; le second a changé la méthode une seconde fois, le score laissant place à la règle stricte.
 
 # Tests du système logiciel
 
@@ -860,13 +865,13 @@ Tableau: Niveaux de test et résultats.
 | API des indicateurs | trois vérifications sur les données du lac | 3 sur 3 |
 | Pipeline | exécution complète RAW → SILVER → GOLD sur la VM | 4 étapes sur 4 (07/09/2026) |
 
-Capture: C15 | Exécution des tests automatisés. | C15_pytest.png | Terminal : sortie de pytest projet/code-source/tests avec « 123 passed ».
+Capture: C15 | Exécution des tests automatisés. | C15_pytest.png | Terminal : sortie de pytest projet/code-source/tests avec « 131 passed, 1 skipped ».
 
-La suite principale réunit les tests du moteur, de la gouvernance et du pipeline : **123 tests sur 123 réussis** (exécution du 30/09/2026), sans aucun échec.
+La suite principale réunit les tests du moteur, de la gouvernance et du pipeline : **131 tests sur 131 réussis** (exécution du 30/09/2026), sans aucun échec ; le test de parité Spark, ignoré sans PySpark, réussit dans la VM.
 
 ## Tests unitaires et d'intégration
 
-Les tests du moteur couvrent la sémantique de la déduplication : rapprochement exact avec des CIN de formats différents, inversion du nom compensée par la date de naissance et le CIN, fusion au seuil de 0,80, faute de frappe compensée par la date de naissance, contribution de la ville de naissance au score, **non-fusion de patients distincts** et parité entre Pandas et Spark. Les tests de planification vérifient le calcul des échéances, la décision de saut d'une source inchangée, la reprise d'un run échoué et l'API de planification.
+Les tests du moteur couvrent la règle d'identité stricte : fusion quand CIN, genre, date et ville sont identiques, malgré un nom mal saisi ou un format de CIN différent ; **non-fusion** dès qu'un de ces champs diffère ou manque ; cas sans CIN ; homonymes parfaits ; identifiants identiques quel que soit l'ordre des fiches ; et parité avec Spark. Les tests de planification vérifient le calcul des échéances, la décision de saut d'une source inchangée, la reprise d'un run échoué et l'API de planification.
 
 Au niveau intégration, les 20 tests du MVP enchaînent pipeline, chargement en base, authentification, audit et API. Le run de référence du pipeline sur la VM a exécuté la chaîne complète RAW → SILVER → GOLD avec succès.
 
@@ -894,32 +899,33 @@ La sensibilité du test de refus a été vérifiée par mutation : neutraliser l
 
 Trois jeux sont générés à partir **des mêmes 500 patients maîtres** ; seul le taux de variation change (10 %, 30 %, 50 %), de sorte que la dégradation de la qualité est attribuable à un seul facteur. Les métriques sont calculées par paires d'enregistrements : la **précision** mesure l'exactitude des fusions, le **rappel** la part des vrais doublons retrouvés, et le **F1** le compromis entre les deux.
 
-Tableau: Évaluation sur vérité terrain (08/09/2026).
-| Niveau | Maîtres prédits | VP | FP | FN | Précision | Rappel | F1 |
-|---|---:|---:|---:|---:|---:|---:|---:|
-| Facile (10 %) | 500 | 727 | 0 | 0 | **1,000** | 1,000 | 1,000 |
-| Moyen (30 %) | 554 | 643 | 0 | 84 | **1,000** | 0,884 | 0,939 |
-| Difficile (50 %) | 804 | 307 | 0 | 420 | **1,000** | 0,422 | 0,594 |
+Tableau: Évaluation sur vérité terrain, v1 (score) et v2 (règle stricte).
+| Niveau | Maîtres prédits (v1 / v2) | FP (v1 / v2) | FN (v1 / v2) | Rappel (v1 / v2) | F1 (v1 / v2) |
+|---|---:|---:|---:|---:|---:|
+| Facile (10 %) | 500 / 500 | 0 / 0 | 0 / 0 | 1,000 / 1,000 | 1,000 / 1,000 |
+| Moyen (30 %) | 554 / 589 | 0 / 0 | 84 / 128 | 0,884 / 0,824 | 0,939 / 0,903 |
+| Difficile (50 %) | 804 / 942 | 0 / 0 | 420 / 597 | 0,422 / 0,179 | 0,594 / 0,303 |
+| 100 000 patients (facile) | 99 998 / 100 000 | **13 / 0** | 0 / 0 | 1,000 / 1,000 | 1,000 / 1,000 |
 
-Capture: C16 | Évaluation sur le jeu difficile. | C16_evaluation.png | Terminal : sortie de evaluate_engine.py sur le jeu hard (précision, rappel, F1, VP/FP/FN).
+Capture: C16 | Évaluation sur le jeu difficile. | C16_evaluation.png | Terminal : sortie de evaluate_pipeline_run.py --level hard --parity (précision, rappel, F1, parité).
 
-L'algorithme **ne fusionne aucune paire à tort** sur les trois niveaux, propriété essentielle en santé, où fusionner deux personnes est plus grave que de les laisser séparées. Sur le jeu difficile, il ne reconnaît pas toutes les variantes (rappel de 0,422). L'introduction du CIN dans la clé exacte a relevé ce rappel de 0,287 à 0,422 sans créer de faux positif. Le pipeline complet, mesuré sur la même vérité terrain, obtient les mêmes résultats : précision de 1,000, rappel de 0,424.
+Aucune des deux versions ne fusionne à tort sur les trois niveaux, propriété essentielle en santé, où fusionner deux personnes est plus grave que de les laisser séparées ; la v2 n'en fusionne aucune non plus à 100 000 patients, là où la v1 réunissait deux homonymes. Le prix est un rappel plus faible dès que la saisie se dégrade : 0,179 au lieu de 0,422 sur le jeu difficile, car une fiche dont la date ou la ville a été effacée n'est jamais rattachée. Le pipeline complet, mesuré sur la même vérité terrain, obtient exactement le résultat du moteur seul, avec les mêmes identifiants fiche par fiche.
 
-La décomposition par méthode localise la faiblesse : sur le jeu difficile, le rapprochement exact atteint un rappel de 0,854 et le rapprochement probabiliste de 0,533, avec une précision de 1,000 dans les deux cas. Le rappel est homogène entre les sources (0,422 ; 0,422 ; 0,423) : la dégradation vient du taux de variation, et non d'une source particulière. Enfin, les implémentations Pandas et Spark produisent exactement les mêmes résultats : 307 vrais positifs, 0 faux positif, 420 faux négatifs et 804 patients maîtres prédits pour 500 groupes réels.
+En v1, la décomposition par méthode localisait la faiblesse : sur le jeu difficile, le rapprochement exact atteignait un rappel de 0,854 et le rapprochement probabiliste de 0,533. Le rappel reste homogène entre les sources (v2 : 0,181 ; 0,175 ; 0,180) : la dégradation vient du taux de variation, et non d'une source particulière.
 
-Une précision mérite d'être faite sur l'absence de faux positif : le générateur dégrade des enregistrements existants mais ne construit jamais deux personnes distinctes presque identiques. La précision de 1,000 vaut donc pour les erreurs simulées : face à des homonymes réels, c'est une estimation **optimiste**, et non une garantie ; la confirmer demanderait un jeu d'homonymes proches.
+Une précision mérite d'être faite sur l'absence de faux positif : le générateur dégrade des enregistrements existants mais ne construit pas volontairement deux personnes distinctes presque identiques. La précision de 1,000 vaut donc pour les erreurs simulées : c'est une estimation **optimiste**, et non une garantie. Avec la règle stricte, une fusion à tort exigerait deux personnes de même CIN (erreur de saisie) ou, sans CIN, de même nom, genre, date et ville.
 
 ## Limites identifiées
 
 Le prototype présente des limites identifiées et documentées :
 
-- **Rappel de 0,422 sur le jeu difficile** : 420 paires manquées, en raison d'un seuil volontairement conservateur ; l'abaisser ou enrichir la clé suppose une validation métier.
+- **Rappel de 0,179 sur le jeu difficile** (v2 ; 0,422 en v1) : 597 paires manquées, car une date ou une ville manquante empêche tout rattachement ; la piste est une validation humaine de ces fiches, pas un score.
 - **Consentement par type de dossier** : en cours de développement ; le contrôle actuel porte sur la finalité.
 - **Base centrale de test** : alimentée par le pipeline et par des consentements de démonstration, pas par des avis réellement recueillis.
-- **Environnement de démonstration** : une VM de 8 Go et 4 cœurs sur un poste de 16 Go, Spark en mode local (un seul processus de 2 Go) ; 212 523 fiches traitées au plus, en 7 min 03 s, avec des gels de la VM quand l'hôte manque de mémoire.
-- **Déduplication centralisée** : toutes les fiches sont rapatriées sur une machine et comparées en Python, sur toutes les fiches à chaque run (332 s pour 212 523 fiches, contre 13 s pour 25 587). Des millions de lignes demanderaient une déduplication incrémentale et un blocage réparti, pas seulement plus de puissance.
-- **Identifiants de patients maîtres non permanents** : ils sont numérotés dans l'ordre de traitement à chaque run ; une fiche nouvelle ou d'autres données décalent les numéros, et un consentement enregistré pour un numéro peut alors désigner une autre personne.
-- **Homonymes parfaits** : à 100 000 patients, deux personnes de même nom et de même date de naissance sont fusionnées à tort (précision de 0,9999), car le nom et la date atteignent seuls le seuil. Un veto sur deux CIN différents en évite une, sans perte de rappel en simulation ; l'autre demande une validation humaine.
+- **Environnement de démonstration** : une VM de 8 Go et 4 cœurs sur un poste de 16 Go, Spark en mode local (un seul processus de 2 Go) ; 212 523 fiches traitées au plus (7 min 03 s en v1, 2 min 48 s en v2), avec des gels de la VM quand l'hôte manque de mémoire.
+- **Déduplication recalculée à chaque run** : en v2, elle s'exécute dans Spark sans rapatrier les fiches (en v1, le moteur Python rapatriait tout sur une machine : 332 s pour 212 523 fiches) ; mais chaque run recalcule toutes les fiches, et la base centrale est encore alimentée par le driver. Des millions de lignes demanderaient l'extraction des seules lignes nouvelles et plusieurs nœuds.
+- **Identifiant dérivé de la clé** : permanent d'un run à l'autre depuis la v2 (auparavant numéroté dans l'ordre de traitement, si bien qu'un consentement pouvait changer de personne) ; il change si un champ de la clé est corrigé, et un secret doit le protéger hors démonstration.
+- **Précision optimiste** : la vérité terrain ne construit ni CIN partagé ni homonyme de même genre, date et ville ; la v1 fusionnait deux homonymes parfaits à 100 000 patients, la v2 aucun.
 - **API des indicateurs non sécurisée** : elle ne sert que du reporting ; le contrôle d'accès est appliqué et testé sur l'API de gouvernance.
 - **Clés d'API hachées sans sel** : l'empreinte protège la lecture directe de la table, mais un hachage salé ou lent (bcrypt) serait préférable.
 - **Pas d'intégration continue ni de tests en environnement déployé**, et planification par cron non activée sur la VM.
@@ -933,18 +939,18 @@ Tableau: Réponse à la problématique.
 |---|---|---|
 | Intégrer | extraction abstraite vers la zone RAW (Parquet sur HDFS, tables Hive) | 3 sources de test (CSV synthétiques) ; extraction PostgreSQL et SQLite implémentée |
 | Nettoyer et normaliser | modèle canonique et schéma pivot FHIR | 1 057 lignes SILVER, dates et noms complets |
-| Dédupliquer de façon explicable | blocking, passe exacte, passe probabiliste ; méthode, score et explication pour chaque décision | 803 patients maîtres, 254 doublons ; précision de 1,000 pour le moteur et pour le pipeline |
-| Centraliser avec traçabilité | zones RAW, SILVER, GOLD ; origine conservée ; reprise, incrémental et historique des runs | 1 057 − 254 = 803 vérifié sur le lac |
-| Gouverner par consentement | rôles, clés hachées, finalité obligatoire, refus 403 journalisé | 123 tests ; 401, 403 et 422 vérifiés aussi sur base peuplée |
-| Ne jamais fusionner sans logique | méthode obligatoire pour tout patient maître | précision de 1,000 sur les trois niveaux |
+| Dédupliquer de façon explicable | règle d'identité stricte (CIN, genre, date et ville identiques), exécutée dans Spark ; méthode et explication pour chaque décision | 942 patients maîtres, 115 doublons ; aucune fusion à tort sur aucun jeu, 100 000 patients compris |
+| Centraliser avec traçabilité | zones RAW, SILVER, GOLD ; origine conservée ; reprise, incrémental et historique des runs | 1 057 − 115 = 942 vérifié sur le lac |
+| Gouverner par consentement | rôles, clés hachées, finalité obligatoire, refus 403 journalisé | 131 tests ; 401, 403 et 422 vérifiés aussi sur base peuplée |
+| Ne jamais fusionner sans logique | méthode obligatoire pour tout patient maître | précision de 1,000 sur tous les jeux |
 
-Le projet démontre quatre résultats. **La démarche progressive tient** : le même moteur, écrit en Pandas puis porté en PySpark et intégré au lac, conserve exactement la même sémantique, jusque dans le pipeline complet mesuré sur la vérité terrain. **La prudence a un coût, mesuré** : le seuil est positionné pour ne jamais fusionner à tort, et le rappel limité sur le jeu difficile est expliqué plutôt que masqué. **La gouvernance est dans le système** : un refus pour finalité non consentie est décidé, opposé et journalisé, et cela est vérifié par des tests qui empruntent le vrai chemin d'authentification. **Le contexte dicte les choix** : VM de 8 Go, Python 3.8 et nœud distant instable ont chacun conduit à une décision documentée.
+Le projet démontre quatre résultats. **La démarche progressive tient** : le moteur, écrit en Pandas, porté en PySpark puis intégré au lac, applique en v2 la même règle en Python et dans Spark, avec les mêmes identifiants fiche par fiche. **La prudence a un coût, mesuré** : le test à 100 000 patients a montré qu'un score reste exposé aux homonymes ; la règle stricte ne fusionne plus à tort, et le rappel limité sur le jeu difficile est expliqué plutôt que masqué. **La gouvernance est dans le système** : un refus pour finalité non consentie est décidé, opposé et journalisé, et cela est vérifié par des tests qui empruntent le vrai chemin d'authentification. **Le contexte dicte les choix** : VM de 8 Go, Python 3.8 et nœud distant instable ont chacun conduit à une décision documentée.
 
-Les difficultés rencontrées ont été techniques (onze incidents corrigés, dont quatre découverts en rejouant le pipeline sur la VM le 30/09), d'environnement (nœud distant instable, VM longtemps indisponible en fin de stage), d'organisation (développement mené seul, algorithme écrit deux fois) et de méthode. La plus instructive a été de définir ce que l'on accepte de perdre — des doublons non retrouvés — au regard de ce que l'on refuse de risquer — la fusion de deux patients — et de pouvoir le démontrer par des chiffres reproductibles.
+Les difficultés rencontrées ont été techniques (douze incidents corrigés, dont cinq découverts le 30/09 en rejouant le pipeline sur la VM et sur des jeux plus grands), d'environnement (nœud distant instable, VM longtemps indisponible en fin de stage), d'organisation (développement mené seul, algorithme écrit deux fois) et de méthode. La plus instructive a été de définir ce que l'on accepte de perdre — des doublons non retrouvés — au regard de ce que l'on refuse de risquer — la fusion de deux patients — et de pouvoir le démontrer par des chiffres reproductibles.
 
-Sur le plan personnel, ce stage m'a permis de pratiquer le Big Data, domaine dans lequel mon expérience était limitée : installer et faire fonctionner une chaîne HDFS, Hive et Spark, et découvrir ce que la documentation ne dit pas, comme l'ordre de démarrage des services ou le coût de Spark sur de petits volumes. Il m'a appris à relier le modèle statistique du rapprochement d'identités, l'architecture qui le rend exploitable et la règle de gouvernance qui décide qui peut le lire. Il m'a enfin appris une discipline : ne rien affirmer sans preuve reproductible, et écrire une limite plutôt que de la taire.
+Sur le plan personnel, ce stage m'a permis de pratiquer le Big Data, domaine dans lequel mon expérience était limitée : installer et faire fonctionner une chaîne HDFS, Hive et Spark, et découvrir ce que la documentation ne dit pas, comme l'ordre de démarrage des services ou le coût de Spark sur de petits volumes. Il m'a appris à relier le rapprochement d'identités, d'un score statistique à une règle stricte, l'architecture qui le rend exploitable et la règle de gouvernance qui décide qui peut le lire. Il m'a enfin appris une discipline : ne rien affirmer sans preuve reproductible, et écrire une limite plutôt que de la taire.
 
-Plusieurs perspectives prolongent ce travail. À court terme : terminer le consentement par type de dossier, rendre permanents les identifiants de patients maîtres, déployer la base centrale et y enregistrer des consentements réellement recueillis, calibrer le seuil et les poids sur la vérité terrain, ajouter un veto sur deux CIN différents, et activer la planification sur la VM. À moyen terme : ajouter une intégration continue, passer à l'échelle par une déduplication incrémentale (seules les fiches nouvelles comparées aux patients maîtres en base), l'extraction des seules lignes nouvelles et un blocage réparti entre plusieurs nœuds Spark, et reprendre la source MAVIS réelle lorsque le nœud sera stable. À plus long terme : brancher la gouvernance sur un catalogue de métadonnées pour le lignage des données, et généraliser le moteur à d'autres entités, comme les médecins ou les médicaments.
+Plusieurs perspectives prolongent ce travail. À court terme : terminer le consentement par type de dossier, protéger l'identifiant dérivé de la clé par un secret, déployer la base centrale et y enregistrer des consentements réellement recueillis, mettre en place une validation humaine des fiches à l'identité incomplète, et activer la planification sur la VM. À moyen terme : ajouter une intégration continue, passer à l'échelle par l'extraction des seules lignes nouvelles et l'exécution de Spark sur plusieurs nœuds, et reprendre la source MAVIS réelle lorsque le nœud sera stable. À plus long terme : brancher la gouvernance sur un catalogue de métadonnées pour le lignage des données, et généraliser le moteur à d'autres entités, comme les médecins ou les médicaments.
 
 #! Références et bibliographie
 
@@ -1023,13 +1029,13 @@ Le générateur est décrit à la section 5.1.5 : 500 patients maîtres, répart
 
 ##! Annexe C — Exemple de décision de déduplication
 
-Pour le cas de référence de démonstration (18 fiches), le moteur produit 11 patients maîtres et 18 liens d'identité, à l'identique en Pandas et en Spark. Jean Rakoto est rattaché par **rapprochement exact** grâce à son CIN, présent sous deux formats différents mais identique après normalisation. Une autre patiente, Nirina, est rattachée par **rapprochement probabiliste** avec un score supérieur à 0,80, son nom présentant une variation. Chaque lien conserve sa méthode, son score et une explication lisible par un gestionnaire de données.
+Sur la base de démonstration, le patient `PAT-10F54EAA8AEB06DB6AA5` réunit trois fiches, une par source (pharmacie, consultation, imagerie). La fiche de la pharmacie, première dans l'ordre d'ingestion, fonde le patient maître (« première fiche de cette identité ») ; les deux autres lui sont rattachées parce que leur CIN, leur genre, leur date et leur ville de naissance sont identiques après normalisation, même si le nom est écrit différemment. À l'inverse, deux homonymes parfaits du jeu de 100 000 patients, de même nom et de même date mais de CIN différents, restent deux patients distincts. Chaque lien conserve sa méthode et une explication lisible par un gestionnaire de données.
 
 ##! Annexe D — Extraits de code complémentaires
 
-La fonction de déduplication enchaîne les deux passes décrites à la section 7.2.3 : rapprochement exact, puis meilleur candidat probabiliste au-dessus du seuil, sinon création d'un nouveau patient maître. Chaque branche produit une décision avec sa méthode, son score et son explication.
+La fonction de déduplication applique la règle stricte décrite à la section 7.2.3 : pour chaque fiche, la clé d'identité et l'identifiant qui en dérive ; la première fiche d'une clé fonde le patient maître, les suivantes lui sont rattachées, et une fiche à l'identité incomplète reste seule. Chaque décision porte sa méthode et son explication.
 
-Code: X06 | Boucle de déduplication en deux passes | engine/identity/matcher.py::deduplicate | X06_deduplicate.png
+Code: X06 | Déduplication par règle d'identité stricte | engine/identity/matcher.py::deduplicate | X06_deduplicate.png
 
 Le journal d'audit est un *middleware* : il s'exécute après chaque requête, quelle qu'en soit l'issue, et enregistre la finalité et le motif d'un éventuel refus.
 

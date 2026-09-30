@@ -130,7 +130,7 @@ flowchart LR
     end
     subgraph REP["Réponse du projet"]
         R1["Modèle canonique + pivot FHIR"]
-        R2["Moteur exact + probabiliste"]
+        R2["Règle d'identité stricte"]
         R3["Data Lake RAW/SILVER/GOLD"]
         R4["RBAC + consent + audit"]
     end
@@ -207,9 +207,8 @@ consultation, `sex` en imagerie) : elles **encodent le genre différemment** (`H
 | Nom | accents, casse et ponctuation supprimés | chaîne vide si le nom est absent |
 
 Une règle gouverne les quatre : **aucune valeur n'est devinée**. Un genre hors liste, un CIN mal
-formé ou une date illisible produisent une valeur vide qui **isole** l'enregistrement sur la clé
-exacte et le renvoie vers la branche probabiliste — un champ douteux ne peut donc pas corrompre un
-rapprochement exact. Ce contrat est testé sur les trois sources synthétiques ; son application aux
+formé ou une date illisible produisent une valeur vide qui **exclut** l'enregistrement de toute
+fusion (identité incomplète) : un champ douteux ne peut donc pas provoquer un rapprochement. Ce contrat est testé sur les trois sources synthétiques ; son application aux
 formats MAVIS et CLINIQUE est documentée mais **hors du run de référence**, qui n'exploite que les
 sources CSV (§ 7.3).
 
@@ -224,8 +223,8 @@ traduits en exigences vérifiables F1 à F6 au chapitre 5.
   SILVER → GOLD), orchestré par `run_pipeline.sh`, avec **reprise** d'un run échoué,
   **ingestion incrémentale**, **planification** et **historique chiffré** de chaque run
   conservé en base ;
-- moteur de déduplication exact et probabiliste (seuil 0,80 ; poids : nom 0,5, naissance 0,3,
-  CIN 0,1, ville de naissance 0,1), implémenté en Pandas **et** en PySpark ;
+- moteur de déduplication par règle d'identité stricte (CIN, genre, date et ville de naissance
+  identiques ; v1 : score pondéré, seuil 0,80), implémenté en Python **et** dans Spark ;
 - gouvernance : rôles, consentement par finalité, journal d'accès, clés d'API hachées (SHA-256) ;
 - deux API REST : l'API des **indicateurs** (Flask), qui lit les zones SILVER et GOLD, et l'API
   de **gouvernance** (FastAPI), qui sert les patients sous contrôle du consentement et réserve à
@@ -258,8 +257,9 @@ normalisation, sans gouvernance ni espace de rejeu. L'analyse en dégage trois b
 dominants :
 
 1. **Interpréter des formats divergents** → un modèle canonique et un pivot FHIR.
-2. **Reconnaître un même patient sans identifiant commun** → mesures de similarité et seuil,
-   évalués sur une vérité terrain (chapitres 2, 7 et 8).
+2. **Reconnaître un même patient sans identifiant commun** → une règle explicable (d'abord un
+   score de similarité, puis une règle stricte), évaluée sur une vérité terrain (chapitres 2, 7
+   et 8).
 3. **Pouvoir passer à l'échelle** → Spark et un Data Lake Medallion.
 
 S'y ajoutent deux exigences transverses : **l'explicabilité** de toute décision (§ 7.1) et la

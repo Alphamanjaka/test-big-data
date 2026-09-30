@@ -10,7 +10,7 @@ flowchart RL
     subgraph Concepts
         ER[Entity Resolution / Record Linkage]
         SIM[Similarités Levenshtein / Jaro-Winkler]
-        BLK[Blocking : clé nom + naissance + CIN]
+        BLK[Blocking poussé à l'extrême : clé d'identité<br/>CIN + genre + naissance + ville]
         MPI[Master Patient Index + Identity Map]
         RGDP[RGPD art. 9 : consentement purpose-by-purpose]
         FH[Interopérabilité FHIR : Patient / $match]
@@ -18,8 +18,8 @@ flowchart RL
         ELT[ELT : Extract → Load → Transform]
     end
     subgraph Technologies
-        RF[RapidFuzz]
-        EN[engine/identity : canonical + matcher]
+        RF[RapidFuzz : mapping des colonnes<br/>score de la v1]
+        EN[engine/identity : canonical + rules<br/>matcher + spark_dedup]
         PG[PostgreSQL central : master, consent, audit]
         SP[Spark / HDFS / Hive]
         API[API FastAPI RBAC + clés SHA-256<br/>refus 403 + audit]
@@ -65,7 +65,7 @@ Les options sont notées de 1 à 5, 5 étant le meilleur :
 | | MySQL | 4 | 4 | 4 | 5 | 5 | 4,25 | écarté (JSONB moins intégré) |
 | **3 · Framework d'API de gouvernance** | **FastAPI** | 5 | 5 | 4 | 4 | 5 | **4,65** | **retenu** |
 | | Flask | 5 | 3 | 5 | 5 | 5 | 4,50 | écarté de peu — validation manuelle de la finalité |
-| **4 · Moteur d'appariement** | **Moteur propre sur RapidFuzz** (poids fixés) | 5 | 5 | 4 | 3 | 5 | **4,50** | **retenu** |
+| **4 · Moteur d'appariement** | **Moteur propre** (v1 : score RapidFuzz à poids fixés ; v2 : règle stricte) | 5 | 5 | 4 | 3 | 5 | **4,50** | **retenu** |
 | | Splink [B15] | 4 | 4 | 3 | 5 | 5 | 4,05 | écarté — poids estimés par EM, version figée à 4.0.11 sous Python 3.8 |
 | | *recordlinkage* | 5 | 4 | 2 | 3 | 5 | 3,85 | écarté — Pandas seul, peu actif depuis 2023 |
 | | *dedupe* | 5 | 2 | 3 | 4 | 5 | 3,70 | écarté — exige une campagne d'étiquetage humain |
@@ -78,13 +78,20 @@ Les options sont notées de 1 à 5, 5 étant le meilleur :
 > `sentence_transformers`, noté 1 sur C1, reste écarté quelle que soit la pondération.
 >
 > L'arbitrage 4 appelle la même prudence : Splink n'est distancé que de 0,45 et l'emporte en
-> maturité (C4 = 5 contre 3) ; le moteur propre ne gagne que par l'explicabilité (poids fixés par
-> le métier) et par la compatibilité durable avec Python 3.8 (§ 2.2.2). Enfin, le socle Hadoop,
+> maturité (C4 = 5 contre 3) ; le moteur propre ne gagne que par l'explicabilité (règles fixées
+> par le métier) et par la compatibilité durable avec Python 3.8 (§ 2.2.2). Enfin, le socle Hadoop,
 > Hive et Spark n'est **pas** noté par cette grille : il découle du sujet (une plateforme Big
 > Data), et le § 2.2.2 reconnaît que DuckDB ou Polars l'emporteraient sur de petits volumes.
+>
+> **Révision de l'arbitrage 4 (30/09/2026).** La première version du moteur (v1) combinait une
+> voie exacte et un score RapidFuzz pondéré. Sur 100 000 patients, ce score a réuni deux homonymes
+> parfaits aux CIN différents (§ 8.5.1). La v2 ne garde qu'une **règle d'identité stricte**, sans
+> score ni poids ; RapidFuzz ne sert plus qu'au mapping des colonnes. Le moteur propre reste retenu,
+> pour la même raison : l'explicabilité (C2).
 
 La plate-forme retenue est donc : Hadoop 3.3.6 (HDFS, YARN), Hive 3.1.3 et Spark 3.4.2 pour le
-Data Lake ; Python 3.8 avec Pandas, PySpark et RapidFuzz pour le moteur ; PostgreSQL pour la
+Data Lake ; Python 3.8 avec Pandas et PySpark pour le moteur, RapidFuzz pour le mapping des
+colonnes ; PostgreSQL pour la
 base centrale ; FastAPI pour l'API de gouvernance et Flask pour l'API des indicateurs ; Next.js
 pour l'interface optionnelle (Tableau 17, § 4.1.4).
 
@@ -98,7 +105,7 @@ projet entre ingestion, normalisation, déduplication, gouvernance et exposition
 ```text
 projet/code-source/
 ├── engine/
-│   ├── identity/        canonical.py · matcher.py · spark_dedup.py
+│   ├── identity/        canonical.py · rules.py · matcher.py · spark_dedup.py
 │   └── governance/      auth.py · consent.py · audit.py · app.py
 ├── provision/
 │   ├── Vagrantfile · bootstrap.sh
@@ -106,7 +113,6 @@ projet/code-source/
 │   ├── api/             hive_api.py · mock_data.py · test_api.py
 │   ├── db/              seed_governance.py
 │   └── config/          schedule.example.yaml (+ fichiers locaux non versionnés)
-├── config/              deduplication.yaml
 ├── sql/                 schema.sql
 ├── evaluation/          synthetic-patient-generator/ · evaluate_engine.py · evaluation_truth.md
 ├── tests/               suites pytest du moteur, de la gouvernance et de la planification
@@ -117,11 +123,13 @@ projet/code-source/
 - **Ingestion et pipeline** : `provision/scripts/` — l'orchestrateur `run_pipeline.sh`, les
   étapes ELT, les utilitaires d'état (`pipeline_state`, `watermark`, `schedule_logic`) et le
   planificateur.
-- **Identité** : `engine/identity/` — le modèle canonique et les deux implantations du moteur.
+- **Identité** : `engine/identity/` — le modèle canonique, la règle d'identité et ses deux
+  implantations (référence Python et Spark).
 - **Gouvernance** : `engine/governance/` — authentification, consentement, audit et API.
 - **Exposition** : `provision/api/` (indicateurs du warehouse) et `front-optional/`.
-- **Paramètres** : `config/deduplication.yaml` (poids, seuil, blocking) et `sql/schema.sql`
-  (base centrale), lus par le code et jamais recopiés dans la logique.
+- **Paramètres** : `sql/schema.sql` (base centrale), lu par le code et jamais recopié dans la
+  logique. La règle d'identité (v2) n'a aucun paramètre à régler ; les poids et le seuil de la v1
+  vivaient dans `config/deduplication.yaml`, retiré le 30/09/2026.
 
 ### 7.2.2 Modélisation des données
 
@@ -134,8 +142,8 @@ birth_date · cin · birth_city · address · gender
 ```
 
 Le mapping des colonnes source → canonique est **explicite et déterministe**
-(`canonical.py::map_patient()`) ; le `matching_key` produit la clé de déduplication
-`(birth_date, cin, nom normalisé)`.
+(`canonical.py::map_patient()`) ; la clé d'identité (`rules.py::identity_key()`) en découle :
+`(CIN, genre, date de naissance, ville)`, avec le nom en plus quand le CIN manque.
 
 **Tableau 33 — Mapping des colonnes vers le modèle canonique.**
 
@@ -226,7 +234,7 @@ s'y ajoutent (§ 7.3.2). Le tableau précise le rôle de chaque table :
 |---|---|---|
 | `raw_patient_record` | fiches brutes, jamais exposées | payload `JSONB`, `UNIQUE(source_system, source_patient_id)` |
 | `master_patient` | identité unique | `gender CHECK IN ('M','F','')` |
-| `patient_identity_map` | fiche source → patient maître | `match_method CHECK IN ('new_master','exact','probabilistic')`, `match_score NUMERIC(4,3)`, `explanation` |
+| `patient_identity_map` | fiche source → patient maître | `match_method CHECK IN ('new_master','exact','probabilistic')` (la v2 n'écrit que les deux premiers), `match_score NUMERIC(4,3)`, `explanation` |
 | `consent` | consentement par finalité (*purpose-by-purpose*) | `purpose` (`CHECK IN ('api_access','research','analytics')`), `granted`, `recorded_at` |
 | `api_user` | utilisateurs machine | `api_key_hash` (SHA-256), `role CHECK ('admin','analyst','viewer')` |
 | `access_audit` | journal de toutes les tentatives | endpoint, status, IP, `purpose`, `refusal_reason`, `accessed_at` |
@@ -257,36 +265,43 @@ référentiel de rejeu.
 
 ### 7.2.3 Composants
 
-**Entity Resolution : blocking et déduplication.** Comparer chaque enregistrement à tous les
-autres coûte O(n²). Le moteur indexe donc les patients maîtres selon trois clés : préfixe du nom
-(4 lettres), date de naissance et CIN (`_MasterIndex`) ; il ne compare une fiche qu'aux candidats
-qui partagent au moins une de ces clés.
+**Entity Resolution : de la v1 à la v2.** Comparer chaque enregistrement à tous les autres coûte
+O(n²). La **v1** du moteur indexait donc les patients maîtres selon trois clés de blocking
+(préfixe du nom, date de naissance, CIN), puis enchaînait deux passes : une voie **exacte** (même
+clé de rapprochement, ou même date et même CIN) et une voie **probabiliste**, un score pondéré
+comparé à un seuil de 0,80.
 
-**Déduplication en deux passes** (`deduplicate()`, seuil de 0,80) :
+**Tableau 36 — Le score de similarité de la v1 (abandonné le 30/09/2026).**
 
-1. **Rapprochement exact** : la fiche partage la clé de rapprochement d'un patient maître, ou
-   bien la même date de naissance **et** le même CIN non vide, ce qui absorbe les inversions de
-   prénom et de nom. Décision `exact`, score 1,0.
-2. **Rapprochement probabiliste** : parmi les candidats du blocking, un score de similarité
-   **pondéré** est calculé :
+| Critère | Similarité | Poids |
+|---|---|---:|
+| Nom | `fuzz.ratio` sur les noms complets en minuscules (sensible à l'ordre des mots) | 0,50 |
+| Date de naissance | égalité | 0,30 |
+| CIN | égalité (si présent, environ 75 % des patients) | 0,10 |
+| Ville de naissance | égalité après normalisation | 0,10 |
 
-**Tableau 36 — Le calcul du score de similarité.**
+Sur 100 000 patients, ce score a réuni deux homonymes parfaits : le nom et la date suffisaient à
+atteindre le seuil, même avec des CIN différents (§ 8.5.1). La **v2** (30/09/2026) remplace les
+deux passes par une **règle d'identité stricte** (`rules.py`), sans score, sans seuil et sans
+poids :
 
-   | Critère | Similarité | Poids |
-   |---|---|---:|
-   | Nom | `fuzz.ratio` sur les noms complets en minuscules (sensible à l'ordre des mots) | 0,50 |
-   | Date de naissance | égalité | 0,30 |
-   | CIN | égalité (si présent, environ 75 % des patients) | 0,10 |
-   | Ville de naissance | égalité après normalisation | 0,10 |
+1. **Clé d'identité** : deux fiches désignent la même personne si et seulement si elles ont le
+   même CIN, le même genre, la même date et la même ville de naissance, après normalisation
+   (Tableau 33). Sans CIN des deux côtés, le nom normalisé doit être identique en plus.
+2. **Identité incomplète** : si le genre, la date ou la ville manque (ou le nom, faute de CIN), la
+   fiche reste seule (`new_master`) : une valeur absente n'est jamais « identique ». Deux CIN
+   différents ne peuvent donc jamais être réunis.
+3. **Identifiant dérivé de la clé** : le patient maître reçoit `PAT-` suivi de l'empreinte SHA-256
+   de sa clé (20 caractères). Il est le même à chaque run, quel que soit l'ordre des fiches, et les
+   consentements restent attachés à la bonne personne. La clé contenant des données
+   identifiantes, un secret (`PATIENT_ID_SECRET`) en fait un HMAC hors démonstration.
+4. Chaque décision porte **`master_patient_id`, `method` (`new_master` ou `exact`), `score` (1,0)
+   et `explanation`** (règle appliquée) : la règle « jamais fusionner sans logique explicable » est
+   inscrite dans la structure des données.
 
-   Score ≥ 0,80 → décision `probabilistic` (score conservé) ; sinon, nouveau patient maître
-   (`new_master`). La comparaison des noms étant sensible à l'ordre des mots, une inversion
-   prénom/nom est rattrapée par la règle exacte (date de naissance et CIN), pas par ce score.
-3. Chaque décision porte **`master_patient_id`, `method`, `score`, `explanation`** : la règle
-   « jamais fusionner sans logique explicable » est inscrite dans la structure des données.
-
-Le cas de référence est conçu pour être résolu : Jean Rakoto (exact, CIN) et Nirina
-(probabiliste, score supérieur à 0,80).
+La clé d'identité est un blocking poussé à l'extrême : un regroupement par clé, sans comparaison
+deux à deux, donc de coût linéaire et réparti par Spark (§ 7.3.3). Le cas de référence du PoC
+(Jean Rakoto, Nirina) illustrait la v1 et relève du périmètre historique du PoC (§ 8.5.3).
 
 **Gouvernance : RBAC, consentement, audit.** Trois mécanismes, dans cet ordre : on vérifie
 **qui** demande, **pourquoi** il demande, et on **trace** ce qui s'est passé.
@@ -323,14 +338,14 @@ Le cas de référence est conçu pour être résolu : Jean Rakoto (exact, CIN) e
 `data_scope` (périmètre de données), ni durée de validité du consentement, ni chiffrement au
 repos du journal d'audit, ni mesure de temps de traitement persistée.
 
-**Parité Spark (niveau 2).** Dans le PoC, l'algorithme est porté en PySpark sans changer sa
-sémantique : les groupes **exacts** sont construits par `groupBy` sur la clé, puis la résolution
-**probabiliste** ne compare que les représentants de ces groupes (`_BoundedMasterIndex`). Cette
-seconde passe s'exécute toutefois sur le driver, après rapatriement des données (`collect()`). Dans
-le pipeline consolidé, l'étape SILVER rapatrie de même toutes les fiches, puis appelle `matcher`.
-La déduplication tourne donc **sur une seule machine**, quel que soit le nombre de nœuds, ce qui
-limite le volume atteignable (conclusion générale, limites). La parité est vérifiée par test et par
-évaluation sur la vérité terrain.
+**Spark (niveau 2).** Dans le PoC, la v1 était portée en PySpark : groupes exacts par `groupBy`,
+puis passe probabiliste sur le driver, après rapatriement des données (`collect()`), donc sur une
+seule machine quel que soit le nombre de nœuds. La v2 lève cette limite. La clé d'identité étant
+un simple regroupement, l'étape SILVER calcule clé et identifiant fiche par fiche (UDF appelant les
+fonctions de la référence Python), puis désigne la fiche fondatrice de chaque clé par
+`row_number` : la décision se répartit entre les exécuteurs, sans rien rapatrier. Seule l'écriture
+de la base centrale lit ensuite les décisions en flux, par lots de 5 000. La parité avec la
+référence Python est vérifiée par test et sur la VM (§ 7.3.3).
 
 ### 7.2.4 Déploiement
 
@@ -365,8 +380,8 @@ en modules ; sa graine fixe (42) le rend déterministe.
 Le déterminisme rend l'évaluation **comparable** : les trois jeux sont produits à partir des
 **mêmes 500 patients maîtres** et ne diffèrent que par le **taux de variation**. La dégradation de
 la qualité est ainsi attribuable à un seul facteur, et deux exécutions sont comparables ligne à
-ligne, condition pour établir la parité Pandas/Spark et pour rejouer une évaluation après un
-changement de poids. Les transactions (achats, consultations, examens) alimentent les entités
+ligne, condition pour établir la parité Python/Spark et pour rejouer une évaluation après un
+changement de règle. Les transactions (achats, consultations, examens) alimentent les entités
 FHIR autres que `Patient`.
 
 ### 7.3.2 Pipeline ELT Medallion en 5 étapes
@@ -446,10 +461,11 @@ aussitôt, le pipeline continue indépendamment et met à jour son propre état.
 même planification est lisible et modifiable par l'API `/pipeline/schedule` (§ 5.3.2),
 dans un format identique à celui attendu par le cron de la VM.
 
-L'étape SILVER intègre la **fusion des doublons dans le Data Lake** : le moteur relit
-`patient_fhir`, applique `deduplicate()`, enrichit chaque ligne du patient maître, de la méthode
-et du score, puis charge les patients maîtres et la table de correspondance dans la base
-centrale. La fusion reste explicable *dans* le lac comme dans la base.
+L'étape SILVER intègre la **fusion des doublons dans le Data Lake** : Spark relit
+`patient_fhir`, applique la règle d'identité (`deduplicate_df()`), enrichit chaque ligne du
+patient maître, de la méthode et du score, puis la base centrale reçoit en flux les patients
+maîtres et la table de correspondance. La fusion reste explicable *dans* le lac comme dans la
+base.
 
 **Run de référence du 07/09/2026.** Sur un premier jeu de démonstration (76 + 76 + 62 fiches),
 le pipeline produisait **214 lignes SILVER**, **145 patients maîtres** et **69 doublons**, tous
@@ -461,7 +477,7 @@ d'évaluation **difficile** (404 / 353 / 300 fiches), dont la vérité terrain e
 ont révélé deux défauts de données, corrigés depuis (§ 7.3.6) : des dates de naissance perdues à
 l'extraction et des noms tronqués. Après correction :
 
-**Tableau 39 — Runs réels du pipeline sur la VM (jeu difficile, 29–30/09/2026).**
+**Tableau 39 — Runs réels du pipeline sur la VM (jeu difficile, 29–30/09/2026, moteur v1).**
 
 | Indicateur | Valeur |
 |---|---:|
@@ -479,7 +495,7 @@ Mesuré sur la vérité terrain, le run complet obtient une **précision de 1,00
 Data ne dégrade pas la déduplication. La planification par cron, elle, n'a pas été exécutée
 (planification désactivée pendant ces runs).
 
-**Run sur 12 000 patients (30/09/2026).** Pour éprouver le volume, le pipeline complet a ensuite
+**Run sur 12 000 patients (30/09/2026, moteur v1).** Pour éprouver le volume, le pipeline complet a ensuite
 traité un jeu **facile** de 12 000 patients synthétiques : 25 587 fiches, sans variation de saisie.
 Il retrouve les **12 000 patients maîtres** (13 587 doublons, tous exacts) et produit 43 141
 événements en GOLD ; sur la vérité terrain, précision et rappel valent 1,000. Ce jeu ne mesure pas
@@ -487,7 +503,7 @@ le rapprochement probabiliste, que seul le jeu difficile sollicite. Il a en reva
 défaut de passage à l'échelle (§ 7.3.6) : une fois corrigé, le run complet passe de 15 min 15 s à
 4 min 57 s.
 
-**Run sur 100 000 patients (30/09/2026).** Le pipeline a ensuite traité 212 523 fiches et 359 299
+**Run sur 100 000 patients (30/09/2026, moteur v1).** Le pipeline a ensuite traité 212 523 fiches et 359 299
 transactions en **7 min 03 s** : 99 998 patients maîtres, 359 299 événements en GOLD, au plus
 4,8 Go de mémoire utilisés sur les 8 Go de la VM. La déduplication occupe l'essentiel du temps,
 environ 5 minutes. Le pipeline n'impose aucune limite de durée, mais un run long est plus exposé
@@ -495,32 +511,37 @@ aux gels de la VM : sur 12 000 patients, un premier run a échoué quand la VM, 
 par l'hôte, s'est figée deux minutes ; le run de 100 000 patients a traversé trois gels sans
 échouer. Ses deux fusions à tort sont analysées au § 8.5.1.
 
-### 7.3.3 Moteur de déduplication : Pandas et Spark
+**Runs de la v2 (30/09/2026).** Avec la règle stricte exécutée dans Spark, le run complet traite
+les 212 523 fiches du jeu de 100 000 patients en **2 min 48 s**, contre 7 min 03 s : 100 000
+patients maîtres, aucune fusion à tort, 4,5 Go de mémoire au plus, aucun gel de la VM. Sur le jeu
+difficile, il dure 1 min 30 s : 942 patients maîtres pour 1 057 fiches (115 doublons, 10,88 %),
+précision de 1,000 et rappel de 0,179 (§ 8.5.1). Sur les deux jeux, la table de correspondance
+écrite par Spark est identique, fiche par fiche, à celle de la référence Python. Cette base sert
+la démonstration (annexe H).
 
-Le moteur `engine/identity/` est la pièce centrale du projet ; il existe en deux implantations
-alignées :
+### 7.3.3 Moteur de déduplication : référence Python et Spark
 
-**Tableau 40 — Les deux implantations du moteur.**
+Le moteur `engine/identity/` est la pièce centrale du projet ; la règle stricte y existe en deux
+implantations alignées :
 
-| Aspect | `matcher.py` (Pandas) | `spark_dedup.py` (variante Spark, exécutée sur le driver) |
+**Tableau 40 — Les deux implantations de la règle stricte (v2).**
+
+| Aspect | `matcher.py` (référence Python) | `spark_dedup.py` (Spark) |
 |---|---|---|
-| Canonique | `canonical.py` (`map_patient`, `from_dict`) | réutilise `matcher`/`canonical` |
-| Exact | `matching_key` + naissance/CIN | clusters par clé (dictionnaire ; `groupBy` Spark dans le PoC) |
-| Probabiliste | `_MasterIndex` (3 buckets) | `_BoundedMasterIndex` sur ancres de clusters |
-| Score | `fuzz.ratio(nom)×0.5 + naissance×0.3 + CIN×0.1 + ville×0.1` | identique |
-| Décision | `exact` / `probabilistic` / `new_master`, seuil 0,80 | identique |
-| Sortie | `MatchDecision` | dicts `(master_patient_id, method, score, explanation)` |
+| Canonique | `canonical.py` (`map_patient`, `from_dict`) | idem, appelé par une UDF |
+| Règle | `rules.identity_key` : clé d'identité stricte | même fonction |
+| Identifiant | `rules.master_id` : empreinte de la clé | même fonction |
+| Fiche fondatrice | première fiche de la clé, dans l'ordre fourni | `row_number` par clé (rang de source, identifiant) |
+| Exécution | liste en mémoire (évaluation, tests) | DataFrame réparti, sans `collect()` (étape SILVER) |
+| Sortie | `MatchDecision` | colonnes `master_patient_id`, `match_method`, `match_score`, `explanation` |
 
-La **parité est vérifiée** sur les jeux testés : 18 fiches de démonstration donnent 11 patients
-maîtres identiques en Pandas et en Spark, et l'évaluation sur vérité terrain donne les mêmes
-résultats pour les deux (VP = 307, FP = 0, FN = 420 sur le jeu difficile ; chapitre 8).
-
-Cette parité tient à la structure : les deux implantations partagent `canonical.py`, lisent les
-**mêmes poids et le même seuil** dans `config/deduplication.yaml`, et ne diffèrent que par la
-**stratégie de regroupement**. Pandas indexe les patients maîtres sur trois clés de blocking ;
-Spark regroupe d'abord par clé exacte (`groupBy`), puis ne compare que les représentants des
-groupes, au prix d'une comparaison moins exhaustive. Rejouer les deux chemins sur le même jeu et
-comparer leurs décisions est le seul moyen de détecter une dérive entre eux.
+La **parité est vérifiée** fiche par fiche. Un test exécuté dans la VM compare les décisions de
+Spark et de la référence sur des cas choisis (homonymes, CIN absent, identité incomplète), et les
+runs de la VM donnent les mêmes identifiants que la référence sur 212 523 et 1 057 fiches
+(`evaluate_pipeline_run.py --parity`). Cette parité tient à la construction : les deux chemins
+appellent les mêmes fonctions et ne diffèrent que par le mode d'exécution. En v1, elle n'était
+qu'approchée : sur le jeu difficile, le pipeline trouvait 803 patients maîtres et le moteur seul
+804.
 
 ### 7.3.4 Chargement de la base centrale et consentement en GOLD
 
@@ -528,7 +549,8 @@ comparer leurs décisions est le seul moyen de détecter une dérive entre eux.
   correspondance sont écrits dans la base centrale, après application idempotente du schéma
   (`IF NOT EXISTS`, `ON CONFLICT`). Sans `DATABASE_URL`, le pipeline continue sans l'alimenter.
 - **`patient_consent_gold`** : l'étape GOLD lit les consentements de la base centrale et les
-  associe aux patients maîtres ; au run du 30/09/2026, 2 409 lignes (803 patients, 3 finalités).
+  associe aux patients maîtres ; sur la base de démonstration, 2 826 lignes (942 patients,
+  3 finalités).
   Si la base est inaccessible, la table est créée avec des consentements vides et l'API des
   indicateurs bascule sur son jeu de démonstration.
 
@@ -575,20 +597,23 @@ s'applique à l'API de gouvernance.
 | Environ 20 % des dates de naissance perdues (30/09) | une colonne mélange quatre formats ; seul le format dominant était lu | lecture valeur par valeur, format par format |
 | Noms tronqués pour la source consultation (30/09) | nom en deux colonnes, dont une seule était retenue par le mapping | nom complet reconstitué (prénom + nom) avant le mapping |
 | Déduplication de 25 587 fiches en près de 15 minutes (30/09) | la passe exacte comparait chaque fiche à tous les patients maîtres déjà créés : coût quadratique | recherche directe par dictionnaire (clé de rapprochement ; date + CIN) : moteur seul de 887 s à 13 s, décisions identiques |
+| Deux homonymes parfaits fusionnés à 100 000 patients (30/09) | nom (0,5) et date (0,3) atteignaient seuls le seuil de 0,80, même avec des CIN différents | règle d'identité stricte (v2) : CIN, genre, date et ville identiques, aucun score |
 
 Ces incidents relèvent de quatre familles. Les incidents de **données** (explosion de SILVER,
 écritures écrasées, dates perdues, noms tronqués) sont documentés comme pièges anti-régression.
 Ceux d'**infrastructure** (Parquet, Spark, HiveServer2, NameNode) ont été contournés par des règles
-de configuration. L'incident d'**outillage** (NLP) est le seul qui ait changé la méthode :
+de configuration. L'incident d'**outillage** (NLP) a changé la méthode une première fois :
 l'approche par vecteurs a été abandonnée au profit d'un score pondéré, plus léger et plus
-explicable. Le dernier relève du **passage à l'échelle** : invisible sur 1 057 fiches, il n'est
-apparu qu'avec 25 587. Les quatre derniers ont été découverts en rejouant le pipeline sur la VM le
-30/09 : aucun test hors VM ne les révélait, ce qui justifie cette re-validation.
+explicable. Les deux derniers relèvent du **passage à l'échelle** : invisibles sur 1 057 fiches,
+ils ne sont apparus qu'avec 25 587 puis 212 523. Le second a changé la méthode une seconde fois :
+le score a laissé place à la règle stricte. Les cinq derniers ont été découverts le 30/09, en
+rejouant le pipeline sur la VM et sur des jeux plus grands : aucun test sur les petits jeux ne les
+révélait.
 
 ## Conclusion et transition
 
-La plateforme est conçue et réalisée : un modèle canonique et deux passes de déduplication
-expliquées, une base centrale traçable et alimentée par le pipeline, une gouvernance par
+La plateforme est conçue et réalisée : un modèle canonique et une règle d'identité stricte,
+explicable et exécutée dans Spark, une base centrale traçable et alimentée par le pipeline, une gouvernance par
 consentement, et un pipeline ELT en cinq étapes, rejoué sur la VM, avec reprise, ingestion
 incrémentale et historique des runs. Le chapitre 8 en mesure la qualité : stratégie de test,
 tests unitaires, d'intégration et fonctionnels, évaluation sur vérité terrain et limites du

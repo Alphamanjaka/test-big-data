@@ -42,7 +42,7 @@ Conception retenue pour chaque brique (cahier des charges, § 4) :
 | **Extraction** | couche d'extraction abstraite (CSV / PostgreSQL / SQLite) → RAW |
 | **Normalisation** | modèle canonique `CanonicalPatient` |
 | **Interopérabilité** | schéma pivot **FHIR** (4 entités) |
-| **Déduplication** | blocking, passe exacte, passe probabiliste (RapidFuzz), seuil 0,80 |
+| **Déduplication** | règle d'identité stricte (CIN, genre, date et ville identiques), exécutée dans Spark ; v1 : passe exacte et score RapidFuzz, seuil 0,80 |
 | **Consolidation** | patient maître et table de correspondance traçable |
 | **Chargement** | base PostgreSQL centrale, écriture idempotente (`ON CONFLICT`, `IF NOT EXISTS`) |
 | **Exposition** | API REST et espace de gouvernance |
@@ -63,7 +63,7 @@ flowchart TB
     RAW["RAW · parquet HDFS<br/>/datalake/raw/{source}/{table}<br/>tables Hive externes STRING"]
     MAP["gen_fhir_mapping<br/>fhir_mapping.json"]
     SIL["SILVER · datalake_silver<br/>patient / encounter / condition / observation _fhir"]
-    DED["Moteur engine/identity<br/>exact + probabiliste · seuil 0,80"]
+    DED["Moteur engine/identity<br/>règle d'identité stricte · Spark"]
     GOLD["GOLD · datalake_gold<br/>patient_events_gold · patient_consent_gold"]
     PG[("PostgreSQL central<br/>master_patient · identity_map<br/>consent · api_user · access_audit")]
     API["API REST (Flask 5000)<br/>+ gouvernance FastAPI"]

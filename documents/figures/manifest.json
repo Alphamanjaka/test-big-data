@@ -57,14 +57,14 @@
       "source": "07-conception.md:8",
       "config": "compact",
       "width_px": 600,
-      "height_px": 822,
+      "height_px": 906,
       "pt_portrait_16cm": 12.1,
       "pt_paysage_26cm": 20.2
     },
     {
       "number": 7,
       "file": "fig-7.png",
-      "source": "07-conception.md:159",
+      "source": "07-conception.md:167",
       "config": "compact",
       "width_px": 1518,
       "height_px": 1007,
@@ -74,7 +74,7 @@
     {
       "number": 8,
       "file": "fig-8.png",
-      "source": "07-conception.md:376",
+      "source": "07-conception.md:393",
       "config": "serre",
       "width_px": 1361,
       "height_px": 148,

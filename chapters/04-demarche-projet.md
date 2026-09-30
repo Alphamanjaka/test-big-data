@@ -13,7 +13,7 @@ une production vérifiable dans le dépôt.
 |---|---|---|
 | **Analyse** | cahier des charges consolidé, capture des schémas sources, exigences F1–F6 | `documents/cahier_des_charges.md`, `documents/journal_poc_datalake_mavis.md`, chapitre 5 |
 | **Conception** | architecture en trois niveaux, modèle canonique, schéma de la base centrale, règles de gouvernance | chapitres 6 et 7, `sql/schema.sql`, `documents/documentation/` |
-| **Développement** | générateur synthétique, moteur de déduplication (Pandas et Spark), pipeline ELT, API, frontend optionnel | `projet/code-source/` |
+| **Développement** | générateur synthétique, moteur de déduplication (Python et Spark), pipeline ELT, API, frontend optionnel | `projet/code-source/` |
 | **Tests et évaluation** | suites `pytest`, évaluation sur vérité terrain, runs du pipeline | `projet/code-source/tests/`, `evaluation/evaluation_truth.md`, chapitre 8 |
 | **Documentation et suivi** | journal daté, suivi d'avancement, manuel conceptuel, ce mémoire | `ai/dev/logs.md`, `ai/dev/suivi_avancement.md`, `documents/`, `chapters/` |
 
@@ -84,7 +84,7 @@ n'atteignent l'historique.
 **Ce qui est déclaré, et non codé en dur.** Les sources de données, les chemins et les
 identifiants sont décrits dans des fichiers de configuration lus au démarrage, jamais
 écrits dans le code. Les paramètres qui gouvernent le comportement — le nombre de partitions,
-le seuil de rapprochement à 0,80, les poids par champ, les finalités autorisées — sont
+les finalités autorisées, et en v1 le seuil de rapprochement et les poids par champ — sont
 explicites et regroupés : les modifier ne demande pas de toucher à la logique.
 
 **Ce qui est vérifié.** La suite de tests est exécutée à chaque jalon, et son résultat vert
@@ -106,9 +106,9 @@ en aval.
 |---|---|---|
 | **VM de 8 Go et 4 cœurs** | mémoire limitée pour Spark | Spark en mode local : un processus de 2 Go, 8 partitions |
 | **Nœud distant MAVIS instable** | source PostgreSQL distante (`mavis_notheme`, 11 tables, tunnel SSH) | répliques locales de dev (`rebuild_mavis_db.py`, 73 090 lignes) ; données finales synthétiques |
-| **Python 3.8 imposé** | `sentence_transformers` plante sous Python 3.8 | RapidFuzz pour la similarité des noms ; dictionnaire de synonymes pour le mapping des colonnes |
+| **Python 3.8 imposé** | `sentence_transformers` plante sous Python 3.8 | RapidFuzz et dictionnaire de synonymes pour le mapping des colonnes (et, en v1, la similarité des noms) |
 | **Dossier partagé de la VM** | fichiers Parquet corrompus quand Spark y écrit | entrepôt Spark toujours sur HDFS |
-| **Reproductibilité** | évaluation et déduplication déterministes | graine 42 ; seuil et poids fixés en configuration |
+| **Reproductibilité** | évaluation et déduplication déterministes | graine 42 ; règle d'identité sans paramètre (v1 : seuil et poids fixés en configuration) |
 | **Données sensibles** | loi n° 2014-038, art. 18 ; RGPD, art. 9 | données **synthétiques** uniquement ; gouvernance intégrée au système |
 
 **Contexte local.** Quatre réalités du terrain conditionnent l'applicabilité du projet ; la
@@ -137,8 +137,8 @@ Deux points restent ouverts :
 2. **La volumétrie réelle n'a pas été utilisée.** Toutes les données sont
    synthétiques, générées à l'échelle du prototype (214 fiches au run de référence,
    1 057 dans le jeu d'évaluation, § 5.1.5). Le dimensionnement réel de l'établissement — volumétrie,
-   cardinalité, taux de doublons observé — est **inconnu** et conditionne le choix
-   du seuil de similarité (§ 7.2.3) comme le partitionnement du blocking.
+   cardinalité, taux de doublons observé — est **inconnu** et conditionne le dimensionnement
+   du cluster comme le traitement des fiches incomplètes (§ 7.2.3).
 
 > **Conséquence concrète.** Sans annuaire d'identité, la gestion des accès par clé d'API et
 > trois rôles est un compromis pragmatique. Avec un annuaire, elle passerait à des comptes

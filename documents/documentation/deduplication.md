@@ -3,7 +3,34 @@
 Cœur intelligent du projet : déterminer si deux enregistrements provenant de sources différentes
 désignent le **même patient**, puis construire une identité **unique** — le **Master Patient Index**
 (MPI) — avec une **identity map** traçable. La logique est **toujours explicable** : chaque fusion est
-justifiée par un score, une méthode et un seuil.
+justifiée par une méthode et la règle appliquée.
+
+## 0. Règle en vigueur : identité stricte (v2, 30/09/2026)
+
+Deux fiches désignent la même personne **si et seulement si** elles partagent la clé d'identité
+(`engine/identity/rules.py::identity_key`) :
+
+| Cas | Clé | Explication enregistrée |
+|---|---|---|
+| CIN présent | (CIN, genre, date de naissance, ville de naissance normalisée) | « CIN, genre, date et ville de naissance identiques » |
+| CIN absent des deux côtés | (nom normalisé, genre, date, ville) | « sans CIN : nom, genre, date et ville de naissance identiques » |
+| Genre, date ou ville manquant (ou nom, sans CIN) | aucune | « identité incomplète (…) : aucune fusion » — la fiche reste seule |
+
+- **Aucun score, aucun seuil, aucun poids** : une valeur manquante n'est jamais « identique » ; deux CIN
+  différents ne sont jamais réunis.
+- **Identifiant du patient maître dérivé de la clé** (`master_id`) : `PAT-` + 20 caractères hexadécimaux
+  de SHA-256 de la clé (d'une fiche isolée : de `fiche|source|identifiant`) ; **HMAC** si la variable
+  `PATIENT_ID_SECRET` est définie (recommandé hors démonstration : la clé contient des données
+  identifiantes). Même identifiant à chaque run et quel que soit l'ordre des fiches.
+- **Méthodes** : `new_master` (fiche fondatrice d'une identité, ou identité incomplète) et `exact`
+  (rattachement) ; score 1,0.
+- **Exécution** : `matcher.deduplicate(patients)` (référence Python : évaluation, tests) et
+  `spark_dedup.deduplicate_df(df)` (étape SILVER : UDF + `row_number` par clé, sans `collect()`), avec les
+  mêmes fonctions de règle. Parité vérifiée : 0 différence d'identifiant sur 212 523 et 1 057 fiches.
+- **Pourquoi** : la v1 (sections 4 et 5, conservées pour l'historique) fusionnait deux homonymes parfaits
+  sur 100 000 patients (nom 0,5 + date 0,3 = seuil de 0,80, CIN différents). Résultats v2 : aucune fusion à
+  tort sur tous les jeux ; rappel 1,000 (facile, 12 000, 100 000), 0,824 (moyen), 0,179 (difficile, où les
+  dates et villes effacées empêchent tout rattachement). Voir [`evaluation.md`](evaluation.md).
 
 ## 1. Chaîne de traitement
 
@@ -64,7 +91,7 @@ Les fonctions `_text`/`_normalized`/`_cin`/`_gender`/`_birth_date` assurent la s
 - normalisation du genre instructive : `F`/`female`/`femme` → `F` ; `H`/`male`/`Homme`/`M` → `M` ;
 - traitement des valeurs manquantes (naissance, ville de naissance).
 
-## 4. Blocking
+## 4. Blocking (v1, historique)
 
 Comparer chaque patient à tous les autres est inefficace (O(n²)) :
 
@@ -75,7 +102,7 @@ Comparer chaque patient à tous les autres est inefficace (O(n²)) :
 Le **blocking** crée des groupes de candidats (même préfixe du nom, même date de naissance, même
 CIN) ; le matching n'est exécuté qu'entre candidats **du même groupe**.
 
-## 5. Matching EXACT puis PROBABILISTE
+## 5. Matching EXACT puis PROBABILISTE (v1, historique)
 
 1. **Exact matching** : comparaison exacte d'informations fiables (CIN identique non vide, clé de
    matching identique). Recherche **directe par dictionnaire** (`_MasterIndex.exact`,
@@ -162,8 +189,9 @@ CONSULTATION Rakoto Jean · 101024045 · 10/01/1990
 IMAGERIE     J. RAKOTO  · 101024045 · 1990/01/10
 ```
 
-Résultat attendu : les 3 enregistrements fusionnés en **un seul master** — Jean Rakoto par **exact**
-(CIN) + **probabiliste** (score 0.8+ pour les variations de pseudo).
+Résultat en v1 : les 3 enregistrements fusionnés en **un seul master** — Jean Rakoto par **exact**
+(CIN) + **probabiliste** (score 0.8+ pour les variations de pseudo). En v2, la fusion exige aussi le
+genre et la ville de naissance identiques : sans ville renseignée, ces fiches resteraient séparées.
 
 ## 8. Implémentation (moteur `engine/`)
 
@@ -171,42 +199,46 @@ Répertoire : [`projet/code-source/engine/`](../../projet/code-source/engine/)
 
 | Fichier | Rôle |
 |---|---|
-| `identity/canonical.py` | `CanonicalPatient`, standardisation, `matching_key` |
-| `identity/config.py` | Chargement de `config/deduplication.yaml` (poids, seuil, préfixe) — fallback défauts si absent |
-| `identity/matcher.py` | `_MasterIndex`, `deduplicate()` — exact + probabiliste, seuil/poids depuis la config |
-| `identity/spark_dedup.py` | Version **driver-side** Parquet même logique, `_BoundedMasterIndex` |
+| `identity/canonical.py` | `CanonicalPatient`, standardisation (`_cin`, `_gender`, `_birth_date`, `_normalized`) |
+| `identity/rules.py` | `identity_key()`, `master_id()`, libellés d'explication — la règle stricte (v2) |
+| `identity/matcher.py` | `deduplicate(patients)` — référence Python de la règle |
+| `identity/spark_dedup.py` | `deduplicate_df(df)` — même règle dans Spark (UDF + `row_number`), sans `collect()` |
 | `identity/__init__.py` | API publique du paquet |
 
-- **Pandas** (`matcher.py`) et **Spark** (`spark_dedup.py`) produisent des résultats **strictement
-  identiques** (validé : démo 18 patients → 11 masters, 18 liens ; Jean Rakoto exact, Nirina probabiliste 0.8).
+- La v1 (`config.py`, `config/deduplication.yaml`, `_similarity`, `_MasterIndex`, `matching_key`) a été
+  retirée le 30/09/2026 ; elle reste consultable dans l'historique Git.
+- Parité Python / Spark : `tests/test_spark_dedup.py` (dans la VM) et `evaluate_pipeline_run.py --parity`.
 - Compatible Python 3.8 (`from __future__ import annotations`) pour tourner sur la VM.
 
 ## 9. Tests
 
-`tests/test_matcher.py` — 12 cas :
+`tests/test_matcher.py` — 10 cas (règle v2) :
 
-1. match exact (clé identique) ;
-2. nom inversé + CIN non vide (exact Naissance+CIN) ;
-3. CIN au seuil 0.80 (nom + naissance = 0.8, sans CIN ni ville) ;
-4. faute de frappe compensée par naissance ;
-5. ville de naissance identique → score augmenté ;
-6. formats de CIN (espacé / compact) normalisés ;
-7. patients distincts → non fusionnés (précision) ;
-8. CIN différents (même nom, même naissance) → non fusionnés ;
-9. parité Pandas / Spark sur le jeu de référence ;
-10. aucun match → nouveau master ;
-11. lecture config YAML (seuil/poids) ;
-12. override des poids modifie la décision.
+1. CIN, genre, date et ville identiques, noms différents → fusion ;
+2. CIN différents (homonymes parfaits du jeu de 100 000) → séparés ;
+3. genre différent → séparés ;
+4. date ou ville différente → séparés ;
+5. champ manquant → identité incomplète, aucune fusion ;
+6. sans CIN des deux côtés : nom identique exigé ;
+7. CIN d'un seul côté → séparés ;
+8. identifiant dérivé de la clé, identique quel que soit l'ordre ;
+9. HMAC quand `PATIENT_ID_SECRET` est défini ;
+10. la fonction appelée par l'UDF Spark donne la même clé et le même identifiant.
+
+`tests/test_spark_dedup.py` — parité Spark = Python sur des cas choisis (ignoré sans PySpark, exécuté dans
+la VM).
 
 ## 10. Synchronisation avec la zone SILVER
 
-Le flag `is_duplicate` de la zone SILVER (Window `partitionBy(name, birth_date, gender)`) est enrichi
-par le moteur lors de la **Phase 5** de la fusion : `master_patient_id`, `match_method`, `match_score`
-pour chaque ligne Patient, rendant la fusion **explicable** au niveau du Data Lake
+Le flag `is_duplicate` de la zone SILVER (Window `partitionBy(name, birth_date, gender)`) est remplacé
+par la décision de la règle stricte, calculée **dans Spark** (`deduplicate_df`) : `master_patient_id`,
+`match_method`, `match_score` pour chaque ligne Patient, rendant la fusion **explicable** au niveau du
+Data Lake ; la base centrale reçoit ensuite les décisions en flux (lots de 5 000)
 (voir [`pipeline_elt.md`](pipeline_elt.md) et [`evaluation.md`](evaluation.md)).
 
 ## Règles métier
 
-- Ne **jamais** fusionner sans logique explicable (score + méthode toujours conservés).
+- Ne **jamais** fusionner sans logique explicable (méthode + explication toujours conservées).
+- Ne **jamais** réunir deux fiches dont un champ d'identité diffère ou manque (règle stricte v2).
 - Conserver la chaîne : `source -> canonique -> master patient`.
 - Le **ground_truth** ne doit jamais être fourni à l'algorithme (réservé à l'évaluation).
