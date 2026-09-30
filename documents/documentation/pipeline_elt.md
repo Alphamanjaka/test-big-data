@@ -221,6 +221,16 @@ Tests : `tests/test_central_db.py`.
     (`create_silver.py`, `composer_nom_complet`), sinon le mapping n'en garde qu'une.
 12. **Dépendances de la VM** : `api-venv` doit contenir `pandas`, `pyyaml` et `psycopg` ; sans pandas, le moteur
     n'est pas importable et l'étape SILVER saute la déduplication (avertissement dans le journal seulement).
+13. **Spark en mode local** (`spark.master local[*]`, `bootstrap.sh` et `gen_extract_raw.py`) : un seul
+    processus Java de 2 Go (le driver, qui exécute aussi les tâches). `executor_memory: 4g` est **sans effet**
+    dans ce mode, et YARN est démarré mais **non utilisé** par le pipeline. Répartir sur plusieurs nœuds
+    suppose `spark.master yarn` et des nœuds supplémentaires ; la déduplication (`collect()` puis moteur Python
+    dans `create_silver.py`) resterait de toute façon sur une seule machine.
+14. **Run orphelin** : si la VM s'arrête pendant un run, `pipeline_state.json` reste `running`. `begin --pid`
+    enregistre le PID du run et le `boot_id` de la machine ; un run dont le processus a disparu, ou dont la
+    machine a redémarré, est orphelin : `effective_status` le voit `failed` (donc `--resume` le reprend à
+    l'étape interrompue) et le planificateur le marque en échec (`reconcile`) au lieu de rester bloqué
+    (corrigé le 30/09/2026 ; tests dans `test_pipeline_state.py`, `test_schedule_logic.py`).
 
 ## Validation VM (29–30/09/2026)
 

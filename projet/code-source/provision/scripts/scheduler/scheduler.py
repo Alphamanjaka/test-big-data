@@ -9,7 +9,9 @@ Le pipeline n'est lancé que si :
   1. la planification est active (enabled: true dans schedule.yaml) ;
   2. l'échéance (fréquence + heure) vient d'être atteinte et n'a pas déjà été
      déclenchée (état persisté dans scheduler_runs.json) ;
-  3. aucun run n'est en cours (pipeline_state.json ne doit pas être `running`).
+  3. aucun run n'est en cours (pipeline_state.json ne doit pas être `running`) ;
+     un run `running` orphelin (processus disparu, VM redémarrée) est d'abord
+     marqué en échec, sinon la planification resterait bloquée.
 
 Le lancement se fait en arrière-plan (start_new_session) : le cron revient
 aussitôt, le pipeline continue indépendamment et met à jour son propre état.
@@ -32,7 +34,7 @@ import json
 import os
 import subprocess
 
-from provision.scripts.utils import schedule_logic
+from provision.scripts.utils import pipeline_state, schedule_logic
 from provision.scripts.utils.watermark import load as load_watermark
 
 _THIS_DIR = os.path.dirname(os.path.abspath(__file__))
@@ -152,6 +154,17 @@ def pipeline_is_running() -> bool:
     return state.get("status") == "running"
 
 
+def reconcile_orphan_run(alive=None, boot_id=None) -> bool:
+    """Marque en échec un run resté `running` dont le processus a disparu."""
+    path = pipeline_state_path()
+    state = pipeline_state.load(path)
+    if not state or not pipeline_state.reconcile(state, alive=alive, boot_id=boot_id):
+        return False
+    pipeline_state.save(state, path)
+    print("Run %s orphelin (processus absent) : marqué en échec." % state.get("run_id"))
+    return True
+
+
 def run_pipeline_cmd() -> list:
     if os.environ.get("RUN_PIPELINE_CMD"):
         return list(os.environ["RUN_PIPELINE_CMD"].split(" "))
@@ -189,6 +202,7 @@ def check(now: datetime.datetime = None) -> int:
         print("Planification désactivée (schedule.yaml) — rien à lancer.")
         return 0
 
+    reconcile_orphan_run()
     if pipeline_is_running():
         print("Un run pipeline est déjà en cours (status=running) — pas de lancement.")
         return 0

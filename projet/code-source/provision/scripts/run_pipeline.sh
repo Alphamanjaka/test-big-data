@@ -20,7 +20,9 @@
 # L'état de chaque run est persisté dans provision/metadata/pipeline_state.json
 # : après un échec, `--resume` repart de la première étape non terminée au lieu
 # de tout rejouer. Le run en cours est signalé par status=running : le
-# planificateur ne lance pas de doublon tant qu'un run n'est pas fini.
+# planificateur ne lance pas de doublon tant qu'un run n'est pas fini. Un run
+# `running` dont le processus a disparu (arrêt brutal) est orphelin : il est
+# traité comme un échec, donc repris par `--resume`.
 # Les compteurs de chaque run sont conservés en base (table pipeline_run).
 
 set -u
@@ -109,8 +111,9 @@ if [ "$MODE" = "from" ]; then
     IDX=$(step_index "$FROM_STEP") || exit 2
     START_INDEX="$IDX"
 elif [ "$MODE" = "resume" ]; then
-    STATE_JSON=$(state_cli show 2>/dev/null || echo "")
-    STATUS=$(printf '%s' "$STATE_JSON" | "$PYTHON" -c "import sys,json; d=json.load(sys.stdin); print(d.get('status','') if d else '')" 2>/dev/null || true)
+    # Statut effectif : un run resté `running` dont le processus a disparu
+    # (arrêt brutal de la VM) compte comme un échec, donc comme reprenable.
+    STATUS=$(state_cli effective_status 2>/dev/null || echo "")
     if [ "$STATUS" = "failed" ]; then
         RESUME_STEP=$(state_cli resume_start 2>/dev/null || echo "")
         if [ -n "$RESUME_STEP" ]; then
@@ -144,11 +147,16 @@ echo "============================================================" >> "$LOG_FIL
 echo "🚀 Lancement du pipeline ELT à $DATE (run $RUN_ID, mode $MODE)" >> "$LOG_FILE"
 echo "============================================================" >> "$LOG_FILE"
 
+# Trace d'un run précédent orphelin avant de le remplacer (message seulement).
+state_cli reconcile >> "$LOG_FILE" 2>&1 || true
+
+# $$ : PID de ce shell, qui vit pendant tout le run (détection des runs orphelins).
 state_cli begin --mode "$MODE" \
     ${FROM_STEP:+--from "$FROM_STEP"} \
     ${SINCE:+--since "$SINCE"} \
     --start-at "$START_INDEX" \
-    --run-id "$RUN_ID" >/dev/null
+    --run-id "$RUN_ID" \
+    --pid "$$" >/dev/null
 
 run_step_cmd() {
     case "$1" in

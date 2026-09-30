@@ -6,6 +6,7 @@ d'une échéance déjà déclenchée et la construction des drapeaux de run.
 """
 
 import datetime
+import json
 import os
 import sys
 from pathlib import Path
@@ -225,6 +226,31 @@ def test_check_skips_when_pipeline_running(tmp_path, monkeypatch):
     monkeypatch.setenv("RUN_PIPELINE_CMD", "echo pipeline")
     assert sched.check(now=NOW) == 0
     assert not (tmp_path / "state.json").exists(), "pas de double run pendant un run"
+
+
+def test_check_unblocks_orphan_run(tmp_path, monkeypatch):
+    # Run resté `running` après un arrêt brutal : processus absent -> marqué en
+    # échec, et l'échéance est de nouveau lancée au lieu d'être bloquée.
+    from provision.scripts.utils import pipeline_state
+
+    path = _write(tmp_path, "enabled: true\nfrequency: daily\ntime: \"03:00\"\n")
+    monkeypatch.setenv("SCHEDULE_PATH", str(path))
+    state_file = tmp_path / "state.json"
+    monkeypatch.setenv("SCHEDULER_STATE_PATH", str(state_file))
+    pipeline = tmp_path / "pipeline.json"
+    pipeline.write_text(json.dumps(pipeline_state.new_state("R1", "full", pid=4242)),
+                        encoding="utf-8")
+    monkeypatch.setenv("PIPELINE_STATE_PATH", str(pipeline))
+    monkeypatch.setenv("RUN_PIPELINE_CMD", "echo pipeline")
+
+    monkeypatch.setattr(pipeline_state, "pid_alive", lambda pid: True)
+    assert sched.check(now=NOW) == 0
+    assert not state_file.exists(), "run vivant : pas de lancement"
+
+    monkeypatch.setattr(pipeline_state, "pid_alive", lambda pid: False)
+    assert sched.check(now=NOW) == 0
+    assert json.loads(pipeline.read_text(encoding="utf-8"))["status"] == "failed"
+    assert state_file.exists(), "run orphelin : l'échéance est lancée"
 
 
 def test_dry_run_no_side_effects(tmp_path, monkeypatch):

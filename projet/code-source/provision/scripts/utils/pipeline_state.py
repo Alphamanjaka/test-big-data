@@ -21,6 +21,14 @@ CLI (utilisée par run_pipeline.sh) :
     python -m provision.scripts.utils.pipeline_state finish ok|failed
     python -m provision.scripts.utils.pipeline_state show
     python -m provision.scripts.utils.pipeline_state resume_start
+    python -m provision.scripts.utils.pipeline_state effective_status
+    python -m provision.scripts.utils.pipeline_state reconcile
+
+Run orphelin : si la VM s'arrête brutalement, le fichier reste `running` et le
+planificateur refuserait tout lancement. `begin --pid` enregistre le PID du run
+et l'identifiant de démarrage de la machine ; un run `running` dont le
+processus n'existe plus (ou dont la machine a redémarré) est orphelin :
+`reconcile` le marque en échec, ce qui permet de le reprendre.
 """
 
 from __future__ import annotations
@@ -44,6 +52,9 @@ STEPS = [
     "create_silver",
     "create_gold",
 ]
+
+BOOT_ID_PATH = "/proc/sys/kernel/random/boot_id"
+ORPHAN_ERROR = "run interrompu : processus absent (arrêt brutal ou redémarrage)"
 
 
 def _now_iso() -> str:
@@ -82,8 +93,13 @@ def new_state(
     since: str = None,
     from_step: str = None,
     start_at: int = 0,
+    pid: int = None,
+    boot_id: str = None,
 ) -> dict:
-    """État initial d'un run : les étapes précédant `start_at` sont héritées OK."""
+    """État initial d'un run : les étapes précédant `start_at` sont héritées OK.
+
+    `pid` et `boot_id` identifient le processus du run, pour détecter un run orphelin.
+    """
     steps = {}
     for i, step in enumerate(STEPS):
         steps[step] = "ok" if i < start_at else "pending"
@@ -99,11 +115,76 @@ def new_state(
         "last_ok_step": STEPS[start_at - 1] if start_at > 0 else None,
         "last_failed_step": None,
         "last_error": None,
+        "pid": pid,
+        "boot_id": boot_id,
     }
 
 
 def is_running(state: dict) -> bool:
     return state.get("status") == "running"
+
+
+def current_boot_id() -> str:
+    """Identifiant du démarrage courant de la machine (Linux), None ailleurs."""
+    try:
+        with open(BOOT_ID_PATH, "r", encoding="utf-8") as f:
+            return f.read().strip() or None
+    except OSError:
+        return None
+
+
+def pid_alive(pid: int) -> bool:
+    """Le processus existe-t-il encore ?
+
+    Sous Windows, `os.kill(pid, 0)` enverrait un Ctrl+C au lieu de tester : le
+    processus est alors supposé vivant (le pipeline s'exécute sous Linux).
+    """
+    if os.name != "posix":
+        return True
+    try:
+        os.kill(pid, 0)
+    except ProcessLookupError:
+        return False
+    except PermissionError:
+        return True
+    return True
+
+
+def is_orphan(state: dict, alive=None, boot_id=None) -> bool:
+    """Run `running` dont le processus a disparu ou dont la machine a redémarré.
+
+    Un état sans PID (ancien format) n'est jamais déclaré orphelin : rien ne
+    permet de conclure, le comportement antérieur est conservé. `alive` et
+    `boot_id` (fonctions) sont injectables pour les tests.
+    """
+    alive = alive or pid_alive
+    boot_id = boot_id or current_boot_id
+    if not is_running(state) or not state.get("pid"):
+        return False
+    recorded, current = state.get("boot_id"), boot_id()
+    if recorded and current and recorded != current:
+        return True
+    return not alive(int(state["pid"]))
+
+
+def reconcile(state: dict, alive=None, boot_id=None) -> bool:
+    """Marque en échec un run orphelin (étape en cours comprise) ; True si modifié."""
+    if not is_orphan(state, alive=alive, boot_id=boot_id):
+        return False
+    started = next((s for s in STEPS if state["steps"].get(s) == "started"), None)
+    if started:
+        mark_step(state, "failed", started, ORPHAN_ERROR)
+    else:
+        state["last_error"] = ORPHAN_ERROR
+    finish(state, "failed")
+    return True
+
+
+def effective_status(state: dict, alive=None, boot_id=None) -> str:
+    """Statut du run, `failed` pour un run orphelin (sans modifier l'état)."""
+    if is_orphan(state, alive=alive, boot_id=boot_id):
+        return "failed"
+    return state.get("status", "")
 
 
 def resume_start(state: dict) -> str:
@@ -150,6 +231,7 @@ def cli(argv=None) -> int:
     p_begin.add_argument("--from", dest="from_step")
     p_begin.add_argument("--start-at", dest="start_at", type=int, default=0)
     p_begin.add_argument("--run-id")
+    p_begin.add_argument("--pid", type=int, help="PID du processus du run (run_pipeline.sh : $$)")
 
     p_step = sub.add_parser("step", help="statut d'une étape")
     p_step.add_argument("status", choices=["started", "ok", "failed"])
@@ -161,6 +243,8 @@ def cli(argv=None) -> int:
 
     sub.add_parser("show", help="affiche l'état JSON")
     sub.add_parser("resume_start", help="première étape non 'ok'")
+    sub.add_parser("effective_status", help="statut, 'failed' si le run est orphelin")
+    sub.add_parser("reconcile", help="marque en échec un run orphelin")
 
     args = parser.parse_args(argv)
 
@@ -174,6 +258,8 @@ def cli(argv=None) -> int:
             since=args.since,
             from_step=args.from_step,
             start_at=start_at,
+            pid=args.pid,
+            boot_id=current_boot_id(),
         )
         print(save(state))
         return 0
@@ -202,6 +288,18 @@ def cli(argv=None) -> int:
 
     if args.action == "resume_start":
         print(resume_start(load()))
+        return 0
+
+    if args.action == "effective_status":
+        print(effective_status(load()))
+        return 0
+
+    if args.action == "reconcile":
+        state = load()
+        if state and reconcile(state):
+            save(state)
+            print("Run %s orphelin (processus absent) : marqué en échec, reprise possible."
+                  % state.get("run_id"))
         return 0
 
     return 2

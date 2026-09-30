@@ -2330,3 +2330,26 @@ ch. 8 : 2 221 → 2 103 ; ch. 9 : 2 251 → 2 200). Export : 100 pages, 18 figur
   « Identifiants de patients maîtres non permanents », volume démontré 25 587 fiches, perspective 2
   « identifiants permanents », perspectives renumérotées 1 à 10), ch2 (volume), ch5 (performance). Rapport :
   mêmes points. `documents/documentation/deduplication.md` et `pipeline_elt.md` complétés.
+
+## 30/09/2026 — Question de l'auteur : durée, millions de lignes, puissance de la VM ; run orphelin corrigé
+
+- Analyse (code + runs du 30/09) : la **durée** ne fait pas échouer un run (aucune limite de temps) ; l'échec
+  du run 20260930T063345 vient d'un gel de la VM. Avec des **millions de lignes**, le goulot est la conception
+  de SILVER : `create_silver.py` rapatrie toutes les fiches sur un processus (`collect()`), puis le moteur
+  Python les traite une par une, sur toutes les fiches à chaque run ; incrémental à la table seulement. Spark
+  tourne en `local[*]` (un processus de 2 Go ; `executor_memory` sans effet ; YARN non utilisé). Mesure :
+  0,9 Ko par fiche dans le moteur (25 587 fiches) ; 195 seaux de préfixe, 61 patients maîtres par seau en
+  moyenne à 12 000 patients.
+- Choix de l'auteur : corriger le **run orphelin** et mesurer **100 000 patients**.
+- Run orphelin : `pipeline_state` enregistre `pid` (`begin --pid $$`) et `boot_id` ; `is_orphan`,
+  `reconcile`, `effective_status` (+ CLI) ; `run_pipeline.sh --resume` utilise le statut effectif ;
+  `scheduler.check()` appelle `reconcile_orphan_run()` avant le contrôle anti-double-run. État sans PID
+  (ancien format) : comportement inchangé. `os.kill(pid, 0)` limité à POSIX (sous Windows il enverrait un
+  Ctrl+C). Tests : +7 (`test_pipeline_state.py` 6, `test_schedule_logic.py` 1) ; `pytest` **130/130**.
+  Vérification VM sur un fichier d'état temporaire : PID inexistant → statut effectif `failed`,
+  `--resume --dry-run` repart de `gen_extract_raw` (index 1), `reconcile` marque l'échec avec son motif ; PID
+  vivant → `running`.
+- Jeu de 100 000 patients généré (graine 42, 41 s) dans `data/experiments_100000/easy/` : **212 523 fiches**
+  (pharmacy 80 809, consultation 70 951, imaging 60 763), 359 299 transactions (achats 162 026, consultations
+  106 339, examens 90 934).
+- `documents/documentation/pipeline_elt.md` : pièges 13 (Spark en local) et 14 (run orphelin).
