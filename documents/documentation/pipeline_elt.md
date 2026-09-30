@@ -236,6 +236,18 @@ Source : jeu d'évaluation **difficile** du générateur copié dans `data/raw/`
 Évaluation du run sur la vérité terrain (`evaluation/evaluate_pipeline_run.py --level hard`) : précision 1,000,
 rappel 0,424, F1 0,595 (moteur seul : 0,422 / 0,594). La planification par cron n'a pas été activée.
 
+**Jeu facile de 12 000 patients (30/09/2026)** — `data/experiments_12000/easy/` copié dans `data/raw/` :
+
+| Run | Mode | Résultat |
+|---|---|---|
+| 20260930T063345 | complet | **échec** à `create_silver` : blocage des processeurs de la VM (hôte à court de mémoire), JVM perdue après le chargement de la base centrale |
+| 20260930T065246 | complet | 25 587 lignes, **12 000** patients maîtres, 13 587 doublons (tous exacts), 53,10 % ; GOLD : 43 141 événements ; 15 min 15 s (moteur quadratique) |
+| 20260930T074237 | complet | mêmes résultats avec la passe exacte par dictionnaire ; **4 min 57 s**, dont environ 3 min de blocage de la VM |
+
+Évaluation (`evaluate_pipeline_run.py --truth …/experiments_12000/easy/ground_truth/identity_mapping.csv`) :
+précision, rappel et F1 de 1,000. Piège : sur un hôte de 16 Go, arrêter l'interface Next.js pendant un run
+volumineux (VM de 8 Go) limite les blocages.
+
 ## Validation VM (interim CSV, 07/09/2026)
 
 `run_pipeline.sh` → **4/4 vert**. Comptages contrôlés par `provision/metadata/check_data.py` (scripts Spark ;

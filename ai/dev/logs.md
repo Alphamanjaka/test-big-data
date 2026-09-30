@@ -2311,3 +2311,22 @@ ch. 8 : 2 221 → 2 103 ; ch. 9 : 2 251 → 2 200). Export : 100 pages, 18 figur
   (créés pour les 803 patients maîtres du jeu difficile) sont donc rattachés à d'autres personnes (données
   fictives, sans conséquence ici). Limite absente du mémoire ; à décider par l'auteur (identifiant persistant
   repris de la base centrale, ou mention en limite).
+
+## 30/09/2026 — Passe exacte du moteur en coût constant ; limite des identifiants non permanents
+
+- Accord de l'auteur sur les deux constats de l'entrée précédente.
+- `engine/identity/matcher.py` : `_MasterIndex.exact()` (dictionnaires `matching_key → premier indice` et
+  `(naissance, CIN) → premier indice`) remplace le parcours de tous les patients maîtres.
+  `engine/identity/spark_dedup.py` : `exact_birth_cin` et `representative` par dictionnaire. Sémantique
+  inchangée (premier patient maître dans l'ordre de création).
+- Preuve d'identité : décisions (fiche → patient maître, méthode) enregistrées avec la version commitée
+  (copie `git archive HEAD`) puis avec la version corrigée, sur easy / medium / hard (500 patients) et sur le
+  jeu de 12 000, pour `matcher` et `spark_dedup` : **8 comparaisons sur 8 identiques**. `pytest` 123/123.
+- Temps du moteur seul (hôte, 25 587 fiches) : `matcher` 887 s → **12,8 s** ; `spark_dedup` 244 s → 28,7 s.
+- Run VM 20260930T074237 (complet, jeu de 12 000, moteur corrigé) : **4 min 57 s** (contre 15 min 15 s), dont
+  environ 3 min de gel de la VM (`rcu_sched self-detected stall` à 07:46:59, entre SILVER et GOLD) ; SILVER
+  (Spark + moteur + base centrale) en 42 s. Évaluation inchangée : 12 000 patients maîtres, P = R = F1 = 1,000.
+- Mémoire : tableau 41 (onzième incident), § 7.3.2 (run sur 12 000 patients), ch9 (« Onze incidents », limite
+  « Identifiants de patients maîtres non permanents », volume démontré 25 587 fiches, perspective 2
+  « identifiants permanents », perspectives renumérotées 1 à 10), ch2 (volume), ch5 (performance). Rapport :
+  mêmes points. `documents/documentation/deduplication.md` et `pipeline_elt.md` complétés.

@@ -69,21 +69,39 @@ def _name_prefix(patient: CanonicalPatient, prefix_len: int = DEFAULT_NAME_PREFI
 
 
 class _MasterIndex:
-    """Index de blocage : préfixe nom, date de naissance, CIN."""
+    """Index des masters : règles exactes, puis blocage (préfixe nom, date de naissance, CIN)."""
 
     def __init__(self, prefix_len: int = DEFAULT_NAME_PREFIX_LEN) -> None:
         self._prefix_len = prefix_len
         self._by_prefix: dict[str, list[int]] = {}
         self._by_birth: dict[str, list[int]] = {}
         self._by_cin: dict[str, list[int]] = {}
+        self._first_by_key: dict[tuple[str, str, str], int] = {}
+        self._first_by_birth_cin: dict[tuple, int] = {}
 
     def add(self, index: int, master: CanonicalPatient) -> None:
-        """Indexe un master dans les seaux de blocage (prefix nom, date, CIN)."""
+        """Indexe un master : clés exactes et seaux de blocage (prefix nom, date, CIN)."""
+        self._first_by_key.setdefault(matching_key(master), index)
+        if master.birth_date is not None and master.cin:
+            self._first_by_birth_cin.setdefault((master.birth_date, master.cin), index)
         self._by_prefix.setdefault(_name_prefix(master, self._prefix_len), []).append(index)
         if master.birth_date is not None:
             self._by_birth.setdefault(master.birth_date.isoformat(), []).append(index)
         if master.cin:
             self._by_cin.setdefault(master.cin, []).append(index)
+
+    def exact(self, patient: CanonicalPatient) -> int | None:
+        """Premier master (ordre de création) de même clé de matching, ou de même
+        date de naissance et même CIN non vide ; None sinon.
+
+        Deux dictionnaires remplacent le parcours de tous les masters : coût
+        constant par fiche au lieu d'un coût proportionnel au nombre de masters.
+        """
+        found = [self._first_by_key.get(matching_key(patient))]
+        if patient.birth_date is not None and patient.cin:
+            found.append(self._first_by_birth_cin.get((patient.birth_date, patient.cin)))
+        found = [index for index in found if index is not None]
+        return min(found) if found else None
 
     def candidates(self, patient: CanonicalPatient) -> Iterable[int]:
         """Candidats au matching : union des seaux prefix nom / date / CIN."""
@@ -124,14 +142,7 @@ def deduplicate(patients: list[CanonicalPatient],
     decisions: list[MatchDecision] = []
 
     for patient in patients:
-        exact_index = next((
-            index for index, master in enumerate(masters)
-            if matching_key(patient) == matching_key(master)
-            or (patient.birth_date is not None
-                and patient.birth_date == master.birth_date
-                and bool(patient.cin)
-                and patient.cin == master.cin)
-        ), None)
+        exact_index = master_index.exact(patient)
         if exact_index is not None:
             master_id = f"PAT-{exact_index + 1:04d}"
             decisions.append(MatchDecision(master_id, patient.source_system, patient.source_patient_id,

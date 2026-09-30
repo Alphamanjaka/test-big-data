@@ -76,12 +76,13 @@ table est la réponse à la question « *qu'avez-vous choisi, et à la place de 
 
 Les difficultés ont été de quatre ordres.
 
-- **Techniques.** Dix incidents ont été rencontrés et corrigés (§ 7.3.6) : explosion de la zone
+- **Techniques.** Onze incidents ont été rencontrés et corrigés (§ 7.3.6) : explosion de la zone
   SILVER à 11 614 lignes, écritures qui s'écrasaient d'une source à l'autre, fichiers Parquet
   corrompus sur le dossier partagé de la VM, démarrage de Spark bloqué, HiveServer2 instable,
   bibliothèque de NLP inutilisable sous Python 3.8, caractère invisible qui empêchait un script de
   compiler ; puis, en rejouant le pipeline le 30/09, un NameNode qui ne redémarrait plus, des
-  dates de naissance perdues à l'extraction et des noms tronqués.
+  dates de naissance perdues à l'extraction, des noms tronqués et, sur 12 000 patients, une passe
+  exacte au coût quadratique.
 - **D'environnement.** Le nœud distant MAVIS était instable, ce qui a imposé des répliques locales
   puis des sources synthétiques ; la VM, indisponible une partie de la fin du stage, n'a été
   relancée que le 30/09.
@@ -101,12 +102,13 @@ Les difficultés ont été de quatre ordres.
 | **Rappel de 0,422 sur le jeu difficile** (0,424 pour le pipeline complet) | 420 paires manquées sur 1 057 fiches | variations à 50 % ; seuil de 0,80 prudent ; le métier n'a pas validé un seuil plus bas |
 | **Consentement par type de dossier** | en cours de développement | le contrôle actuel porte sur la finalité (consultation par l'API, recherche, statistiques) |
 | **Base centrale de test** | alimentée par le pipeline et par un jeu de consentements de démonstration (2 409 avis) | pas d'avis réellement recueillis ni de base de production |
+| **Identifiants de patients maîtres non permanents** | `PAT-0001`, `PAT-0002`… numérotés dans l'ordre de traitement, à chaque run | une fiche nouvelle ou d'autres données décalent les numéros : un consentement enregistré pour un numéro peut alors désigner une autre personne (constaté sur la base de test le 30/09) |
 | **Planification par cron non exécutée** | logique couverte par 22 tests | planification désactivée pendant les runs du 29–30/09 |
 | **Formalités légales non accomplies** | conception alignée sur la loi n° 2014-038 et sur le RGPD (§ 2.1.6), sans déclaration ni autorisation auprès de la CMIL | prototype non déployé ; autorité de contrôle pas encore opérationnelle (§ 4.2) |
 | **API Flask de démonstration non sécurisée** | `/api/governance/consent` sans authentification, `debug=True` | dette connue du PoC ; le contrôle de consentement est implémenté sur l'API **FastAPI** de gouvernance, qui est celle du dépôt consolidé |
 | **Clés d'API hachées sans sel** | empreinte SHA-256 simple, sans sel ni itération | une même clé donne toujours la même empreinte. Les clés générées étant aléatoires et longues (64 caractères hexadécimaux), une attaque par dictionnaire reste peu réaliste ; la pratique recommandée reste un sel ou une fonction lente (`bcrypt`, déjà employé par l'interface pour les mots de passe) |
 | **Précision de 1,000 : estimation optimiste** | aucun quasi-homonyme dans la vérité terrain | le générateur dégrade des fiches existantes mais ne crée jamais deux personnes presque identiques ; un module de quasi-homonymes renforcerait la preuve (§ 8.6) |
-| **Volume démontré** | 1 057 fiches au plus | les volumes réels de l'établissement n'étaient pas disponibles, et la VM de 8 Go limite les essais ; le parcours Big Data est **architecturé et reproductible**, pas passé à l'échelle |
+| **Volume démontré** | 25 587 fiches (12 000 patients) au plus, sur un jeu sans variation de saisie | les volumes réels de l'établissement n'étaient pas disponibles, et la VM de 8 Go limite les essais ; le parcours Big Data est **architecturé et reproductible**, pas éprouvé sur les volumes d'un établissement |
 | **Comparaison de l'existant = documentaire** | aucun produit tiers installé | banc d'essai hors périmètre du stage (§ 2.4) |
 | **Absents du périmètre** | déploiement en production, Docker/CI, export VM `.box` | écartés explicitement (hors stage) ; le frontend, optionnel, n'est réalisé que partiellement |
 
@@ -130,27 +132,30 @@ taire.
 
 1. Terminer le **consentement par type de dossier** (consultations, imagerie…), annoncé en
    introduction.
-2. **Déployer la base centrale** sur un serveur de l'établissement et y enregistrer des
+2. Rendre **permanents les identifiants de patients maîtres** : réutiliser le numéro déjà
+   attribué à une fiche connue (table de correspondance) avant d'en créer un, pour que
+   consentements et audit restent attachés à la même personne.
+3. **Déployer la base centrale** sur un serveur de l'établissement et y enregistrer des
    consentements réellement recueillis.
-3. **Calibrer le seuil et les poids** sur la vérité terrain (rappel contre précision) et
+4. **Calibrer le seuil et les poids** sur la vérité terrain (rappel contre précision) et
    documenter la courbe de compromis au lieu d'un point unique.
-4. **Activer et observer la planification** par cron sur la VM ; l'ingestion incrémentale a été
+5. **Activer et observer la planification** par cron sur la VM ; l'ingestion incrémentale a été
    validée le 30/09.
 
 **Moyen terme — fiabiliser et généraliser**
 
-5. Ajouter les **tests d'intégration déployés** et une **CI** (GitHub Actions) exécutant générateur,
+6. Ajouter les **tests d'intégration déployés** et une **CI** (GitHub Actions) exécutant générateur,
    moteur et évaluation à chaque commit.
-6. Passer à l'échelle : partitionnement du blocking, consolidation *transitive* des groupes dans
+7. Passer à l'échelle : partitionnement du blocking, consolidation *transitive* des groupes dans
    `spark_dedup.py`, calibration EM (dans l'esprit de Splink) **en complément** du score pondéré.
-7. Reprendre le vrai MAVIS distant quand le nœud sera stable et rejouer le pipeline sur les
+8. Reprendre le vrai MAVIS distant quand le nœud sera stable et rejouer le pipeline sur les
    volumes réels, en conservant les répliques synthétiques pour la démonstration.
 
 **Long terme — ouverture**
 
-8. Brancher la gouvernance sur un **catalogue de métadonnées** (Apache Atlas) pour la lignée
+9. Brancher la gouvernance sur un **catalogue de métadonnées** (Apache Atlas) pour la lignée
    RAW → GOLD, et sur la dé-identification pour toute sortie de données hors plateforme.
-9. Généraliser le moteur à d'autres entités qu'aux patients (médecins, médicaments) : la
+10. Généraliser le moteur à d'autres entités qu'aux patients (médecins, médicaments) : la
    traçabilité des identités se transpose telle quelle.
 
 *Toutes les données de ce mémoire sont fictives et vérifiables dans le dépôt unique

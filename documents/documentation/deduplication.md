@@ -78,7 +78,10 @@ CIN) ; le matching n'est exécuté qu'entre candidats **du même groupe**.
 ## 5. Matching EXACT puis PROBABILISTE
 
 1. **Exact matching** : comparaison exacte d'informations fiables (CIN identique non vide, clé de
-   matching identique).
+   matching identique). Recherche **directe par dictionnaire** (`_MasterIndex.exact`,
+   `_BoundedMasterIndex.exact_birth_cin`), sans parcourir les patients maîtres : jusqu'au
+   30/09/2026, la passe exacte de `matcher` comparait chaque fiche à tous les patients maîtres
+   (coût quadratique, 887 s sur 25 587 fiches, contre 13 s après correction, décisions identiques).
 2. **Probabilistic matching** : lorsque les informations diffèrent légèrement (variations de casse,
    d'ordre, de format), calcul d'un **score de similarité** (RapidFuzz).
 

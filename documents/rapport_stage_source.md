@@ -792,6 +792,8 @@ Tableau: Runs réels du pipeline sur la VM (jeu difficile, 29–30/09/2026).
 
 Mesuré sur la vérité terrain, le run complet obtient une précision de 1,000, un rappel de 0,424 et un F1 de 0,595 (0,422 et 0,594 pour le moteur seul) : la chaîne Big Data ne dégrade pas la déduplication.
 
+Pour éprouver le volume, le pipeline a ensuite traité un jeu facile de 12 000 patients synthétiques (25 587 fiches, sans variation de saisie). Il retrouve les 12 000 patients maîtres, avec une précision et un rappel de 1,000, et produit 43 141 événements en GOLD. Ce run a révélé un défaut de passage à l'échelle, décrit plus loin : une fois corrigé, le run complet passe de 15 min 15 s à 4 min 57 s.
+
 ### Moteur de déduplication : Pandas et Spark
 
 Tableau: Implémentations Pandas et Spark.
@@ -838,8 +840,9 @@ Tableau: Difficultés et correctifs.
 | NameNode qui ne redémarrait plus (30/09) | métadonnées HDFS dans `/tmp`, vidé au redémarrage de la VM | données HDFS déplacées hors de `/tmp` |
 | Environ 20 % des dates de naissance perdues (30/09) | quatre formats mêlés dans une colonne ; seul le dominant était lu | lecture valeur par valeur, format par format |
 | Noms tronqués pour la source consultation (30/09) | nom en deux colonnes, dont une seule était retenue | nom complet reconstitué avant le mapping |
+| Déduplication de 25 587 fiches en près de 15 minutes (30/09) | la passe exacte comparait chaque fiche à tous les patients maîtres déjà créés | recherche directe par dictionnaire : moteur seul de 887 s à 13 s, décisions identiques |
 
-Ces incidents relèvent de trois familles. Les incidents de **données** ont donné lieu à des correctifs documentés comme pièges à ne pas reproduire. Les incidents d'**infrastructure** ont été contournés par des règles de configuration. L'incident d'**outillage** est le seul qui ait changé la méthode : l'approche par vecteurs a été abandonnée au profit d'un score pondéré, plus léger et plus explicable.
+Ces incidents relèvent de quatre familles. Les incidents de **données** ont donné lieu à des correctifs documentés comme pièges à ne pas reproduire. Les incidents d'**infrastructure** ont été contournés par des règles de configuration. L'incident d'**outillage** est le seul qui ait changé la méthode : l'approche par vecteurs a été abandonnée au profit d'un score pondéré, plus léger et plus explicable. Le dernier relève du **passage à l'échelle** : invisible sur un millier de fiches, il n'est apparu qu'avec 25 587.
 
 # Tests du système logiciel
 
@@ -913,6 +916,7 @@ Le prototype présente des limites identifiées et documentées :
 - **Rappel de 0,422 sur le jeu difficile** : 420 paires manquées, en raison d'un seuil volontairement conservateur ; l'abaisser ou enrichir la clé suppose une validation métier.
 - **Consentement par type de dossier** : en cours de développement ; le contrôle actuel porte sur la finalité.
 - **Base centrale de test** : alimentée par le pipeline et par des consentements de démonstration, pas par des avis réellement recueillis.
+- **Identifiants de patients maîtres non permanents** : ils sont numérotés dans l'ordre de traitement à chaque run ; une fiche nouvelle ou d'autres données décalent les numéros, et un consentement enregistré pour un numéro peut alors désigner une autre personne.
 - **Absence de cas adversarial** : pas de jeu d'homonymes proches pour éprouver la précision.
 - **API des indicateurs non sécurisée** : elle ne sert que du reporting ; le contrôle d'accès est appliqué et testé sur l'API de gouvernance.
 - **Clés d'API hachées sans sel** : l'empreinte protège la lecture directe de la table, mais un hachage salé ou lent (bcrypt) serait préférable.
@@ -934,11 +938,11 @@ Tableau: Réponse à la problématique.
 
 Le projet démontre quatre résultats. **La démarche progressive tient** : le même moteur, écrit en Pandas puis porté en PySpark et intégré au lac, conserve exactement la même sémantique, jusque dans le pipeline complet mesuré sur la vérité terrain. **La prudence a un coût, mesuré** : le seuil est positionné pour ne jamais fusionner à tort, et le rappel limité sur le jeu difficile est expliqué plutôt que masqué. **La gouvernance est dans le système** : un refus pour finalité non consentie est décidé, opposé et journalisé, et cela est vérifié par des tests qui empruntent le vrai chemin d'authentification. **Le contexte dicte les choix** : VM de 8 Go, Python 3.8 et nœud distant instable ont chacun conduit à une décision documentée.
 
-Les difficultés rencontrées ont été techniques (dix incidents corrigés, dont trois découverts en rejouant le pipeline sur la VM le 30/09), d'environnement (nœud distant instable, VM longtemps indisponible en fin de stage), d'organisation (développement mené seul, algorithme écrit deux fois) et de méthode. La plus instructive a été de définir ce que l'on accepte de perdre — des doublons non retrouvés — au regard de ce que l'on refuse de risquer — la fusion de deux patients — et de pouvoir le démontrer par des chiffres reproductibles.
+Les difficultés rencontrées ont été techniques (onze incidents corrigés, dont quatre découverts en rejouant le pipeline sur la VM le 30/09), d'environnement (nœud distant instable, VM longtemps indisponible en fin de stage), d'organisation (développement mené seul, algorithme écrit deux fois) et de méthode. La plus instructive a été de définir ce que l'on accepte de perdre — des doublons non retrouvés — au regard de ce que l'on refuse de risquer — la fusion de deux patients — et de pouvoir le démontrer par des chiffres reproductibles.
 
 Sur le plan personnel, ce stage m'a permis de pratiquer le Big Data, domaine dans lequel mon expérience était limitée : installer et faire fonctionner une chaîne HDFS, Hive et Spark, et découvrir ce que la documentation ne dit pas, comme l'ordre de démarrage des services ou le coût de Spark sur de petits volumes. Il m'a appris à relier le modèle statistique du rapprochement d'identités, l'architecture qui le rend exploitable et la règle de gouvernance qui décide qui peut le lire. Il m'a enfin appris une discipline : ne rien affirmer sans preuve reproductible, et écrire une limite plutôt que de la taire.
 
-Plusieurs perspectives prolongent ce travail. À court terme : terminer le consentement par type de dossier, déployer la base centrale et y enregistrer des consentements réellement recueillis, calibrer le seuil et les poids sur la vérité terrain, et activer la planification sur la VM. À moyen terme : ajouter une intégration continue, passer à l'échelle par un blocking partitionné et une consolidation transitive des groupes, et reprendre la source MAVIS réelle lorsque le nœud sera stable. À plus long terme : brancher la gouvernance sur un catalogue de métadonnées pour le lignage des données, et généraliser le moteur à d'autres entités, comme les médecins ou les médicaments.
+Plusieurs perspectives prolongent ce travail. À court terme : terminer le consentement par type de dossier, rendre permanents les identifiants de patients maîtres, déployer la base centrale et y enregistrer des consentements réellement recueillis, calibrer le seuil et les poids sur la vérité terrain, et activer la planification sur la VM. À moyen terme : ajouter une intégration continue, passer à l'échelle par un blocking partitionné et une consolidation transitive des groupes, et reprendre la source MAVIS réelle lorsque le nœud sera stable. À plus long terme : brancher la gouvernance sur un catalogue de métadonnées pour le lignage des données, et généraliser le moteur à d'autres entités, comme les médecins ou les médicaments.
 
 #! Références et bibliographie
 

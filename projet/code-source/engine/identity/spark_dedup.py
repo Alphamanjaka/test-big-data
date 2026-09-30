@@ -64,14 +64,15 @@ class _BoundedMasterIndex:
 
     def __init__(self, prefix_len: int = DEFAULT_NAME_PREFIX_LEN) -> None:
         self._prefix_len = prefix_len
-        self._masters: list[tuple[int, dict]] = []
+        self._representatives: dict[int, dict] = {}
+        self._first_by_birth_cin: dict[tuple[str, str], int] = {}
         self._by_prefix: dict[str, list[int]] = {}
         self._by_birth: dict[str, list[int]] = {}
         self._by_cin: dict[str, list[int]] = {}
 
     def add(self, master_idx: int, row: dict) -> None:
         """Indexe un master dans les seaux prefix nom / date / CIN (dict canonique)."""
-        self._masters.append((master_idx, row))
+        self._representatives.setdefault(master_idx, row)
         name = row.get("__normalized_name") or ""
         self._by_prefix.setdefault(name[: self._prefix_len], []).append(master_idx)
         bd = row.get("birth_date")
@@ -81,6 +82,8 @@ class _BoundedMasterIndex:
         cin = row.get("cin") or ""
         if cin:
             self._by_cin.setdefault(cin, []).append(master_idx)
+        if birth_key and cin:
+            self._first_by_birth_cin.setdefault((birth_key, cin), master_idx)
 
     def candidates(self, row: dict) -> list[int]:
         name = row.get("__normalized_name") or ""
@@ -99,22 +102,19 @@ class _BoundedMasterIndex:
         return out
 
     def representative(self, master_idx: int) -> dict:
-        return next(rep for i, rep in self._masters if i == master_idx)
+        return self._representatives[master_idx]
 
     def exact_birth_cin(self, row: dict) -> int | None:
-        """Master identique par la règle complémentaire : date de naissance ET CIN non vide."""
+        """Premier master de même date de naissance ET même CIN non vide (règle complémentaire).
+
+        Recherche par dictionnaire : coût constant, sans parcourir les masters.
+        """
         bd = row.get("birth_date")
         birth_key = bd.isoformat() if hasattr(bd, "isoformat") else (bd or "")
         cin = row.get("cin") or ""
         if not birth_key or not cin:
             return None
-        for master_idx, rep in self._masters:
-            rb = rep.get("birth_date")
-            rbk = rb.isoformat() if hasattr(rb, "isoformat") else (rb or "")
-            rcin = rep.get("cin") or ""
-            if rbk == birth_key and rcin and rcin == cin:
-                return master_idx
-        return None
+        return self._first_by_birth_cin.get((birth_key, cin))
 
 
 def deduplicate(rows: list[dict],

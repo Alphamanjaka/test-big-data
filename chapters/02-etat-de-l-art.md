@@ -410,7 +410,7 @@ solution du stage est notée « oui, testé » lorsqu'une mesure existe et « ou
 n'existe pas encore. C'est le cas de la ligne gouvernance, vérifiée mécaniquement par la suite de tests
 (§ 8.4), mais dont les données PostgreSQL n'étaient pas peuplées au moment de l'exécution
 (chapitre 8). De même, la montée en charge est **architecturée** et reproductible, mais n'a été
-démontrée que sur un millier de fiches au plus. Ensuite, « partiel » signifie « partiel selon la
+démontrée que sur 25 587 fiches synthétiques au plus. Ensuite, « partiel » signifie « partiel selon la
 documentation » : il signale une capacité réelle mais incomplète dans le contexte du stage, et non
 un doute sur l'existence de la fonction. En gouvernance, le « partiel » de HAPI FHIR signale un cadre à
 programmer, pas une politique prête à l'emploi. Pour HAPI FHIR, OpenCR et Atlas, le « partiel » en E2 traduit

@@ -477,6 +477,14 @@ Mesuré sur la vérité terrain, le run complet obtient une **précision de 1,00
 Data ne dégrade pas la déduplication. La planification par cron, elle, n'a pas été exécutée
 (planification désactivée pendant ces runs).
 
+**Run sur 12 000 patients (30/09/2026).** Pour éprouver le volume, le pipeline complet a ensuite
+traité un jeu **facile** de 12 000 patients synthétiques : 25 587 fiches, sans variation de saisie.
+Il retrouve les **12 000 patients maîtres** (13 587 doublons, tous exacts) et produit 43 141
+événements en GOLD ; sur la vérité terrain, précision et rappel valent 1,000. Ce jeu ne mesure pas
+le rapprochement probabiliste, que seul le jeu difficile sollicite. Il a en revanche révélé un
+défaut de passage à l'échelle (§ 7.3.6) : une fois corrigé, le run complet passe de 15 min 15 s à
+4 min 57 s.
+
 ### 7.3.3 Moteur de déduplication : Pandas et Spark
 
 Le moteur `engine/identity/` est la pièce centrale du projet ; il existe en deux implantations
@@ -556,14 +564,16 @@ s'applique à l'API de gouvernance.
 | Le NameNode ne redémarrait plus (30/09) | métadonnées HDFS stockées dans `/tmp`, vidé au redémarrage de la VM | données HDFS déplacées hors de `/tmp` (`hadoop.tmp.dir`) |
 | Environ 20 % des dates de naissance perdues (30/09) | une colonne mélange quatre formats ; seul le format dominant était lu | lecture valeur par valeur, format par format |
 | Noms tronqués pour la source consultation (30/09) | nom en deux colonnes, dont une seule était retenue par le mapping | nom complet reconstitué (prénom + nom) avant le mapping |
+| Déduplication de 25 587 fiches en près de 15 minutes (30/09) | la passe exacte comparait chaque fiche à tous les patients maîtres déjà créés : coût quadratique | recherche directe par dictionnaire (clé de rapprochement ; date + CIN) : moteur seul de 887 s à 13 s, décisions identiques |
 
-Ces incidents relèvent de trois familles. Les incidents de **données** (la première, la
-deuxième et les deux dernières lignes) sont documentés comme pièges anti-régression. Ceux
-d'**infrastructure** (Parquet, Spark, HiveServer2, NameNode) ont été contournés par des règles de
-configuration. L'incident d'**outillage** (NLP) est le seul qui ait changé la méthode : l'approche
-par vecteurs a été abandonnée au profit d'un score pondéré, plus léger et plus explicable. Les
-trois derniers ont été découverts en rejouant le pipeline sur la VM le 30/09 : aucun test hors VM
-ne les révélait, ce qui justifie cette re-validation.
+Ces incidents relèvent de quatre familles. Les incidents de **données** (explosion de SILVER,
+écritures écrasées, dates perdues, noms tronqués) sont documentés comme pièges anti-régression.
+Ceux d'**infrastructure** (Parquet, Spark, HiveServer2, NameNode) ont été contournés par des règles
+de configuration. L'incident d'**outillage** (NLP) est le seul qui ait changé la méthode :
+l'approche par vecteurs a été abandonnée au profit d'un score pondéré, plus léger et plus
+explicable. Le dernier relève du **passage à l'échelle** : invisible sur 1 057 fiches, il n'est
+apparu qu'avec 25 587. Les quatre derniers ont été découverts en rejouant le pipeline sur la VM le
+30/09 : aucun test hors VM ne les révélait, ce qui justifie cette re-validation.
 
 ## Conclusion et transition
 

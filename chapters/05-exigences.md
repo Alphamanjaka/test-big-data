@@ -167,7 +167,7 @@ lancement régulier est **planifiable** (fréquence `daily` / `weekly` / `monthl
 | Qualité | Exigence | Réalisation | Preuve ou limite |
 |---|---|---|---|
 | **Utilisabilité** | un refus ou une erreur doit être compréhensible | `purpose` hors liste → **422** avec la liste des valeurs autorisées ; refus → **403** avec motif en audit ; bandeau « données de démonstration » à l'écran quand l'API se replie | cas vérifiés en § 8.4 ; frontend optionnel |
-| **Performance** | pipeline bout en bout en moins de 30 minutes | run complet de 2 min 56 s sur la VM (1 057 fiches, 29/09/2026) | volume réel de l'établissement non mesuré (§ 4.2) |
+| **Performance** | pipeline bout en bout en moins de 30 minutes | run complet sur la VM : 2 min 56 s pour 1 057 fiches, 4 min 57 s pour 25 587 fiches (29–30/09/2026) | volume réel de l'établissement non mesuré (§ 4.2) |
 | **Scalabilité** | changer d'échelle sans changer la sémantique | moteur porté en PySpark avec **parité stricte** ; comparaisons bornées par le blocking ; stockage HDFS | résultats identiques en Pandas et en Spark sur les trois jeux (§ 8.5) ; volume démontré limité |
 | **Sécurité** | aucun accès sans rôle, finalité et consentement | RBAC, clés API hachées SHA-256, consentement par finalité, audit de chaque appel, secrets hors du dépôt | 401/403/422 vérifiés (§ 8.4) ; dettes déclarées : hachage non salé, API Flask sans authentification |
 | **Maintenance** | faire évoluer le comportement sans toucher la logique | poids, seuil et blocking déclarés dans `config/deduplication.yaml` ; schéma idempotent ; pièges anti-régression documentés | 123 tests réussis (§ 8.1) |
