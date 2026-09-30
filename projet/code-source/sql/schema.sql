@@ -166,3 +166,21 @@ CREATE TABLE
         silver_patient_rows INTEGER,
         PRIMARY KEY (run_id, source_system)
     );
+
+-- Index des lectures de l'API gouvernance (les clés primaires et contraintes UNIQUE
+-- ont déjà le leur). Idempotents : rejouer le schéma ne les recrée pas.
+-- Clé API résolue à chaque requête authentifiée (engine/governance/auth.py).
+CREATE INDEX IF NOT EXISTS api_user_api_key_hash_idx
+    ON api_user (api_key_hash);
+
+-- Correspondances d'un patient maître (dossier GET /patients/{id}).
+CREATE INDEX IF NOT EXISTS patient_identity_map_master_idx
+    ON patient_identity_map (master_patient_id);
+
+-- Dernier avis d'un patient pour une finalité (check_consent) et historique du dossier.
+CREATE INDEX IF NOT EXISTS consent_master_purpose_recorded_idx
+    ON consent (master_patient_id, purpose, recorded_at DESC);
+
+-- Journal d'accès lu du plus récent au plus ancien (GET /audit).
+CREATE INDEX IF NOT EXISTS access_audit_accessed_at_idx
+    ON access_audit (accessed_at DESC);

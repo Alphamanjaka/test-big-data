@@ -161,6 +161,18 @@ dans `Mon_Memoire` (subtree → `projet/code-source/`, `projet/mvp/`, `archives/
     éliminatoires + 5 de qualité ; arbitrage 4 ajouté à la matrice du § 7.1 ; B21-B31 ajoutées.
     **Preuves :** sources consultées le 28/09 (URL et DOI dans `references/bibliographie.md`) ;
     49 tableaux renumérotés sans trou ; export DOCX de contrôle OK. Reste : relecture, commit.
+22. **[Exploitation des technologies — audit puis correctifs, 30/09]** GOLD : tranches d'âge en expression
+    Spark native à intervalles semi-ouverts (4,5 % des âges tombaient en `unknown`), `master_patient_id`
+    dans `patient_events_gold`, dernier avis `is_current` dans `patient_consent_gold`, vue
+    `patient_events_analytics` (consentants `analytics`, sans nom ni identifiant source). API : pool
+    `psycopg_pool`, dépendances synchrones, audit hors boucle d'événements et perte d'audit journalisée,
+    liste des patients paginée par PostgreSQL, 4 index. Spark : warehouse HDFS dans l'extraction (bases RAW
+    déplacées hors de vboxsf), journal d'événements. FHIR requalifié « schéma pivot inspiré de FHIR »
+    (table de correspondance R4 ; tableau 10 du mémoire : Q2 « partiel, testé »). `bootstrap.sh` complété.
+    **Preuves :** `pytest` hôte 160 réussis / 2 ignorés (dont 10 sur vrai PostgreSQL) ; VM 32 réussis
+    (parités Spark) ; run `20260930T173256` (88 s) : 942 maîtres, 1 761 événements, `unknown` 499 → 451
+    (tous sans date), vue 726 événements / 395 patients = les 395 consentants PostgreSQL. Code mort
+    supprimé (4 fichiers, `spark-warehouse/`). **Reste :** ré-export du mémoire ; notes du deck.
 21. **[Moteur v2 — règle d'identité stricte, 30/09]** Demande de l'auteur : CIN, genre, date et ville de naissance
     identiques, sans probabilité (sans CIN : nom en plus). Score, seuil et poids supprimés ; règle exécutée dans
     Spark (UDF + `row_number`, sans `collect()`) ; identifiant du patient maître dérivé de la clé (permanent, HMAC
@@ -213,6 +225,10 @@ dans `Mon_Memoire` (subtree → `projet/code-source/`, `projet/mvp/`, `archives/
   chiffré au repos ; ni `data_scope` ni `expires_at` sur le consentement.
 - `schema.sql` et `provision/db/seed_governance.py` non exécutés depuis leur dernière modification.
 - Docker/CI, export VM `.box`, tests unitaires ≥80 % (hors moteur).
+- Audit du 30/09, non traité : `run_pipeline.sh --since DATE` n'utilise pas la date (`INGEST_SINCE`
+  jamais lu) ; lecteur Parquet vectorisé désactivé dans SILVER (DDL Hive écrit à la main) ; lectures JDBC
+  sans partitionnement ; colonnes de `fhir_mapping.json` non lues par SILVER ; 4 tables de `schema.sql`
+  non alimentées ; aucune ressource FHIR produite (perspective) ; pas de `response_model` FastAPI.
 - Pages governance/consentements frontend (optionnel).
 
 ## Critères de succès

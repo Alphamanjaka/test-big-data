@@ -46,6 +46,18 @@ erDiagram
 | 10 | `pipeline_run` (`run_id` TEXT) | `mode`, `status`, `started_at`, `finished_at`, `failed_step`, `silver_rows`, `master_count`, `duplicate_count`, `exact_count`, `probabilistic_count`, `duplicate_rate`, `gold_event_rows`, `gold_consent_rows`, `recorded_at` | historique des runs ELT ; `status IN ('running','ok','failed')` ; `master_count` = patients maîtres **distincts** |
 | 11 | `pipeline_run_source` (`run_id`, `source_system`) | `run_id` FK, `tables_extracted`, `tables_skipped`, `tables_failed`, `rows_extracted`, `rows_skipped`, `silver_patient_rows` | détail par source d'un run |
 
+Les tables 1, 5, 6 et 7 sont définies mais **non alimentées** par le pipeline actuel : les fiches
+brutes et les événements restent dans le lac (RAW, SILVER, GOLD).
+
+### Index (hors clés primaires et contraintes `UNIQUE`)
+
+| Index | Colonnes | Lecture servie |
+|---|---|---|
+| `api_user_api_key_hash_idx` | `api_user (api_key_hash)` | résolution de la clé API à chaque requête |
+| `patient_identity_map_master_idx` | `patient_identity_map (master_patient_id)` | correspondances d'un dossier `GET /patients/{id}` |
+| `consent_master_purpose_recorded_idx` | `consent (master_patient_id, purpose, recorded_at DESC)` | dernier avis d'un patient pour une finalité, historique du dossier |
+| `access_audit_accessed_at_idx` | `access_audit (accessed_at DESC)` | `GET /audit` (plus récents d'abord) |
+
 ---
 
 ## 2. Couche RAW (Hive) — une base externe par source
@@ -53,6 +65,9 @@ erDiagram
 Le script `gen_extract_raw.py` crée `CREATE DATABASE IF NOT EXISTS {source}` puis, pour chaque table,
 une **table externe Hive** sur parquet HDFS : `hdfs://localhost:9000/datalake/raw/{source}/{table}`
 (helpers `paths.hdfs_raw`). Toutes les colonnes sont typées `STRING` (le typage FHIR arrive en SILVER).
+Le répertoire de chaque base est `hdfs://localhost:9000/datalake/raw/warehouse/{source}.db`
+(`spark.sql.warehouse.dir`, fixé depuis le 30/09/2026 ; auparavant `spark-warehouse/` du dossier
+partagé vboxsf).
 
 ### Sources actives par défaut (générateur synthétique, `data_sources.example.json`)
 
@@ -119,8 +134,9 @@ Construite comme **lampe de chevet de `encounter_fhir`** :
 | Colonnes | Provenance |
 |----------|------------|
 | `patient_uuid`, `source_patient_id`, `name`, `gender`, `birth_date` | patient_fhir |
+| `master_patient_id` (patient maître : relie les événements des différentes sources) | patient_fhir (moteur) |
 | `age` (années, `datediff / 365.25`) | calculé |
-| `age_tranche` (8 classes démo d'âge, `unknown` si absent) | `pipeline.yaml → gold.age_tranches` |
+| `age_tranche` (8 classes, intervalles semi-ouverts ; `unknown` si âge absent ou hors bornes) | `pipeline.yaml → gold.age_tranches`, `utils/age_tranches.py` |
 | `encounter_id`, `admission_date`, `discharge_date`, `visit_type` | encounter_fhir |
 | `diagnosis_code`, `category`, `diagnosis` | condition_fhir |
 | `mortality`, `parity`, `gravida`, `live_births` | observation_fhir |
@@ -136,7 +152,17 @@ Dédup GOLD : `dropDuplicates(["patient_uuid", "encounter_id", "diagnosis_code"]
 2. Consentements lus depuis PostgreSQL (`consent`, via `DATABASE_URL`) — si absent : lignes NULL
    (schéma créé, API en fallback mock).
 3. Join sur `master_patient_id` → colonnes : `master_patient_id`, `patient_uuid`, `name`, `purpose`,
-   `granted`, `recorded_at`.
+   `granted`, `recorded_at`, `is_current` (dernier avis du couple patient / finalité, calculé par
+   PostgreSQL : `recorded_at` puis `consent_id` décroissants, même règle que l'API).
+
+### Vue `patient_events_analytics` (`pipeline.yaml → tables.gold_analytics`)
+
+Événements de `patient_events_gold` dont le patient maître a un avis **courant accordé** pour la
+finalité `gold.analytics_purpose` (`analytics`). Refus par défaut : sans avis ou sans patient maître,
+aucune ligne. Minimisation : ni `name`, ni `birth_date`, ni `patient_uuid` / `source_patient_id` ; le
+patient n'y est désigné que par `master_patient_id`. Vue recréée à chaque run GOLD (`CREATE OR REPLACE
+VIEW`) : un avis modifié ensuite ne s'y applique qu'au run suivant, alors que l'API FastAPI lit la base
+à chaque requête.
 
 ---
 

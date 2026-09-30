@@ -122,11 +122,10 @@ vagrant up
 vagrant ssh
 ```
 
-### Étape 2 — Re-formater le NameNode (obligatoire après chaque reboot)
-> `/tmp/hadoop-vagrant/dfs/name` est vidé au reboot → le NameNode refuse de démarrer sans reformat.
-```bash
-hdfs namenode -format -force -nonInteractive
-```
+### Étape 2 — NE PAS reformater le NameNode
+> Depuis le 30/09/2026, les données HDFS sont dans `/home/vagrant/hadoop-data` (`hadoop.tmp.dir`) et
+> survivent au redémarrage. `hdfs namenode -format` **effacerait tout le lac** : à réserver à une VM
+> neuve (le provisionnement le fait déjà une fois).
 
 ### Étape 3 — Démarrer Hadoop + YARN (ordre strict)
 ```bash
@@ -291,9 +290,10 @@ bases Hive obsolètes.
    ```bash
    rm -rf ~/metastore_db && cd ~/hive && schematool -dbType derby -initSchema && cd ~
    ```
-4. **Re-formater le NameNode** :
+4. **Re-formater le NameNode** (réinitialisation volontaire : efface tout HDFS) :
    ```bash
-   rm -rf /tmp/hadoop-vagrant/dfs
+   stop-yarn.sh; stop-dfs.sh
+   rm -rf /home/vagrant/hadoop-data/dfs
    hdfs namenode -format -force -nonInteractive
    ```
 5. **Relancer la pile complète** (époques 2–6 de la section 4) puis le pipeline.
@@ -347,7 +347,7 @@ cd ~/datalake-final
 
 | Symptôme | Cause probable | Correctif |
 |---|---|---|
-| `NameNode` refuse de démarrer | namespace `/tmp/hadoop-vagrant/dfs/name` vidé | `hdfs namenode -format -force -nonInteractive` |
+| `NameNode` refuse de démarrer | avant le 30/09/2026 : namespace dans `/tmp`, vidé au redémarrage | vérifier `hadoop.tmp.dir = /home/vagrant/hadoop-data` (`core-site.xml`) et `/tmp/start-dfs.log` ; reformater seulement en dernier recours (efface le lac) |
 | Spark écrit sur vboxsf / erreurs de rename | warehouse sur partage | remettre `spark.sql.warehouse.dir = hdfs://localhost:9000/...` |
 | `beeline` ne répond pas | HS2 pas (re)démarré | revoir étape 4 (metastore puis HS2, `sleep 30`) |
 | SILVER explosé (nb lignes = carré) | mapping dynamique capture une clé intra-table (ex. `patient_uuid`) | exclure la colonne de jointure du mapping FHIR ; valider par `check_data.py` |

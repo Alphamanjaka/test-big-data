@@ -256,7 +256,7 @@ l'empreinte n'a pas changé n'est **pas ré-extraite** (incrémental, anti-retra
 | Couche | Rôle dans la conception | Écriture |
 |---|---|---|
 | **RAW** | donnée brute, inchangée (schéma-on-read) | parquet HDFS `/datalake/raw/{source}/{table}` + tables Hive externes |
-| **SILVER** | normalisée **FHIR** (4 entités), chaque fiche rattachée à son patient maître (méthode, score) | `datalake_silver.{patient,encounter,condition,observation}_fhir` |
+| **SILVER** | normalisée selon un **schéma pivot inspiré de FHIR** (4 entités, une colonne par champ ; aucune ressource FHIR produite), chaque fiche rattachée à son patient maître (méthode, score) | `datalake_silver.{patient,encounter,condition,observation}_fhir` |
 | **GOLD** | agrégats prêts à l'analyse + consentement | `datalake_gold.patient_events_gold` (8 tranches d'âge), `patient_consent_gold` |
 
 La logique ELT impose : l'ingestion **charge** la donnée brute, la transformation

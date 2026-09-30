@@ -2463,3 +2463,110 @@ ch. 8 : 2 221 → 2 103 ; ch. 9 : 2 251 → 2 200). Export : 100 pages, 18 figur
   `bases_de_donnees.md`, `api.md` (`/metrics`), README des captures (X04).
 - Non modifiable ici : la vidéo de démonstration (S17), si elle a déjà été enregistrée avec les anciens
   chiffres.
+
+## 30/09/2026 — Audit de `projet/code-source` : niveau d'exploitation de Spark, Hive, FHIR, FastAPI, Flask
+
+- Demande de l'auteur : vérifier si les technologies sont exploitées à leur pleine capacité. **Lecture seule :
+  aucun fichier de code modifié.** Méthode : lecture des 4 étapes ELT, du moteur, des deux API, de
+  `sql/schema.sql`, de `bootstrap.sh` ; recherches `git grep` ; deux contrôles hors Spark (logique recopiée
+  à l'identique dans un script temporaire hors dépôt) ; `pytest` sur l'hôte : 131 réussis, 1 ignoré
+  (`test_spark_dedup.py`, PySpark absent de l'hôte). Rien n'a été exécuté dans la VM.
+- **Défauts prouvés.**
+  - Tranches d'âge GOLD (`pipeline.yaml` + `create_gold.py::assign_age_tranche`) : bornes entières et âge
+    décimal → les âges entre deux tranches (4,25 ; 14,5 ; 24,5 ; 59,5 ans…) sont classés `unknown`.
+    Simulation au jour près sur 0-90 ans : 4,54 % des âges.
+  - `gen_extract_raw.py` ne fixe pas `spark.sql.warehouse.dir` : les bases Hive RAW sont créées dans
+    `spark-warehouse/` du dossier partagé vboxsf (`pharmacy.db`, `consultation.db`, `imaging.db` présents sur
+    l'hôte) — contraire à la règle « warehouse sur HDFS » (les données, elles, sont bien sur HDFS).
+  - `run_pipeline.sh --since DATE` : `INGEST_SINCE` est exporté mais jamais lu ; le mode équivaut à `--full`.
+- **Constats par lecture du code (non mesurés).**
+  - Spark : UDF Python ligne à ligne pour la clé d'identité et pour la tranche d'âge (cette dernière
+    remplaçable par `F.when`) ; lecture JDBC sans partitionnement (`fetchsize` 100) ; lecteur Parquet
+    vectorisé désactivé dans SILVER (cause probable : DDL Hive écrit à la main, `DECIMAL` sans précision) ;
+    actions `count()` de journalisation sans cache ; clés nulles regroupées dans une seule partition de la
+    fenêtre `row_number` ; RAW réécrit à chaque run et dates de naissance normalisées dès RAW (valeur
+    d'origine perdue) ; ni journal d'événements Spark ni `explain()`.
+  - GOLD : `patient_events_gold` ne porte pas `master_patient_id`, n'applique pas le consentement et n'est lue
+    par aucune API.
+  - FHIR : schéma pivot à plat nommé d'après 4 ressources ; aucune ressource FHIR produite (ni `identifier`,
+    ni `Consent`, ni `AuditEvent`, ni `Patient.link` / `$match`) ; la documentation écrit « standardisée FHIR ».
+  - FastAPI : dépendances et intergiciel d'audit `async` appelant psycopg bloquant ; 4 connexions par requête,
+    sans pool ; `/patients` charge toute la table puis filtre en mémoire ; aucun index hors clés ; pas de
+    `response_model` ; échec d'audit avalé sans trace.
+  - Flask : `debug=True` relance le module (deux sessions Spark) ; KPI de doublons calculé aussi par FastAPI.
+  - RapidFuzz : sur les 6 tables du générateur, le flou (seuil 60) ne trouve qu'une colonne utile
+    (`adresse`) et 3 faux candidats, neutralisés par le garde-fou anti-collision.
+  - Code mort : `pipeline_orchestrator.py`, `schemas/mpi_mapping_schema.py`, `fhir_keywords.json`,
+    `fhir_synonyms.py`, 4 tables de `schema.sql` jamais alimentées, `colonnes` de `fhir_mapping.json` non lues.
+  - `bootstrap.sh` n'installe pas `pandas`, `pyyaml`, `psycopg`, `python-dotenv` (installés à la main le 30/09).
+- Déjà assumé dans le mémoire, non repris : Spark en `local[*]`, `executor_memory` sans effet, YARN inutilisé,
+  API Flask sans authentification.
+- **Reste :** décision de l'auteur sur les correctifs (aucun engagé).
+
+## 30/09/2026 — Correctifs de l'audit : GOLD, API gouvernance, Spark, FHIR, provisionnement
+
+Demande de l'auteur : appliquer les six étapes recommandées. VM et PostgreSQL Laragon démarrés par l'auteur.
+
+**Code.**
+- Tranches d'âge : `provision/scripts/utils/age_tranches.py` (nouveau : référence Python + expression Spark
+  `CASE WHEN`) ; intervalles semi-ouverts ; bornes 29 j et 60 j corrigées dans `pipeline.yaml` (0.0793,
+  0.1642) ; UDF Python retirée de `create_gold.py`. Tests : `tests/test_age_tranches.py` (21, dont parité Spark).
+- GOLD (`create_gold.py`) : `master_patient_id` dans `patient_events_gold` (19 colonnes) ; `is_current` dans
+  `patient_consent_gold` (calculé par PostgreSQL : `recorded_at`, puis `consent_id` décroissants) ; vue
+  `patient_events_analytics` (`pipeline.yaml` : `tables.gold_analytics`, `gold.analytics_purpose`).
+- API gouvernance : `database.py` réécrit (pool `psycopg_pool`, ouvert au premier appel, fermé par `lifespan`
+  et `atexit` ; transaction ouverte annulée avant restitution) ; `auth.py` : dépendances synchrones ;
+  `audit.py` : écriture dans le pool de threads, échec journalisé (méthode, statut, type d'erreur) au lieu
+  d'être avalé ; `app.py` : `/patients` en deux requêtes SQL (comptage + page `LIMIT/OFFSET`, dernier avis,
+  refus par défaut, tri `COLLATE "C"`) ; `consent.py` : départage par `consent_id`, `consented_master_ids`
+  retirée (plus utilisée). `sql/schema.sql` : 4 index `IF NOT EXISTS`. Dépendance : `psycopg[binary,pool]`
+  (`pyproject.toml`, `engine/requirements.txt` ; 3.2.8 résolu pour Python 3.8, 3.3.3 sur l'hôte) ;
+  `PyYAML` ajouté à `engine/requirements.txt` (déjà dans `pyproject.toml`).
+- Tests : `test_governance_api.py` (liste : câblage SQL, 5 tests ; perte d'audit journalisée) ;
+  `tests/test_governance_pg.py` (nouveau, 10 tests sur vrai PostgreSQL via le vrai pool, schéma temporaire
+  créé puis supprimé, ignoré sans `GOVERNANCE_TEST_DATABASE_URL`).
+- Spark : `gen_extract_raw.py` fixe `spark.sql.warehouse.dir` (HDFS) ; `bootstrap.sh` : journal
+  d'événements (`/home/vagrant/spark-events`) et `pandas`, `PyYAML`, `psycopg`, `python-dotenv`, `pytest`.
+
+**VM (état existant corrigé à la main).** Services démarrés (HDFS, YARN, métastore, HiveServer2, sans
+reformatage). Journal d'événements ajouté à `spark-defaults.conf` (`sudo`, fichier de root). Bases Hive
+`pharmacy`, `consultation`, `imaging` : emplacement `file:/home/vagrant/datalake-final/spark-warehouse/…`
+(vboxsf) → `hdfs://localhost:9000/datalake/raw/warehouse/{source}.db` (`ALTER DATABASE … SET LOCATION`,
+beeline ; tables externes inchangées, déjà sur HDFS).
+
+**Base.** Instance de test du 30/09 (port 5433) redémarrée (PID périmé, récupération normale) ; base
+`patient_platform_demo` : identifiants maîtres vérifiés sans `PATIENT_ID_SECRET` avant le run (aucun doublon
+possible). PostgreSQL Laragon (5432) utilisé seulement pour le test d'intégration (schéma temporaire supprimé).
+
+**Preuves.**
+- Hôte : `pytest` 160 réussis, 2 ignorés (parités Spark) ; VM : `test_age_tranches.py`, `test_spark_dedup.py`,
+  `test_matcher.py` : 32 réussis.
+- Run VM `20260930T173256` (mode full, base `demo`) : 88 s ; 942 maîtres, 1 057 correspondances (inchangés) ;
+  GOLD 1 761 événements ; `unknown` 499 → 451, les 451 sans âge (0 avec âge connu) ; `master_patient_id`
+  renseigné sur les 1 761 lignes, 100 patients maîtres ont des événements de plusieurs sources ; vue lue par
+  beeline : 16 colonnes (sans nom ni identifiant source), 726 événements, 395 patients = exactement les 395
+  consentants `analytics` courants de PostgreSQL (comparaison des listes). 4 index créés par le run ; run
+  enregistré dans `pipeline_run`. Aucun nouveau dossier dans `spark-warehouse/` ; 3 journaux d'événements.
+- `/patients` sur `patient_platform_scale` (100 000 maîtres, 0 consentement) : lecture de toute la table
+  164 ms / 100 000 lignes (avant filtrage Python) → comptage + page 112 ms / au plus 25 lignes.
+
+**Documentation.** `bigdata_concepts.md` (§ 3, 4, 6, § 8 réécrit : schéma inspiré de FHIR, table de
+correspondance FHIR R4), `architecture.md`, `bases_de_donnees.md` (index, tables non alimentées, GOLD, vue),
+`api.md`, `consentement_gouvernance.md`, `ai/dev/{README,architecture,pipeline_elt}.md`,
+`ai/memoire/contexte_projet.md`, README du code. `GUIDE/guide-vagrant.md` : l'étape « reformater le NameNode
+à chaque redémarrage » (qui effacerait désormais le lac) remplacée par une mise en garde.
+Mémoire : tableau 10 (Q2 « partiel, testé ») et précaution de lecture, tableau 11, § 7.2.2 ; script oral S12
+(« schéma inspiré de FHIR », +3 mots). Non ré-exporté en DOCX ; deck non modifié (fichier ouvert, modifié
+par l'auteur).
+
+**Non fait.** Suppression de `pipeline_orchestrator.py`, `schemas/mpi_mapping_schema.py`,
+`provision/config/fhir_keywords.json`, `provision/scripts/utils/fhir_synonyms.py` et du dossier vide
+`spark-warehouse/` : refusée à l'agent par le contrôle de sécurité, laissée à l'auteur. API Flask non relancée
+(colonnes lues inchangées).
+
+**Suite (même jour, demande explicite de l'auteur).** Les 4 fichiers sont supprimés (`git rm`, récupérables
+dans l'historique) et le dossier `spark-warehouse/` (3 sous-dossiers vides) retiré. Aucun code ne les
+importait (`git grep` sans résultat). Mentions mises à jour : README du code, `ai/dev/architecture.md`,
+`documents/documentation/architecture.md`, `pipeline_elt.md` (les synonymes viennent de
+`fhir_entities.json` via `fhir_schema.py`). Preuves : `pytest` hôte 160 réussis / 2 ignorés ; VM :
+`fhir_schema` et `paths` importables (4 entités, 11 synonymes).

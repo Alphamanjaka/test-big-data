@@ -118,7 +118,7 @@ def check_consent(master_patient_id: str, purpose: str) -> bool:
         """
         SELECT granted FROM consent
         WHERE master_patient_id = %s AND purpose = %s
-        ORDER BY recorded_at DESC LIMIT 1
+        ORDER BY recorded_at DESC, consent_id DESC LIMIT 1
         """,
         (master_patient_id, purpose),
     )
@@ -154,22 +154,3 @@ def enforce_consent(request: Request, master_patient_id: str, purpose: str) -> s
     reason = f"consentement non accorde pour la finalite {purpose}"
     request.state.refusal_reason = reason
     raise HTTPException(status_code=403, detail=reason)
-
-
-def consented_master_ids(purpose: str) -> set:
-    """Masters ayant consenti a `purpose`, le dernier avis de chaque patient.
-
-    Un seul aller-retour SQL. `DISTINCT ON` + `ORDER BY recorded_at DESC`
-    applique la meme regle « le dernier avis gagne » que `check_consent`.
-    """
-    validate_purpose(purpose)
-    rows = _query_all(
-        """
-        SELECT DISTINCT ON (master_patient_id) master_patient_id, granted
-        FROM consent
-        WHERE purpose = %s
-        ORDER BY master_patient_id, recorded_at DESC
-        """,
-        (purpose,),
-    )
-    return {row["master_patient_id"] for row in rows if row["granted"]}

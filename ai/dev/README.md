@@ -65,7 +65,9 @@ python -m provision.api.test_api                     # 14/14 PASS attendu
 # venv
 python -m venv .venv
 .venv\Scripts\python -m pip install -e ".[test]"
-.venv\Scripts\python -m pytest -q                    # 54/54 attendu (matcher + consentement + canonique + API gouvernance)
+.venv\Scripts\python -m pytest -q                    # hôte : tout réussi ; tests Spark ignorés sans PySpark
+# API sur un vrai PostgreSQL (schéma temporaire créé puis supprimé) :
+# $env:GOVERNANCE_TEST_DATABASE_URL = "postgresql://..." ; .venv\Scripts\python -m pytest -q tests\test_governance_pg.py
 .venv\Scripts\python evaluation\evaluate_engine.py --level hard
 ```
 
@@ -79,7 +81,8 @@ python -m venv .venv
 4. **Pas de mocks côté frontend** — les données fictives vivent côté backend (`mock_data.py`, flag `mocked`).
 5. **PAS de `DOCTOR`** — rôles alignés (`ADMIN`/`MEDECIN` web ; `admin`/`analyst`/`viewer` plateforme).
 6. **Jamais de vraies données patients** ; clés/secrets via env, jamais commités.
-7. Mémoire Spark VM 8 Go : `executor_memory=4g`, `driver_memory=2g`, `spark.sql.shuffle.partitions=8`.
+7. Mémoire Spark VM 8 Go : `driver_memory=2g`, `spark.sql.shuffle.partitions=8` ; en `local[*]`,
+   `executor_memory=4g` est sans effet (un seul processus).
 8. Route params Next.js 15 = **Promise** (await obligatoire).
 
 ## Références

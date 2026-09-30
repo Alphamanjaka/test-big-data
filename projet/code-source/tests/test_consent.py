@@ -12,7 +12,6 @@ from engine.governance.consent import (
     PURPOSES,
     ConsentCreate,
     check_consent,
-    consented_master_ids,
     create_consent,
     enforce_consent,
     list_consents,
@@ -223,28 +222,6 @@ def test_check_consent_missing_row_is_refused(monkeypatch):
     from engine.governance import consent as consent_module
     monkeypatch.setattr(consent_module, "_query_one", lambda q, p=(): None)
     assert check_consent("PAT-0001", "research") is False
-
-
-def test_consented_master_ids_keeps_only_granted(monkeypatch):
-    from engine.governance import consent as consent_module
-    monkeypatch.setattr(
-        consent_module,
-        "_query_all",
-        lambda q, p=(): [
-            {"master_patient_id": "PAT-0001", "granted": True},
-            {"master_patient_id": "PAT-0002", "granted": False},
-            {"master_patient_id": "PAT-0003", "granted": True},
-        ],
-    )
-    assert consented_master_ids("research") == {"PAT-0001", "PAT-0003"}
-
-
-def test_consented_master_ids_rejects_unknown_purpose(monkeypatch):
-    from engine.governance import consent as consent_module
-    monkeypatch.setattr(consent_module, "_query_all", lambda q, p=(): [])
-    with pytest.raises(HTTPException) as exc:
-        consented_master_ids("marketing")
-    assert exc.value.status_code == 422
 
 
 def test_enforce_consent_allows_and_records_purpose(monkeypatch):

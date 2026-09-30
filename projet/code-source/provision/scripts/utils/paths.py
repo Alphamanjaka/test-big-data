@@ -57,6 +57,7 @@ HIVE_GOLD = CFG["hive_dbs"]["gold"]
 # ── Tables cibles ──
 GOLD_TABLE = CFG["tables"]["gold"]
 CONSENT_GOLD_TABLE = CFG["tables"]["consent_gold"]
+GOLD_ANALYTICS_VIEW = CFG["tables"]["gold_analytics"]
 SILVER_PATIENT_TABLE = CFG["tables"]["silver_patient"]
 
 # ── Spark defaults ──
@@ -68,6 +69,7 @@ SPARK_SHUFFLE_PARTITIONS = CFG["spark"]["shuffle_partitions"]
 AGE_TRANCHES = [
     (row[0], row[1], row[2]) for row in CFG["gold"]["age_tranches"]
 ]
+GOLD_ANALYTICS_PURPOSE = CFG["gold"]["analytics_purpose"]
 
 # ── SILVER ──
 FUZZY_THRESHOLD = CFG["silver"]["fuzzy_threshold"]

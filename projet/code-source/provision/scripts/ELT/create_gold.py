@@ -6,6 +6,11 @@ create_gold.py
 ==============
 Transformation des tables SILVER vers une table GOLD centralisée
 prête pour le dashboard (RMA) avec tranches d'âge spécifiques.
+
+Sorties : patient_events_gold (événements rattachés au patient maître),
+patient_consent_gold (historique des avis, dernier avis marqué) et la vue
+patient_events_analytics (événements des seuls patients consentant à la
+finalité analytique, sans donnée identifiante).
 """
 
 import logging
@@ -15,8 +20,10 @@ from pyspark.sql.types import StringType, BooleanType
 
 from ..utils.sync_utils import update_sync_metadata
 from ..utils.run_metrics import record_safely
+from ..utils.age_tranches import tranche_column
 from ..utils.paths import (
     HIVE_SILVER, HIVE_GOLD, GOLD_TABLE, CONSENT_GOLD_TABLE,
+    GOLD_ANALYTICS_VIEW, GOLD_ANALYTICS_PURPOSE,
     hdfs_warehouse, AGE_TRANCHES,
     LOG_DIR, SPARK_EXECUTOR_MEMORY, SPARK_DRIVER_MEMORY, SPARK_SHUFFLE_PARTITIONS,
 )
@@ -91,8 +98,14 @@ if df_patient is None:
 # -----------------------------
 # 🎯 RÉDUCTION AUX COLONNES UTILES
 # -----------------------------
+# master_patient_id vient du moteur de déduplication (étape SILVER) : il relie les
+# événements des différentes sources au même patient maître. Absent si le moteur
+# n'a pas tourné : la colonne reste alors vide (et la vue analytique aussi).
+if "master_patient_id" not in df_patient.columns:
+    logging.warning("master_patient_id absent de patient_fhir (moteur non exécuté) — colonne GOLD vide.")
+    df_patient = df_patient.withColumn("master_patient_id", F.lit(None).cast(StringType()))
 df_patient = df_patient.select(
-    "patient_uuid", "source_patient_id", "name", "gender", "birth_date"
+    "patient_uuid", "source_patient_id", "master_patient_id", "name", "gender", "birth_date"
 )
 df_encounter = (df_encounter if df_encounter is not None else _vide(
     ["patient_uuid", "encounter_id", "admission_date", "discharge_date", "visit_type"]
@@ -124,16 +137,8 @@ df_patient = df_patient.withColumn(
     "age", F.datediff(F.current_date(), F.col("birth_date")) / 365.25
 )
 
-def assign_age_tranche(age):
-    if age is None:
-        return "unknown"
-    for min_age, max_age, label in AGE_TRANCHES:
-        if min_age <= age <= max_age:
-            return label
-    return "unknown"
-
-udf_age_tranche = F.udf(assign_age_tranche, StringType())
-df_patient = df_patient.withColumn("age_tranche", udf_age_tranche(F.col("age")))
+# Expression Spark native (CASE WHEN), sans UDF Python ; intervalles semi-ouverts.
+df_patient = df_patient.withColumn("age_tranche", tranche_column(F.col("age"), AGE_TRANCHES))
 
 # -----------------------------
 # 🔗 JOINTURES PATIENT ↔ ENTITÉS
@@ -151,6 +156,7 @@ df_gold = df_gold.join(df_observation, df_gold.patient_uuid == df_observation.pa
 df_gold_final = df_gold.select(
     "patient_uuid",
     "source_patient_id",
+    "master_patient_id",
     "name",
     "gender",
     "birth_date",
@@ -180,7 +186,12 @@ logging.info(f"🎯 Table GOLD créée : {GOLD_TABLE} ({gold_event_rows} lignes)
 # 🪪 CONSENTEMENT (GOLD)
 # -----------------------------
 def charger_consent_gold():
-    """Alimente patient_consent_gold à partir du SILVER patient et de PostgreSQL."""
+    """Alimente patient_consent_gold à partir du SILVER patient et de PostgreSQL.
+
+    La table `consent` est un historique : `is_current` marque le dernier avis de
+    chaque (patient, finalité), calculé par PostgreSQL avec la règle de l'API
+    (« le dernier avis gagne », engine/governance/consent.py).
+    """
     df_patient = spark.table(f"{HIVE_SILVER}.patient_fhir").select(
         "patient_uuid", "master_patient_id", "name"
     ).filter(F.col("master_patient_id").isNotNull()) \
@@ -194,7 +205,9 @@ def charger_consent_gold():
             with psycopg.connect(db_url) as conn:
                 with conn.cursor() as cur:
                     cur.execute(
-                        "SELECT master_patient_id, purpose, granted, recorded_at::text "
+                        "SELECT master_patient_id, purpose, granted, recorded_at::text, "
+                        "ROW_NUMBER() OVER (PARTITION BY master_patient_id, purpose "
+                        "ORDER BY recorded_at DESC, consent_id DESC) = 1 AS is_current "
                         "FROM consent ORDER BY master_patient_id"
                     )
                     consent_rows = cur.fetchall()
@@ -207,7 +220,9 @@ def charger_consent_gold():
 
     if consent_rows:
         df_consent = spark.createDataFrame(
-            consent_rows, ["master_patient_id", "purpose", "granted", "recorded_at"]
+            consent_rows,
+            "master_patient_id string, purpose string, granted boolean, "
+            "recorded_at string, is_current boolean",
         )
     else:
         df_consent = df_patient.select(
@@ -215,6 +230,7 @@ def charger_consent_gold():
             F.lit(None).cast(StringType()).alias("purpose"),
             F.lit(None).cast(BooleanType()).alias("granted"),
             F.lit(None).cast(StringType()).alias("recorded_at"),
+            F.lit(None).cast(BooleanType()).alias("is_current"),
         )
         logging.info("Consent vide — schéma créé, API en fallback mock.")
 
@@ -223,7 +239,8 @@ def charger_consent_gold():
         on="master_patient_id",
         how="left",
     ).select(
-        "master_patient_id", "patient_uuid", "name", "purpose", "granted", "recorded_at"
+        "master_patient_id", "patient_uuid", "name", "purpose", "granted", "recorded_at",
+        "is_current",
     )
 
     nb_consent = df_consent.count()
@@ -233,6 +250,37 @@ def charger_consent_gold():
     return nb_consent
 
 gold_consent_rows = charger_consent_gold()
+
+# -----------------------------
+# 🔒 VUE ANALYTIQUE GOUVERNÉE (GOLD)
+# -----------------------------
+def creer_vue_analytique():
+    """Vue des événements GOLD limitée aux patients maîtres consentant à la finalité analytique.
+
+    Refus par défaut : sans avis courant accordé (ou sans patient maître), aucune ligne.
+    Minimisation : ni nom, ni date de naissance, ni identifiant source ; le patient n'y
+    est désigné que par son identifiant maître. Le consentement lu est celui du dernier
+    run GOLD : un avis modifié ensuite ne s'applique à la vue qu'au run suivant (l'API
+    FastAPI, elle, lit la base à chaque requête).
+    """
+    spark.sql(f"""
+        CREATE OR REPLACE VIEW {GOLD_ANALYTICS_VIEW} AS
+        SELECT e.master_patient_id, e.gender, e.age, e.age_tranche, e.encounter_id,
+               e.admission_date, e.discharge_date, e.visit_type, e.diagnosis_code,
+               e.category, e.diagnosis, e.mortality, e.parity, e.gravida, e.live_births
+        FROM {GOLD_TABLE} e
+        JOIN (
+            SELECT DISTINCT master_patient_id
+            FROM {CONSENT_GOLD_TABLE}
+            WHERE purpose = '{GOLD_ANALYTICS_PURPOSE}' AND is_current AND granted
+        ) c ON e.master_patient_id = c.master_patient_id
+    """)
+    nb = spark.table(GOLD_ANALYTICS_VIEW).count()
+    logging.info(f"🔒 Vue GOLD {GOLD_ANALYTICS_VIEW} : {nb} événements "
+                 f"(finalité {GOLD_ANALYTICS_PURPOSE}, sur {gold_event_rows}).")
+    return nb
+
+gold_analytics_rows = creer_vue_analytique()
 
 # Historique du run : volumes de la zone GOLD.
 record_safely(

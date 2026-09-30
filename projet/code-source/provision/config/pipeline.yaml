@@ -18,6 +18,9 @@ hive_dbs:
 tables:
   gold: "datalake_gold.patient_events_gold"
   consent_gold: "datalake_gold.patient_consent_gold"
+  # Vue des événements GOLD réservée aux patients consentant à gold.analytics_purpose
+  # (sans nom ni identifiant source) : la gouvernance appliquée dans le lac.
+  gold_analytics: "datalake_gold.patient_events_analytics"
   silver_patient: "datalake_silver.patient_fhir"
 
 # ── Config Spark (commune à tous les scripts) ──
@@ -27,16 +30,22 @@ spark:
   shuffle_partitions: "8"
 
 # ── GOLD : tranches d'âge ──
+# Âge en années (jours / 365,25). Une tranche va de sa borne basse (incluse) à la
+# borne basse de la suivante (exclue) ; seule la dernière s'arrête à sa borne haute
+# (incluse). Les autres bornes hautes sont indicatives (provision/scripts/utils/age_tranches.py).
+# 0.0793 ≈ 29 j et 0.1642 ≈ 60 j : le 29e et le 60e jour ouvrent leur tranche.
 gold:
   age_tranches:
     - [0.0,    0.0767, "0-28 j"]
-    - [0.0795, 0.1616, "29-59 j"]
-    - [0.1667, 0.9167, "2-11 m"]
+    - [0.0793, 0.1616, "29-59 j"]
+    - [0.1642, 0.9167, "2-11 m"]
     - [1.0,    4.0,    "1-4 ans"]
     - [5.0,    14.0,   "5-14 ans"]
     - [15.0,   24.0,   "15-24 ans"]
     - [25.0,   59.0,   "25-59 ans"]
     - [60.0,   120.0,  "60 ans et plus"]
+  # Finalité exigée par la vue tables.gold_analytics (liste fermée de engine/governance/consent.py).
+  analytics_purpose: "analytics"
 
 # ── SILVER ──
 silver:

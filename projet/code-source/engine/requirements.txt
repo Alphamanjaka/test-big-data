@@ -1,7 +1,9 @@
 # Moteur d'identité + gouvernance (déduplication et consentement)
 # Compatible Python 3.8 (VM Big Data) — RapidFuzz est requis.
 pandas>=2.0,<3.0
-psycopg[binary]>=3.2,<4.0
+PyYAML>=6.0,<7.0
+# pool : connexions partagées de l'API gouvernance (psycopg_pool 3.2.x sous Python 3.8)
+psycopg[binary,pool]>=3.2,<4.0
 python-dotenv>=1.0,<2.0
 fastapi>=0.115,<1.0
 uvicorn[standard]>=0.30,<1.0

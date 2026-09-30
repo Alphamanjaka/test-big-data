@@ -54,7 +54,11 @@ Le projet veille à démontrer le **consentement selon la finalité** : un accè
 n'est pas consentie, même pour un utilisateur autorisé. L'absence de ligne vaut **refus**
 (*fail closed*). Implémentation de référence :
 [`engine/governance/consent.py`](../../projet/code-source/engine/governance/consent.py)
-(`PURPOSES`, `validate_purpose`, `check_consent`, `enforce_consent`, `consented_master_ids`).
+(`PURPOSES`, `validate_purpose`, `check_consent`, `enforce_consent`). Pour la liste des patients, la
+même règle (« le dernier avis gagne », refus par défaut) est appliquée en SQL par
+[`engine/governance/app.py`](../../projet/code-source/engine/governance/app.py) (`_PATIENT_SCOPE`).
+Dans le lac, la vue `datalake_gold.patient_events_analytics` l'applique aux événements GOLD pour la
+finalité `analytics` (avis lus au dernier run GOLD).
 
 **Écarts assumés** : ni `data_scope` (périmètre de données), ni `expires_at` (durée de validité), ni
 `authorized_user_id` — le consentement est lié au **patient et à la finalité**, pas à une personne.

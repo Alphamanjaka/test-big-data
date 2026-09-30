@@ -43,7 +43,10 @@ Logs : `provision/logs/elt.log` · Suivi : `provision/metadata/sync_metadata.jso
 - **Lectures RAW robustes** : fallbacks Hive `{src}.{table}` → Hive `{table}` → Parquet ; gérer
   `FIXED_LEN_BYTE_ARRAY` (cast String des colonnes binary/decimal).
 - **GOLD** : réduire explicitement les colonnes AVANT jointures (sinon `AMBIGUOUS_REFERENCE: name`),
-  tranches d'âge (8 classes) via UDF, `age` NULL → `"unknown"`.
+  tranches d'âge (8 classes) en expression Spark native (`utils/age_tranches.py`, pas d'UDF Python) :
+  intervalles semi-ouverts [borne basse, borne basse suivante) — des bornes fermées laissaient 4,5 % des
+  âges en `"unknown"` ; `age` NULL → `"unknown"`. Conserver `master_patient_id` dans les événements et
+  recréer la vue `patient_events_analytics` (consentement `is_current` + `granted`) à chaque run.
 
 ## 4. Optimisation VM (8 Go) — dans CHAQUE session Spark
 
@@ -56,11 +59,17 @@ Logs : `provision/logs/elt.log` · Suivi : `provision/metadata/sync_metadata.jso
 .config("spark.sql.shuffle.partitions", "8")
 ```
 
-**WAREHOUSE OBLIGATOIRE SUR HDFS** (jamais vboxsf) :
+**WAREHOUSE OBLIGATOIRE SUR HDFS** (jamais vboxsf), dans **chaque** session qui crée une base ou une
+table, extraction RAW comprise (oubliée jusqu'au 30/09/2026 : bases RAW créées dans `spark-warehouse/`
+du dossier partagé) :
 
 ```python
-.config("spark.sql.warehouse.dir", "hdfs://localhost:9000/datalake/{silver|gold}/warehouse")
+.config("spark.sql.warehouse.dir", "hdfs://localhost:9000/datalake/{raw|silver|gold}/warehouse")
 ```
+
+Spark tourne en `local[*]` : seul `driver_memory` compte, `executor_memory` est sans effet et YARN
+n'est pas utilisé. Le journal d'événements (`spark-defaults.conf`, `/home/vagrant/spark-events`) garde
+la trace de chaque job : `$SPARK_HOME/sbin/start-history-server.sh` puis http://192.168.56.10:18080.
 
 ## 5. Pièges connus
 

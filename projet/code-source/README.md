@@ -16,7 +16,7 @@ projet/code-source/
 │   ├── bootstrap.sh      provisioning (Java, Hadoop, Hive, Spark, JDBC, venv)
 │   ├── config/           pipeline.yaml (commité) · fhir_entities.json · data_sources.json (NON COMMITÉ) + data_sources.example.json / data_sources.mavis.example.json
 │   ├── scripts/ELT/      gen_extract_raw · gen_fhir_mapping · create_silver · create_gold
-│   ├── scripts/utils/    paths.py (config centrale) · fhir_schema · fhir_synonyms · sync_utils
+│   ├── scripts/utils/    paths.py (config centrale) · fhir_schema (schéma + synonymes) · sync_utils · age_tranches (tranches GOLD)
 │   ├── scripts/run_pipeline.sh    orchestration 5 étapes (arrêt sur erreur)
 │   ├── scripts/ensure_generator_data.sh  étape 0 : régénère les CSV du générateur (seed 42)
 │   ├── api/              hive_api.py (Flask, port 5000) · mock_data.py · test_api.py
@@ -25,12 +25,12 @@ projet/code-source/
 │   └── test_startup.sh   health check MAVIS/Hive/API/métadonnées
 ├── engine/               moteur de déduplication + gouvernance (Python 3.8+, autonome)
 │   ├── identity/         canonical.py · rules.py (règle stricte) · matcher.py (référence Python) · spark_dedup.py (Spark)
-│   └── governance/       database.py · auth.py (clés SHA-256) · consent.py · audit.py
+│   └── governance/       database.py (pool psycopg) · auth.py (clés SHA-256) · consent.py · audit.py
 ├── evaluation/           ground-truth P/R/F1
 │   ├── synthetic-patient-generator/   générateur easy/medium/hard (+ ground truth)
 │   ├── evaluation_truth.py            calcul P/R/F1 + breakdown
 │   └── evaluate_engine.py             évaluateur adapté au moteur engine/
-├── tests/                test_matcher.py (12) · test_consent.py (21) · test_deduplication.py (8) · test_governance_api.py (13)
+├── tests/                moteur, consentement, API (fausses connexions), pipeline ; test_governance_pg.py (vrai PostgreSQL, si GOVERNANCE_TEST_DATABASE_URL) ; parités Spark (VM)
 ├── sql/schema.sql        schéma PostgreSQL central (RAW, master, identity map, consent, api_user, audit)
 └── front-optional/       visualisation Next.js (optionnel — ex visualisation_app)
 ```
@@ -40,7 +40,7 @@ projet/code-source/
 ```powershell
 python -m venv .venv
 .venv\Scripts\python -m pip install -e ".[test]"
-.venv\Scripts\python -m pytest -q        # 54/54 attendu (matcher + consentement + canonique + API gouvernance)
+.venv\Scripts\python -m pytest -q        # hôte : tout réussi ; tests Spark et PostgreSQL ignorés sans PySpark / base de test
 .venv\Scripts\python evaluation\evaluate_engine.py --level hard   # évaluation ground-truth
 ```
 

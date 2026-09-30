@@ -61,11 +61,16 @@ démonstration » — il ne l'infère jamais lui-même.
 ```
 Frontend (Next.js:3000)  ou  curl / client
     ↓ HTTP (Authorization: Bearer <api_key>)
-FastAPI Gouvernance (8000)  ← psycopg → PostgreSQL central (master_patient, consent, access_audit)
+FastAPI Gouvernance (8000)  ← pool psycopg → PostgreSQL central (master_patient, consent, access_audit)
 ```
 
 Lancement (hôte Windows) : `uvicorn engine.governance.app:app --port 8000`.
 Auth : clés API (Bearer token, SHA-256 côté serveur).
+Connexions : pool `psycopg_pool` (`engine/governance/database.py`), ouvert à la première requête et
+fermé à l'arrêt (taille maximale `DB_POOL_MAX_SIZE`, défaut 10 ; attente maximale 5 s). Les
+dépendances d'authentification sont synchrones et l'écriture d'audit passe par le pool de threads :
+aucune requête PostgreSQL ne bloque la boucle d'événements. Un audit qui ne peut pas être écrit ne
+bloque pas la réponse mais laisse un avertissement dans le journal applicatif.
 
 ### Endpoints
 
@@ -82,9 +87,11 @@ Auth : clés API (Bearer token, SHA-256 côté serveur).
 | `GET /pipeline/runs` | Historique des runs ELT (`limit`, défaut 20) : lignes par source, patients maîtres distincts, doublons, volumes GOLD (tables `pipeline_run`, `pipeline_run_source`) | admin, analyst |
 
 `GET /patients` accepte `purpose` (obligatoire, fermé) ainsi que `search` (nom complet / CIN /
-identifiant master), `page` et `page_size` (défaut 25, max 100). Le filtrage par consentement
-précède la pagination : les patients non consentis à la finalité déclarée sont **silencieux**
-(leur nombre exclu est journalisé dans `access_audit.refusal_reason`). `GET /patients/{id}`
+identifiant master), `page` et `page_size` (défaut 25, max 100). Recherche, filtrage par
+consentement (dernier avis de chaque patient, refus par défaut) et pagination sont exécutés par
+PostgreSQL : seule la page demandée quitte la base. Le filtrage précède la pagination : les patients
+non consentis à la finalité déclarée sont **silencieux** (leur nombre exclu est journalisé dans
+`access_audit.refusal_reason`). `GET /patients/{id}`
 retourne l'identité master, la table `patient_identity_map` (méthode et score de chaque
 correspondance de déduplication) et l'historique `consent` du master ; répond **403** pour une
 finalité non consentie (refus journalisé).

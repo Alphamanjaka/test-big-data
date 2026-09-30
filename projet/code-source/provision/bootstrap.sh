@@ -170,9 +170,18 @@ export JAVA_HOME=${JAVA_HOME}
 export HADOOP_HOME=${HADOOP_HOME}
 export HIVE_HOME=${HIVE_HOME}
 EOF
+# Journal d'événements : chaque job du pipeline laisse une trace (DAG, étapes, durées,
+# shuffles) consultable après coup par le serveur d'historique
+# ($SPARK_HOME/sbin/start-history-server.sh, http://192.168.56.10:18080), au lieu de
+# l'interface du job, qui disparaît à sa fin. Stocké hors du dossier partagé vboxsf.
+mkdir -p /home/vagrant/spark-events
+chown vagrant:vagrant /home/vagrant/spark-events
 cat > "$SPARK_HOME/conf/spark-defaults.conf" <<EOF
 spark.master               local[*]
 spark.sql.catalogImplementation   hive
+spark.eventLog.enabled            true
+spark.eventLog.dir                file:///home/vagrant/spark-events
+spark.history.fs.logDirectory     file:///home/vagrant/spark-events
 EOF
 # Spark doit aussi connaître la metastore distante (thrift 9083)
 cp "$HIVE_HOME/conf/hive-site.xml" "$SPARK_HOME/conf/"
@@ -185,7 +194,10 @@ if [ ! -d "/home/vagrant/api-venv" ]; then
     python3 -m venv /home/vagrant/api-venv
     chown -R vagrant:vagrant /home/vagrant/api-venv
 fi
-# Installer les dépendances dans le venv
+# Installer les dépendances dans le venv. pandas (moteur : sans lui, SILVER sautait la
+# déduplication), PyYAML (pipeline.yaml), psycopg et python-dotenv (base centrale) et
+# pytest (parité Spark) manquaient : installés à la main sur la VM le 30/09/2026.
+# pip retient les dernières versions compatibles Python 3.8.
 su - vagrant -c "
 source ~/api-venv/bin/activate
 pip install --upgrade pip
@@ -199,6 +211,11 @@ pip install \
     flask-cors \
     requests \
     pytz \
+    'pandas>=2.0,<3.0' \
+    'PyYAML>=6.0,<7.0' \
+    'psycopg[binary]>=3.2,<4.0' \
+    'python-dotenv>=1.0,<2.0' \
+    pytest \
 "
 # Activer le venv dans .bashrc pour les sessions interactives
 grep -q "api-venv/bin/activate" /home/vagrant/.bashrc || \

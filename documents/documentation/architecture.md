@@ -91,14 +91,14 @@ Mon_Memoire/
 | Zone | Contenu | Stockage |
 |---|---|---|
 | RAW (Bronze) | Données brutes extraites, inchangées, avec `_source_table` | `/datalake/raw/{source}/{table}` Parquet + tables Hive externes `{source}.{table}` |
-| SILVER (Argent) | Nettoyée, normalisée, standardisée FHIR, doublons identifiés | `datalake_silver.{patient,encounter,condition,observation}_fhir` |
-| GOLD (Or) | Agrégée, prête pour l'analyse/API | `datalake_gold.patient_events_gold` |
+| SILVER (Argent) | Nettoyée, normalisée selon un schéma pivot inspiré de FHIR (sans ressource FHIR produite), doublons identifiés | `datalake_silver.{patient,encounter,condition,observation}_fhir` |
+| GOLD (Or) | Agrégée, prête pour l'analyse ; événements rattachés au patient maître ; vue limitée aux consentants | `datalake_gold.patient_events_gold`, `patient_consent_gold`, vue `patient_events_analytics` |
 
 ```mermaid
 flowchart LR
     S["Sources<br/>CSV générateur · MAVIS · MMT_DB · CLINIQUE"] --> RAW["RAW · Bronze<br/>/datalake/raw/{source}/{table}<br/>Parquet + tables Hive externes"]
-    RAW --> SIL["SILVER · Argent<br/>datalake_silver.*_fhir<br/>nettoyée · FHIR · doublons identifiés"]
-    SIL --> GOLD["GOLD · Or<br/>datalake_gold.patient_events_gold<br/>agrégée · prête analyse"]
+    RAW --> SIL["SILVER · Argent<br/>datalake_silver.*_fhir<br/>nettoyée · pivot inspiré de FHIR · doublons identifiés"]
+    SIL --> GOLD["GOLD · Or<br/>datalake_gold.patient_events_gold<br/>agrégée · patient maître · vue consentie"]
     GOLD --> API2["API Flask · port 5000"]
     SIL -->|"Phase 5 : master + score"| ENG["Moteur de déduplication"]
 ```
@@ -116,7 +116,7 @@ Règles Silver :
 |---|---|---|
 | VM Big Data | Environnement reproductible Hadoop/Hive/Spark | `provision/Vagrantfile`, `provision/bootstrap.sh` |
 | Pipeline ELT | 5 étapes (0/5 générateur → 4/5) | `ensure_generator_data.sh`, `provision/scripts/ELT/gen_extract_raw.py`, `gen_fhir_mapping.py`, `create_silver.py`, `create_gold.py` |
-| Utilitaires pipeline | Config + schéma FHIR, synonymes, sync | `provision/scripts/utils/paths.py`, `fhir_schema.py`, `fhir_synonyms.py`, `sync_utils.py` |
+| Utilitaires pipeline | Config + schéma FHIR et synonymes, sync, tranches d'âge | `provision/scripts/utils/paths.py`, `fhir_schema.py`, `sync_utils.py`, `age_tranches.py` |
 | Configuration pipeline | Chemins, bases Hive, tables, Spark, API (un seul fichier, commité) | `provision/config/pipeline.yaml` |
 | Config FHIR déclarative | Schéma 4 entités + synonymes + mapping table→entité | `provision/config/fhir_entities.json` |
 | API données | Exposition GOLD | `provision/api/hive_api.py`, `mock_data.py` |

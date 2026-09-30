@@ -215,13 +215,34 @@ def test_metrics(monkeypatch, audit_sink):
     assert data["duplicate_rate"] == 15.0
 
 
+# La liste est évaluée par PostgreSQL (recherche, consentement, tri, page) : ces tests
+# vérifient le câblage ; la sémantique est couverte sur une vraie base par
+# tests/test_governance_pg.py.
+
+def _patch_patient_list(monkeypatch, counts, rows):
+    """Sert (visibles, masqués) puis la page ; renvoie les requêtes exécutées."""
+    executed = []
+
+    class ListCursor(FakeCursor):
+        def execute(self, query, parameters=None):
+            executed.append((query, parameters))
+            super().execute(query, parameters)
+
+    class ListConnection(FakeConnection):
+        def cursor(self, row_factory=None):
+            return ListCursor(query_map={
+                "FILTER (WHERE NOT allowed)": [counts],
+                "WHERE allowed ORDER BY": list(rows),
+            })
+
+    monkeypatch.setattr("engine.governance.app.connection_factory", lambda: ListConnection())
+    return executed
+
+
 def test_list_patients(monkeypatch, audit_sink):
+    """Une page servie par la base, jamais la table entière."""
     _patch_auth(monkeypatch, ADMIN_ROW)
-    _patch_consent(monkeypatch, [
-        {"master_patient_id": "PAT-0001", "granted": True},
-        {"master_patient_id": "PAT-0002", "granted": True},
-    ])
-    _patch_db(monkeypatch, results=[M1, M2])
+    executed = _patch_patient_list(monkeypatch, (2, 0), [M2, M1])
     client = TestClient(app)
     resp = client.get("/patients", params={"purpose": "research"}, headers=_HEADERS)
     assert resp.status_code == 200
@@ -233,79 +254,65 @@ def test_list_patients(monkeypatch, audit_sink):
     assert first["cin"] == "1203456789"
     assert first["gender"] == "M"
     assert data["total"] == 2
+    page_sql, page_params = executed[1]
+    assert "LIMIT %(limit)s OFFSET %(offset)s" in page_sql
+    assert page_params == {"purpose": "research", "term": "", "limit": 25, "offset": 0}
+    reasons = [p[7] for q, p in audit_sink if "INSERT INTO access_audit" in q]
+    assert reasons == [None]
 
 
 def test_list_patients_filters_without_consent(monkeypatch, audit_sink):
-    """Seuls les patients ayant consenti a la finalite sont renvoyes."""
+    """Seuls les consentants sont servis ; le nombre de patients filtrés est tracé."""
     _patch_auth(monkeypatch, ADMIN_ROW)
-    _patch_consent(monkeypatch, [
-        {"master_patient_id": "PAT-0001", "granted": True},
-        {"master_patient_id": "PAT-0003", "granted": False},
-    ])
-    _patch_db(monkeypatch, results=[M1, M2, M3])
+    executed = _patch_patient_list(monkeypatch, (1, 2), [M1])
     client = TestClient(app)
     resp = client.get("/patients", params={"purpose": "research"}, headers=_HEADERS)
     assert resp.status_code == 200
     assert [row["master_patient_id"] for row in resp.json()["items"]] == ["PAT-0001"]
-    # le nombre de patients filtres est trace
+    assert resp.json()["total"] == 1
+    page_sql, _ = executed[1]
+    assert "FROM matched WHERE allowed" in page_sql
+    assert "DISTINCT ON (master_patient_id)" in page_sql          # dernier avis par patient
+    assert "COALESCE(l.granted, FALSE)" in page_sql               # sans avis : refus
     reasons = [p[7] for q, p in audit_sink if "INSERT INTO access_audit" in q]
     assert any("2 patient(s) filtres" in (r or "") for r in reasons)
 
 
-def test_list_patients_search_by_full_name(monkeypatch, audit_sink):
-    """La recherche porte sur le nom complet, insensible à la casse."""
+def test_list_patients_search_passed_to_sql(monkeypatch, audit_sink):
+    """Le terme (espaces retirés) est comparé en minuscules au nom, au CIN et à l'identifiant."""
     _patch_auth(monkeypatch, ADMIN_ROW)
-    _patch_consent(monkeypatch, [
-        {"master_patient_id": pid, "granted": True} for pid in ("PAT-0001", "PAT-0002", "PAT-0003")
-    ])
-    _patch_db(monkeypatch, results=[M1, M2, M3])
+    executed = _patch_patient_list(monkeypatch, (1, 0), [M1])
     client = TestClient(app)
-    resp = client.get("/patients", params={"purpose": "research", "search": "rako"},
+    resp = client.get("/patients", params={"purpose": "research", "search": "  Rako "},
                       headers=_HEADERS)
     assert resp.status_code == 200
-    assert [row["master_patient_id"] for row in resp.json()["items"]] == ["PAT-0001"]
-
-
-def test_list_patients_search_by_cin_and_id(monkeypatch, audit_sink):
-    """La recherche fonctionne aussi sur le CIN et l'identifiant master."""
-    _patch_auth(monkeypatch, ADMIN_ROW)
-    _patch_consent(monkeypatch, [
-        {"master_patient_id": pid, "granted": True} for pid in ("PAT-0001", "PAT-0002")
-    ])
-    _patch_db(monkeypatch, results=[M1, M2])
-    client = TestClient(app)
-    by_cin = client.get("/patients", params={"purpose": "research", "search": "1203456789"},
-                        headers=_HEADERS)
-    assert [row["master_patient_id"] for row in by_cin.json()["items"]] == ["PAT-0002"]
-    by_id = client.get("/patients", params={"purpose": "research", "search": "PAT-0001"},
-                       headers=_HEADERS)
-    assert [row["master_patient_id"] for row in by_id.json()["items"]] == ["PAT-0001"]
+    count_sql, count_params = executed[0]
+    assert count_params["term"] == "Rako"
+    for column in ("m.full_name", "m.cin", "m.master_patient_id", "lower(%(term)s)"):
+        assert column in count_sql
 
 
 def test_list_patients_pagination(monkeypatch, audit_sink):
-    """Le filtrage par consentement precede la pagination."""
+    """Page et taille deviennent LIMIT/OFFSET ; le total vient du comptage des consentants."""
     _patch_auth(monkeypatch, ADMIN_ROW)
-    rows = [
-        _master("PAT-0001", "Jean", "RAKOTO", cin="1102345678"),
-        _master("PAT-0002", "Marie", "ANDRIANARIVO", cin="1203456789"),
-        _master("PAT-0003", "Paul", "RABE", cin="1304567890"),
-        _master("PAT-0004", "Liva", "RASOA", cin="1405678901"),
-        _master("PAT-0005", "Hery", "RAZAFY", cin="1506789012"),
-    ]
-    _patch_consent(monkeypatch, [
-        {"master_patient_id": r[0], "granted": True} for r in rows
-    ])
-    _patch_db(monkeypatch, results=rows)
+    executed = _patch_patient_list(monkeypatch, (5, 0), [M3])
     client = TestClient(app)
-    page1 = client.get("/patients", params={"purpose": "research", "page": 1, "page_size": 2},
-                       headers=_HEADERS)
-    page3 = client.get("/patients", params={"purpose": "research", "page": 3, "page_size": 2},
-                       headers=_HEADERS)
-    data1 = page1.json()
-    assert data1["total"] == 5
-    assert len(data1["items"]) == 2
-    assert data1["items"][0]["full_name"] == "ANDRIANARIVO Marie"
-    assert len(page3.json()["items"]) == 1
+    resp = client.get("/patients", params={"purpose": "research", "page": 3, "page_size": 2},
+                      headers=_HEADERS)
+    data = resp.json()
+    assert data["total"] == 5 and data["page"] == 3 and len(data["items"]) == 1
+    _, page_params = executed[1]
+    assert (page_params["limit"], page_params["offset"]) == (2, 4)
+
+
+def test_list_patients_unknown_purpose_422_without_query(monkeypatch, audit_sink):
+    """Finalité hors liste : 422 avant toute requête patient."""
+    _patch_auth(monkeypatch, ADMIN_ROW)
+    executed = _patch_patient_list(monkeypatch, (0, 0), [])
+    client = TestClient(app)
+    resp = client.get("/patients", params={"purpose": "marketing"}, headers=_HEADERS)
+    assert resp.status_code == 422
+    assert executed == []
 
 
 def test_list_patients_requires_purpose(monkeypatch, audit_sink):
@@ -394,6 +401,20 @@ def test_get_patient_denied_without_consent(monkeypatch, audit_sink):
     assert parameters[4] == 403, "le statut HTTP du refus est journalise"
     assert parameters[6] == "research", "la finalite declaree est journalisee"
     assert "consentement non accorde" in parameters[7]
+
+
+def test_audit_failure_is_logged_not_silent(monkeypatch, caplog):
+    """Base d'audit injoignable : la réponse part quand même, la perte est journalisée."""
+    def unreachable():
+        raise OSError("connexion refusee")
+
+    monkeypatch.setattr("engine.governance.audit.connection_factory", unreachable)
+    client = TestClient(app)
+    with caplog.at_level("WARNING", logger="engine.governance.audit"):
+        resp = client.get("/health")
+    assert resp.status_code == 200
+    assert any("NON enregistré" in r.getMessage() and "GET 200" in r.getMessage()
+               for r in caplog.records)
 
 
 def test_audit_endpoint_returns_accessed_at(monkeypatch, audit_sink):

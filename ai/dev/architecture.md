@@ -57,9 +57,13 @@ Config : `provision/config/data_sources.json` (**non committé**, secrets) — t
   - Encounter : patient_uuid, encounter_id, admission_date, discharge_date, create_date, visit_type
   - Condition : patient_uuid, diagnosis, diagnosis_code, category, code, info, name
   - Observation : patient_uuid, mortality, parity, gravida, live_births
-- **GOLD** : `datalake_gold.patient_events_gold` — 18 colonnes (patient_uuid, source_patient_id, name,
-  gender, birth_date, age, age_tranche[8 tranches], encounter_id, admission_date, discharge_date, visit_type,
-  diagnosis_code, category, diagnosis, mortality, parity, gravida, live_births).
+- **GOLD** : `datalake_gold.patient_events_gold` — 19 colonnes (patient_uuid, source_patient_id,
+  master_patient_id, name, gender, birth_date, age, age_tranche[8 tranches, intervalles semi-ouverts],
+  encounter_id, admission_date, discharge_date, visit_type, diagnosis_code, category, diagnosis, mortality,
+  parity, gravida, live_births) ; `patient_consent_gold` (+ `is_current`) ; vue
+  `patient_events_analytics` (consentants `analytics`, sans nom ni identifiant source).
+- Le schéma SILVER est **inspiré** de FHIR (noms de 4 ressources, champs à plat) : aucune ressource FHIR
+  n'est produite. Correspondance colonne → élément FHIR R4 : `documents/documentation/bigdata_concepts.md` § 8.
 
 ### PostgreSQL central (`projet/code-source/sql/schema.sql`)
 
@@ -72,7 +76,7 @@ raw_patient_record · master_patient (+gender) · patient_identity_map · consen
 ```
 projet/code-source/
 ├── provision/scripts/ELT/    ← gen_extract_raw, gen_fhir_mapping, create_silver, create_gold
-├── provision/scripts/utils/  ← paths.py (charge pipeline.yaml) · fhir_schema.py · fhir_synonyms.py · sync_utils.py
+├── provision/scripts/utils/  ← paths.py (charge pipeline.yaml) · fhir_schema.py (schéma + synonymes) · sync_utils.py · age_tranches.py
 ├── provision/api/            ← hive_api.py, mock_data.py, test_api.py
 ├── provision/config/         ← pipeline.yaml + fhir_entities.json (commités) · data_sources.json (non committé) + data_sources.example.json
 ├── provision/metadata/       ← artefacts générés (non committés)

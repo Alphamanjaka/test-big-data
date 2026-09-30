@@ -68,7 +68,7 @@ Si un fichier CSV des sources manque (`pharmacy/{patients,achats}.csv`, `consult
    `Condition` ; `observation/measurement/death/register/maternity` → `Observation` ;
    `encounter/visit/consultation/admission` → `Encounter` ; surcharges manuelles (`gnuhealth_family`,
    `party_party` → Encounter).
-3. **Sélection des colonnes** : correspondance exacte → synonymes (`fhir_synonyms.py`) → fuzzy
+3. **Sélection des colonnes** : correspondance exacte → synonymes (`fhir_entities.json`, chargés par `fhir_schema.py`) → fuzzy
    (RapidFuzz, seuil 60 %) → première colonne.
 4. **Conflits** : préfixe `table.column` si le nom de colonne apparaît dans plusieurs tables ;
    la table principale sort en premier.
@@ -158,7 +158,7 @@ data_sources.json ─> [Step 1] ─> extract_raw_report.json + data_sources.json
 | `provision/config/fhir_entities.json` | Schéma FHIR + synonymes + mapping table→entité (source de vérité) |
 | `provision/scripts/utils/paths.py` | Charge `pipeline.yaml`, résout `PROJECT_ROOT`, expose constantes + helpers (`hdfs_raw`, `hdfs_warehouse`) |
 | `provision/scripts/utils/fhir_schema.py` | `FHIR_FIELDS`/`FHIR_SYNONYMS` chargés depuis `fhir_entities.json` |
-| `provision/scripts/utils/fhir_synonyms.py` | Ré-export de compatibilité |
+| `provision/scripts/utils/age_tranches.py` | Tranches d'âge GOLD : référence Python + expression Spark `CASE WHEN` (intervalles semi-ouverts) |
 | `provision/scripts/utils/sync_utils.py` | Gestion de `sync_metadata.json` (timestamps UTC+3) |
 | `provision/config/data_sources.json` | Configuration des sources (non commité) |
 | `provision/db/rebuild_mmt_db.py` | Générateur de données synthétiques pour MMT_DB |

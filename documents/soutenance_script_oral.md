@@ -183,7 +183,7 @@ Il reste **environ 3 minutes de marge** sur 20 minutes : elles servent à ralent
 ## S12. Architecture — 0:50 · `[7:05] → [7:55]`
 
 > Les sources sont copiées telles quelles dans la zone RAW, sur HDFS. Elles sont ensuite
-> harmonisées au format FHIR dans la zone SILVER, où le moteur rattache chaque fiche à son patient
+> harmonisées selon un schéma inspiré de FHIR dans la zone SILVER, où le moteur rattache chaque fiche à son patient
 > maître. La zone GOLD porte les agrégats et le consentement. PostgreSQL garde l'état de
 > référence : patients maîtres, consentements, journal d'audit. Et l'API de gouvernance est la
 > seule porte d'entrée : chaque appel y est journalisé. Le tout tourne sur une machine virtuelle

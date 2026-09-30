@@ -48,7 +48,7 @@ def _get_user_by_key(api_key: str) -> Optional[UserContext]:
         connection.close()
 
 
-async def get_current_user(
+def get_current_user(
     request: Request,
     credentials: Annotated[Optional[HTTPAuthorizationCredentials], Security(security)] = None,
 ) -> UserContext:
@@ -56,6 +56,8 @@ async def get_current_user(
 
     401 si aucun token ou si la clé est inconnue/inactive ; le contexte est
     aussi déposé dans `request.state.user` pour le middleware d'audit.
+    Fonction synchrone : la requête PostgreSQL est bloquante, FastAPI l'exécute
+    dans son pool de threads au lieu de bloquer la boucle d'événements.
     """
     if credentials is None:
         raise HTTPException(status_code=401, detail="Token d'authentification manquant")
@@ -72,7 +74,7 @@ def require_role(*allowed_roles: str):
     Construit une dépendance FastAPI à chaîner après get_current_user:
     renvoie 403 si le rôle de l'utilisateur n'est pas dans la liste.
     """
-    async def role_checker(user: Annotated[UserContext, Depends(get_current_user)]) -> UserContext:
+    def role_checker(user: Annotated[UserContext, Depends(get_current_user)]) -> UserContext:
         if user.role not in allowed_roles:
             raise HTTPException(
                 status_code=403,

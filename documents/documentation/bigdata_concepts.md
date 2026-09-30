@@ -62,14 +62,14 @@ RAW (Bronze) → SILVER (Argent) → GOLD (Or)
 
 ```mermaid
 flowchart LR
-    RAW["RAW · Bronze<br/>Brut inchangé<br/>traçabilité · rejeu"] --> SIL["SILVER · Argent<br/>Nettoyé, normalisé, FHIR<br/>doublons identifiés"] --> GOLD["GOLD · Or<br/>Agrégé, prêt analyse<br/>consommé par l'API"]
+    RAW["RAW · Bronze<br/>Brut inchangé<br/>traçabilité · rejeu"] --> SIL["SILVER · Argent<br/>Nettoyé, normalisé<br/>pivot inspiré de FHIR<br/>doublons identifiés"] --> GOLD["GOLD · Or<br/>Agrégé, prêt analyse<br/>vue filtrée par consentement"]
 ```
 
 | Couche | Rôle | Dans le projet |
 |---|---|---|
 | **RAW** | Conserver la donnée brute, inchangée, telle qu'extraite | Parquet HDFS `/datalake/raw/{source}/{table}` + tables Hive externes ; permet traçabilité, rejeu du pipeline, comparaison avant/après |
-| **SILVER** | Données **nettoyées, normalisées, standardisées** ; les doublons sont identifiés | 4 tables Hive harmonisées **FHIR** : `datalake_silver.*_fhir` |
-| **GOLD** | Données **agrégées, prêtes pour l'analyse** | `datalake_gold.patient_events_gold` (18 colonnes, 8 tranches d'âge), consommée par l'API |
+| **SILVER** | Données **nettoyées, normalisées, standardisées** ; les doublons sont identifiés | 4 tables Hive au **schéma pivot inspiré de FHIR** (§ 8) : `datalake_silver.*_fhir` |
+| **GOLD** | Données **agrégées, prêtes pour l'analyse** | `datalake_gold.patient_events_gold` (19 colonnes, dont `master_patient_id` ; 8 tranches d'âge), `patient_consent_gold` (lue par l'API Flask) et la vue `patient_events_analytics` (patients consentant à `analytics`, sans donnée identifiante) |
 
 Bénéfices : séparation claire des états de la donnée, rejeu possible, qualité progressive, et
 **séparation des données** exigée par la gouvernance (brutes / nettoyées / consolidées).
@@ -87,6 +87,9 @@ Propriétés :
 
 **Piège rencontré :** le warehouse Spark ne doit **jamais** être écrit sur le montage vboxsf
 (`part-*.snappy.parquet` corrompu) → toujours `spark.sql.warehouse.dir = hdfs://localhost:9000/...`.
+Les **trois** étapes Spark le fixent : l'extraction RAW ne le faisait pas (30/09/2026), et ses bases
+Hive par source étaient créées dans `spark-warehouse/` du dossier partagé (les données, en
+emplacement explicite, étaient déjà sur HDFS).
 
 ## 5. Hive (SQL sur Data Lake)
 
@@ -107,9 +110,15 @@ tables **externes** sur des fichiers HDFS, faire des analyses.
 - Modèle **RDD/DataFrame**, exécution **distribuée** en mémoire (bien plus rapide que MapReduce).
 - **PySpark** : API Python, utilisée pour le mapping FHIR, la normalisation, la détection des doublons,
   l'agrégation GOLD.
-- La déduplication probabiliste a aussi été **portée en Spark** (driver-side) avec parité stricte des
-  résultats avec la version Pandas.
-- Config mémoire VM 8 Go : `executor_memory=4g`, `driver_memory=2g`, `spark.sql.shuffle.partitions=8`.
+- La règle d'identité stricte (v2) s'exécute **dans Spark** (UDF + `row_number`, sans `collect()`),
+  avec parité stricte des décisions avec la référence Python.
+- Exécution en **`local[*]`** (un seul processus, 4 cœurs de la VM) : `driver_memory=2g` fixe la mémoire
+  réellement disponible ; `executor_memory` est sans effet dans ce mode et YARN n'est pas utilisé.
+  `spark.sql.shuffle.partitions=8`.
+- **Journal d'événements** (`spark.eventLog.*`, dossier `/home/vagrant/spark-events`) : chaque job du
+  pipeline reste consultable après sa fin (DAG, étapes, durées, shuffles) avec le serveur d'historique
+  (`$SPARK_HOME/sbin/start-history-server.sh`, http://192.168.56.10:18080).
+- GOLD : tranches d'âge en expression native (`CASE WHEN`), sans UDF Python.
 
 ## 7. ELT vs ETL
 
@@ -124,22 +133,58 @@ Le pipeline suit la logique **ELT** :
 Avantages sur l'architecture : les données brutes restent disponibles et ré-ingérables ; le schéma
 n'est appliqué qu'à la lecture/transformation (schéma-on-read) — caractéristique du Data Lake.
 
-## 8. Interopérabilité : schéma pivot FHIR
+## 8. Interopérabilité : schéma pivot inspiré de FHIR
 
-FHIR (HL7) sert de **schéma pivot** pour harmoniser des sources structurées différemment. Le mapping
-automatique colonnes → FHIR repose sur **RapidFuzz + dictionnaire de synonymes** (`fhir_synonyms.py`) :
+FHIR (HL7) sert de **modèle d'inspiration** pour un schéma pivot qui harmonise des sources
+structurées différemment. Ce schéma reprend le nom de 4 ressources (`Patient`, `Encounter`,
+`Condition`, `Observation`) et leurs champs principaux, **à plat** (une colonne par champ, une
+table Hive par ressource). Il n'est **pas conforme** à FHIR : aucune ressource FHIR (JSON, `resourceType`)
+n'est produite ni lue, il n'y a ni API REST FHIR, ni terminologie déclarée (CIM-10, LOINC), et les
+ressources FHIR du consentement (`Consent`), de l'audit (`AuditEvent`) et de l'identité maître
+(`Patient.link`, opération `$match`) ne sont pas utilisées : le projet les implémente dans ses propres
+tables PostgreSQL. Produire ces ressources à partir des tables existantes reste une perspective.
 
-- correspondance exacte (champ FHIR = nom colonne),
+Le mapping automatique colonnes → champs pivots repose sur un **dictionnaire de synonymes**
+(`fhir_entities.json`) complété par **RapidFuzz** :
+
+- correspondance exacte (champ = nom colonne),
 - synonymes (birth_date ≡ dob, birthday, bdate),
-- fuzzy matching (seuil 60 %),
-- fallback première colonne.
+- fuzzy matching (seuil 60 %) : sur les 6 tables du générateur, il ne trouve qu'une colonne
+  (`adresse` → `address`) ; ses autres candidats (`purchase_date` pour `discharge_date`, par exemple)
+  sont écartés par le garde-fou « une colonne source n'alimente qu'un seul champ »,
+- fallback première colonne (clé du patient).
 
-4 entités : `Patient`, `Encounter`, `Condition`, `Observation`. Ce choix évite tout modèle NLP lourd
-(`sentence_transformers` interdit : crash Python 3.8).
+Ce choix évite tout modèle NLP lourd (`sentence_transformers` interdit : crash Python 3.8).
+
+**Correspondance avec FHIR R4.**
+
+| Entité | Colonne SILVER | Élément FHIR R4 | Écart |
+|---|---|---|---|
+| Patient | `patient_uuid` | `Patient.id` | empreinte technique de la fiche source |
+| Patient | `source_patient_id` | `Patient.identifier` (système = source) | |
+| Patient | `master_patient_id` | `Patient.link` (type `refer`, vers le patient maître) | ajouté par le moteur |
+| Patient | `name` | `Patient.name` (`HumanName.text`) | nom complet en une chaîne, sans `family` / `given` |
+| Patient | `birth_date` | `Patient.birthDate` | |
+| Patient | `gender` | `Patient.gender` | `male` / `female` ; valeur non reconnue gardée en minuscules (FHIR : `other`, `unknown`) |
+| Patient | `address` | `Patient.address.text` | |
+| Patient | `cin` | `Patient.identifier` (système = CIN) | |
+| Patient | `birth_city` | extension `patient-birthPlace` | |
+| Patient | `email` | `Patient.telecom` (système = `email`) | |
+| Encounter | `encounter_id` | `Encounter.identifier` | |
+| Encounter | `patient_uuid` | `Encounter.subject` | valeur, pas référence |
+| Encounter | `admission_date`, `discharge_date` | `Encounter.period.start`, `.end` | |
+| Encounter | `visit_type` | `Encounter.class`, `Encounter.type` | texte libre |
+| Encounter | `create_date` | — | aucun équivalent direct |
+| Condition | `diagnosis_code` | `Condition.code.coding` | système de codage non déclaré |
+| Condition | `diagnosis` | `Condition.code.text` | |
+| Condition | `category` | `Condition.category` | |
+| Condition | `code`, `info`, `name` | — | champs sources conservés |
+| Observation | `parity`, `gravida`, `live_births` | une `Observation` par mesure (code LOINC, `valueInteger`) | trois mesures sur une ligne |
+| Observation | `mortality` | `Patient.deceased[x]` | n'est pas une `Observation` en FHIR |
 
 ```mermaid
 flowchart LR
-    PHA["pharmacy · CSV"] --> PIVOT{"Pivot FHIR<br/>RapidFuzz + synonymes<br/>(seuil 60 %)"}
+    PHA["pharmacy · CSV"] --> PIVOT{"Pivot inspiré de FHIR<br/>synonymes + RapidFuzz<br/>(seuil 60 %)"}
     CON["consultation · CSV"] --> PIVOT
     IMA["imaging · CSV"] --> PIVOT
     MAV["MAVIS · PostgreSQL"] --> PIVOT

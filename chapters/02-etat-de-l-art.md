@@ -391,7 +391,7 @@ d'une **lecture documentaire, sans mesure**.
 | **E1** Hébergement interne | partiel | oui | non | oui | oui | oui | oui | **oui, testé** |
 | **E2** Exploitable dans l'environnement du stage | non | non | non | partiel | partiel | partiel | partiel | **oui, testé** |
 | **Q1** Déduplication explicable | oui | oui | non | non | oui | oui | non | **oui, testé** |
-| **Q2** Interopérabilité FHIR | partiel | non | oui | oui | oui | non | non | **oui, testé** |
+| **Q2** Interopérabilité FHIR | partiel | non | oui | oui | oui | non | non | **partiel, testé** |
 | **Q3** Gouvernance rôle + consentement + audit | partiel | partiel | partiel | partiel | non | non | partiel | **oui, conçu** |
 | **Q4** Montée en charge (stockage et calcul répartis) | partiel | oui | oui | non | partiel | oui | oui | **partiel, architecturé** |
 | **Q5** Coût et indépendance | non | non | non | oui | oui | oui | oui | **oui** (dépendance reportée sur la maintenance, § 2.4) |
@@ -411,7 +411,10 @@ solution du stage est notée « oui, testé » lorsqu'une mesure existe et « ou
 n'existe pas encore. C'est le cas de la ligne gouvernance, vérifiée mécaniquement par la suite de tests
 (§ 8.4), mais dont les données PostgreSQL n'étaient pas peuplées au moment de l'exécution
 (chapitre 8). De même, la montée en charge est **architecturée** et reproductible, mais n'a été
-démontrée que sur 212 523 fiches synthétiques au plus. Ensuite, « partiel » signifie « partiel selon la
+démontrée que sur 212 523 fiches synthétiques au plus. Quant à l'interopérabilité FHIR, elle est
+partielle : les sources sont traduites vers un schéma pivot inspiré de quatre ressources FHIR,
+éprouvé par chaque run du pipeline, mais aucune ressource FHIR n'est produite ni lue (§ 7.2.2).
+Ensuite, « partiel » signifie « partiel selon la
 documentation » : il signale une capacité réelle mais incomplète dans le contexte du stage, et non
 un doute sur l'existence de la fonction. En gouvernance, le « partiel » de HAPI FHIR signale un cadre à
 programmer, pas une politique prête à l'emploi. Pour HAPI FHIR, OpenCR et Atlas, le « partiel » en E2 traduit
@@ -430,7 +433,7 @@ solution ne fournit dans le contexte imposé.
 |---|---|---|
 | Décision *match / non-match* par somme de poids | Fellegi-Sunter [B2] | score pondéré et seuil fixés par le métier (§ 7.2.3) |
 | Service de correspondance par score | FHIR `$match` [B5] | même philosophie, sans serveur FHIR (§ 7.2.3) |
-| Interopérabilité par schéma pivot | FHIR [B5] | 4 ressources `Patient / Encounter / Condition / Observation` |
+| Interopérabilité par schéma pivot | FHIR [B5] | schéma à plat inspiré de 4 ressources `Patient / Encounter / Condition / Observation`, sans ressource FHIR produite |
 | Consentement par finalité, refus par défaut | FHIR Consent [B26], loi 2014-038 art. 14 et 18 [B24] | une décision par finalité, contrôlée à chaque accès (§ 7.2.3) |
 | Stockage en zones de qualité croissante | Medallion [B9] | RAW / SILVER / GOLD sur HDFS et Hive |
 | Rapprochement multi-sources | MPI, identity map, registre de clients [B13], [B29] | patient maître et table de correspondance en PostgreSQL |

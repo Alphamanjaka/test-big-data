@@ -15,9 +15,11 @@ Endpoints :
 Les patients exposés proviennent du schéma canonique `sql/schema.sql` : l'identité
 master (`master_patient`), les correspondances de déduplication
 (`patient_identity_map`) et l'historique des avis (`consent`). L'endpoint de liste
-accepte `search` (nom/CIN/id) et une pagination `page`/`page_size` ; le filtrage
-par consentement précède toujours la pagination pour que les patients non consentis
-restent silencieux.
+accepte `search` (nom/CIN/id) et une pagination `page`/`page_size` ; recherche,
+filtrage par consentement et pagination sont exécutés par PostgreSQL, le filtrage
+précédant toujours la pagination pour que les patients non consentis restent
+silencieux. Les connexions sont empruntées au pool de `engine.governance.database`,
+fermé à l'arrêt de l'API.
 
 Les endpoints `/patients*` exigent le paramètre `purpose` (finalité déclarée par
 l'appelant) : la liste ne renvoie que les patients ayant consenti à cette
@@ -29,6 +31,8 @@ Lancement : uvicorn engine.governance.app:app --port 8000
 
 from __future__ import annotations
 
+from contextlib import asynccontextmanager
+
 from fastapi import FastAPI, HTTPException, Depends, Query, Request
 from starlette.middleware.cors import CORSMiddleware
 
@@ -37,13 +41,21 @@ from engine.governance.audit import AuditMiddleware
 from engine.governance.auth import UserContext, require_role
 from engine.governance.consent import (
     PURPOSES,
-    consented_master_ids,
     enforce_consent,
+    validate_purpose,
 )
 from engine.governance.consent import router as consent_router
-from engine.governance.database import connection_factory
+from engine.governance.database import close_pool, connection_factory
 
-app = FastAPI(title="API Gouvernance", version="0.1.0")
+
+@asynccontextmanager
+async def lifespan(_app):
+    """Le pool s'ouvre à la première requête ; il est fermé à l'arrêt de l'API."""
+    yield
+    close_pool()
+
+
+app = FastAPI(title="API Gouvernance", version="0.1.0", lifespan=lifespan)
 
 app.add_middleware(
     CORSMiddleware,
@@ -105,6 +117,37 @@ def _master_row(row) -> dict:
     return dict(zip(MASTER_COLUMNS, row))
 
 
+# Périmètre de la liste, évalué par PostgreSQL : `latest` applique « le dernier avis
+# gagne » (même règle que check_consent) ; un patient sans avis pour la finalité est
+# refusé par défaut. La recherche (insensible à la casse) porte sur le nom complet, le
+# CIN et l'identifiant master.
+_PATIENT_SCOPE = """
+    WITH latest AS (
+        SELECT DISTINCT ON (master_patient_id) master_patient_id, granted
+        FROM consent
+        WHERE purpose = %(purpose)s
+        ORDER BY master_patient_id, recorded_at DESC, consent_id DESC
+    ), matched AS (
+        SELECT m.*, COALESCE(l.granted, FALSE) AS allowed
+        FROM master_patient m
+        LEFT JOIN latest l ON l.master_patient_id = m.master_patient_id
+        WHERE strpos(lower(coalesce(m.full_name, '') || ' ' || coalesce(m.cin, '') || ' '
+                           || m.master_patient_id), lower(%(term)s)) > 0
+    )
+"""
+
+PATIENT_COUNT_SQL = _PATIENT_SCOPE + (
+    "SELECT COUNT(*) FILTER (WHERE allowed), COUNT(*) FILTER (WHERE NOT allowed) FROM matched"
+)
+
+# Ordre binaire (COLLATE "C") : stable et indépendant de la locale du serveur.
+PATIENT_PAGE_SQL = _PATIENT_SCOPE + (
+    "SELECT " + ", ".join(MASTER_COLUMNS) + " FROM matched WHERE allowed "
+    "ORDER BY lower(coalesce(full_name, '')) COLLATE \"C\", master_patient_id COLLATE \"C\" "
+    "LIMIT %(limit)s OFFSET %(offset)s"
+)
+
+
 @app.get("/patients")
 def list_patients(
     request: Request,
@@ -116,52 +159,39 @@ def list_patients(
 ):
     """Liste des masters ayant consenti a la finalite demandee.
 
-    Contrat : le filtrage par consentement precede la recherche et la
-    pagination, executees en mémoire sur un sous-ensemble d'identifiants deja
-    restreint. Le nombre de patients exclus est consigne dans l'audit pour que
-    le silence soit explicable.
+    Contrat : le filtrage par consentement precede la pagination ; seule la page
+    demandée quitte la base. Le nombre de patients exclus (correspondant à la
+    recherche mais sans consentement) est consigne dans l'audit pour que le
+    silence soit explicable.
     """
     request.state.purpose = purpose
-    allowed = consented_master_ids(purpose)
+    validate_purpose(purpose)
+    params = {
+        "purpose": purpose,
+        "term": search.strip(),
+        "limit": page_size,
+        "offset": (page - 1) * page_size,
+    }
     conn = connection_factory()
     try:
         with conn.cursor() as cur:
-            cur.execute(MASTER_SELECT)
+            cur.execute(PATIENT_COUNT_SQL, params)
+            total, hidden = cur.fetchone()
+            cur.execute(PATIENT_PAGE_SQL, params)
             rows = cur.fetchall()
     finally:
         conn.close()
-    term = search.strip().lower()
-    matched = [r for r in rows if _matches_search(r, term)]
-    visible = [r for r in matched if r[0] in allowed]
-    # Tri déterministe en mémoire (nom complet puis identifiant), pour un ordre
-    # stable identique en vrai base comme en jeu de test.
-    visible.sort(key=lambda r: (str(r[3] or "").lower(), r[0]))
-    hidden = len(matched) - len(visible)
     request.state.refusal_reason = (
         f"{hidden} patient(s) filtres : consentement non accorde pour {purpose}"
         if hidden
         else None
     )
-    offset = (page - 1) * page_size
     return {
-        "items": [_master_row(r) for r in visible[offset:offset + page_size]],
-        "total": len(visible),
+        "items": [_master_row(r) for r in rows],
+        "total": total,
         "page": page,
         "page_size": page_size,
     }
-
-
-def _matches_search(row: tuple, term: str) -> bool:
-    """Recherche insensible à la casse sur nom complet, CIN et identifiant.
-
-    Le sous-ensemble porté par la liste étant déjà restreint par le consentement
-    (et de taille démonstrative), la recherche est appliquée en mémoire : elle
-    reste ainsi testable avec les fausses connexions des tests.
-    """
-    if not term:
-        return True
-    haystack = " ".join(str(field or "") for field in (row[3], row[5], row[0]))
-    return term in haystack.lower()
 
 
 @app.get("/patients/{master_patient_id}")

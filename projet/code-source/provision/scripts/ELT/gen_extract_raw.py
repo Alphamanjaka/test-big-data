@@ -16,7 +16,7 @@ import uuid
 from ..utils.sync_utils import update_sync_metadata
 from ..utils.paths import (
     DATASOURCES_PATH, METADATA_DIR, LOG_DIR_EXTRACT,
-    hdfs_raw,
+    hdfs_raw, hdfs_warehouse,
     expand_path,
     SPARK_EXECUTOR_MEMORY, SPARK_DRIVER_MEMORY,
 )
@@ -649,6 +649,8 @@ def discover_csv(source, spark, source_index, watermark):
 # ============================================================
 def main():
     start = time.time()
+    # Warehouse sur HDFS : sans lui, `CREATE DATABASE {source}` plaçait les bases RAW
+    # dans ./spark-warehouse, c'est-à-dire sur le dossier partagé vboxsf.
     spark = SparkSession.builder \
         .appName("DatalakeDiscoverPostgres") \
         .master("local[*]") \
@@ -658,6 +660,7 @@ def main():
         .config("spark.executor.memory", SPARK_EXECUTOR_MEMORY) \
         .config("spark.driver.memory", SPARK_DRIVER_MEMORY) \
         .config("spark.sql.legacy.timeParserPolicy", "CORRECTED") \
+        .config("spark.sql.warehouse.dir", hdfs_warehouse("raw")) \
         .enableHiveSupport() \
         .getOrCreate()
 
