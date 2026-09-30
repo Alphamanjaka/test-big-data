@@ -2248,3 +2248,17 @@ ch. 8 : 2 221 → 2 103 ; ch. 9 : 2 251 → 2 200). Export : 100 pages, 18 figur
   capturées » (inexact) → « 3 sources de test ; extraction PostgreSQL et SQLite implémentée ».
 - Rapport régénéré : 69 pages, 14 957 mots, captures C04, C07, C09, C10, C11, C12, C14, C15, C16 insérées ; C01
   (schéma MAVIS) en attente de la décision de l'auteur. `documents/captures/README.md` à jour.
+
+## 30/09/2026 — Nettoyage de `documents/` : trois documents périmés retirés
+
+- Inventaire : les autres fichiers sont des entrées ou sorties de scripts (`icon/` → `figures/logos/` par
+  `build_logos.py`, 24/24 ; `figures/` ↔ `manifest.json`, 9 figures ; `captures/` ↔ son README ; `image/` et
+  gabarit `references/*.docx` lus par les générateurs du rapport et du deck) : conservés.
+- Retirés (non référencés hors historique de `suivi_avancement.md`, chiffres antérieurs aux runs du 29-30/09 :
+  102 tests au lieu de 123, 32 % de doublons au lieu de 24 %) :
+  `documents/rapport_stage.md` (remplacé par `rapport_stage_source.md` → docx),
+  `documents/slides_soutenance.md` (esquisse 13 slides, remplacée par le deck 20 slides + `soutenance_script_oral.md`),
+  `documents/etat_avancement_superieur.md` (point du 28/09 pour le supérieur). Récupérables dans l'historique Git.
+- `README.md` : ligne `documents/` et « Documents clés » complétées (rapport de stage, soutenance).
+- Non traités, laissés à la décision de l'auteur : `references/V2soutenance_m2_hasina.pptx` (7 Mo, versionné)
+  et le dossier vide `documents/articles/` (encore cité par `ai/memoire/methode.md`).

@@ -10,7 +10,7 @@ purpose-by-purpose, audit d'accès et architecture Big Data.
 ```
 Mon_Memoire/
 ├── chapters/             # mémoire, plan MBDS — 00 introduction, 01 → 08 chapitres, 09 conclusion (+ liminaires)
-├── documents/            # cahier des charges, documentation conceptuelle, journal du PoC datalake_mavis
+├── documents/            # cahier des charges, documentation conceptuelle, rapport de stage, soutenance, journal du PoC
 ├── references/           # bibliographie (B1 → B20) et sources citées
 ├── projet/
 │   ├── code-source/      # code consolidé : Big Data (VM Hive/HDFS/Spark) + moteur engine/
@@ -27,6 +27,10 @@ Mon_Memoire/
 - Mémoire : `chapters/00-introduction.md` → `09-conclusion.md`, plus `remerciements.md` et
   `glossaire.md` en pièces liminaires ; rendu Word `documents/memoire_M2_MBDS.docx`
   (consignes : `ai/memoire/`).
+- Rapport de stage : `documents/rapport_stage_source.md` → rendu Word
+  `documents/Rapport_de_stage_RANOMENJANAHARY_Manjaka_Alpha.docx` (`scripts/dev/build_rapport_stage_docx.py`).
+- Soutenance : `documents/slide_soutenance/Soutenance_M2_MBDS_RANOMENJANAHARY.pptx` et texte oral
+  `documents/soutenance_script_oral.md`.
 - Cahier des charges : `documents/cahier_des_charges.md`.
 - Code : `projet/code-source/README.md` (démarrage moteur/tests, démarrage VM Big Data).
 
