@@ -47,7 +47,9 @@ STEPS = [
 
 
 def _now_iso() -> str:
-    return datetime.now().replace(microsecond=0).isoformat()
+    # Heure avec son fuseau (la VM est en UTC, l'hôte en UTC+3) : sans lui, la base
+    # centrale interprétait l'heure de la VM comme une heure locale de l'hôte.
+    return datetime.now().astimezone().replace(microsecond=0).isoformat()
 
 
 def state_path() -> str:

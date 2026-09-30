@@ -477,7 +477,21 @@ def discover_sqlite(source, spark, source_index, watermark):
 # DISCOVER CSV (sources intérimaires type='csv', modèle test_bigdata)
 # ============================================================
 CSV_DATE_FORMATS = ["yyyy-MM-dd", "dd/MM/yyyy", "yyyy/MM/dd", "MM/dd/yyyy"]
+# Formats acceptés ligne par ligne (du plus sûr au moins sûr). Une même colonne mélange
+# plusieurs formats dans les sources hétérogènes : ne lire que le format « dominant »
+# rendait vides environ 20 % des dates de naissance (run du 29/09/2026). Le format
+# américain MM/dd/yyyy est exclu : ambigu avec dd/MM/yyyy, il fausserait des dates.
+CSV_DATE_FORMATS_LIGNE = ["yyyy-MM-dd", "dd/MM/yyyy", "yyyy/MM/dd", "dd-MM-yyyy"]
 CSV_DATE_COL_HINTS = ("naissance", "date_naiss", "dob", "birth", "birthday")
+
+
+def _date_iso(col_name):
+    """Date ISO yyyy-MM-dd : premier format qui réussit sur la valeur, sinon NULL."""
+    valeur = F.trim(F.col(col_name).cast("string"))
+    return F.date_format(
+        F.coalesce(*[F.to_date(valeur, fmt) for fmt in CSV_DATE_FORMATS_LIGNE]),
+        "yyyy-MM-dd",
+    )
 
 def _csv_date_cols(columns):
     """Colonnes candidates 'date de naissance' (par indice de nom)."""
@@ -574,18 +588,16 @@ def discover_csv(source, spark, source_index, watermark):
                 logger.info(f"[{source_name}] Extraction table {table_name}")
                 df = spark.read.option("header", True).option("inferSchema", False).csv(file_path)
 
-                # Normalisation des colonnes date de naissance en ISO yyyy-MM-dd
+                # Normalisation des colonnes date de naissance en ISO yyyy-MM-dd,
+                # valeur par valeur (plusieurs formats coexistent dans une colonne).
                 for col_name in _csv_date_cols(df.columns):
                     fmt = _detect_date_format(df, col_name)
                     if fmt:
-                        df = df.withColumn(
-                            col_name,
-                            F.date_format(
-                                F.to_date(F.col(col_name).cast("string"), fmt),
-                                "yyyy-MM-dd",
-                            ),
+                        df = df.withColumn(col_name, _date_iso(col_name))
+                        logger.info(
+                            f"[{source_name}] Date '{col_name}' normalisée → ISO "
+                            f"(formats acceptés : {', '.join(CSV_DATE_FORMATS_LIGNE)})"
                         )
-                        logger.info(f"[{source_name}] Date '{col_name}' normalisée (format {fmt}) → ISO")
                     else:
                         logger.info(f"[{source_name}] Colonne '{col_name}' non reconnue comme date — inchangée")
 
@@ -645,6 +657,7 @@ def main():
         ])) \
         .config("spark.executor.memory", SPARK_EXECUTOR_MEMORY) \
         .config("spark.driver.memory", SPARK_DRIVER_MEMORY) \
+        .config("spark.sql.legacy.timeParserPolicy", "CORRECTED") \
         .enableHiveSupport() \
         .getOrCreate()
 

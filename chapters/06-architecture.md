@@ -19,7 +19,7 @@ flowchart TB
         P2[PySpark : mêmes algorithmes, parité stricte]
         P2 --> PGish[(résultats identiques MVP)]
     end
-    subgraph N3["Niveau 3 — Big Data Medallion (architecture médicale)"]
+    subgraph N3["Niveau 3 — Big Data Medallion (chaîne complète)"]
         RAW[(RAW parquet HDFS)] --> SILVER[(SILVER 4 tables FHIR)]
         SILVER --> GOLD[(GOLD patient_events + consent)]
         SILVER --> ENG[engine/identity : dédup + master_patient_id]
@@ -33,19 +33,19 @@ flowchart TB
 > vérifiée, puis le Data Lake Medallion RAW → SILVER → GOLD, qui porte le moteur et la
 > gouvernance.**
 
-Design retenu pour chaque brique [cahier des charges §4] :
+Conception retenue pour chaque brique (cahier des charges, § 4) :
 
-**Tableau 32 — Les sept briques de la chaîne retenue et la conception adoptée pour chacune.**
+**Tableau 32 — Les briques de la chaîne et leur conception.**
 
 | Brique | Conception |
 |---|---|
 | **Extraction** | couche d'extraction abstraite (CSV / PostgreSQL / SQLite) → RAW |
 | **Normalisation** | modèle canonique `CanonicalPatient` |
 | **Interopérabilité** | schéma pivot **FHIR** (4 entités) |
-| **Déduplication** | blocking + exact + probabiliste (RapidFuzz), seuil 0.80 |
-| **Consolidation** | master patient + identity map traçable |
-| **Chargement** | PostgreSQL central idempotent (`ON CONFLICT`, `IF NOT EXISTS`) |
-| **Exposition** | API REST + espace de gouvernance |
+| **Déduplication** | blocking, passe exacte, passe probabiliste (RapidFuzz), seuil 0,80 |
+| **Consolidation** | patient maître et table de correspondance traçable |
+| **Chargement** | base PostgreSQL centrale, écriture idempotente (`ON CONFLICT`, `IF NOT EXISTS`) |
+| **Exposition** | API REST et espace de gouvernance |
 
 ### 6.1.2 Chaîne de bout en bout (niveau 3 retenu)
 
@@ -62,24 +62,24 @@ flowchart LR
     RAW["RAW · parquet HDFS<br/>/datalake/raw/{source}/{table}<br/>tables Hive externes STRING"]
     MAP["gen_fhir_mapping<br/>fhir_mapping.json"]
     SIL["SILVER · datalake_silver<br/>patient / encounter / condition / observation _fhir"]
-    DED["Moteur engine/identity<br/>exact + probabiliste · seuil 0.80"]
+    DED["Moteur engine/identity<br/>exact + probabiliste · seuil 0,80"]
     GOLD["GOLD · datalake_gold<br/>patient_events_gold · patient_consent_gold"]
     PG[("PostgreSQL central<br/>master_patient · identity_map<br/>consent · api_user · access_audit")]
     API["API REST (Flask 5000)<br/>+ gouvernance FastAPI"]
     S1 & S2 & S3 & S0 --> RAW --> MAP --> SIL --> DED --> GOLD
-    DED --> PG
-    SIL --> PG
+    DED -- "patients maîtres · correspondances" --> PG
+    PG -. "consentements" .-> GOLD
     GOLD --> API
     PG --> API
     API -. "RBAC + consentement + audit" .-> AUD[("access_audit")]
 ```
 
-> **Figure 5 — Le chemin d'une donnée, de la source à l'API : les trois zones du Data
-> Lake, le moteur de déduplication, la base centrale, et l'audit de chaque accès.**
+> **Figure 5 — Le chemin d'une donnée, de la source à l'API.**
 
-Traçabilité de bout en bout : chaque ligne SILVER conserve `_source_system`, `_source_table`,
-`source_patient_id` et `patient_uuid` (`sha2(source|source_patient_id)`) ; chaque fusion porte
-`master_patient_id`, `match_method`, `match_score` et `explanation` [bases_de_donnees.md §3].
+Traçabilité de bout en bout : chaque ligne SILVER conserve sa source (`_source_system`,
+`_source_table`), son identifiant d'origine et une empreinte unique (`patient_uuid`), ainsi que
+le patient maître, la méthode et le score de la décision. L'explication de chaque décision est
+conservée dans la table de correspondance de la base centrale, que l'étape SILVER alimente.
 
 Les deux magasins n'ont pas le même rôle : HDFS, Hive et Spark portent le lac **rejouable** et
 ses trois zones de qualité ; PostgreSQL porte l'**état de référence** — patients maîtres,
@@ -87,10 +87,10 @@ consentements, journal d'audit, comptes. C'est une séparation de rôles, pas un
 
 ## 6.2 Architecture technique
 
-L'architecture est installée sur **une VM unique** (`ubuntu/focal64`, Vagrant, 8 Go / 4 cœurs) ;
-l'ordre de démarrage des services est strict [architecture.md §3] :
+L'architecture est installée sur **une VM unique** (`ubuntu/focal64`, Vagrant, 8 Go, 4 cœurs) ;
+l'ordre de démarrage des services est strict :
 
-**Tableau 33 — Les composants installés sur la VM, leur rôle et leur port ou leur chemin ; l'ordre de démarrage est imposé.**
+**Tableau 33 — Les composants de la VM et leurs ports.**
 
 | Composant | Rôle | Port / chemin |
 |---|---|---|
@@ -100,19 +100,18 @@ l'ordre de démarrage des services est strict [architecture.md §3] :
 | HiveServer2 | accès SQL (`beeline`) | 10000 |
 | Moteur `engine/` | déduplication + gouvernance (PostgreSQL) | — |
 | API données (Flask) | exposition de GOLD | 5000 |
-| API gouvernance (FastAPI) | `/health`, `/metrics`, `/patients`, `/audit`, `/consent`, `/pipeline/schedule`, `/pipeline/status` | 8000 |
+| API gouvernance (FastAPI) | `/health`, `/metrics`, `/patients`, `/audit`, `/consent`, `/pipeline/schedule`, `/pipeline/status`, `/pipeline/runs` | 8000 (hôte Windows) |
 | Planificateur ELT | déclenche `run_pipeline.sh` selon `schedule.yaml` (`daily` / `weekly` / `monthly`), échéance vérifiée chaque minute, anti-double-run | cron VM + `provision/scripts/scheduler/scheduler.py` |
-| Watermark / état | empreinte des sources (`watermark.json`) pour l'incrémental ; état des runs (`pipeline_state.json`) pour la reprise | `provision/metadata/` |
+| Watermark / état | empreinte des sources (`watermark.json`) pour l'incrémental ; état du run (`pipeline_state.json`) pour la reprise ; compteurs du run (`run_metrics.json`) avant leur enregistrement en base | `provision/metadata/` |
 | Frontend Next.js | pages de pilotage et de consultation (§ 5.3.1) : RBAC ADMIN/MEDECIN, `purpose` obligatoire | 3000 (hôte Windows) |
 
 > **Ordre strict :** `start-dfs.sh` → `start-yarn.sh` → metastore (9083) → HiveServer2 (10000) →
 > jobs Spark → API. Toute inversion produit des erreurs d'écriture ou de métadonnées (§ 7.3.6).
 
-Environnement d'exécution : VM `ubuntu/focal64` 8 Go / 4 cœurs — Hadoop 3.3.6,
-Hive 3.1.3 (métastore distant 9083 pour éviter le conflit Derby), Spark 3.4.2,
-Java 8 ; Spark configuré `executor 4g / driver 2g / shuffle.partitions=8`
-[Vagrantfile, bootstrap.sh]. Les ports 9870 (interface HDFS), 10000 (Hive) et 5000 (API) sont
-redirigés vers l'hôte.
+Versions installées : Hadoop 3.3.6, Hive 3.1.3, Spark 3.4.2 et Java 8. Spark dispose de 4 Go
+pour l'exécuteur, 2 Go pour le driver et 8 partitions. Les données HDFS sont stockées hors de
+`/tmp`, que la VM vide à chaque redémarrage (§ 7.3.6). Les ports 9870 (interface HDFS), 10000
+(Hive) et 5000 (API des indicateurs) sont redirigés vers l'hôte.
 
 ## Conclusion et transition
 
@@ -120,9 +119,3 @@ L'architecture fixe deux choses : une **logique métier unique** portée par tro
 d'infrastructure, et une **chaîne de bout en bout** où chaque donnée garde sa trace d'origine et
 chaque accès sa trace d'audit. Le chapitre 7 descend d'un niveau : la plate-forme technique, la
 structure du code, le modèle de données, les composants et la réalisation de chaque étape.
-
-### Références
-
-- `documents/documentation/architecture.md` (services, ports, ordre de démarrage).
-- `documents/documentation/bases_de_donnees.md` §3 (traçabilité des colonnes).
-- `provision/Vagrantfile`, `bootstrap.sh`.

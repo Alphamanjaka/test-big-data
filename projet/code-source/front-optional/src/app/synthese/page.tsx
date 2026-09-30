@@ -89,7 +89,7 @@ export default function SynthesePage() {
           <CardContent>
             <dl className="space-y-2 text-sm">
               <div className="flex justify-between">
-                <dt className="text-gray-600">Patients maîtresses</dt>
+                <dt className="text-gray-600">Patients maîtres</dt>
                 <dd className="font-semibold">
                   {dups ? dups.total_masters.toLocaleString() : "n/d"}
                 </dd>

@@ -84,7 +84,7 @@ export default function DoublonsPage() {
               hint="Enregistrements de la table maître avant rapprochement."
             />
             <Kpi
-              label="Patients maîtresses"
+              label="Patients maîtres"
               value={stats.total_masters.toLocaleString()}
               icon={Fingerprint}
               tone="text-blue-700"

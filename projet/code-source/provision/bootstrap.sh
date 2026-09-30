@@ -46,6 +46,12 @@ cat > "$HADOOP_HOME/etc/hadoop/core-site.xml" <<EOF
     <name>fs.defaultFS</name>
     <value>hdfs://localhost:9000</value>
   </property>
+  <!-- Données HDFS hors de /tmp : /tmp est vidé au redémarrage de la VM, ce qui
+       empêchait le NameNode de redémarrer (répertoire de métadonnées disparu). -->
+  <property>
+    <name>hadoop.tmp.dir</name>
+    <value>/home/vagrant/hadoop-data</value>
+  </property>
   <!-- Impersonation : requis pour HiveServer2 -->
   <property>
     <name>hadoop.proxyuser.vagrant.hosts</name>

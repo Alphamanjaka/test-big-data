@@ -23,6 +23,7 @@ from pyspark.sql.window import Window
 from ..utils.fhir_schema import FHIR_FIELDS, FHIR_SYNONYMS
 from ..utils.sync_utils import update_sync_metadata
 from ..utils.run_metrics import record_safely, summarize_dedup
+from ..utils.central_db import load_central_db
 from ..utils.paths import (
     METADATA_DIR, LOG_DIR, HIVE_SILVER,
     HDFS_BASE, hdfs_warehouse, FUZZY_THRESHOLD,
@@ -117,7 +118,7 @@ def enrichir_dedup_moteur():
         return
 
     dedup_cfg = load_dedup_config()
-    colonnes = ["_source_system", "source_patient_id", "name", "birth_date", "cin", "birth_city"]
+    colonnes = ["_source_system", "source_patient_id", "name", "birth_date", "cin", "birth_city", "gender"]
     presentes = [c for c in colonnes if c in df_patient.columns]
     rows = [r.asDict() for r in df_patient.select(*presentes).collect()]
 
@@ -130,7 +131,7 @@ def enrichir_dedup_moteur():
             "cin": r.get("cin"),
             "birth_city": r.get("birth_city") or "",
             "address": "",
-            "gender": "",
+            "gender": r.get("gender") or "",  # male/female -> M/F (modèle canonique)
             "source_file": "",
         })
         for r in rows
@@ -169,6 +170,9 @@ def enrichir_dedup_moteur():
     nb_doublons = resume_dedup["duplicate_count"]
     nb_masters = resume_dedup["master_count"]
     record_safely("create_silver", resume_dedup, logging.getLogger(__name__))
+    # Base centrale : patients maîtres et correspondances, lus ensuite par l'API de
+    # gouvernance (sans DATABASE_URL, le pipeline continue sans l'alimenter).
+    load_central_db(patients, decisions, logger=logging.getLogger(__name__))
 
     # Écriture via table temporaire + rename pour éviter l'erreur Spark
     # "Cannot overwrite table ... that is also being read from"
@@ -236,6 +240,28 @@ def fuzzy_score(a: str, b: str) -> int:
     if a in b or b in a:
         return 80
     return 0
+
+# Nom porté par deux colonnes (prénom, nom) : sans reconstitution, le mapping FHIR n'en
+# retient qu'une (synonyme « nom ») et le moteur compare des noms tronqués — constaté au
+# run du 29/09/2026 sur la source consultation (« Clément », « godard »).
+PAIRES_PRENOM_NOM = (("prenom", "nom"), ("first_name", "last_name"), ("given_name", "family_name"))
+COLONNES_NOM_COMPLET = ("full_name", "nom_complet", "patient_name", "name")
+
+
+def composer_nom_complet(df):
+    """Ajoute `full_name` = prénom + nom quand la source n'a pas de colonne de nom complet."""
+    colonnes = {c.lower(): c for c in df.columns}
+    if any(c in colonnes for c in COLONNES_NOM_COMPLET):
+        return df
+    for prenom, nom in PAIRES_PRENOM_NOM:
+        if prenom in colonnes and nom in colonnes:
+            logging.info(f"👤 Nom complet reconstitué : {colonnes[prenom]} + {colonnes[nom]}")
+            return df.withColumn(
+                "full_name",
+                F.trim(F.concat_ws(" ", F.trim(F.col(colonnes[prenom])), F.trim(F.col(colonnes[nom])))),
+            )
+    return df
+
 
 def meilleure_colonne_attendue(champ_fhir: str, candidates: List[str]) -> str:
     """Trouve la colonne source la plus proche d'un champ FHIR attendu.
@@ -398,6 +424,8 @@ for source, entites in fhir_mapping.items():
             except FileNotFoundError:
                 logging.warning(f"⚠️ Table {nom_table} non trouvée — ignorée.")
                 continue
+            if entite == "Patient":
+                df = composer_nom_complet(df)
 
             # Mapping dynamique FHIR → colonne source
             mapping_local = {}

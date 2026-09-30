@@ -75,6 +75,10 @@ def test_changed_signature_extracts():
 # ---------------------------------------------------------------------------
 
 def test_remember_and_report(tmp_path):
+    # Le fichier réel du projet peut exister (écrit par un vrai run du pipeline) : on
+    # vérifie qu'il n'est pas modifié par le test, et non qu'il est absent.
+    real_path = watermark.watermark_path()
+    before = os.path.getmtime(real_path) if os.path.exists(real_path) else None
     wm = {}
     watermark.remember(
         wm,
@@ -97,8 +101,9 @@ def test_remember_and_report(tmp_path):
     assert report["row_count"] == 5
     assert report["hdfs_path"].endswith("pharmacy/patients")
 
-    # Nettoyage pour isolement des tests (pas de fichier réel écrit ici).
-    assert not os.path.exists(watermark.watermark_path())
+    # Isolement : remember/report travaillent en mémoire, aucun fichier réel n'est écrit.
+    after = os.path.getmtime(real_path) if os.path.exists(real_path) else None
+    assert after == before
 
 
 def test_wiped_entry_returns_none():

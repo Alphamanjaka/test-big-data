@@ -85,6 +85,8 @@ DIAGRAM_FONT_PX = 16
 PT_PER_CM = 28.35
 
 CAPTION_RE = re.compile(r"^>\s*\*\*Figure\s+(\d+)\b")
+# Capture d'écran insérée comme image : « ![texte](chemin relatif à la racine du dépôt) ».
+IMAGE_RE = re.compile(r"^!\[[^\]]*\]\(([^)]+)\)$")
 # Diagramme de Gantt : marqueur de légende et couleurs des cellules (mêmes teintes que le
 # rapport de stage) — daté dans les journaux, déclaré, prévu.
 GANTT_MARK = "{gantt}"
@@ -380,6 +382,28 @@ def add_markdown(doc: Document, md: str, manifest: dict, figure_number: int = 0)
             i = j
             continue
 
+        # Capture d'écran : ligne « ![](chemin) » suivie de sa légende « > **Figure N — …** ».
+        image = IMAGE_RE.match(stripped)
+        if image:
+            path = (ROOT / image.group(1)).resolve()
+            j = i + 1
+            while j < n and not lines[j].strip():
+                j += 1
+            caption_lines = []
+            match = CAPTION_RE.match(lines[j].strip()) if j < n else None
+            if match:
+                figure_number = int(match.group(1))
+                while j < n and lines[j].strip().startswith(">"):
+                    caption_lines.append(lines[j].strip())
+                    j += 1
+            caption = " ".join(item[1:].strip() for item in caption_lines).strip()
+            if path.exists():
+                add_figure_image(doc, path, TEXT_WIDTH_PORTRAIT_CM, caption)
+            else:
+                print("  [avertissement] capture introuvable : {0}".format(path))
+            i = j if caption_lines else i + 1
+            continue
+
         if stripped.startswith("|"):
             table_lines = []
             while i < n and lines[i].strip().startswith("|"):
@@ -626,7 +650,8 @@ def collect_captions() -> "tuple[list, list]":
     """
     figures = []
     tables = []
-    for chapter in sorted(CHAPTERS_DIR.glob("0*.md")):
+    sources = sorted(CHAPTERS_DIR.glob("0*.md")) + ([ANNEXES] if ANNEXES.exists() else [])
+    for chapter in sources:
         lines = chapter.read_text(encoding="utf-8").splitlines()
         index = 0
         while index < len(lines):

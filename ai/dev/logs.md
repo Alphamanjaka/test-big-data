@@ -2152,3 +2152,47 @@ MMT_DB / CLINIQUE toujours laissés en l'état (décision en attente).
 - `scripts/dev/export_memoire_docx.py` : marqueur `{gantt}` dans la légende → cellules ■ / □ / ○ colorées (mêmes
   teintes que le rapport) ; rendu contrôlé sur PDF (page 45).
 Pas de commit à ce stade (commit groupé ci-après).
+
+## 30/09/2026 — VM relancée : runs réels, base centrale alimentée, défauts de données corrigés, captures
+
+Travail autonome confié par l'auteur. **Données synthétiques uniquement.**
+
+**Environnement.**
+- VM démarrée (`vagrant up`). Le NameNode ne redémarrait plus : ses métadonnées étaient dans `/tmp`, vidé à chaque
+  redémarrage (contenu du lac perdu, reconstruit par le pipeline). Correctif : `hadoop.tmp.dir=/home/vagrant/hadoop-data`
+  (VM et `provision/bootstrap.sh`), `hdfs namenode -format`, puis HDFS, YARN, metastore Hive et HiveServer2 démarrés.
+- `api-venv` de la VM : `pandas`, `pyyaml`, `python-dotenv` et `psycopg` absents ; sans pandas, le moteur n'était pas
+  importable et l'étape SILVER aurait sauté la déduplication en silence. Installés (compatibles Python 3.8).
+- Base centrale de **test** : instance PostgreSQL temporaire (binaires Laragon) sur le port 5433, dans le dossier
+  temporaire de session, sans mot de passe, écoutant sur `localhost` et `192.168.56.1` ; aucun secret versionné.
+- Données de test : jeu « difficile » du générateur copié dans `data/raw/` (non versionné) pour pouvoir mesurer le run.
+
+**Code (constats du run → correctifs).**
+- `provision/scripts/utils/central_db.py` (nouveau) : **le pipeline consolidé n'écrivait jamais les patients maîtres
+  en base** (seul l'ancien MVP le faisait) ; l'étape SILVER charge désormais `master_patient` et
+  `patient_identity_map` (idempotent, jamais bloquant). Tests : `tests/test_central_db.py` (6).
+- `gen_extract_raw.py` : les dates de naissance mélangent quatre formats ; seul le format dominant était lu,
+  **~20 % des dates devenaient vides**. Lecture valeur par valeur (4 formats, `MM/dd/yyyy` exclu car ambigu).
+- `create_silver.py` : la source consultation porte le nom en deux colonnes ; le mapping FHIR n'en gardait qu'une
+  (**noms tronqués**). Reconstitution `full_name` = prénom + nom. Le genre SILVER est aussi transmis au moteur.
+- `pipeline_state.py` : heures des runs avec fuseau (la VM est en UTC, l'hôte en UTC+3 : la base décalait de 3 h).
+- `evaluation/evaluate_pipeline_run.py` (nouveau) : évalue le run du pipeline complet sur la vérité terrain.
+- `tests/test_watermark.py` : ne suppose plus l'absence du fichier réel `watermark.json`.
+- `scripts/dev/export_memoire_docx.py` : insertion de captures (`![](chemin)` + légende Figure N) ; annexes lues
+  pour la liste des figures. Interface : « Patients maîtresses » → « Patients maîtres ».
+
+**Résultats mesurés.**
+
+| Run | Mode | Données | Résultat |
+|---|---|---|---|
+| 20260929T203418 | complet | jeu généré (moyen), avant correctifs | 1 057 fiches SILVER, 767 patients maîtres, 290 doublons (282 exacts, 8 probabilistes), GOLD 1 761 événements |
+| 20260929T204439 | complet | jeu difficile, après correctifs | 1 057 fiches, **803** patients maîtres, 254 doublons (245 / 9), 24,03 % ; durée 2 min 56 s |
+| 20260929T204829 | reprise | inchangé | **6 tables sur 6 sautées** (empreinte identique) : incrémental validé sur la VM ; durée faussée par une mise en veille de l'hôte |
+
+Évaluation du run complet sur la vérité terrain (jeu difficile) : **précision 1,000, rappel 0,424, F1 0,595**,
+803 patients maîtres — le moteur seul donnait 1,000 / 0,422 / 0,594 et 804 : la chaîne Big Data ne dégrade plus
+la déduplication. Table GOLD des événements : **1 761 lignes** (vide au run du 07/09). Seed de gouvernance exécuté :
+3 comptes d'API, 2 409 consentements (803 × 3 finalités) ; `patient_consent_gold` porte désormais finalité et accord.
+Contrôle d'accès vérifié **sur base peuplée** : 422 (finalité absente ou inconnue), 401 (sans clé), 403 (rôle),
+403 + motif en audit (finalité refusée), liste « analytics » : 294 renvoyés, 509 écartés et journalisés.
+Captures réelles : C04, C07, C09, C10, C11 (`documents/captures/`). `pytest` : 123 passed.
