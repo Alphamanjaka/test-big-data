@@ -2226,3 +2226,13 @@ Relecture critique poursuivie, en intégrant les faits établis sur la VM le 29�
   Figures 3, 4, 5, 6 et 9 re-rendues ; les autres PNG inchangés.
 Mots (ch. 5 à 9) : 13 245 → 12 804 (ch. 5 : 2 714 → 2 646 ; ch. 6 : 928 → 928 ; ch. 7 : 5 131 → 4 927 ;
 ch. 8 : 2 221 → 2 103 ; ch. 9 : 2 251 → 2 200). Export : 100 pages, 18 figures, 47 tableaux.
+
+## 30/09/2026 — Soutenance : script oral et deck alignés sur les résultats réels
+
+- `documents/soutenance_script_oral.md` : « c'est un plancher » → estimation **optimiste** (erreurs simulées) ;
+  S15 et S17 sur le run du 29/09 (1 057 fiches, 803 patients, 254 doublons, 24 %, 123 tests) ; S16 ajoute
+  l'évaluation du pipeline complet (précision 1,000, rappel 0,424) ; S18 : limites à jour (cron non activé, base
+  de test) ; « choses à ne pas dire » mises à jour. 1 608 mots pour 16 min 30 (compte par script).
+- Deck : slides 15, 17, 18 et 19 (texte des runs uniquement, formes et animations inchangées) ; notes de
+  l'orateur régénérées depuis le script. Rendu PowerPoint contrôlé (slides 15, 18, 19). Copie du deck avant
+  modification dans le dossier temporaire.

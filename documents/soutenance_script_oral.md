@@ -15,13 +15,14 @@
 
 1. Que le consentement **par type de dossier** fonctionne : il est **en cours de développement** ;
    ce qui est réalisé et testé, c'est le consentement **par finalité**.
-2. Que la base centrale PostgreSQL a été alimentée avec les données du run : elle **n'a pas été
-   peuplée** ; la mécanique de gouvernance est prouvée par les tests, pas par la donnée.
-3. Que la planification et la reprise ont été rejouées sur la VM : elles sont **testées hors VM**,
-   la VM n'étant plus disponible en fin de stage.
+2. Que la base centrale contient de vrais consentements : c'est une **base de test**, alimentée
+   par le pipeline et par des consentements **de démonstration** (30/09/2026).
+3. Que la planification automatique a tourné : le **cron n'a pas été activé**. La reprise et
+   l'ingestion incrémentale, elles, ont été validées sur la VM le 30/09.
 
 **Trois phrases à placer quoi qu'il arrive** : « aucune fusion sans justification » (S13),
-« zéro fusion à tort, mais c'est un plancher » (S16), « je préfère nommer les limites » (S18).
+« zéro fusion à tort, sur les erreurs que j'ai simulées » (S16), « je préfère nommer les
+limites » (S18).
 
 **Vidéo** (S17) : 3 min 30, muette, enregistrée à l'avance ; la tester sur le poste de soutenance.
 
@@ -229,11 +230,11 @@ Il reste **environ 3 minutes de marge** sur 20 minutes : elles servent à ralent
 
 ## S15. Résultats du run — 0:40 · `[9:50] → [10:30]`
 
-> Sur le jeu de démonstration du 7 septembre : 214 fiches, 145 patients distincts, 69 doublons
-> rattachés, soit 32 % de doublons. Et la cohérence se vérifie par une simple soustraction :
-> 214 moins 69, 145. Le pipeline a réussi toutes ses étapes, et les 102 tests passent.
+> Sur le jeu difficile, rejoué dans la VM le 29 septembre : 1 057 fiches, 803 patients distincts,
+> 254 doublons rattachés, soit 24 % de doublons. La cohérence se vérifie par une soustraction :
+> 1 057 moins 254, 803. Les cinq étapes réussissent, et les 123 tests passent.
 
-→ « Mais ces 145 patients sont-ils les bons ? »
+→ « Mais ces 803 patients sont-ils les bons ? »
 
 ---
 
@@ -243,12 +244,14 @@ Il reste **environ 3 minutes de marge** sur 20 minutes : elles servent à ralent
 > jeux où 10, 30 ou 50 % des fiches sont abîmées : fautes de frappe, inversions, formats.
 >
 > Résultat principal : zéro fusion à tort, sur les trois niveaux. En santé, c'est la propriété
-> qui compte : confondre deux patients est plus grave que de les laisser séparés. Je dois être
-> honnête sur sa portée : c'est un plancher, car mon générateur ne crée pas de sosies, deux
-> personnes différentes qui se ressemblent.
+> qui compte : confondre deux patients est plus grave que de les laisser séparés. Sa portée a
+> une limite : mon générateur ne crée pas de sosies, deux personnes différentes qui se
+> ressemblent. Ce résultat vaut donc pour les erreurs que j'ai simulées ; face à de vrais
+> homonymes, c'est une estimation optimiste.
 >
 > Le prix de cette prudence, c'est le rappel : 0,422 sur le jeu difficile, après être parti de
-> 0,287. Et Pandas et Spark donnent exactement les mêmes résultats.
+> 0,287. Pandas et Spark donnent exactement les mêmes résultats, et le pipeline complet, mesuré
+> sur la même vérité terrain, aussi : précision 1,000, rappel 0,424.
 
 → « Je vous montre maintenant la chaîne en fonctionnement. »
 
@@ -262,11 +265,11 @@ Il reste **environ 3 minutes de marge** sur 20 minutes : elles servent à ralent
 
 | Plan | À l'écran | À dire pendant le plan |
 |---|---|---|
-| 0:45 | tests | « 102 tests, aucun échec : moteur, gouvernance, planification. » |
+| 0:45 | tests | « 123 tests, aucun échec : moteur, gouvernance, pipeline. » |
 | 0:45 | évaluation, jeu difficile | « Précision 1,000, rappel 0,422, mêmes décisions en Pandas et en Spark. » |
 | 1:00 | pipeline RAW → SILVER → GOLD | « Les étapes s'enchaînent jusqu'à la zone GOLD. » |
 | 0:30 | tableau de bord | « Les zones, le dernier run et la planification. » |
-| 0:30 | repli si la vidéo échoue | « Les mêmes preuves en chiffres : 214, 145, 69. » |
+| 0:30 | repli si la vidéo échoue | « Les mêmes preuves en chiffres : 1 057, 803, 254. » |
 
 → « Ce que je n'ai pas résolu. »
 
@@ -274,14 +277,14 @@ Il reste **environ 3 minutes de marge** sur 20 minutes : elles servent à ralent
 
 ## S18. Limites et perspectives — 0:50 · `[15:00] → [15:50]`
 
-> Je préfère nommer les limites. Le rappel sur le jeu difficile reste à 0,422. La table des
-> événements de soin est vide : les consultations ne sont pas encore rattachées au patient. La
-> base centrale des consentements n'a pas été peuplée. Et la plateforme n'est pas déployée : c'est
-> un prototype reproductible.
+> Je préfère nommer les limites. Le rappel sur le jeu difficile reste à 0,42. La planification
+> automatique n'a pas encore été activée. La base centrale est une base de test, avec des
+> consentements de démonstration. Et la plateforme n'est pas déployée : c'est un prototype
+> reproductible.
 >
-> La suite : terminer le consentement par type de dossier, compléter le rattachement des
-> consultations, calibrer le seuil. Et avant toute mise en production, vérifier le droit malgache
-> des données de santé.
+> La suite : terminer le consentement par type de dossier, calibrer le seuil, activer la
+> planification. Et avant toute mise en production, vérifier le droit malgache des données de
+> santé.
 
 → « Pour conclure. »
 
@@ -325,16 +328,16 @@ Il reste **environ 3 minutes de marge** sur 20 minutes : elles servent à ralent
 ## Contrôle du débit
 
 Mots réellement prononcés par slide (texte « à dire » et transitions), comptés par script le
-29/09/2026. La vidéo (S17) n'est comptée que pour sa narration.
+30/09/2026. La vidéo (S17) n'est comptée que pour sa narration.
 
 | Slides | Durée prévue | Mots | Débit |
 |---|---|---|---|
 | S1 à S6 (ouverture) | 3:30 | 453 | 129 /min |
 | S7 à S10 (état de l'art, existant) | 2:45 | 308 | 112 /min |
-| S11 à S16 (solution, résultats) | 5:15 | 602 | 115 /min |
-| S17 (vidéo 3:30) | 3:30 | 72 | narration seule |
-| S18 à S20 (limites, conclusion) | 1:30 | 152 | 101 /min |
-| **Total** | **16:30** | **1 587** | — |
+| S11 à S16 (solution, résultats) | 5:15 | 632 | 120 /min |
+| S17 (vidéo 3:30) | 3:30 | 73 | narration seule |
+| S18 à S20 (limites, conclusion) | 1:30 | 142 | 95 /min |
+| **Total** | **16:30** | **1 608** | — |
 
 Les slides S1 à S4 sont les plus denses (environ 140 mots par minute) : ce sont celles du récit,
 à dire posément. Les slides techniques laissent le temps de montrer l'écran. Avec la marge, l'exposé
