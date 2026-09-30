@@ -143,7 +143,7 @@ mêmes résultats en Pandas et en Spark) :
 | moyen (30 %) | 554 | 643 | 0 | 84 | **1,000** | 0,884 | 0,939 |
 | difficile (50 %) | 804 | 307 | 0 | 420 | **1,000** | 0,422 | 0,594 |
 
-Lecture : l'algorithme **ne fusionne jamais à tort** (aucun faux positif sur les trois niveaux) ;
+Lecture : sur les trois niveaux, l'algorithme **ne fusionne aucune paire à tort** (aucun faux positif) ;
 sur le jeu volontairement difficile, il **ne reconnaît pas toutes les variantes** (rappel de
 0,422). Poids et seuil sont configurables pour arbitrer entre précision et rappel. L'ajout du
 **CIN à la clé exacte** a relevé le rappel du jeu difficile de 0,287 à **0,422**, sans faux
@@ -160,11 +160,22 @@ Les paires sont comptées analytiquement, groupe par groupe, sans être énumér
 reste applicable à des jeux plus grands sans explosion combinatoire.
 
 **Portée du zéro faux positif.** Le générateur dégrade des fiches existantes (casse, espaces,
-inversion, abréviation, faute de frappe, format, champ manquant) mais ne crée **jamais** deux
-personnes distinctes qui se ressemblent. Le cas le plus dangereux, deux homonymes proches
-fusionnés à tort, n'est donc **pas sollicité** par la vérité terrain. La précision de 1,000 vaut
-pour les erreurs simulées : face à des homonymes réels, elle est une estimation **optimiste**. La
-confirmer exigerait un générateur de quasi-homonymes (§ 8.6).
+inversion, abréviation, faute de frappe, format, champ manquant) mais ne crée pas volontairement
+deux personnes distinctes qui se ressemblent. Sur les jeux de 500 patients, le cas le plus
+dangereux, deux homonymes proches fusionnés à tort, n'est donc **pas sollicité** par la vérité
+terrain. La précision de 1,000 vaut pour les erreurs simulées : face à des homonymes réels, elle
+est une estimation **optimiste**. La confirmer exigerait un générateur de quasi-homonymes (§ 8.6).
+
+**Premières fusions à tort, à 100 000 patients.** Sur un jeu facile de 100 000 patients
+(212 523 fiches), le hasard produit ce que les petits jeux ne contenaient pas : des **homonymes
+parfaits**. Le moteur retrouve 99 998 patients maîtres au lieu de 100 000 : deux fois, deux
+personnes distinctes de même nom et de même date de naissance ont été réunies (13 paires à tort ;
+précision de 0,9999, rappel de 1,000). Le score atteint exactement le seuil (nom 0,5 + date 0,3 =
+0,80), alors que les CIN diffèrent dans un cas et manquent d'un côté dans l'autre, où seule la
+ville de naissance, de faible poids, distingue les deux personnes. Simulé sans modifier le moteur,
+un **veto** interdisant de fusionner deux CIN non vides et différents évite le premier cas
+(9 paires à tort au lieu de 13), sans changer aucun résultat sur les jeux de référence ni sur le
+jeu de 12 000 patients. Le second relève d'une validation humaine.
 
 ### 8.5.2 Décomposition par méthode et par source
 
@@ -213,8 +224,9 @@ Les limites suivantes sont reprises dans la conclusion générale :
 
 La stratégie de test couvre le générateur (44 tests), le moteur et la gouvernance (57), le
 pipeline (66), le MVP (20), l'API des indicateurs (3) et le pipeline complet rejoué sur la VM.
-L'évaluation sur vérité terrain montre que la règle centrale est tenue : aucune fusion à tort,
-pour le moteur seul comme pour le pipeline complet, avec un rappel de 0,42 sur le jeu difficile
-qui indique où la logique peut s'enrichir. La gouvernance est vérifiée par son comportement
+L'évaluation sur vérité terrain montre que la règle centrale est tenue sur les jeux de référence :
+aucune fusion à tort, pour le moteur seul comme pour le pipeline complet, avec un rappel de 0,42
+sur le jeu difficile qui indique où la logique peut s'enrichir. À 100 000 patients, deux homonymes
+parfaits fusionnés à tort montrent la limite d'un score seul (§ 8.5.1). La gouvernance est vérifiée par son comportement
 observable (401, 403, 422, audit avec finalité et motif), y compris sur une base peuplée. La
 **conclusion générale** reprend ces acquis, les limites et les perspectives.

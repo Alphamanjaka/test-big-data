@@ -30,7 +30,7 @@ table est la réponse à la question « *qu'avez-vous choisi, et à la place de 
 | Décision | Alternative écartée | Critère décisif | Preuve | Risque résiduel |
 |---|---|---|---|---|
 | **RapidFuzz** | `sentence_transformers` | compatibilité Python 3.8 (C1) | 2,10 contre 5,00 en arbitrage pondéré | rappel limité sur les variations fortes (0,422) |
-| **Seuil 0,80**, poids 0,5 / 0,3 / 0,1 / 0,1 | seuil plus bas, davantage de fusions | en santé, une fusion à tort est plus grave qu'une fusion manquée | précision de 1,000 sur les 3 jeux, aucun faux positif | 420 paires manquées sur le jeu difficile |
+| **Seuil 0,80**, poids 0,5 / 0,3 / 0,1 / 0,1 | seuil plus bas, davantage de fusions | en santé, une fusion à tort est plus grave qu'une fusion manquée | précision de 1,000 sur les 3 jeux, aucun faux positif | 420 paires manquées sur le jeu difficile ; à 100 000 patients, deux homonymes parfaits atteignent le seuil |
 | **CIN dans la clé exacte** (et le blocking) | rapprochement sur le nom et la date seuls | CIN porté par environ 75 % des patients | rappel du jeu difficile 0,287 → **0,422** | patients sans CIN : rappel plus faible |
 | **Medallion RAW → SILVER → GOLD** | base unique « à plat » | traçabilité et rejeu exigés (F1) | runs complets et en reprise réussis ; 1 761 événements en GOLD | agrégats GOLD encore simples |
 | **PostgreSQL central** | SQLite / MySQL | JSONB, contraintes CHECK, écritures concurrentes | schéma versionné, contraintes `purpose` et `role` | base unique : point de défaillance unique, non traité |
@@ -107,8 +107,10 @@ Les difficultés ont été de quatre ordres.
 | **Formalités légales non accomplies** | conception alignée sur la loi n° 2014-038 et sur le RGPD (§ 2.1.6), sans déclaration ni autorisation auprès de la CMIL | prototype non déployé ; autorité de contrôle pas encore opérationnelle (§ 4.2) |
 | **API Flask de démonstration non sécurisée** | `/api/governance/consent` sans authentification, `debug=True` | dette connue du PoC ; le contrôle de consentement est implémenté sur l'API **FastAPI** de gouvernance, qui est celle du dépôt consolidé |
 | **Clés d'API hachées sans sel** | empreinte SHA-256 simple, sans sel ni itération | une même clé donne toujours la même empreinte. Les clés générées étant aléatoires et longues (64 caractères hexadécimaux), une attaque par dictionnaire reste peu réaliste ; la pratique recommandée reste un sel ou une fonction lente (`bcrypt`, déjà employé par l'interface pour les mots de passe) |
-| **Précision de 1,000 : estimation optimiste** | aucun quasi-homonyme dans la vérité terrain | le générateur dégrade des fiches existantes mais ne crée jamais deux personnes presque identiques ; un module de quasi-homonymes renforcerait la preuve (§ 8.6) |
-| **Volume démontré** | 25 587 fiches (12 000 patients) au plus, sur un jeu sans variation de saisie | les volumes réels de l'établissement n'étaient pas disponibles, et la VM de 8 Go limite les essais ; le parcours Big Data est **architecturé et reproductible**, pas éprouvé sur les volumes d'un établissement |
+| **Précision : estimation optimiste** | 1,000 sur les jeux de référence ; 0,9999 à 100 000 patients, où deux homonymes parfaits (même nom, même date) sont fusionnés à tort | nom et date atteignent seuls le seuil de 0,80 ; un veto sur deux CIN différents évite un des deux cas sans perte de rappel (simulation) ; l'autre, sans identifiant pour trancher, demande une validation humaine (§ 8.5.1) |
+| **Environnement de démonstration** | 212 523 fiches (100 000 patients) au plus, en 7 min 03 s, sur un jeu sans variation de saisie | une VM de 8 Go et 4 cœurs sur un poste de 16 Go ; Spark en mode local, un seul processus de 2 Go ; gels de la VM quand l'hôte manque de mémoire (un run sur quatre échoué à partir de 12 000 patients) ; volumes réels de l'établissement non disponibles |
+| **Déduplication centralisée, recalculée à chaque run** | toutes les fiches rapatriées sur une machine (`collect()`), rapprochement Python séquentiel ; moteur seul : 13 s pour 25 587 fiches, 332 s pour 212 523 (8 fois plus de fiches, 26 fois plus de temps) | chaque fiche est comparée aux patients maîtres de son seau de blocage, et les seaux grossissent avec le volume ; l'incrémental porte sur la table, pas sur la ligne. Des **millions de lignes** ne passeraient pas en ajoutant seulement de la puissance : il faut une déduplication incrémentale et un blocage réparti (perspectives 2 et 7) |
+| **Reprise par étape** | un run repart de l'étape interrompue, jamais du milieu d'une étape | un échec pendant la déduplication la refait entièrement ; un run orphelin (VM arrêtée) est détecté et repris depuis le 30/09 |
 | **Comparaison de l'existant = documentaire** | aucun produit tiers installé | banc d'essai hors périmètre du stage (§ 2.4) |
 | **Absents du périmètre** | déploiement en production, Docker/CI, export VM `.box` | écartés explicitement (hors stage) ; le frontend, optionnel, n'est réalisé que partiellement |
 
@@ -138,7 +140,8 @@ taire.
 3. **Déployer la base centrale** sur un serveur de l'établissement et y enregistrer des
    consentements réellement recueillis.
 4. **Calibrer le seuil et les poids** sur la vérité terrain (rappel contre précision) et
-   documenter la courbe de compromis au lieu d'un point unique.
+   documenter la courbe de compromis au lieu d'un point unique ; ajouter un **veto** sur deux CIN
+   différents et une **file de validation humaine** pour les scores proches du seuil (§ 8.5.1).
 5. **Activer et observer la planification** par cron sur la VM ; l'ingestion incrémentale a été
    validée le 30/09.
 
@@ -146,8 +149,13 @@ taire.
 
 6. Ajouter les **tests d'intégration déployés** et une **CI** (GitHub Actions) exécutant générateur,
    moteur et évaluation à chaque commit.
-7. Passer à l'échelle : partitionnement du blocking, consolidation *transitive* des groupes dans
-   `spark_dedup.py`, calibration EM (dans l'esprit de Splink) **en complément** du score pondéré.
+7. **Passer à l'échelle**, dans cet ordre : dédupliquer de façon **incrémentale** (comparer les
+   seules fiches nouvelles à l'index des patients maîtres en base, ce qui suppose la perspective 2) ;
+   extraire les **seules lignes nouvelles** (date de modification, capture des changements) ;
+   **répartir le blocage** entre les nœuds Spark, chaque bloc étant traité indépendamment ; exécuter
+   Spark sur **YARN** avec plusieurs nœuds, dimensionnés par un test de charge ; charger la base
+   centrale par `COPY`. Une calibration EM (dans l'esprit de Splink) viendrait **en complément** du
+   score pondéré.
 8. Reprendre le vrai MAVIS distant quand le nœud sera stable et rejouer le pipeline sur les
    volumes réels, en conservant les répliques synthétiques pour la démonstration.
 

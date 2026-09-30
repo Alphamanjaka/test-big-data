@@ -104,7 +104,7 @@ en aval.
 
 | Contrainte | Nature | Traitement adopté |
 |---|---|---|
-| **VM de 8 Go et 4 cœurs** | mémoire limitée pour Spark | 4 Go pour l'exécuteur, 2 Go pour le driver, 8 partitions |
+| **VM de 8 Go et 4 cœurs** | mémoire limitée pour Spark | Spark en mode local : un processus de 2 Go, 8 partitions |
 | **Nœud distant MAVIS instable** | source PostgreSQL distante (`mavis_notheme`, 11 tables, tunnel SSH) | répliques locales de dev (`rebuild_mavis_db.py`, 73 090 lignes) ; données finales synthétiques |
 | **Python 3.8 imposé** | `sentence_transformers` plante sous Python 3.8 | RapidFuzz pour la similarité des noms ; dictionnaire de synonymes pour le mapping des colonnes |
 | **Dossier partagé de la VM** | fichiers Parquet corrompus quand Spark y écrit | entrepôt Spark toujours sur HDFS |
@@ -152,7 +152,7 @@ le projet ; le tableau les reprend avec la parade prévue et le constat à la fi
 
 | Risque | Impact | Parade | Constat à la fin du stage |
 |---|---|---|---|
-| Mémoire limitée de la VM (8 Go) | performance de Spark | paramétrage de la mémoire et des partitions | maîtrisé au volume du prototype : pipeline complet au run de référence |
+| Mémoire limitée de la VM (8 Go) | performance de Spark | paramétrage de la mémoire et des partitions | maîtrisé au volume du prototype ; gels de la VM observés à 25 587 fiches, quand l'hôte manquait de mémoire (30/09) |
 | Nœud distant MAVIS instable | blocage du pipeline | sources locales de développement (Laragon, SQLite) puis synthétiques | contourné : le run de référence n'utilise que les sources CSV |
 | Hétérogénéité des sources | mapping FHIR incomplet | synonymes et similarité pour le mapping des colonnes | partiellement maîtrisé : table GOLD des événements vide (§ 8.6) |
 | Données sensibles | confidentialité | données **synthétiques** uniquement ; rôles, audit et consentement | maîtrisé : aucune donnée réelle manipulée |

@@ -323,12 +323,14 @@ Le cas de référence est conçu pour être résolu : Jean Rakoto (exact, CIN) e
 `data_scope` (périmètre de données), ni durée de validité du consentement, ni chiffrement au
 repos du journal d'audit, ni mesure de temps de traitement persistée.
 
-**Parité Spark (niveau 2).** L'algorithme est porté en PySpark sans changer sa sémantique : les
-groupes **exacts** sont construits par `groupBy` sur la clé, puis la résolution **probabiliste**
-ne compare que les représentants de ces groupes (`_BoundedMasterIndex`). La comparaison reste
-bornée ; en revanche, cette seconde passe s'exécute sur le driver, c'est-à-dire sur une seule
-machine, ce qui limite le volume atteignable (perspective : partitionner le blocking). La parité
-Pandas/Spark est vérifiée par test et par évaluation sur la vérité terrain.
+**Parité Spark (niveau 2).** Dans le PoC, l'algorithme est porté en PySpark sans changer sa
+sémantique : les groupes **exacts** sont construits par `groupBy` sur la clé, puis la résolution
+**probabiliste** ne compare que les représentants de ces groupes (`_BoundedMasterIndex`). Cette
+seconde passe s'exécute toutefois sur le driver, après rapatriement des données (`collect()`). Dans
+le pipeline consolidé, l'étape SILVER rapatrie de même toutes les fiches, puis appelle `matcher`.
+La déduplication tourne donc **sur une seule machine**, quel que soit le nombre de nœuds, ce qui
+limite le volume atteignable (conclusion générale, limites). La parité est vérifiée par test et par
+évaluation sur la vérité terrain.
 
 ### 7.2.4 Déploiement
 
@@ -485,6 +487,14 @@ le rapprochement probabiliste, que seul le jeu difficile sollicite. Il a en reva
 défaut de passage à l'échelle (§ 7.3.6) : une fois corrigé, le run complet passe de 15 min 15 s à
 4 min 57 s.
 
+**Run sur 100 000 patients (30/09/2026).** Le pipeline a ensuite traité 212 523 fiches et 359 299
+transactions en **7 min 03 s** : 99 998 patients maîtres, 359 299 événements en GOLD, au plus
+4,8 Go de mémoire utilisés sur les 8 Go de la VM. La déduplication occupe l'essentiel du temps,
+environ 5 minutes. Le pipeline n'impose aucune limite de durée, mais un run long est plus exposé
+aux gels de la VM : sur 12 000 patients, un premier run a échoué quand la VM, privée de mémoire
+par l'hôte, s'est figée deux minutes ; le run de 100 000 patients a traversé trois gels sans
+échouer. Ses deux fusions à tort sont analysées au § 8.5.1.
+
 ### 7.3.3 Moteur de déduplication : Pandas et Spark
 
 Le moteur `engine/identity/` est la pièce centrale du projet ; il existe en deux implantations
@@ -492,10 +502,10 @@ alignées :
 
 **Tableau 40 — Les deux implantations du moteur.**
 
-| Aspect | `matcher.py` (Pandas) | `spark_dedup.py` (PySpark driver-side) |
+| Aspect | `matcher.py` (Pandas) | `spark_dedup.py` (variante Spark, exécutée sur le driver) |
 |---|---|---|
 | Canonique | `canonical.py` (`map_patient`, `from_dict`) | réutilise `matcher`/`canonical` |
-| Exact | `matching_key` + naissance/CIN | clusters par `groupBy` de la clé |
+| Exact | `matching_key` + naissance/CIN | clusters par clé (dictionnaire ; `groupBy` Spark dans le PoC) |
 | Probabiliste | `_MasterIndex` (3 buckets) | `_BoundedMasterIndex` sur ancres de clusters |
 | Score | `fuzz.ratio(nom)×0.5 + naissance×0.3 + CIN×0.1 + ville×0.1` | identique |
 | Décision | `exact` / `probabilistic` / `new_master`, seuil 0,80 | identique |

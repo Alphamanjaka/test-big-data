@@ -108,8 +108,10 @@ RESUME = (
     "est rejouable (reprise), incrémental (empreinte des sources) et planifiable (cron). "
     "Rejoué sur une machine virtuelle avec un jeu synthétique difficile, le pipeline ramène "
     "1 057 fiches à 803 patients. Mesurée sur la vérité terrain, la déduplication ne fusionne "
-    "jamais à tort (précision de 1,000 sur les trois niveaux de difficulté) ; le rappel vaut "
-    "1,000 sur le jeu facile et 0,42 sur le jeu difficile, prix assumé de cette prudence. Ce "
+    "aucune paire à tort sur les trois jeux de référence (précision de 1,000) ; le rappel vaut "
+    "1,000 sur le jeu facile et 0,42 sur le jeu difficile, prix assumé de cette prudence. Sur "
+    "100 000 patients, traités en 7 minutes, deux homonymes parfaits sont fusionnés à tort : "
+    "cette limite, comme le passage à l'échelle de la déduplication, est analysée. Ce "
     "mémoire expose l'état réel du système : ce qui est démontré et testé, ce qui reste "
     "limité, et les corrections identifiées."
 )
@@ -124,9 +126,11 @@ ABSTRACT = (
     "consent, access auditing and hashed API keys. The pipeline is resumable, incremental "
     "(source fingerprint) and cron-schedulable. Run on a virtual machine with a hard "
     "synthetic dataset, the pipeline reduces 1,057 records to 803 patients. Measured against "
-    "ground truth, deduplication never merges two different people (precision 1.000 at all "
-    "three difficulty levels); recall is 1.000 on the easy set and 0.42 on the hard set, the "
-    "accepted price of this caution. This thesis reports the system's state: what is "
+    "ground truth, deduplication wrongly merges no pair on the three reference sets "
+    "(precision 1.000); recall is 1.000 on the easy set and 0.42 on the hard set, the "
+    "accepted price of this caution. On 100,000 patients, processed in 7 minutes, two perfect "
+    "homonyms are wrongly merged: this limit, like the scaling of deduplication, is analysed. "
+    "This thesis reports the system's state: what is "
     "demonstrated and tested, what remains limited, and the identified corrections."
 )
 KEYWORDS = (

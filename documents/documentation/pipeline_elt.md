@@ -258,6 +258,19 @@ rappel 0,424, F1 0,595 (moteur seul : 0,422 / 0,594). La planification par cron 
 précision, rappel et F1 de 1,000. Piège : sur un hôte de 16 Go, arrêter l'interface Next.js pendant un run
 volumineux (VM de 8 Go) limite les blocages.
 
+**Jeu facile de 100 000 patients (30/09/2026)** — `data/experiments_100000/easy/` (212 523 fiches, 359 299
+transactions) copié dans `data/raw/`, interface Next.js arrêtée :
+
+| Run | Mode | Résultat |
+|---|---|---|
+| 20260930T082016 | complet | **7 min 03 s** ; extraction 571 822 lignes (pharmacy 242 835, consultation 177 290, imaging 151 697) ; SILVER 212 523 → **99 998** patients maîtres (112 520 exacts, 5 probabilistes), 52,95 % ; GOLD 359 299 événements ; moteur ≈ 5 min ; pic VM 4,8 Go utilisés sur 7,9 ; trois gels de la VM (dont un `soft lockup` de 65 s) sans échec |
+
+Évaluation : 13 paires fusionnées à tort (précision 0,99991, rappel 1,000). Les 5 décisions probabilistes
+sont deux fusions d'homonymes parfaits (même nom, même date ; score 0,80 = seuil) : CIN différents dans un cas,
+CIN absent d'un côté dans l'autre. Moteur seul sur l'hôte : 331,5 s, pic 407 Mo. Veto « deux CIN non vides
+différents » simulé (sans modifier le moteur) : 9 paires à tort au lieu de 13, aucun changement sur les jeux de
+référence ni sur le jeu de 12 000.
+
 ## Validation VM (interim CSV, 07/09/2026)
 
 `run_pipeline.sh` → **4/4 vert**. Comptages contrôlés par `provision/metadata/check_data.py` (scripts Spark ;

@@ -167,6 +167,10 @@ dans `Mon_Memoire` (subtree → `projet/code-source/`, `projet/mvp/`, `archives/
     run complet 15 min 15 s → 4 min 57 s, décisions identiques avant/après sur les 4 jeux et les 2 moteurs.
     Limite ajoutée au mémoire et au rapport : identifiants de patients maîtres non permanents.
     **Preuves :** `pytest` 123/123, journal du 30/09. **Reste :** identifiants permanents (perspective 2).
+    Suite (30/09) : **100 000 patients** (212 523 fiches) en 7 min 03 s sur la VM ; premières **fusions à tort**
+    (2 homonymes parfaits, précision 0,9999) ; veto CIN simulé ; **run orphelin** corrigé (130/130 tests) ;
+    mémoire et rapport : limites « environnement » et « déduplication centralisée », pièges YARN et exécuteur
+    corrigés (Spark en mode local). **Reste :** veto CIN et file de validation humaine (décision de l'auteur).
 19. **[Validation VM — 30/09]** VM relancée : HDFS réparé (données hors de `/tmp`), dépendances Python de la VM
     complétées, **cinq runs réels** enregistrés en base (jeu difficile). Trois défauts découverts et corrigés
     (dates perdues, noms tronqués, base centrale jamais alimentée par le pipeline consolidé :

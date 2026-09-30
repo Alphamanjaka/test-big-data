@@ -2353,3 +2353,36 @@ ch. 8 : 2 221 → 2 103 ; ch. 9 : 2 251 → 2 200). Export : 100 pages, 18 figur
   (pharmacy 80 809, consultation 70 951, imaging 60 763), 359 299 transactions (achats 162 026, consultations
   106 339, examens 90 934).
 - `documents/documentation/pipeline_elt.md` : pièges 13 (Spark en local) et 14 (run orphelin).
+
+## 30/09/2026 — Test de charge à 100 000 patients ; premières fusions à tort ; mémoire corrigé sur l'échelle
+
+- Moteur seul sur l'hôte (`matcher`, 212 523 fiches) : chargement 66,7 s, **déduplication 331,5 s** (contre
+  12,8 s pour 25 587 fiches : 8,3 fois plus de fiches, 26 fois plus de temps), pic mémoire du processus 407 Mo ;
+  seaux de préfixe : 205, 488 patients maîtres en moyenne (61,5 à 12 000), plus gros 2 266.
+- Run VM **20260930T082016** (complet, Next.js arrêté) : **réussi en 7 min 03 s**. Extraction 571 822 lignes
+  (pharmacy 242 835, consultation 177 290, imaging 151 697 : fiches + transactions, aucune perte) ; SILVER
+  212 523 → 99 998 patients maîtres (112 520 exacts, 5 probabilistes), 52,95 % ; GOLD 359 299 événements,
+  2 409 consentements ; moteur dans la VM ≈ 5 min (08:21:26 → 08:26:29) ; pic 4,8 Go utilisés sur 7,9 ;
+  trois gels de la VM (08:22:47, 08:24:15 avec `soft lockup` de 65 s, 08:25:58) traversés sans échec. API Flask :
+  `mocked: false`, mêmes chiffres.
+- Évaluation (`evaluate_pipeline_run.py --truth …/experiments_100000/…`) : VP 146 186, **FP 13**, FN 0 ;
+  précision 0,99991, rappel 1,000. **Premières fusions à tort** : deux paires d'homonymes parfaits (même nom,
+  même date de naissance) fusionnées par la passe probabiliste, score 0,80 = seuil (nom 0,5 + date 0,3) :
+  « Georges Grenier » (CIN différents : 106867407 / 106388848) et « Émile Marty » (CIN absent d'un côté, villes
+  différentes). Les 5 décisions probabilistes du run sont exactement ces fusions. Données fictives.
+- Simulation d'un **veto CIN** (deux CIN non vides différents interdisent la fusion ; fonction de score
+  remplacée en mémoire, moteur non modifié) : easy / medium / hard / 12 000 inchangés (mêmes VP, FP, FN) ;
+  100 000 : 9 paires à tort au lieu de 13 (« Georges Grenier » évité). Veto « ville différente » : aucun effet
+  sur nos jeux, mais le générateur ne varie pas les villes (non concluant, non retenu). **Veto non appliqué** :
+  décision de l'auteur.
+- Mémoire : ch2 (volume 212 523), ch4 (Spark en mode local, gels), ch5 (performance 7 min 03 s ; déduplication
+  sur une machine), ch6 (YARN non utilisé, mode local, 2 Go), ch7 (§ 7.2.3 déduplication sur une machine,
+  tableau 40, run de 100 000 patients), ch8 (« aucune paire à tort sur les trois niveaux » ; paragraphe
+  « Premières fusions à tort »), ch9 (limites « Environnement de démonstration », « Déduplication centralisée,
+  recalculée à chaque run », « Reprise par étape », « Précision : estimation optimiste » réécrite ;
+  perspective 4 + veto et validation humaine ; perspective 7 réécrite). Résumé et abstract nuancés
+  (`export_memoire_docx.py`). Rapport : mêmes points. Script oral : réponse « Pourquoi Spark » corrigée,
+  3 questions ajoutées, conclusion nuancée ; notes de S19 du deck corrigées.
+- Exports : mémoire (47 tableaux, 18 figures, résumé 227 mots) ; rapport 71 pages. `pytest` 130/130.
+- État laissé : `data/raw/` contient le jeu de 100 000 patients ; base de test : 99 998 patients maîtres
+  (anciens numéros réattribués). Retour au jeu difficile de la démonstration : à décider par l'auteur.

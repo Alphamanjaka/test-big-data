@@ -96,7 +96,7 @@ l'ordre de démarrage des services est strict :
 | Composant | Rôle | Port / chemin |
 |---|---|---|
 | HDFS NameNode | entrepôt du Data Lake (parquet RAW/SILVER/GOLD) | 9000 — `start-dfs.sh` en premier |
-| YARN | exécution des jobs Spark | 8088 — `start-yarn.sh` ensuite |
+| YARN | gestionnaire de ressources d'un futur cluster ; démarré, mais non utilisé par le pipeline (Spark en mode local) | 8088 — `start-yarn.sh` ensuite |
 | Hive Metastore | métadonnées des bases `datalake_*` | 9083 (distant, évite le conflit Derby) |
 | HiveServer2 | accès SQL (`beeline`) | 10000 |
 | Moteur `engine/` | déduplication + gouvernance (PostgreSQL) | — |
@@ -109,8 +109,10 @@ l'ordre de démarrage des services est strict :
 > **Ordre strict :** `start-dfs.sh` → `start-yarn.sh` → metastore (9083) → HiveServer2 (10000) →
 > jobs Spark → API. Toute inversion produit des erreurs d'écriture ou de métadonnées (§ 7.3.6).
 
-Versions installées : Hadoop 3.3.6, Hive 3.1.3, Spark 3.4.2 et Java 8. Spark dispose de 4 Go
-pour l'exécuteur, 2 Go pour le driver et 8 partitions. Les données HDFS sont stockées hors de
+Versions installées : Hadoop 3.3.6, Hive 3.1.3, Spark 3.4.2 et Java 8. Spark s'exécute en **mode
+local** (`local[*]`) : un seul processus Java de 2 Go, le driver, exécute aussi les tâches sur les
+4 cœurs, avec 8 partitions. Le réglage de 4 Go prévu pour l'exécuteur ne s'applique qu'en cluster.
+Les données HDFS sont stockées hors de
 `/tmp`, que la VM vide à chaque redémarrage (§ 7.3.6). Les ports 9870 (interface HDFS), 10000
 (Hive) et 5000 (API des indicateurs) sont redirigés vers l'hôte.
 

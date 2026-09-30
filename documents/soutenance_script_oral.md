@@ -292,7 +292,7 @@ Il reste **environ 3 minutes de marge** sur 20 minutes : elles servent à ralent
 
 ## S19. Conclusion — 0:30 · `[15:50] → [16:20]`
 
-> La plateforme centralise, normalise, déduplique sans jamais fusionner à tort, et contrôle chaque
+> La plateforme centralise, normalise, déduplique sans fusion à tort sur nos jeux de référence, et contrôle chaque
 > accès par le consentement. Changer d'échelle n'a pas changé la logique. Et derrière chaque
 > chiffre, il y a ce patient du début : reconnu comme une seule personne, et maître de l'usage de
 > ses données.
@@ -321,7 +321,10 @@ Il reste **environ 3 minutes de marge** sur 20 minutes : elles servent à ralent
 | Pourquoi une entreprise de matériel biomédical gère-t-elle des données patients ? | son département R&D gère depuis 2024 des systèmes d'information médicale (GNU Health, MAVIS, base clinique) |
 | Pourquoi 0,80 et ces poids ? | choix explicables, déclarés dans un fichier de configuration ; le calibrage fait partie des perspectives |
 | Pourquoi ne pas estimer les poids automatiquement, comme Splink ? | pour qu'un gestionnaire de données puisse lire et modifier chaque poids |
-| Pourquoi Spark, si Pandas est plus rapide sur vos volumes ? | Spark se justifie par le volume visé ; la parité montre que la logique ne change pas avec l'échelle |
+| Pourquoi Spark, si Pandas est plus rapide sur vos volumes ? | Spark porte l'extraction, le lac et GOLD, qui se répartissent en ajoutant des nœuds ; la déduplication, elle, tourne encore sur une seule machine : c'est la limite principale, et la voie de sortie est connue |
+| Que se passe-t-il si la VM s'arrête pendant un run ? | le run est reconnu orphelin (processus disparu) : il est marqué en échec et repris à l'étape interrompue, sans bloquer la planification |
+| Et avec des millions de lignes ? La VM est-elle assez puissante ? | la VM limite la démonstration (8 Go, gels observés), mais un plus gros serveur ne suffirait pas : l'extraction, le lac et GOLD passent sous Spark, alors que la déduplication est centralisée sur une machine et refaite à chaque run (212 523 fiches : 8 fois plus de fiches, 26 fois plus de temps). La voie : déduplication incrémentale avec identifiants permanents, puis blocage réparti sur un cluster |
+| Votre précision est-elle vraiment de 1 ? | sur les jeux de référence, oui ; à 100 000 patients, deux homonymes parfaits ont été fusionnés (0,9999) : c'est la limite d'un score seul. Un veto sur deux CIN différents en évite un ; l'autre demande une validation humaine |
 | Le consentement par type de dossier est-il fait ? | non, il est en cours ; le consentement par finalité est réalisé et testé (401, 403, 422) |
 | Et le RGPD à Madagascar ? | le RGPD sert de cadre de conception ; le droit malgache reste à étudier avant toute production |
 

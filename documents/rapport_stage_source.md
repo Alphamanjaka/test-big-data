@@ -25,7 +25,7 @@ Dans un établissement de santé, les données des patients sont réparties entr
 
 Ce stage, réalisé chez Madagascar Medical Technology (MMT), a porté sur la conception d'une plateforme de centralisation et de gouvernance de ces données. L'architecture retenue est un lac de données organisé en trois zones de qualité croissante (RAW, SILVER, GOLD) sur HDFS, Hive et Spark, alimenté par un pipeline ELT rejouable, incrémental et planifiable. Elle est complétée par un moteur de déduplication explicable, qui combine une passe exacte sur clés normalisées et une passe probabiliste par score pondéré, et par une gouvernance des accès associant rôles, consentement du patient par finalité et journal d'audit.
 
-Rejouée sur la VM avec un jeu synthétique difficile, la plateforme ramène 1 057 fiches à 803 patients. Évaluée sur trois jeux synthétiques dont la vérité est connue, la déduplication atteint une précision de 1,000 sur tous les niveaux — aucune fusion à tort — et un rappel de 0,422 sur le jeu le plus difficile ; le pipeline complet, mesuré de la même façon, obtient le même résultat. Les implémentations Pandas et Spark produisent des résultats strictement identiques. Toutes les données manipulées sont fictives.
+Rejouée sur la VM avec un jeu synthétique difficile, la plateforme ramène 1 057 fiches à 803 patients. Évaluée sur trois jeux synthétiques dont la vérité est connue, la déduplication atteint une précision de 1,000 sur tous les niveaux — aucune fusion à tort — et un rappel de 0,422 sur le jeu le plus difficile ; le pipeline complet, mesuré de la même façon, obtient le même résultat. Sur 100 000 patients, traités en 7 minutes, deux homonymes parfaits sont fusionnés à tort, limite analysée dans le rapport. Les implémentations Pandas et Spark produisent des résultats strictement identiques. Toutes les données manipulées sont fictives.
 
 #= Abstract
 
@@ -33,7 +33,7 @@ In a healthcare institution, patient data is spread across several independent i
 
 This internship, carried out at Madagascar Medical Technology (MMT), focused on designing a platform to centralise and govern this data. The chosen architecture is a data lake organised in three zones of increasing quality (RAW, SILVER, GOLD) on HDFS, Hive and Spark, fed by a replayable, incremental and schedulable ELT pipeline. It is complemented by an explainable deduplication engine, combining an exact pass on normalised keys with a probabilistic pass based on a weighted score, and by access governance that associates roles, purpose-based patient consent and an audit log.
 
-Run on the virtual machine with a hard synthetic dataset, the platform reduces 1,057 records to 803 patients. Evaluated on three synthetic datasets with known ground truth, deduplication reaches a precision of 1.000 at every level — no false merge — and a recall of 0.422 on the hardest dataset; the full pipeline, measured the same way, achieves the same result. The Pandas and Spark implementations produce strictly identical results. All data used is fictitious.
+Run on the virtual machine with a hard synthetic dataset, the platform reduces 1,057 records to 803 patients. Evaluated on three synthetic datasets with known ground truth, deduplication reaches a precision of 1.000 at every level — no false merge — and a recall of 0.422 on the hardest dataset; the full pipeline, measured the same way, achieves the same result. On 100,000 patients, processed in 7 minutes, two perfect homonyms are wrongly merged, a limit analysed in the report. The Pandas and Spark implementations produce strictly identical results. All data used is fictitious.
 
 **Keywords**: healthcare data, data lake, Medallion architecture, Spark, Hive, FHIR, deduplication, Master Patient Index, consent, GDPR.
 
@@ -427,7 +427,7 @@ Tableau: Les outils du projet. {logos}
 | ^ | logo:virtualbox VirtualBox | 7.2.8 | hyperviseur de la VM (8 Go, 4 cœurs) |
 | ^ | logo:ubuntu Ubuntu | 20.04 | système de la VM (image `ubuntu/focal64`) |
 | ^ | logo:laragon Laragon | — | bases locales de développement sur le poste Windows |
-| Big Data | logo:hadoop Hadoop | 3.3.6 | HDFS stocke les zones du lac ; YARN exécute les traitements |
+| Big Data | logo:hadoop Hadoop | 3.3.6 | HDFS stocke les zones du lac ; YARN, démarré, n'est pas encore utilisé (Spark en mode local) |
 | ^ | logo:hive Hive | 3.1.3 | catalogue des tables du lac et accès SQL |
 | ^ | logo:spark Spark / PySpark | 3.4.2 | traitements répartis : mapping FHIR, déduplication, zone GOLD |
 | ^ | logo:openjdk OpenJDK | 8 | machine Java requise par Hadoop, Hive et Spark |
@@ -452,7 +452,7 @@ Le projet est rejouable à partir du seul dépôt. Le dépôt Git est la source 
 Tableau: Contraintes et risques du projet.
 | Contrainte ou risque | Traitement adopté | Constat |
 |---|---|---|
-| VM de 8 Go et 4 cœurs | 4 Go pour l'exécuteur, 2 Go pour le driver, 8 partitions | maîtrisé : pipeline complet au run de référence |
+| VM de 8 Go et 4 cœurs | Spark en mode local : un processus de 2 Go, 8 partitions | maîtrisé au volume du prototype ; gels de la VM observés à 25 587 fiches |
 | Nœud MAVIS distant instable | répliques locales, puis sources synthétiques pour le run final | contourné |
 | Hétérogénéité des sources | synonymes et similarité pour le mapping FHIR | maîtrisé au 30/09/2026 : dates et noms corrigés, 1 761 événements en GOLD |
 | Reproductibilité | graine 42, seuil et pondérations fixés en configuration | appliqué |
@@ -568,7 +568,7 @@ Tableau: Exigences non fonctionnelles.
 |---|---|---|---|
 | Utilisabilité | un refus doit être compréhensible | finalité inconnue : code 422 avec la liste des valeurs autorisées ; refus : 403 avec motif journalisé | vérifié (section 8.3) |
 | Performance | pipeline complet en moins de 30 minutes | cible atteinte au run de référence | volume réel non mesuré |
-| Scalabilité | changer d'échelle sans changer la logique | moteur porté en PySpark avec parité stricte, comparaisons bornées | résultats identiques Pandas et Spark (section 8.4) |
+| Scalabilité | changer d'échelle sans changer la logique | moteur porté en PySpark avec parité stricte, comparaisons bornées | résultats identiques Pandas et Spark (section 8.4) ; déduplication exécutée sur une seule machine |
 | Sécurité | aucun accès sans rôle, finalité et consentement | rôles, clés hachées, consentement, audit, secrets hors dépôt | codes 401, 403 et 422 vérifiés ; hachage non salé |
 | Maintenabilité | faire évoluer le comportement sans toucher la logique | poids, seuil et blocking en configuration ; schéma idempotent | 123 tests sur 123 réussis |
 | Fiabilité | ne pas retraiter en boucle, reprendre après échec | empreinte des sources, reprise, verrou anti-double exécution, historique des runs | 66 tests ; reprise validée sur la VM (6 tables sur 6 sautées) ; cron non exécuté |
@@ -649,7 +649,7 @@ Tableau: Composants de la VM et ports.
 | Composant | Rôle | Port |
 |---|---|---:|
 | HDFS NameNode | stockage du lac (Parquet RAW, SILVER, GOLD) | 9000 |
-| YARN | exécution des traitements Spark | 8088 |
+| YARN | gestionnaire de ressources d'un futur cluster, non utilisé par le pipeline | 8088 |
 | Hive Metastore | catalogue des bases du lac | 9083 |
 | HiveServer2 | accès SQL | 10000 |
 | API des indicateurs (Flask) | exposition des zones SILVER et GOLD | 5000 |
@@ -659,7 +659,7 @@ Tableau: Composants de la VM et ports.
 
 Capture: C11 | Les zones du lac dans HDFS. | C11_hdfs_datalake.png | Interface HDFS (port 9870), menu Utilities > Browse the file system, dossier /datalake montrant raw, silver et gold.
 
-Les versions installées sont Hadoop 3.3.6, Hive 3.1.3, Spark 3.4.2 et Java 8. Spark est configuré avec 4 Go pour l'exécuteur, 2 Go pour le driver et 8 partitions, afin de tenir dans la mémoire de la VM.
+Les versions installées sont Hadoop 3.3.6, Hive 3.1.3, Spark 3.4.2 et Java 8. Spark s'exécute en mode local : un seul processus Java de 2 Go exécute toutes les tâches, avec 8 partitions, afin de tenir dans la mémoire de la VM ; le réglage prévu pour l'exécuteur ne s'applique qu'en cluster.
 
 # Conception du système logiciel réalisée dans le projet (vision interne/développeur)
 
@@ -792,7 +792,7 @@ Tableau: Runs réels du pipeline sur la VM (jeu difficile, 29–30/09/2026).
 
 Mesuré sur la vérité terrain, le run complet obtient une précision de 1,000, un rappel de 0,424 et un F1 de 0,595 (0,422 et 0,594 pour le moteur seul) : la chaîne Big Data ne dégrade pas la déduplication.
 
-Pour éprouver le volume, le pipeline a ensuite traité un jeu facile de 12 000 patients synthétiques (25 587 fiches, sans variation de saisie). Il retrouve les 12 000 patients maîtres, avec une précision et un rappel de 1,000, et produit 43 141 événements en GOLD. Ce run a révélé un défaut de passage à l'échelle, décrit plus loin : une fois corrigé, le run complet passe de 15 min 15 s à 4 min 57 s.
+Pour éprouver le volume, le pipeline a ensuite traité un jeu facile de 12 000 patients synthétiques (25 587 fiches, sans variation de saisie). Il retrouve les 12 000 patients maîtres, avec une précision et un rappel de 1,000, et produit 43 141 événements en GOLD. Ce run a révélé un défaut de passage à l'échelle, décrit plus loin : une fois corrigé, le run complet passe de 15 min 15 s à 4 min 57 s. Sur 100 000 patients (212 523 fiches, 359 299 transactions), le run complet dure 7 min 03 s, dont environ 5 minutes de déduplication, et retrouve 99 998 patients maîtres : deux homonymes parfaits ont été fusionnés à tort (voir l'évaluation). Ce run a traversé trois gels de la VM ; sur 12 000 patients, un premier run avait échoué pour cette raison.
 
 ### Moteur de déduplication : Pandas et Spark
 
@@ -903,7 +903,7 @@ Tableau: Évaluation sur vérité terrain (08/09/2026).
 
 Capture: C16 | Évaluation sur le jeu difficile. | C16_evaluation.png | Terminal : sortie de evaluate_engine.py sur le jeu hard (précision, rappel, F1, VP/FP/FN).
 
-L'algorithme **ne fusionne jamais à tort** : aucun faux positif sur les trois niveaux, propriété essentielle en santé, où fusionner deux personnes est plus grave que de les laisser séparées. Sur le jeu difficile, il ne reconnaît pas toutes les variantes (rappel de 0,422). L'introduction du CIN dans la clé exacte a relevé ce rappel de 0,287 à 0,422 sans créer de faux positif. Le pipeline complet, mesuré sur la même vérité terrain, obtient les mêmes résultats : précision de 1,000, rappel de 0,424.
+L'algorithme **ne fusionne aucune paire à tort** sur les trois niveaux, propriété essentielle en santé, où fusionner deux personnes est plus grave que de les laisser séparées. Sur le jeu difficile, il ne reconnaît pas toutes les variantes (rappel de 0,422). L'introduction du CIN dans la clé exacte a relevé ce rappel de 0,287 à 0,422 sans créer de faux positif. Le pipeline complet, mesuré sur la même vérité terrain, obtient les mêmes résultats : précision de 1,000, rappel de 0,424.
 
 La décomposition par méthode localise la faiblesse : sur le jeu difficile, le rapprochement exact atteint un rappel de 0,854 et le rapprochement probabiliste de 0,533, avec une précision de 1,000 dans les deux cas. Le rappel est homogène entre les sources (0,422 ; 0,422 ; 0,423) : la dégradation vient du taux de variation, et non d'une source particulière. Enfin, les implémentations Pandas et Spark produisent exactement les mêmes résultats : 307 vrais positifs, 0 faux positif, 420 faux négatifs et 804 patients maîtres prédits pour 500 groupes réels.
 
@@ -916,8 +916,10 @@ Le prototype présente des limites identifiées et documentées :
 - **Rappel de 0,422 sur le jeu difficile** : 420 paires manquées, en raison d'un seuil volontairement conservateur ; l'abaisser ou enrichir la clé suppose une validation métier.
 - **Consentement par type de dossier** : en cours de développement ; le contrôle actuel porte sur la finalité.
 - **Base centrale de test** : alimentée par le pipeline et par des consentements de démonstration, pas par des avis réellement recueillis.
+- **Environnement de démonstration** : une VM de 8 Go et 4 cœurs sur un poste de 16 Go, Spark en mode local (un seul processus de 2 Go) ; 212 523 fiches traitées au plus, en 7 min 03 s, avec des gels de la VM quand l'hôte manque de mémoire.
+- **Déduplication centralisée** : toutes les fiches sont rapatriées sur une machine et comparées en Python, sur toutes les fiches à chaque run (332 s pour 212 523 fiches, contre 13 s pour 25 587). Des millions de lignes demanderaient une déduplication incrémentale et un blocage réparti, pas seulement plus de puissance.
 - **Identifiants de patients maîtres non permanents** : ils sont numérotés dans l'ordre de traitement à chaque run ; une fiche nouvelle ou d'autres données décalent les numéros, et un consentement enregistré pour un numéro peut alors désigner une autre personne.
-- **Absence de cas adversarial** : pas de jeu d'homonymes proches pour éprouver la précision.
+- **Homonymes parfaits** : à 100 000 patients, deux personnes de même nom et de même date de naissance sont fusionnées à tort (précision de 0,9999), car le nom et la date atteignent seuls le seuil. Un veto sur deux CIN différents en évite une, sans perte de rappel en simulation ; l'autre demande une validation humaine.
 - **API des indicateurs non sécurisée** : elle ne sert que du reporting ; le contrôle d'accès est appliqué et testé sur l'API de gouvernance.
 - **Clés d'API hachées sans sel** : l'empreinte protège la lecture directe de la table, mais un hachage salé ou lent (bcrypt) serait préférable.
 - **Pas d'intégration continue ni de tests en environnement déployé**, et planification par cron non activée sur la VM.
@@ -942,7 +944,7 @@ Les difficultés rencontrées ont été techniques (onze incidents corrigés, do
 
 Sur le plan personnel, ce stage m'a permis de pratiquer le Big Data, domaine dans lequel mon expérience était limitée : installer et faire fonctionner une chaîne HDFS, Hive et Spark, et découvrir ce que la documentation ne dit pas, comme l'ordre de démarrage des services ou le coût de Spark sur de petits volumes. Il m'a appris à relier le modèle statistique du rapprochement d'identités, l'architecture qui le rend exploitable et la règle de gouvernance qui décide qui peut le lire. Il m'a enfin appris une discipline : ne rien affirmer sans preuve reproductible, et écrire une limite plutôt que de la taire.
 
-Plusieurs perspectives prolongent ce travail. À court terme : terminer le consentement par type de dossier, rendre permanents les identifiants de patients maîtres, déployer la base centrale et y enregistrer des consentements réellement recueillis, calibrer le seuil et les poids sur la vérité terrain, et activer la planification sur la VM. À moyen terme : ajouter une intégration continue, passer à l'échelle par un blocking partitionné et une consolidation transitive des groupes, et reprendre la source MAVIS réelle lorsque le nœud sera stable. À plus long terme : brancher la gouvernance sur un catalogue de métadonnées pour le lignage des données, et généraliser le moteur à d'autres entités, comme les médecins ou les médicaments.
+Plusieurs perspectives prolongent ce travail. À court terme : terminer le consentement par type de dossier, rendre permanents les identifiants de patients maîtres, déployer la base centrale et y enregistrer des consentements réellement recueillis, calibrer le seuil et les poids sur la vérité terrain, ajouter un veto sur deux CIN différents, et activer la planification sur la VM. À moyen terme : ajouter une intégration continue, passer à l'échelle par une déduplication incrémentale (seules les fiches nouvelles comparées aux patients maîtres en base), l'extraction des seules lignes nouvelles et un blocage réparti entre plusieurs nœuds Spark, et reprendre la source MAVIS réelle lorsque le nœud sera stable. À plus long terme : brancher la gouvernance sur un catalogue de métadonnées pour le lignage des données, et généraliser le moteur à d'autres entités, comme les médecins ou les médicaments.
 
 #! Références et bibliographie
 
