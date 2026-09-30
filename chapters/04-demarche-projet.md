@@ -7,7 +7,7 @@
 Le projet a mobilisé les cinq activités classiques de l'ingénierie logicielle. Chacune a laissé
 une production vérifiable dans le dépôt.
 
-**Tableau 17 — Les activités d'ingénierie logicielle et leurs productions.**
+**Tableau 16 — Les activités d'ingénierie logicielle et leurs productions.**
 
 | Activité | Ce qu'elle a produit | Où le trouver |
 |---|---|---|
@@ -54,7 +54,7 @@ parties prenantes sont au nombre de quatre :
 
 ### 4.1.4 Outils
 
-**Tableau 18 — Les outils du projet, regroupés par usage.**
+**Tableau 17 — Les outils du projet, regroupés par usage.**
 
 | Usage | Outils | Rôle dans le projet |
 |---|---|---|
@@ -100,7 +100,7 @@ en aval.
 
 ## 4.2 Contraintes et risques
 
-**Tableau 19 — Les contraintes du stage et leur traitement.**
+**Tableau 18 — Les contraintes du stage et leur traitement.**
 
 | Contrainte | Nature | Traitement adopté |
 |---|---|---|
@@ -114,7 +114,7 @@ en aval.
 **Contexte local.** Quatre réalités du terrain conditionnent l'applicabilité du projet ; la
 dernière n'est que **partiellement** traitée dans le périmètre du stage.
 
-**Tableau 20 — Le contexte local et ce qu'il change à la solution.**
+**Tableau 19 — Le contexte local et ce qu'il change à la solution.**
 
 | Plan de réalité | Observation de terrain | Conséquence sur la solution | État |
 |---|---|---|---|
@@ -148,7 +148,7 @@ Deux points restent ouverts :
 **Risques du projet.** Le cahier des charges (§ 11) identifie les risques qui pouvaient bloquer
 le projet ; le tableau les reprend avec la parade prévue et le constat à la fin du stage.
 
-**Tableau 21 — Les risques du projet et leur traitement.**
+**Tableau 20 — Les risques du projet et leur traitement.**
 
 | Risque | Impact | Parade | Constat à la fin du stage |
 |---|---|---|---|
@@ -165,7 +165,7 @@ critère de sortie vérifiable. Les deux PoC d'origine ont avancé en parallèle
 pour le moteur métier, `datalake_mavis` pour l'architecture Big Data — avant d'être fusionnés
 dans le dépôt unique ; la règle du critère de sortie s'applique à l'intérieur de chaque chaîne.
 
-**Tableau 22 — Les cinq jalons du stage.**
+**Tableau 21 — Les cinq jalons du stage.**
 
 | Jalon | Contenu | Critère de sortie | Preuve | Traces datées |
 |---|---|---|---|---|
@@ -189,7 +189,7 @@ contrainte découverte relançant une discussion, une relecture de l'existant ou
 documentaire. C'est ce qui justifie une démarche itérative plutôt qu'un cycle en cascade
 (§ 4.1.2).
 
-**Tableau 23 — Diagramme de Gantt du stage, par quinzaine. {gantt}**
+**Tableau 22 — Diagramme de Gantt du stage, par quinzaine. {gantt}**
 
 | Phase | 06/07–19/07 | 20/07–02/08 | 03/08–16/08 | 17/08–30/08 | 31/08–13/09 | 14/09–27/09 | 28/09–11/10 | 12/10–31/10 |
 |---|:---:|:---:|:---:|:---:|:---:|:---:|:---:|:---:|
@@ -219,7 +219,7 @@ d'hébergement ou d'exploitation n'est compté. Les **coûts humains sont une es
 valorisent le temps consacré au projet sur la base d'un coût mensuel de référence, et non des
 montants facturés. Les coûts matériels et logiciels, eux, sont réels.
 
-**Tableau 24 — Budget du projet sur quatre mois.**
+**Tableau 23 — Budget du projet sur quatre mois.**
 
 | Poste | Base de calcul | Coût (Ar) |
 |---|---|---:|

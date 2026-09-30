@@ -105,7 +105,7 @@ variantes *Jean Rakoto* / *Rakoto Jean* / *J. RAKOTO* imposent de mesurer une re
 seulement une égalité. Les mesures classiques du domaine se répartissent en trois familles
 [B1], [B3] :
 
-**Tableau 6 — Les mesures de similarité classiques.**
+**Tableau 5 — Les mesures de similarité classiques.**
 
 | Famille | Mesure | Principe | Usage typique |
 |---|---|---|---|
@@ -152,7 +152,7 @@ fiche des bases sources y est rattachée à un identifiant unique, celui du **pa
 (*master patient*), par une **identity map**, une table de correspondance qui conserve la trace
 de chaque rattachement :
 
-**Tableau 7 — Exemple d'identity map : trois fiches rattachées au même patient maître.**
+**Tableau 6 — Exemple d'identity map : trois fiches rattachées au même patient maître.**
 
 | Source | Identifiant source | Patient maître | Score | Méthode |
 |---|---|---|---|---|
@@ -199,7 +199,7 @@ précise deux distinctions utiles : la base légale (art. 6) et la dérogation p
 sensibles (art. 9) se cumulent, et le consentement au **traitement** des données diffère du
 consentement aux **soins** [B11], [B12].
 
-**Tableau 8 — Exigences des deux textes et principe de conception retenu.**
+**Tableau 7 — Exigences des deux textes et principe de conception retenu.**
 
 | Exigence | Loi 2014-038 (Madagascar) | RGPD (référence de conception) | Principe de conception retenu |
 |---|---|---|---|
@@ -325,7 +325,7 @@ dans les programmes de santé publique, on parle aussi de **registre de clients*
 registry*). Le **MDM** (*Master Data Management*) applique la même idée à toutes les données de
 référence d'une organisation, patients ou non.
 
-**Tableau 9 — Les sept solutions étudiées : apport et obstacle à l'adoption.**
+**Tableau 8 — Les sept solutions étudiées : apport et obstacle à l'adoption.**
 
 | Solution | Famille | Apport pour le besoin | Ce qui bloque l'adoption ici |
 |---|---|---|---|
@@ -359,7 +359,7 @@ composants retenus ne sont pas dépassés par une alternative disponible. Le tab
 confronte chaque brique du projet à ses alternatives, en vérifiant leur compatibilité avec
 Python 3.8 dans les métadonnées officielles des versions publiées [B31].
 
-**Tableau 10 — Les briques du projet face à leurs alternatives.**
+**Tableau 9 — Les briques du projet face à leurs alternatives.**
 
 | Besoin | Brique retenue | Alternative | Ce que l'alternative apporte | Compatibilité Python 3.8 | Raison du choix |
 |---|---|---|---|---|---|
@@ -383,7 +383,7 @@ Les sept critères du § 2.1.9 sont appliqués à chaque solution : « oui » si
 annoncée par la documentation, « partiel » capacité partielle, « non » capacité absente. Il s'agit
 d'une **lecture documentaire, sans mesure**.
 
-**Tableau 11 — Comparaison des solutions sur les sept critères.**
+**Tableau 10 — Comparaison des solutions sur les sept critères.**
 
 | Critère | EMPI | Talend MDM | Azure HDS | HAPI FHIR | OpenCR | Splink | Atlas | Solution du stage |
 |---|:---:|:---:|:---:|:---:|:---:|:---:|:---:|:---:|
@@ -423,7 +423,7 @@ version figée par Python 3.8.
 algorithmes de l'existant** et n'écrit que la chaîne d'exécution et de gouvernance, qu'aucune
 solution ne fournit dans le contexte imposé.
 
-**Tableau 12 — Ce que le projet reprend de l'état de l'art.**
+**Tableau 11 — Ce que le projet reprend de l'état de l'art.**
 
 | Élément repris de l'existant | Provenance | Implémentation retenue |
 |---|---|---|

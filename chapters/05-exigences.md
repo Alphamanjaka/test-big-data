@@ -4,7 +4,7 @@
 
 Les six objectifs du cahier des charges (§ 3) sont traduits en exigences vérifiables :
 
-**Tableau 27 — Les exigences fonctionnelles.**
+**Tableau 24 — Les exigences fonctionnelles.**
 
 | # | Exigence fonctionnelle | Critère de succès |
 |---|---|---|
@@ -20,7 +20,7 @@ une activité transverse d'évaluation. Les cas d'utilisation (CU) précisent **
 quelles conditions, et **ce qui se passe en cas d'échec** ; ils décrivent l'usage, l'implémentation
 étant au § 7.3.
 
-**Tableau 28 — Les étapes fonctionnelles et leurs cas d'utilisation.**
+**Tableau 25 — Les étapes fonctionnelles et leurs cas d'utilisation.**
 
 | Étape | Exigences | Cas d'utilisation |
 |---|---|---|
@@ -146,11 +146,10 @@ flowchart LR
 
 Chaque source a aussi ses transactions : 792 achats, 519 consultations et 450 examens.
 
-> **Deux usages distincts.** Le dataset **hard** (404/353/300) sert à
-> l'**évaluation** de la dédup (chapitre 8). Le dataset **brut** d'ingestion
-> (76/76/62 enregistrements) alimente le **pipeline ELT** de démonstration :
-> 214 lignes SILVER, 145 masters, 69 doublons — run 07/09/2026
-> [contexte_projet.md].
+> **Deux usages.** Les jeux du générateur servent à **évaluer** le moteur (chapitre 8). Le jeu
+> difficile a aussi servi de **source au pipeline** lors des runs du 29–30/09/2026, ce qui a permis
+> de mesurer la chaîne complète sur la même vérité terrain (§ 7.3.2). Le run de référence du
+> 07/09/2026 utilisait un jeu plus petit (76 / 76 / 62 fiches).
 
 ## 5.2 Exigences non fonctionnelles
 
@@ -163,16 +162,16 @@ n'est pas ré-extraite), un run échoué **reprend** à la première étape non 
 lancement régulier est **planifiable** (fréquence `daily` / `weekly` / `monthly`, cron)
 (cahier des charges, § 4.1).
 
-**Tableau 29 — Les exigences non fonctionnelles.**
+**Tableau 26 — Les exigences non fonctionnelles.**
 
 | Qualité | Exigence | Réalisation | Preuve ou limite |
 |---|---|---|---|
 | **Utilisabilité** | un refus ou une erreur doit être compréhensible | `purpose` hors liste → **422** avec la liste des valeurs autorisées ; refus → **403** avec motif en audit ; bandeau « données de démonstration » à l'écran quand l'API se replie | cas vérifiés en § 8.4 ; frontend optionnel |
-| **Performance** | pipeline bout en bout en moins de 30 minutes | cible atteinte au run de référence (quelques centaines de lignes) | cahier des charges §8 ; volume réel non mesuré (§ 4.2) |
+| **Performance** | pipeline bout en bout en moins de 30 minutes | run complet de 2 min 56 s sur la VM (1 057 fiches, 29/09/2026) | volume réel de l'établissement non mesuré (§ 4.2) |
 | **Scalabilité** | changer d'échelle sans changer la sémantique | moteur porté en PySpark avec **parité stricte** ; comparaisons bornées par le blocking ; stockage HDFS | résultats identiques en Pandas et en Spark sur les trois jeux (§ 8.5) ; volume démontré limité |
 | **Sécurité** | aucun accès sans rôle, finalité et consentement | RBAC, clés API hachées SHA-256, consentement par finalité, audit de chaque appel, secrets hors du dépôt | 401/403/422 vérifiés (§ 8.4) ; dettes déclarées : hachage non salé, API Flask sans authentification |
 | **Maintenance** | faire évoluer le comportement sans toucher la logique | poids, seuil et blocking déclarés dans `config/deduplication.yaml` ; schéma idempotent ; pièges anti-régression documentés | 123 tests réussis (§ 8.1) |
-| **Fiabilité d'exploitation** | ne pas retraiter en boucle, reprendre après échec | watermark (empreinte des sources), reprise à la première étape non terminée, anti-double-run | 45 tests dédiés (§ 8.2) ; **non rejoué** sur la VM (§ 7.3.2) |
+| **Fiabilité d'exploitation** | ne pas retraiter en boucle, reprendre après échec | empreinte des sources, reprise à la première étape non terminée, anti-double-run, historique des runs | 66 tests (§ 8.2) ; run en reprise sur la VM : 6 tables sur 6 sautées (30/09/2026) ; cron non exécuté |
 | **Confidentialité** | aucune donnée réelle | générateur synthétique à graine fixe | `RANDOM_SEED = 42` ; aucune donnée réelle dans le dépôt |
 
 ## 5.3 Interfaces détaillées
@@ -184,7 +183,7 @@ du cahier des charges. Elle se limite au pilotage du pipeline, aux vues de gouve
 consultation des patients ; l'accès est contrôlé par jeton (JWT) avec les rôles **ADMIN** et
 **MEDECIN**, et `purpose` reste un paramètre obligatoire des pages patients.
 
-**Tableau 30 — Les pages de l'interface web.**
+**Tableau 27 — Les pages de l'interface web.**
 
 | Page | Ce qu'elle affiche | Source des données |
 |---|---|---|
@@ -208,7 +207,7 @@ interface de pilotage est distinguée au § 3.4 des **dashboards d'analyse** du 
 chaque appel présente une clé d'API (`Authorization: Bearer <clé>`), résolue en utilisateur et
 en rôle, et chaque appel est journalisé dans `access_audit` [`engine/governance/app.py`].
 
-**Tableau 31 — Les points d'entrée de l'API de gouvernance.**
+**Tableau 28 — Les points d'entrée de l'API de gouvernance.**
 
 | Point d'entrée | Méthode | Rôles autorisés | Contrôle et réponse |
 |---|---|---|---|

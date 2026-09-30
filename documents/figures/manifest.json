@@ -24,10 +24,10 @@
     {
       "number": 3,
       "file": "fig-3.png",
-      "source": "05-exigences.md:126",
+      "source": "05-exigences.md:123",
       "config": "compact",
-      "width_px": 1426,
-      "height_px": 338,
+      "width_px": 1432,
+      "height_px": 290,
       "pt_portrait_16cm": 5.1,
       "pt_paysage_26cm": 8.5
     },
@@ -36,20 +36,20 @@
       "file": "fig-4.png",
       "source": "06-architecture.md:10",
       "config": "compact",
-      "width_px": 1068,
+      "width_px": 1049,
       "height_px": 733,
-      "pt_portrait_16cm": 6.8,
-      "pt_paysage_26cm": 11.3
+      "pt_portrait_16cm": 6.9,
+      "pt_paysage_26cm": 11.5
     },
     {
       "number": 5,
       "file": "fig-5.png",
       "source": "06-architecture.md:56",
-      "config": "serre",
-      "width_px": 2114,
-      "height_px": 343,
-      "pt_portrait_16cm": 3.4,
-      "pt_paysage_26cm": 5.7
+      "config": "compact",
+      "width_px": 573,
+      "height_px": 1512,
+      "pt_portrait_16cm": 12.7,
+      "pt_paysage_26cm": 21.1
     },
     {
       "number": 6,
@@ -64,7 +64,7 @@
     {
       "number": 7,
       "file": "fig-7.png",
-      "source": "07-conception.md:167",
+      "source": "07-conception.md:159",
       "config": "compact",
       "width_px": 1518,
       "height_px": 1007,
@@ -74,7 +74,7 @@
     {
       "number": 8,
       "file": "fig-8.png",
-      "source": "07-conception.md:399",
+      "source": "07-conception.md:376",
       "config": "serre",
       "width_px": 1361,
       "height_px": 148,

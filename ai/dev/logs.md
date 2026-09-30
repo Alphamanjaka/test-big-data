@@ -2196,3 +2196,33 @@ la déduplication. Table GOLD des événements : **1 761 lignes** (vide au run d
 Contrôle d'accès vérifié **sur base peuplée** : 422 (finalité absente ou inconnue), 401 (sans clé), 403 (rôle),
 403 + motif en audit (finalité refusée), liste « analytics » : 294 renvoyés, 509 écartés et journalisés.
 Captures réelles : C04, C07, C09, C10, C11 (`documents/captures/`). `pytest` : 123 passed.
+
+## 30/09/2026 — Relecture du mémoire, étapes 5 à 9 : chapitres 5 à 9, annexes, tableaux et figures
+
+Relecture critique poursuivie, en intégrant les faits établis sur la VM le 29–30/09 (entrée précédente).
+- **Pièges corrigés.** Ch. 5 : un fichier absent « interrompt le lot » (faux : l'extraction consigne et continue) ;
+  « aucune donnée sans consentement n'atteint GOLD » (faux : le contrôle est à l'API) ; CU5 et CU8 contradictoires
+  (403 pour la fiche, liste filtrée) ; paramètres `q` / `limit` → `search` / `page_size` ; identity map traduite
+  « carte d'identité ». Ch. 6 : figure 5 corrigée (plus de flèche SILVER → PostgreSQL ; flux moteur → base et base
+  → GOLD exacts depuis le chargement central) et redessinée à la verticale (2,8 pt → 12,7 pt) ; `explanation`
+  n'est pas une colonne SILVER. Ch. 7 : `fuzz.ratio` présenté comme insensible à l'ordre (faux) ; critère C1
+  « éliminatoire » mais pondéré (reformulé) ; `difflib` présenté comme Levenshtein ; « driver-side … d'où la
+  montée en charge » nuancé ; `spark/session.py` (absent du dépôt) retiré ; explication douteuse du caractère
+  invisible retirée. Ch. 8 : précision « plancher » → estimation **optimiste** (raisonnement inversé) ; référence
+  PoC « 10 669 patients / 5 000 masters » (non vérifiable) retirée. Ch. 9 : gain de rappel attribué au CIN « dans
+  le blocking » → clé exacte ; « les deux derniers points » ne désignait pas les bonnes lignes ; risque du hachage
+  sans sel nuancé (clés aléatoires de 64 caractères) ; consentement par type de dossier ajouté aux limites et
+  perspectives.
+- **Faits nouveaux intégrés** : runs du 29–30/09 (tableau des runs réels au § 7.3.2), évaluation du pipeline
+  complet (P 1,000 / R 0,424 / F1 0,595), base centrale alimentée (test), 123 tests, trois incidents découverts
+  sur la VM (tableau des difficultés), limites mises à jour (événements GOLD et consentements n'y figurent plus ;
+  cron non exécuté, base de test seulement).
+- **Annexes** : A (journal), B (onze tables), D (phrase cassée et contradictoire réécrite), F (fichier de vérité
+  terrain corrigé) ; annexe « questions anticipées du jury » retirée ; **nouvelle annexe H : neuf captures**
+  (figures 10 à 18). Export : images `![](chemin)` + légende.
+- **Forme** : décimales françaises, `masters` → patients maîtres, renvois internes et listes de références de fin
+  de chapitre supprimés, légendes raccourcies, auto-labels « honnête » retirés.
+- **Numérotation** : 47 tableaux renumérotés dans l'ordre de lecture, renvois compris, aucun orphelin (script).
+  Figures 3, 4, 5, 6 et 9 re-rendues ; les autres PNG inchangés.
+Mots (ch. 5 à 9) : 13 183 → 12 740 (ch. 5 : 2 714 → 2 655 ; ch. 7 : 5 131 → 4 924 ; ch. 8 : 2 221 → 2 103 ;
+ch. 9 : 2 251 → 2 200). Export : 100 pages, 18 figures, 47 tableaux.

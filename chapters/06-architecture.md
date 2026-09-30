@@ -35,7 +35,7 @@ flowchart TB
 
 Conception retenue pour chaque brique (cahier des charges, § 4) :
 
-**Tableau 32 — Les briques de la chaîne et leur conception.**
+**Tableau 29 — Les briques de la chaîne et leur conception.**
 
 | Brique | Conception |
 |---|---|
@@ -54,8 +54,9 @@ gouvernée. Le schéma ci-dessous relie les trois zones Medallion, le moteur de 
 la gouvernance ; il sert de référence à la réalisation (§ 7.3).
 
 ```mermaid
-flowchart LR
+flowchart TB
     subgraph SRC["Sources"]
+        direction LR
         S1["pharmacy CSV"] --- S2["consultation CSV"] --- S3["imaging CSV"]
         S0["MAVIS PG · MMT_DB PG · CLINIQUE SQLite<br/>(sources avancées, optionnelles)"]
     end
@@ -90,7 +91,7 @@ consentements, journal d'audit, comptes. C'est une séparation de rôles, pas un
 L'architecture est installée sur **une VM unique** (`ubuntu/focal64`, Vagrant, 8 Go, 4 cœurs) ;
 l'ordre de démarrage des services est strict :
 
-**Tableau 33 — Les composants de la VM et leurs ports.**
+**Tableau 30 — Les composants de la VM et leurs ports.**
 
 | Composant | Rôle | Port / chemin |
 |---|---|---|

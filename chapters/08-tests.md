@@ -10,13 +10,13 @@ flowchart TD
     subgraph Unitaire
         G["Générateur : 44 tests<br/>variation, distribution, mapping"]
         E["Moteur et gouvernance : 57/57<br/>matcher 12 · consent 21 · canonique 8<br/>API de gouvernance 16"]
-        P["Planification et reprise : 45/45<br/>échéances 22 · empreintes 10<br/>état du pipeline 5 · API de planification 8"]
+        P["Pipeline : 66/66<br/>échéances 22 · empreintes 10 · état 5<br/>API du pipeline 11 · historique 12 · base centrale 6"]
     end
     subgraph Intégration
         MVP["MVP : 20 tests<br/>pipeline, loader, auth, audit, api"]
     end
     subgraph Système
-        API["API des indicateurs (Flask) : 3/3<br/>pipeline run 4/4 (07/09) · 5 étapes"]
+        API["API des indicateurs (Flask) : 3/3<br/>runs du pipeline sur la VM (30/09)"]
         EVAL["Évaluation sur vérité terrain<br/>P/R/F1 easy / medium / hard"]
     end
     G --> E --> MVP --> API
@@ -24,30 +24,27 @@ flowchart TD
     E --> EVAL
 ```
 
-> **Figure 9 — La stratégie de test : tests unitaires (générateur, moteur, planification), puis le
-> MVP, et enfin les tests système (API des indicateurs, évaluation sur vérité terrain).**
+> **Figure 9 — La stratégie de test.**
 
-**Tableau 44 — Les niveaux de test, leur périmètre et le résultat obtenu ; les 3 tests de l'API Flask ne prouvent que la joignabilité.**
+**Tableau 42 — Les niveaux de test et leurs résultats.**
 
 | Niveau | Périmètre | Résultat |
 |---|---|---|
-| **Générateur** (7 fichiers de tests) | variation engine, générateurs de sources, distribution, identity mapping, experiment builder | **44 tests PASS** [contexte_projet.md] |
-| **Moteur `engine/`** | `test_matcher.py` (12 cas), `test_consent.py` (21 cas), `test_deduplication.py` (8 cas canonique), `test_governance_api.py` (16 cas) | **57/57 PASS** (`pytest projet/code-source/tests`, 28/09/2026) |
-| **Planification & reprise `provision/`** | `test_schedule_logic.py` (22 cas), `test_watermark.py` (10 cas), `test_pipeline_state.py` (5 cas), `test_pipeline_api.py` (8 cas) | **45/45 PASS** (même suite) |
-| **MVP** (`test_bigdata`) | pipeline, loader PostgreSQL, auth, audit, api | **20 tests PASS** [contexte_projet.md] |
-| **API des indicateurs (Flask)** | `test_api.py` — 3 tests sur données réelles | **3/3 PASS** [logs.md] |
-| **Pipeline** | `run_pipeline.sh` RAW → SILVER → GOLD | **4/4 vert** (07/09/2026) ; orchestration actuelle en 5 étapes, re-validation VM en attente |
+| **Générateur** (7 fichiers de tests) | moteur de variations, générateurs de sources, répartition, vérité terrain, construction des jeux | **44 tests réussis** |
+| **Moteur et gouvernance `engine/`** | `test_matcher.py` (12 cas), `test_consent.py` (21), `test_deduplication.py` (8, modèle canonique), `test_governance_api.py` (16) | **57 sur 57** (`pytest projet/code-source/tests`, 30/09/2026) |
+| **Pipeline `provision/`** | `test_schedule_logic.py` (22 cas), `test_watermark.py` (10), `test_pipeline_state.py` (5), `test_pipeline_api.py` (11), `test_run_metrics.py` (12), `test_central_db.py` (6) | **66 sur 66** (même suite) |
+| **MVP** (`test_bigdata`) | pipeline, chargement PostgreSQL, authentification, audit, API | **20 tests réussis** |
+| **API des indicateurs (Flask)** | `test_api.py` — 3 vérifications sur les données du lac | **3 sur 3** (joignabilité seulement) |
+| **Pipeline sur la VM** | `run_pipeline.sh` RAW → SILVER → GOLD | runs complets et en reprise réussis (29–30/09/2026) ; évaluation du run : précision 1,000, rappel 0,424 |
 
-L'ordre des niveaux n'est pas décoratif : il suit le **coût de retour à l'échec**. Un test
-unitaire échoue en quelques secondes et pointe une ligne de code ; un test de système n'échoue
-qu'après un pipeline complet et demande la VM. La pyramide est ici le substitut d'une intégration
-continue, écartée du périmètre du stage : la preuve est **reproductible manuellement** (`pytest`
-pour le moteur, `run_pipeline.sh` pour le lac, `test_api.py` pour l'API) plutôt que rejouée à
-chaque commit.
+L'ordre des niveaux suit le **coût d'un échec** : un test unitaire échoue en quelques secondes
+et désigne une ligne de code ; un test système n'échoue qu'après un pipeline complet et demande
+la VM. En l'absence d'intégration continue, hors périmètre du stage, chaque niveau est
+**rejouable manuellement** (`pytest` pour le moteur et le pipeline, `run_pipeline.sh` pour le lac,
+`test_api.py` pour l'API des indicateurs).
 
-La suite complète (`pytest projet/code-source/tests`) passe à **102/102** (57 moteur +
-45 planification/reprise), zéro échec — le chiffre reporté dans la conclusion générale et les
-slides.
+La suite principale (`pytest projet/code-source/tests`) réussit **123 tests sur 123** (57 pour le
+moteur et la gouvernance, 66 pour le pipeline), sans échec.
 
 ## 8.2 Tests unitaires
 
@@ -55,45 +52,43 @@ slides.
 sources, la distribution, l'identity mapping et la construction des jeux easy / medium / hard :
 **44 tests PASS**.
 
-**Moteur.** Les tests du moteur couvrent la sémantique de la dédup : match exact (clé
-identique, formats de CIN normalisés), nom inversé compensé par (naissance + CIN)
-exact, fusion au seuil 0.80 (nom + naissance), faute de frappe compensée par
-naissance, ville de naissance qui augmente le score, **non-fusion de patients
-distincts**, et **parité Pandas/Spark** (`test_spark_parity`) [deduplication.md §9].
+**Moteur.** Les tests couvrent la sémantique de la déduplication : rapprochement exact (clé
+identique, formats de CIN différents), inversion du nom compensée par la date de naissance et le
+CIN, fusion au seuil de 0,80, faute de frappe compensée par la date de naissance, contribution de
+la ville de naissance au score, **non-fusion de patients distincts**, et **parité Pandas/Spark**.
 
-**Planification et reprise.** Quatre fichiers vérifient la mécanique d'exploitation hors VM :
-calcul des échéances `daily` / `weekly` / `monthly` (`test_schedule_logic.py`, 22 cas),
-empreintes et décision de saut (`test_watermark.py`, 10 cas), état et reprise d'un run
-(`test_pipeline_state.py`, 5 cas), API de planification (`test_pipeline_api.py`, 8 cas) :
-**45/45 PASS**.
+**Pipeline.** Six fichiers vérifient hors VM la mécanique d'exploitation : calcul des échéances
+(22 cas), empreintes et décision de saut (10), état et reprise d'un run (5), API du pipeline,
+historique compris (11), historique des runs (12) et chargement de la base centrale (6) :
+**66 sur 66**.
 
 ## 8.3 Tests d'intégration
 
 **MVP.** Les 20 tests du MVP (`test_bigdata`) enchaînent les composants : pipeline, chargement
 PostgreSQL, authentification, audit et API — **20 tests PASS**.
 
-**Pipeline complet.** Le run de référence du 07/09/2026 exécute `run_pipeline.sh` de bout en
-bout sur la VM, RAW → SILVER → GOLD : **4/4 vert**, 214 lignes SILVER, 145 masters, 69 doublons
-(§ 7.3.2). L'orchestration compte désormais cinq étapes ; la cinquième, préparatoire, et la
-planification n'ont **pas encore été rejouées** sur la VM (§ 8.6).
+**Pipeline complet.** Le run de référence du 07/09/2026 exécutait `run_pipeline.sh` de bout en
+bout sur la VM (214 lignes SILVER, 145 patients maîtres, 69 doublons). Les runs du 29 et du
+30/09/2026 ont rejoué les cinq étapes sur le jeu difficile, avec chargement de la base centrale et
+enregistrement de l'historique (§ 7.3.2) ; un run en mode reprise a sauté les six tables
+inchangées. Seule la planification par cron n'a pas été exécutée.
 
 ## 8.4 Tests fonctionnels
 
-**L'API des indicateurs (Flask).** `test_api.py` est un **test de fumée**. Il vérifie que chaque
-endpoint renvoie le code de statut attendu sur données réelles, sans en-tête
-d'authentification — il prouve la **joignabilité** des 2 endpoints de gouvernance du backend
-Flask (`/api/governance/duplicates` et `/api/governance/consent`) et l'absence de régression de
-statut, **pas** le contrôle d'accès. Celui-ci est vérifié ailleurs, par les 16 cas de l'API de
+**L'API des indicateurs (Flask).** `test_api.py` est un **test de fumée** : il vérifie que chaque
+point d'entrée répond avec le code attendu sur les données du lac, sans authentification. Il
+prouve la **joignabilité** des deux points d'entrée (`/api/governance/duplicates` et
+`/api/governance/consent`), **pas** le contrôle d'accès. Celui-ci est vérifié ailleurs, par les 16 cas de l'API de
 gouvernance, qui emprunte le chemin d'authentification réel (tableau ci-dessous). Aucun des deux
 niveaux ne se substitue à l'autre.
 
-**Le contrôle d'accès et le consentement (FastAPI).** Les 16 cas d'API ne simulent que le
-transport PostgreSQL : ils empruntent le **chemin réel** `Authorization: Bearer <clé>` →
-résolution de l'utilisateur → contrôle du rôle → contrôle du consentement, et **n'overrident
-jamais la dépendance d'authentification**. Ils constituent la preuve des mécanismes du § 7.2.3, qui
-traduisent les exigences juridiques du § 2.1.6.
+**Le contrôle d'accès et le consentement (FastAPI).** Les 16 cas de l'API ne simulent que la
+connexion PostgreSQL : ils empruntent le **chemin réel** `Authorization: Bearer <clé>` →
+résolution de l'utilisateur → contrôle du rôle → contrôle du consentement, sans jamais
+contourner l'authentification. Ils prouvent les mécanismes du § 7.2.3, qui traduisent les
+exigences juridiques du § 2.1.6. Le tableau reprend les principaux.
 
-**Tableau 45 — Les treize cas de contrôle d'accès et de consultation vérifiés sur le chemin réel, et le code ou le comportement attendu.**
+**Tableau 43 — Les cas de contrôle d'accès vérifiés.**
 
 | Cas vérifié | Attendu |
 |---|---|
@@ -101,143 +96,125 @@ traduisent les exigences juridiques du § 2.1.6.
 | Clé inconnue | **401** (clé invalide) |
 | Rôle `viewer` sur un endpoint `admin` | **403** |
 | `purpose` absent de `/patients` | **422** (finalité obligatoire) |
-| `purpose` hors liste fermée (`marketing`) | **422**, alphabet autorisé listé |
+| `purpose` hors liste fermée (`marketing`) | **422**, valeurs autorisées listées |
 | Finalité non consentie sur `/patients/{id}` | **403** + `refusal_reason` en audit |
 | Finalité consentie sur `/patients/{id}` | **200**, `refusal_reason` vide |
 | `/patients` avec consentements partiels | seuls les patients consentis sont renvoyés, exclusions comptées |
-| `/patients` — recherche plein texte | `q=<nom>` retrouve les masters dont le nom normalisé correspond |
-| `/patients` — recherche par CIN ou identifiant | `q=<CIN ou id>` retrouve le master correspondant |
-| `/patients` — pagination | `page`/`limit` renvoient une tranche bornée avec le total |
+| `/patients` — recherche plein texte | `search=<nom>` retrouve les patients maîtres dont le nom normalisé correspond |
+| `/patients` — recherche par CIN ou identifiant | `search=<CIN ou identifiant>` retrouve le patient maître correspondant |
+| `/patients` — pagination | `page` / `page_size` renvoient une tranche bornée avec le total |
 | `/audit` | lit `accessed_at` (régression : la requête interrogeait `recorded_at`, inexistant) |
-| Absence de ligne de consentement | refus (fail closed) |
+| Absence de ligne de consentement | refus par défaut |
 
-> **Sensibilité des tests.** Le test de refus 403 a été vérifié par *mutation* :
-> neutraliser l'appel au contrôle de consentement fait **échouer** le test. Un
-> test qui passe quelle que soit l'implémentation ne prouverait rien — c'est la
-> raison de cette vérification explicite.
+> **Sensibilité des tests.** Le test de refus 403 a été vérifié par *mutation* : neutraliser le
+> contrôle de consentement fait **échouer** le test. Un test qui réussirait quelle que soit
+> l'implémentation ne prouverait rien.
+
+**Sur une base peuplée.** Le 30/09/2026, ces cas ont aussi été rejoués sur une base centrale de
+test alimentée par le pipeline (803 patients maîtres) et par le jeu de consentements de
+démonstration (2 409 avis) : 401 sans clé, 403 pour un rôle insuffisant, 422 pour une finalité
+absente ou inconnue, 403 avec son motif en audit pour une finalité refusée ; pour la finalité
+« statistiques », la liste renvoie 294 patients et en écarte 509, nombre journalisé (annexe H).
 
 ## 8.5 Évaluation sur vérité terrain
 
 ### 8.5.1 Principe et résultats
 
-**Principe.** Trois jeux synthétiques easy / medium / hard sont générés à partir
-**des mêmes masters** (`--seed 42`) : seul le **taux de variation** change
-(10 % / 30 % / 50 %). La **vérité terrain** (`identity_mapping.csv`) regroupe les
-enregistrements du même patient ; l'algorithme **ne la reçoit jamais**. Les
-métriques sont calculées **par paires** d'enregistrements [evaluation.md §2].
+**Principe.** Trois jeux synthétiques (facile, moyen, difficile) sont générés à partir **des
+mêmes patients maîtres** : seul le **taux de variation** change (10 %, 30 %, 50 %). La **vérité
+terrain** (`identity_mapping.csv`) regroupe les fiches d'un même patient ; l'algorithme **ne la
+reçoit jamais**. Les métriques sont calculées **par paires** de fiches : un vrai positif (VP) est
+une paire correctement réunie, un faux positif (FP) une paire réunie à tort, un faux négatif (FN)
+une paire manquée.
 
-Les trois métriques sont définies par comptage sur les intersections de groupes. La
-**précision** (`TP / (TP + FP)`) mesure l'exactitude des fusions : c'est le risque le
-plus grave en santé, où fusionner deux personnes distinctes est plus grave que d'en
-laisser deux séparées. Le **rappel** (`TP / (TP + FN)`) mesure la complétude, c'est-à-dire
-la part des vrais doublons effectivement trouvés. Le **F1** (`2·P·R / (P+R)`) est le
-compromis global des deux.
+La **précision** (`VP / (VP + FP)`) mesure l'exactitude des fusions : c'est la propriété
+critique en santé, où fusionner deux personnes distinctes est plus grave que d'en laisser deux
+séparées. Le **rappel** (`VP / (VP + FN)`) mesure la part des vrais doublons retrouvés. Le **F1**
+(`2·P·R / (P+R)`) est le compromis des deux.
 
-**Résultats de référence** (run 08/09/2026, 500 masters par niveau, ~1 000
-enregistrements, parité MVP = Spark vérifiée à chaque niveau) [evaluation.md §3] :
+**Résultats de référence** (run du 08/09/2026, 500 patients maîtres et 1 057 fiches par niveau,
+mêmes résultats en Pandas et en Spark) :
 
-**Tableau 46 — Les résultats de l'évaluation ground-truth sur les trois niveaux de variation.**
+**Tableau 44 — L'évaluation du moteur sur vérité terrain.**
 
-| Niveau | Masters prédits | TP | FP | FN | Precision | Recall | F1 |
+| Niveau | Patients maîtres prédits | VP | FP | FN | Précision | Rappel | F1 |
 |---|---|---|---|---|---|---|---|
-| easy (10 %) | 500 | 727 | 0 | 0 | **1.000** | **1.000** | **1.000** |
-| medium (30 %) | 554 | 643 | 0 | 84 | **1.000** | 0.884 | 0.939 |
-| hard (50 %) | 804 | 307 | 0 | 420 | **1.000** | 0.422 | 0.594 |
+| facile (10 %) | 500 | 727 | 0 | 0 | **1,000** | **1,000** | **1,000** |
+| moyen (30 %) | 554 | 643 | 0 | 84 | **1,000** | 0,884 | 0,939 |
+| difficile (50 %) | 804 | 307 | 0 | 420 | **1,000** | 0,422 | 0,594 |
 
-Lecture : l'algorithme **ne fusionne jamais à tort** (zéro faux positif, P 1.000 sur
-les trois niveaux) — propriété essentielle en santé ; sur le dataset volontairement
-dur (50 % de variations), il **ne reconnaît pas toutes les variantes** (R 0.422).
-Les pondérations et le seuil sont configurables pour trader précision ↔ rappel
-[deduplication.md §5]. L'introduction du **CIN en clé exacte** (couverture ~75 %)
-a relevé le rappel hard de 0.287 (07/09) à **0.422** sans aucun faux positif.
+Lecture : l'algorithme **ne fusionne jamais à tort** (aucun faux positif sur les trois niveaux) ;
+sur le jeu volontairement difficile, il **ne reconnaît pas toutes les variantes** (rappel de
+0,422). Poids et seuil sont configurables pour arbitrer entre précision et rappel. L'ajout du
+**CIN à la clé exacte** a relevé le rappel du jeu difficile de 0,287 à **0,422**, sans faux
+positif.
 
-Ces métriques sont calculées **par comptage analytique** sur les intersections de groupes, et non
-en générant toutes les paires : le nombre de paires d'un groupe est obtenu directement, ce qui rend
-l'évaluation applicable à des jeux de l'ordre du millier d'enregistrements sans explosion
-combinatoire. La décomposition par méthode et par source réutilise ce même décompte en ne retenant
-que les paires « pertinentes ».
+**Le pipeline complet, mesuré de la même façon.** Le jeu difficile a aussi servi de source au
+pipeline Big Data (run du 29/09/2026, § 7.3.2) ; la table de correspondance écrite dans la base
+centrale a été comparée à la même vérité terrain (`evaluation/evaluate_pipeline_run.py`) :
+803 patients maîtres, VP = 308, FP = 0, FN = 419, soit une **précision de 1,000**, un **rappel de
+0,424** et un **F1 de 0,595**. Le passage par le lac (extraction, mapping FHIR, SILVER) ne dégrade
+donc pas la déduplication.
 
-Un point d'honnêteté sur le **zéro faux positif**. Le générateur ne fait que dégrader des
-enregistrements existants — casse, espaces, inversion, abréviation, faute de frappe, format de CIN
-ou de date, champ manquant — et ne construit **jamais** deux personnes distinctes qui se
-ressemblent. Les collisions de noms survenues fortuitement ont donc été absorbées par le seuil,
-mais le cas adversariaire — un homonyme proche fusionné à tort — n'est **pas sollicité** par la
-vérité terrain. La précision affichée est donc un **plancher**, pas une borne : la confirmer
-exigerait un générateur d'homophones quasi identiques, identifié comme piste au § 8.6.
+Les paires sont comptées analytiquement, groupe par groupe, sans être énumérées : l'évaluation
+reste applicable à des jeux plus grands sans explosion combinatoire.
+
+**Portée du zéro faux positif.** Le générateur dégrade des fiches existantes (casse, espaces,
+inversion, abréviation, faute de frappe, format, champ manquant) mais ne crée **jamais** deux
+personnes distinctes qui se ressemblent. Le cas le plus dangereux, deux homonymes proches
+fusionnés à tort, n'est donc **pas sollicité** par la vérité terrain. La précision de 1,000 vaut
+pour les erreurs simulées : face à des homonymes réels, elle est une estimation **optimiste**. La
+confirmer exigerait un générateur de quasi-homonymes (§ 8.6).
 
 ### 8.5.2 Décomposition par méthode et par source
 
-Le découpage par technique de match localise la faiblesse : sur le niveau hard, la
-méthode **exacte** atteint 1.000 / 0.854 / 0.921 (précision / rappel / F1) contre
-1.000 / 0.533 / 0.696 pour la méthode **probabiliste**. La précision reste parfaite
-dans les deux cas : toute la perte de rappel se situe sur les variantes que la passe
-probabiliste ne franchit pas le seuil 0.80 (identique MVP/Spark) [evaluation.md §3].
+Le découpage par méthode localise la faiblesse : sur le jeu difficile, la méthode **exacte**
+atteint 1,000 / 0,854 / 0,921 (précision / rappel / F1), la méthode **probabiliste**
+1,000 / 0,533 / 0,696. La perte de rappel se situe sur les variantes dont le score reste sous le
+seuil de 0,80.
 
-Le rappel est homogène entre sources (hard) : pharmacy 0.422 · consultation 0.422 ·
-imaging 0.423 — la dégradation vient du **taux de variation**, pas d'une source.
+Le rappel est homogène entre sources (pharmacy 0,422 ; consultation 0,422 ; imaging 0,423) : la
+dégradation vient du **taux de variation**, pas d'une source.
 
-La parité est quasi triviale mais structurelle : sur le dataset hard, les deux
-implantations (Pandas `matcher.py` et Spark `spark_dedup.py`) produisent
-exactement mêmes **TP=307, FP=0, FN=420, 804 masters prédits pour 500 groupes de
-vérité sur 1 057 enregistrements** [evaluation_truth.md]. Référence historique
-(test_bigdata, 10 669 patients / 5 000 masters) : F1 0.403, zéro FP, là encore
-Pandas = Spark [evaluation.md §3].
+Les deux implantations (Pandas `matcher.py` et Spark `spark_dedup.py`) produisent exactement les
+mêmes résultats sur le jeu difficile : VP = 307, FP = 0, FN = 420, et 804 patients maîtres prédits
+pour 500 patients réels et 1 057 fiches.
 
 ### 8.5.3 Cas de référence et intégrité
 
-- **Cas « Jean Rakoto »** : démo 18 patients → **11 masters, 18 liens** ; Jean
-  Rakoto fusionné par **exact** (CIN), Nirina par **probabilistic** (score
-  0.8) — identique Pandas et Spark [deduplication.md §7].
-- **Intégrité chargée** (run 07/09/2026) : SILVER `patient_fhir` **214** lignes
-  (76 + 76 + 62) ; **145 masters**, **69 doublons** (tous `match_method=exact`,
-  `match_score=1.0`) ; **214 − 69 = 145** — la cohérence se vérifie par comptage
-  sur le lac [contexte_projet.md].
-- **Gouvernance API** : `duplicate_rate` = **32.24 %** avec `mocked: false` ;
-  `patient_consent_gold` = **145** lignes pour 145 masters — la table est produite
-  par jointure, mais `purpose` / `granted` y sont à `NULL`, le consentement n'ayant
-  pas été injecté en base au moment du run (cf. § 8.6).
+- **Cas « Jean Rakoto »** : 18 fiches de démonstration donnent **11 patients maîtres et 18
+  liens** ; Jean Rakoto est rattaché par la voie **exacte** (CIN), Nirina par la voie
+  **probabiliste** (score supérieur à 0,80), à l'identique en Pandas et en Spark.
+- **Cohérence du lac** : au run du 07/09/2026, 214 lignes SILVER, 145 patients maîtres et
+  69 doublons, soit `214 − 69 = 145`, vérifiable par simple comptage ; au run du 29/09/2026,
+  1 057 lignes, 803 patients maîtres et 254 doublons (`1 057 − 254 = 803`).
+- **Consentement en GOLD** : au 07/09, la table des consentements comptait une ligne par patient
+  maître, finalité et accord vides faute de base alimentée ; au 30/09, elle porte les 2 409 avis
+  enregistrés (803 patients, 3 finalités).
 
 ## 8.6 Limites et dettes identifiées
 
-Le prototype est évalué sans complaisance [contexte_projet.md — reste à faire].
-Sept limites ont été relevées, toutes reprises dans la conclusion générale : le **rappel
-de 0.422** sur le jeu « hard » (420 faux négatifs ; à corriger en abaissant le seuil ou
-en enrichissant la clé avec l'adresse, si le métier l'accepte) ; **`patient_events_gold`
-vide**, les Encounter et Condition n'étant pas rattachées à un `patient_uuid`, donc un
-enrichissement du mapping FHIR à prévoir ; le **consentement non alimenté** en base
-centrale (`purpose` et `granted` à `NULL`), le seed étant fourni mais non exécuté, la
-mécanique étant prouvée et la donnée absente ; l'absence de
-**cas adversariaire d'homophones**, qui fait de la précision 1.000 un plancher et non
-une borne ; le **contrôle d'accès de l'API Flask non testé**, `test_api.py` ne
-contrôlant que 3 statuts sans authentification, dette assumée puisque le contrôle par
-rôle et par consentement est appliqué et testé sur l'API de gouvernance ; l'absence de
-**tests EI-déployés et d'intégration continue**, hors périmètre du stage ; enfin la
-**re-validation sur VM de l'ingestion incrémentale et de la planification cron**,
-écrites et couvertes par 45 tests, mais dont **aucune exécution réelle planifiée n'a
-encore été rejouée sur la VM** (indisponible sur le poste de préparation).
+Les limites suivantes sont reprises dans la conclusion générale :
 
-Ces limites sont **assumées et non masquées** : chacune est écrite ici avec sa cause
-et, quand elle existe, sa piste de correction, plutôt que passée sous silence.
+- **Rappel de 0,424** sur le jeu difficile (419 paires manquées) : piste, abaisser le seuil ou
+  enrichir la clé, si le métier l'accepte.
+- **Pas de cas de quasi-homonymes** dans la vérité terrain : la précision de 1,000 est une
+  estimation optimiste.
+- **API des indicateurs (Flask) sans contrôle d'accès** : `test_api.py` ne vérifie que trois
+  statuts ; le contrôle par rôle et consentement est appliqué et testé sur l'API de gouvernance.
+- **Planification par cron non exécutée** sur la VM : la logique est couverte par 22 tests.
+- **Base centrale de test seulement** : elle a été alimentée par le pipeline et par un jeu de
+  consentements de démonstration, pas par des avis réellement recueillis.
+- **Consentement par type de dossier** (consultations, imagerie…) : en cours de développement ;
+  le contrôle actuel porte sur la finalité.
+- **Ni tests sur un environnement déployé, ni intégration continue**, hors périmètre du stage.
 
 ## Conclusion
 
-La stratégie de test couvre le générateur (44), le moteur et la gouvernance
-(102/102 : 57 moteur, 45 planification/reprise), le MVP (20), l'API (3/3) et le
-pipeline (4/4 au run de référence, 5 étapes d'orchestration). L'évaluation
-ground-truth démontre **une règle d'or tenue** : zéro fusion à tort (Precision
-1.000) sur tous les niveaux, avec une parité Pandas/Spark parfaite, et un rappel
-hard relevé à 0.422 grâce à la clé CIN. Le rappel sur le jeu dur indique
-précisément où la logique pourrait s'enrichir. La gouvernance, elle, est vérifiée
-par le comportement observable : 401, 403 (rôle et consentement), 422, et un audit
-contenant la finalité et le motif du refus. La **conclusion générale** reprend ces
-acquis, expose les limites assumées et les perspectives.
-
-### Références
-
-- `documents/documentation/evaluation.md` et `evaluation/evaluation_truth.md`.
-- `tests/test_matcher.py`, `tests/test_consent.py`, `tests/test_governance_api.py`
-  (engine) ; `provision/api/test_api.py`.
-- `tests/test_schedule_logic.py`, `tests/test_watermark.py`, `tests/test_pipeline_state.py`,
-  `tests/test_pipeline_api.py` (planification et reprise).
-- `engine/governance/consent.py`, `engine/governance/audit.py` (comportements vérifiés).
-- `documents/documentation/deduplication.md` §9 ; `ai/memoire/contexte_projet.md`.
+La stratégie de test couvre le générateur (44 tests), le moteur et la gouvernance (57), le
+pipeline (66), le MVP (20), l'API des indicateurs (3) et le pipeline complet rejoué sur la VM.
+L'évaluation sur vérité terrain montre que la règle centrale est tenue : aucune fusion à tort,
+pour le moteur seul comme pour le pipeline complet, avec un rappel de 0,42 sur le jeu difficile
+qui indique où la logique peut s'enrichir. La gouvernance est vérifiée par son comportement
+observable (401, 403, 422, audit avec finalité et motif), y compris sur une base peuplée. La
+**conclusion générale** reprend ces acquis, les limites et les perspectives.

@@ -29,7 +29,7 @@ Ce que l'utilisateur ne peut pas faire, en revanche, c'est **passer d'un systèm
 Trois systèmes sources ont été rencontrés puis capturés (schémas et volumes) au cours du stage
 [`documents/journal_poc_datalake_mavis.md`](../documents/journal_poc_datalake_mavis.md) :
 
-**Tableau 13 — Les quatre sources capturées au stage : socle technique, volume vérifié, tables retenues et particularités relevées.**
+**Tableau 12 — Les quatre sources capturées au stage : socle technique, volume vérifié, tables retenues et particularités relevées.**
 
 | Source | Socle | Volume vérifiable | Tables retenues | Particularités relevées |
 |---|---|---|---|---|
@@ -71,7 +71,7 @@ graine fixe. Ils ne représentent pas les sources de production : en établissem
 plateforme lirait directement les bases des services (PostgreSQL, SQLite ou autre), par la
 même couche d'extraction.
 
-**Tableau 14 — Les trois sources synthétiques et leur identifiant.**
+**Tableau 13 — Les trois sources synthétiques et leur identifiant.**
 
 | Source | Fichier | Identifiant |
 |---|---|---|
@@ -197,7 +197,7 @@ consultation, `sex` en imagerie) : elles **encodent le genre différemment** (`H
 `male/female`, `Homme/femme`). Le moteur y répond par des listes fermées, dans
 `engine/identity/canonical.py` :
 
-**Tableau 15 — Le contrat de normalisation.**
+**Tableau 14 — Le contrat de normalisation.**
 
 | Champ | Règle de normalisation appliquée | Comportement en cas d'échec |
 |---|---|---|
@@ -238,14 +238,14 @@ optionnelle au sens du cahier des charges. Le **déploiement** chez le commandit
 Docker/CI) n'entre pas dans le stage : la plateforme est livrée comme un prototype reproductible
 sur sa VM de développement.
 
-**Tableau 16 — Les livrables et leur état à la fin du stage.**
+**Tableau 15 — Les livrables et leur état à la fin du stage.**
 
 | # | Livrable (cahier des charges, § 10) | État |
 |---|---|---|
 | 1 | Code source complet (dépôt unique `Mon_Memoire`) | réalisé |
 | 2 | Pipeline ELT Big Data (provision et scripts PySpark) | réalisé — 4 étapes sur 4 au run de référence du 07/09/2026 ; orchestration actuelle en 5 étapes |
 | 3 | Moteur de déduplication et évaluation sur vérité terrain | réalisé |
-| 4 | PostgreSQL central (patients maîtres, consentement, audit) | schéma réalisé et testé ; base **non peuplée** pendant le stage (seed fourni, non exécuté) |
+| 4 | PostgreSQL central (patients maîtres, consentement, audit) | réalisé ; alimenté par le pipeline sur une base de **test** (30/09/2026), pas de base de production |
 | 5 | API des indicateurs et API de gouvernance | réalisé |
 | 6 | Documentation technique et manuel conceptuel (`documents/`) | réalisé |
 | 7 | Frontend optionnel (Next.js) | réalisé partiellement (pilotage du pipeline, consultation des patients) — optionnel |

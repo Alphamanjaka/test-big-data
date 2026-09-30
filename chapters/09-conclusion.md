@@ -8,16 +8,16 @@ La problématique posée en introduction était la suivante :
 > données patients issues de sources hétérogènes, tout en assurant la traçabilité des identités
 > et la gouvernance des accès basée sur le consentement du patient ?*
 
-**Tableau 47 — Les six volets de la problématique : la réponse conçue et réalisée, et la preuve vérifiable dans le dépôt.**
+**Tableau 45 — Réponse à la problématique, volet par volet.**
 
 | Volet de la problématique | Réponse conçue et réalisée | Preuve vérifiable |
 |---|---|---|
 | **Intégrer** des sources hétérogènes | couche d'extraction abstraite (CSV, PostgreSQL, SQLite) → zone **RAW** en parquet HDFS, tables Hive externes, typage `STRING` assumé | 3 sources actives + 3 sources avancées (MAVIS 11 tables, MMT_DB 9 tables, CLINIQUE 4 tables) capturées [§ 3.1.2] |
-| **Nettoyer / normaliser** | modèle canonique `CanonicalPatient` + schéma pivot **FHIR** (4 entités) + normalisation de genre, dates, CIN | `datalake_silver.patient_fhir` : **214 lignes** cohérentes (76 + 76 + 62) [run 07/09/2026] |
-| **Dédupliquer** de façon explicable | blocking (3 buckets) + passe **exact** + passe **probabiliste** (RapidFuzz, poids 0.5 / 0.3 / 0.1 / 0.1, seuil 0.80) ; chaque décision porte méthode, score et explication | **145 masters**, **69 doublons** liés, `duplicate_rate` 32.24 % avec `mocked: false` |
-| **Centraliser en conservant la traçabilité** | Medallion **RAW → SILVER → GOLD**, `patient_uuid` (empreinte SHA-2 de la source et de l'identifiant d'origine), colonnes `_source_system` / `_source_table`, `patient_identity_map` ; orchestration reprise (`pipeline_state.json`) et incrémentale (watermark) | 4/4 au run de référence (07/09), 5 étapes d'orchestration ; **214 − 69 = 145** vérifié par comptage sur le lac |
-| **Gouverner par consentement** | **RBAC** (admin / analyst / viewer), clés API **SHA-256**, consentement *purpose-by-purpose* lié au `master_patient_id`, **finalité déclarée obligatoire**, refus **403** journalisé avec son motif | `access_audit` : `purpose` + `refusal_reason` ; suite de tests **102/102** (57 moteur, 45 planification et reprise), dont 401, 403 rôle, 403 consentement et 422 finalité inconnue |
-| **Ne jamais fusionner sans logique explicable** | règle **structurelle** : aucun `master_patient_id` sans `match_method` (`new_master` / `exact` / `probabilistic`) | précision **1.000** et **zéro faux positif** sur easy, medium **et** hard |
+| **Nettoyer / normaliser** | modèle canonique `CanonicalPatient` + schéma pivot **FHIR** (4 entités) + normalisation de genre, dates, CIN | `datalake_silver.patient_fhir` : **1 057 lignes** (404 + 353 + 300), dates et noms complets (run du 29/09/2026) |
+| **Dédupliquer** de façon explicable | blocking sur trois clés, passe **exacte** puis passe **probabiliste** (RapidFuzz, poids 0,5 / 0,3 / 0,1 / 0,1, seuil 0,80) ; chaque décision porte méthode, score et explication | **803 patients maîtres**, 254 doublons ; précision de 1,000 sur vérité terrain, pour le moteur seul comme pour le pipeline complet |
+| **Centraliser en conservant la traçabilité** | Medallion **RAW → SILVER → GOLD**, `patient_uuid` (empreinte SHA-2 de la source et de l'identifiant d'origine), colonnes `_source_system` / `_source_table`, `patient_identity_map` ; orchestration reprise (`pipeline_state.json`) et incrémentale (watermark) | runs complets et en reprise réussis sur la VM (29–30/09/2026), historique de chaque run en base ; **1 057 − 254 = 803** vérifié par comptage sur le lac |
+| **Gouverner par consentement** | **RBAC** (admin / analyst / viewer), clés API **SHA-256**, consentement *purpose-by-purpose* lié au `master_patient_id`, **finalité déclarée obligatoire**, refus **403** journalisé avec son motif | `access_audit` : `purpose` et `refusal_reason` ; **123 tests** réussis ; 401, 403 (rôle, consentement) et 422 vérifiés aussi sur une base peuplée (803 patients, 2 409 avis) |
+| **Ne jamais fusionner sans logique explicable** | règle **structurelle** : aucun `master_patient_id` sans `match_method` (`new_master` / `exact` / `probabilistic`) | précision de **1,000**, **aucun faux positif** sur les trois jeux |
 
 ### Synthèse des arbitrages
 
@@ -25,48 +25,48 @@ Les choix du projet se lisent comme une suite d'arbitrages, chacun posé sur des
 critères explicites (§ 7.1) et chacun assorti d'un risque résiduel assumé. Cette
 table est la réponse à la question « *qu'avez-vous choisi, et à la place de quoi ?* ».
 
-**Tableau 48 — Les onze arbitrages du projet : la décision, l'alternative écartée, le critère décisif, la preuve et le risque résiduel assumé.**
+**Tableau 46 — Les arbitrages du projet.**
 
 | Décision | Alternative écartée | Critère décisif | Preuve | Risque résiduel |
 |---|---|---|---|---|
-| **RapidFuzz** + dictionnaire de synonymes | `sentence_transformers` | compatibilité Python 3.8 (C1 éliminatoire) | 2.10 vs 5.00 en arbitrage pondéré ; parité Pandas = Spark | rappel limité sur variations fortes (0.422) |
-| **Seuil 0.80**, poids 0.5/0.3/0.1/0.1 | seuil unique 0.90 | en santé, une fusion à tort est plus grave qu'une fusion manquée | précision 1.000 sur les 3 niveaux, 0 FP | 420 paires manquées (faux négatifs) sur le jeu dur |
-| **CIN dans la clé de blocking** | blocage sur le seul nom | couverture ~75 % des maîtres | rappel hard 0.287 → **0.422** | patients sans CIN : rappel plus faible |
-| **Medallion RAW → SILVER → GOLD** | base unique « wide » | traçabilité et rejeu exigés (F1) | 4/4 étapes vertes, rejeu reproductible | tables GOLD à enrichir (`patient_events_gold` vide) |
+| **RapidFuzz** | `sentence_transformers` | compatibilité Python 3.8 (C1) | 2,10 contre 5,00 en arbitrage pondéré | rappel limité sur les variations fortes (0,422) |
+| **Seuil 0,80**, poids 0,5 / 0,3 / 0,1 / 0,1 | seuil plus bas, davantage de fusions | en santé, une fusion à tort est plus grave qu'une fusion manquée | précision de 1,000 sur les 3 jeux, aucun faux positif | 420 paires manquées sur le jeu difficile |
+| **CIN dans la clé exacte** (et le blocking) | rapprochement sur le nom et la date seuls | CIN porté par environ 75 % des patients | rappel du jeu difficile 0,287 → **0,422** | patients sans CIN : rappel plus faible |
+| **Medallion RAW → SILVER → GOLD** | base unique « à plat » | traçabilité et rejeu exigés (F1) | runs complets et en reprise réussis ; 1 761 événements en GOLD | agrégats GOLD encore simples |
 | **PostgreSQL central** | SQLite / MySQL | JSONB, contraintes CHECK, écritures concurrentes | schéma versionné, contraintes `purpose` et `role` | base unique : point de défaillance unique, non traité |
 | **Clé API + 3 rôles** | comptes nominatifs / annuaire | pas d'annuaire d'identité sur place (§ 4.2) | `api_user`, SHA-256, 401/403 vérifiés | pas de traçabilité nominative individuelle |
-| **Finalité en paramètre de requête** | finalité déduite du rôle | finalité déterminée (art. 5.1.b) | 422 hors liste fermée, 403 sinon | une finalité reste déclarative : elle repose sur l'honnêteté de l'appelant |
-| **FastAPI** | Flask | contrôle de finalité exprimé dans le schéma d'API | 4.65 vs 4.50 | écart faible : choix revisable |
+| **Finalité en paramètre de requête** | finalité déduite du rôle | finalité déterminée (loi 2014-038, art. 14 ; RGPD, art. 5.1.b) | 422 hors liste fermée, 403 si non consentie | la finalité reste déclarative : elle repose sur la bonne foi de l'appelant |
+| **FastAPI** | Flask | contrôle de finalité exprimé dans le schéma d'API | 4,65 contre 4,50 | écart faible : choix révisable |
 | **MPI local + pivot FHIR** | MPI commercial ou registre complet (OpenCR) | périmètre du stage, données synthétiques | `engine/identity/`, 4 entités `_fhir` | MPI non certifié, à valider avant tout usage réel |
 | **3 niveaux : MVP → Spark → Big Data** | Big Data direct | chaque technologie introduite par un besoin | `run_pipeline.sh`, 4/4 étapes vertes | chaque niveau ajoute un palier à maintenir |
-| **Parité Pandas = Spark vérifiée** | deux logiques divergentes | démontrer que le scale ne change pas la sémantique | `test_spark_parity` : TP=307, FP=0, FN=420 identiques | parité vérifiée sur 3 jeux, pas sur le volume réel |
+| **Parité Pandas = Spark vérifiée** | deux logiques divergentes | montrer que le passage à l'échelle ne change pas la sémantique | VP = 307, FP = 0, FN = 420 identiques | parité vérifiée sur 3 jeux, pas sur le volume réel |
 
-> **Ce que cette synthèse dit du projet.** Aucun arbitrage n'a été fait « par
-> défaut » : chacun a une raison, une preuve et un risque associé. Les deux
-> derniers points sont les plus discutables — la finalité déclarée par l'appelant
-> n'est vérifiable qu'*a posteriori* par l'audit, et l'écart FastAPI/Flask est trop
-> faible pour être une conviction forte. Les assumer explicitement vaut mieux
-> qu'un tableau de décisions toutes présentées comme optimales.
+> **Lecture.** Chaque arbitrage a une raison, une preuve et un risque. Deux sont plus
+> discutables que les autres : la finalité déclarée par l'appelant n'est vérifiable qu'*a
+> posteriori*, par l'audit ; et l'écart entre FastAPI et Flask est trop faible pour être une
+> conviction forte.
 
 ### Ce que le projet démontre
 
 1. **La démarche progressive tient.** Le même moteur métier a été écrit une première fois en
    Pandas (niveau 1), puis porté en PySpark (niveau 2) avec une **parité stricte** vérifiée par
-   test et par évaluation (TP = 307, FP = 0, FN = 420 pour les deux implantations), puis intégré
-   à un Data Lake Medallion (niveau 3). Changer d'infrastructure **n'a pas changé la sémantique**.
-2. **L'explicabilité a un coût, et ce coût est maîtrisé.** En santé, une fusion à tort est plus
-   grave qu'une fusion manquée : le seuil a été positionné en conséquence, et le rappel
-   « easy / medium » atteint 1.000 / 0.884 sans aucun faux positif. Le rappel dur (0.422) est
-   **assumé et expliqué**, pas masqué.
+   test et par évaluation (VP = 307, FP = 0, FN = 420 pour les deux implantations), puis intégré
+   à un Data Lake Medallion (niveau 3). Mesuré sur la même vérité terrain, le pipeline complet
+   obtient les mêmes résultats (précision 1,000, rappel 0,424) : changer d'infrastructure **n'a
+   pas changé la sémantique**.
+2. **La prudence a un coût, et il est mesuré.** En santé, une fusion à tort est plus grave qu'une
+   fusion manquée : le seuil a été positionné en conséquence. Le rappel atteint 1,000 et 0,884
+   sur les jeux facile et moyen, sans faux positif ; sur le jeu difficile, il reste à 0,422, et
+   la cause en est expliquée.
 3. **La gouvernance est dans le système, pas à côté.** Le refus d'accès pour finalité non
    consentie est **décidé, opposé et journalisé** : un utilisateur autorisé qui demande une
    finalité non consentie reçoit un **403**, et l'audit conserve la finalité demandée et le motif
    du refus. La conformité se démontre par l'audit, pas par une intention. Le comportement est
    vérifié par des tests qui empruntent le **vrai** chemin d'authentification (clé API → rôle →
-   consentement), et non en court-circuitant la sécurité.
+   consentement), puis sur une base peuplée de 803 patients et 2 409 avis.
 4. **Le contexte dicte les choix.** VM 8 Go, Python 3.8, nœud distant instable : chaque
    contrainte a été traitée (RapidFuzz au lieu d'un modèle NLP, réplique locale de MAVIS, entrepôt
-   Spark toujours sur HDFS) et consignée dans les pièges anti-régression [pipeline_elt.md].
+   Spark toujours sur HDFS) et consignée dans les pièges anti-régression.
 
 > **Toutes les données manipulées sont synthétiques** (`RANDOM_SEED = 42`). Aucun identifiant réel,
 > aucun dump de production n'a été exploité : la confidentialité est une exigence de conception, pas
@@ -76,13 +76,15 @@ table est la réponse à la question « *qu'avez-vous choisi, et à la place de 
 
 Les difficultés ont été de quatre ordres.
 
-- **Techniques.** Sept incidents ont été rencontrés et corrigés (§ 7.3.6) : explosion de la zone
-  SILVER à 11 614 lignes, écritures qui s'écrasaient d'une source à l'autre, fichiers parquet
-  corrompus sur le partage de la VM, démarrage de Spark bloqué, HiveServer2 instable, modèle NLP
-  inutilisable sous Python 3.8, caractère invisible qui empêchait un script de compiler.
+- **Techniques.** Dix incidents ont été rencontrés et corrigés (§ 7.3.6) : explosion de la zone
+  SILVER à 11 614 lignes, écritures qui s'écrasaient d'une source à l'autre, fichiers Parquet
+  corrompus sur le dossier partagé de la VM, démarrage de Spark bloqué, HiveServer2 instable,
+  bibliothèque de NLP inutilisable sous Python 3.8, caractère invisible qui empêchait un script de
+  compiler ; puis, en rejouant le pipeline le 30/09, un NameNode qui ne redémarrait plus, des
+  dates de naissance perdues à l'extraction et des noms tronqués.
 - **D'environnement.** Le nœud distant MAVIS était instable, ce qui a imposé des répliques locales
-  puis des sources synthétiques ; en fin de stage, la VM indisponible sur le poste de préparation
-  n'a pas permis de rejouer la planification et l'ingestion incrémentale (§ 8.6).
+  puis des sources synthétiques ; la VM, indisponible une partie de la fin du stage, n'a été
+  relancée que le 30/09.
 - **D'organisation.** L'équipe de développement tenait en une personne : pas de revue de code
   croisée (§ 4.1.3), et un algorithme porté deux fois, en Pandas puis en Spark, faute d'avoir
   arrêté l'échelle plus tôt (§ 4.3).
@@ -92,18 +94,19 @@ Les difficultés ont été de quatre ordres.
 
 ## Limites assumées
 
-**Tableau 49 — Les limites assumées du prototype : état observé et cause, sans dissimulation.**
+**Tableau 47 — Les limites du prototype.**
 
 | Limite | État observé | Cause |
 |---|---|---|
-| **Rappel 0.422 sur le jeu « hard »** | 420 faux négatifs sur 1 057 enregistrements | variations à 50 % ; seuil 0.80 conservateur ; le métier n'a pas validé un seuil plus bas |
-| **`patient_events_gold` vide** | 0 ligne en intermédiaire | Encounter / Condition / Observation non rattachées à `patient_uuid` : enrichissement du mapping FHIR restant |
-| **Consentement non alimenté en base centrale** | `patient_consent_gold` : 145 lignes mais `purpose` / `granted` à `NULL` | PostgreSQL central non peuplé pendant le stage. La **mécanique** est démontrée et testée (seed `provision/db/seed_governance.py` fourni, non exécuté faute d'environnement) ; la **donnée** ne l'est pas |
+| **Rappel de 0,422 sur le jeu difficile** (0,424 pour le pipeline complet) | 420 paires manquées sur 1 057 fiches | variations à 50 % ; seuil de 0,80 prudent ; le métier n'a pas validé un seuil plus bas |
+| **Consentement par type de dossier** | en cours de développement | le contrôle actuel porte sur la finalité (consultation par l'API, recherche, statistiques) |
+| **Base centrale de test** | alimentée par le pipeline et par un jeu de consentements de démonstration (2 409 avis) | pas d'avis réellement recueillis ni de base de production |
+| **Planification par cron non exécutée** | logique couverte par 22 tests | planification désactivée pendant les runs du 29–30/09 |
 | **Formalités légales non accomplies** | conception alignée sur la loi n° 2014-038 et sur le RGPD (§ 2.1.6), sans déclaration ni autorisation auprès de la CMIL | prototype non déployé ; autorité de contrôle pas encore opérationnelle (§ 4.2) |
 | **API Flask de démonstration non sécurisée** | `/api/governance/consent` sans authentification, `debug=True` | dette connue du PoC ; le contrôle de consentement est implémenté sur l'API **FastAPI** de gouvernance, qui est celle du dépôt consolidé |
-| **Clés d'API hachées sans sel** | `engine/governance/auth.py:26` et `provision/db/seed_governance.py:57` : `hashlib.sha256(...).hexdigest()`, sans sel ni itération | l'empreinte protège la lecture directe de `api_user`, mais une même clé produit toujours la même empreinte : une table de correspondance suffit à la retrouver. Voie de correction : un sel par clé, ou une fonction lente par défaut (`bcrypt`, déjà employée côté frontend pour les mots de passe). Sans effet sur le moteur de déduplication, qui n'utilise pas ces clés |
-| **Précision 1.000 = un plancher, pas une borne** | aucun cas adversariaire dans la vérité terrain | le générateur ne dégrade que des enregistrements existants et ne crée jamais deux personnes presque identiques ; un module « faux jumeaux » renforcerait la preuve (§ 8.6) |
-| **Volume démontré** | quelques centaines de lignes en Silver | la VM 8 Go ne permet pas de charger les volumes réels de l'établissement ; le parcours Big Data est **architecturé et reproductible**, pas passé à l'échelle |
+| **Clés d'API hachées sans sel** | empreinte SHA-256 simple, sans sel ni itération | une même clé donne toujours la même empreinte. Les clés générées étant aléatoires et longues (64 caractères hexadécimaux), une attaque par dictionnaire reste peu réaliste ; la pratique recommandée reste un sel ou une fonction lente (`bcrypt`, déjà employé par l'interface pour les mots de passe) |
+| **Précision de 1,000 : estimation optimiste** | aucun quasi-homonyme dans la vérité terrain | le générateur dégrade des fiches existantes mais ne crée jamais deux personnes presque identiques ; un module de quasi-homonymes renforcerait la preuve (§ 8.6) |
+| **Volume démontré** | 1 057 fiches au plus | les volumes réels de l'établissement n'étaient pas disponibles, et la VM de 8 Go limite les essais ; le parcours Big Data est **architecturé et reproductible**, pas passé à l'échelle |
 | **Comparaison de l'existant = documentaire** | aucun produit tiers installé | banc d'essai hors périmètre du stage (§ 2.4) |
 | **Absents du périmètre** | déploiement en production, Docker/CI, export VM `.box` | écartés explicitement (hors stage) ; le frontend, optionnel, n'est réalisé que partiellement |
 
@@ -115,9 +118,9 @@ HDFS, Hive, Spark — sur une machine virtuelle, et j'ai appris à mes dépens c
 documentation ne dit pas : l'ordre de démarrage des services, l'entrepôt Spark qu'on n'écrit
 jamais sur un partage, le coût de démarrage de Spark sur de petits volumes.
 
-Il m'a ensuite permis de mettre en relation trois niveaux rarement réconciliés — le **modèle
+Il m'a ensuite permis de relier trois niveaux souvent étudiés séparément : le **modèle
 statistique** du rapprochement d'identités, l'**architecture Big Data** qui le rend exploitable à
-l'échelle, et la **règle de gouvernance** qui décide qui peut le lire. Enfin, il m'a appris une
+l'échelle, et la **règle de gouvernance** qui décide qui peut lire les données. Enfin, il m'a appris une
 discipline : ne rien affirmer sans preuve reproductible, et écrire une limite plutôt que de la
 taire.
 
@@ -125,23 +128,21 @@ taire.
 
 **Court terme — compléter la chaîne existante**
 
-1. Enrichir le **mapping FHIR** (liens `Encounter` / `Condition` / `Observation` sur
-   `patient_uuid`) pour alimenter `patient_events_gold` et valider un `COUNT(*) > 0`.
-2. **Peupler le PostgreSQL central** en exécutant `provision/db/seed_governance.py`
-   (utilisateurs, consentements mixtes accords/refus) et rejouer l'étape GOLD pour
-   démontrer le refus par finalité non consentie sur données réelles du dépôt.
-3. **Calibrer le seuil et les poids** sur la vérité terrain existante (rappel contre précision) et
+1. Terminer le **consentement par type de dossier** (consultations, imagerie…), annoncé en
+   introduction.
+2. **Déployer la base centrale** sur un serveur de l'établissement et y enregistrer des
+   consentements réellement recueillis.
+3. **Calibrer le seuil et les poids** sur la vérité terrain (rappel contre précision) et
    documenter la courbe de compromis au lieu d'un point unique.
-4. **Rejouer sur la VM** la planification et l'ingestion incrémentale, écrites et testées hors
-   VM.
+4. **Activer et observer la planification** par cron sur la VM ; l'ingestion incrémentale a été
+   validée le 30/09.
 
 **Moyen terme — fiabiliser et généraliser**
 
 5. Ajouter les **tests d'intégration déployés** et une **CI** (GitHub Actions) exécutant générateur,
    moteur et évaluation à chaque commit.
-6. Passer à l'échelle : partitionnement du blocking, consolidation *transitive* des clusters dans
-   `spark_dedup.py`, calibration EM (dans l'esprit de Splink) **en complément** du score pondéré,
-   avec double comptage explicable.
+6. Passer à l'échelle : partitionnement du blocking, consolidation *transitive* des groupes dans
+   `spark_dedup.py`, calibration EM (dans l'esprit de Splink) **en complément** du score pondéré.
 7. Reprendre le vrai MAVIS distant quand le nœud sera stable et rejouer le pipeline sur les
    volumes réels, en conservant les répliques synthétiques pour la démonstration.
 
@@ -151,18 +152,6 @@ taire.
    RAW → GOLD, et sur la dé-identification pour toute sortie de données hors plateforme.
 9. Généraliser le moteur à d'autres entités qu'aux patients (médecins, médicaments) : la
    traçabilité des identités se transpose telle quelle.
-
----
-
-## Références
-
-- `ai/memoire/contexte_projet.md` (chiffres du run 07/09/2026) ; `evaluation/evaluation_truth.md`.
-- `documents/documentation/deduplication.md` (règles de fusion) ;
-  `documents/documentation/pipeline_elt.md` (pièges et run) ;
-  `documents/documentation/consentement_gouvernance.md` (RBAC, consentement, audit).
-- `documents/rapport_stage.md` §6 (synthèse de stage, même contenu condensé).
-- `documents/slides_soutenance.md` (support de démonstration).
-- Annexe G : questions anticipées du jury, avec la réponse vérifiée et le paragraphe d'appui.
 
 *Toutes les données de ce mémoire sont fictives et vérifiables dans le dépôt unique
 `Mon_Memoire`.*
