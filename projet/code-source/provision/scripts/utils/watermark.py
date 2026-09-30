@@ -29,7 +29,7 @@ DEFAULT_WATERMARK_PATH = os.path.join(
 
 
 def _now_iso() -> str:
-    return datetime.now().replace(microsecond=0).isoformat()
+    return datetime.now().astimezone().replace(microsecond=0).isoformat()  # avec fuseau (VM en UTC)
 
 
 def watermark_path() -> str:
