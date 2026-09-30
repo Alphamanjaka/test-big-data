@@ -186,8 +186,17 @@ est définie. Sans base joignable, le run reste en attente et sera enregistré a
 l'historique ne fait jamais échouer le pipeline. Lecture : `GET /pipeline/runs` (admin, analyst),
 affiché dans la page `/dashboard` (carte « Historique des runs », détail par source au clic).
 
-État au 29/09/2026 : mécanique testée hors VM (`tests/test_run_metrics.py`, `tests/test_pipeline_api.py`) ;
-**aucun run réel encore enregistré** (VM indisponible, `schema.sql` à appliquer sur la base).
+État au 30/09/2026 : cinq runs réels enregistrés sur une base centrale **de test** (voir « Validation VM,
+30/09/2026 ») ; tests : `tests/test_run_metrics.py`, `tests/test_pipeline_api.py`.
+
+## Chargement de la base centrale (étape SILVER)
+
+`provision/scripts/utils/central_db.py` : après la déduplication, l'étape SILVER écrit `master_patient` (un
+patient maître par décision `new_master`, identité de la fiche fondatrice) et `patient_identity_map` (une ligne
+par fiche : patient maître, méthode, score, explication), après application idempotente de `sql/schema.sql`.
+Écritures `ON CONFLICT` (rejouables) ; sans `DATABASE_URL` ou base injoignable, rien n'est écrit et le pipeline
+continue. Avant le 30/09/2026, le pipeline consolidé n'alimentait pas ces tables (seul l'ancien MVP le faisait).
+Tests : `tests/test_central_db.py`.
 
 ## Pièges connus (règles anti-régression)
 
@@ -204,6 +213,28 @@ affiché dans la page `/dashboard` (carte « Historique des runs », détail par
 6. Si une ancienne base GOLD existe en local : `DROP DATABASE datalake_gold CASCADE` avant reconfiguration.
 7. **Interdiction** : `sentence_transformers` (crash Python 3.8).
 8. Mémoire Spark : executor 4g / driver 2g / `shuffle.partitions=8` (via `pipeline.yaml`).
+9. **Données HDFS hors de `/tmp`** (`hadoop.tmp.dir=/home/vagrant/hadoop-data`) : `/tmp` est vidé au
+   redémarrage de la VM, et le NameNode ne redémarrait plus (constaté le 30/09/2026).
+10. **Dates de naissance lues valeur par valeur** (`gen_extract_raw.py`, `_date_iso`) : une colonne mélange
+    plusieurs formats ; ne lire que le format dominant perdait environ 20 % des dates.
+11. **Nom en deux colonnes** (prénom, nom) : reconstitué en `full_name` avant le mapping FHIR
+    (`create_silver.py`, `composer_nom_complet`), sinon le mapping n'en garde qu'une.
+12. **Dépendances de la VM** : `api-venv` doit contenir `pandas`, `pyyaml` et `psycopg` ; sans pandas, le moteur
+    n'est pas importable et l'étape SILVER saute la déduplication (avertissement dans le journal seulement).
+
+## Validation VM (29–30/09/2026)
+
+Source : jeu d'évaluation **difficile** du générateur copié dans `data/raw/` ; base centrale de test
+(PostgreSQL local, `DATABASE_URL` vers l'hôte `192.168.56.1`).
+
+| Run | Mode | Résultat |
+|---|---|---|
+| 20260929T203418 | complet | avant correctifs (dates, noms) : 1 057 lignes, 767 patients maîtres, 290 doublons |
+| 20260929T204439 | complet | 1 057 lignes, **803** patients maîtres, 254 doublons (245 exacts, 9 probabilistes), 24,03 % ; GOLD : 1 761 événements ; 2 min 56 s |
+| 20260929T204829 et suivants | reprise | **6 tables sur 6 sautées** (empreinte identique) ; consentements GOLD : 2 409 lignes après seed |
+
+Évaluation du run sur la vérité terrain (`evaluation/evaluate_pipeline_run.py --level hard`) : précision 1,000,
+rappel 0,424, F1 0,595 (moteur seul : 0,422 / 0,594). La planification par cron n'a pas été activée.
 
 ## Validation VM (interim CSV, 07/09/2026)
 
@@ -227,8 +258,8 @@ beeline HS2 instable dans la VM, contourné) :
   `patient_id`, `patient_code`) déclaré dans `fhir_entities.json` → `patient_events_gold` attendu > 0
   (à revalider sur VM).
 - Laboratory et Malaria : données uniquement mock (sources hors GOLD).
-- Consentement PostgreSQL non alimenté en interim → `patient_consent_gold` construit depuis les masters SILVER
-  (`granted`/`purpose` NULL) ; endpoints duplicates/consent servis hors mock (`mocked: false`).
+- Consentement PostgreSQL non alimenté en interim (07/09) → `patient_consent_gold` avec `granted`/`purpose`
+  NULL. **Résolu** sur la base de test le 30/09/2026 (seed de gouvernance : 2 409 avis).
 
 ## Voir aussi
 

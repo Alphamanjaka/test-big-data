@@ -161,6 +161,13 @@ dans `Mon_Memoire` (subtree → `projet/code-source/`, `projet/mvp/`, `archives/
     éliminatoires + 5 de qualité ; arbitrage 4 ajouté à la matrice du § 7.1 ; B21-B31 ajoutées.
     **Preuves :** sources consultées le 28/09 (URL et DOI dans `references/bibliographie.md`) ;
     49 tableaux renumérotés sans trou ; export DOCX de contrôle OK. Reste : relecture, commit.
+19. **[Validation VM — 30/09]** VM relancée : HDFS réparé (données hors de `/tmp`), dépendances Python de la VM
+    complétées, **cinq runs réels** enregistrés en base (jeu difficile). Trois défauts découverts et corrigés
+    (dates perdues, noms tronqués, base centrale jamais alimentée par le pipeline consolidé :
+    `provision/scripts/utils/central_db.py`). Évaluation du pipeline complet sur vérité terrain : P 1,000 /
+    R 0,424 / F1 0,595 ; reprise validée (6 tables sur 6 sautées) ; gouvernance vérifiée sur base peuplée ;
+    captures réelles (annexe H du mémoire, rapport). **Preuves :** `pytest` 123/123, journal du 30/09.
+    **Reste :** activer le cron ; base centrale de production ; décision sur MAVIS / MMT_DB / CLINIQUE.
 18. **[Pipeline — historique des runs]** Fonctionnalité **implémentée et testée hors VM** (29/09) :
     chaque run est conservé **en base** (tables `pipeline_run` et `pipeline_run_source` de
     `sql/schema.sql`) avec, par source, les lignes extraites ou sautées, puis les lignes SILVER, les
