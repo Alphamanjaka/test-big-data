@@ -30,19 +30,19 @@ emplacement (`inséré` / `EN ATTENTE`).
 | C01 | `C01_schema_mavis.png` | 3.1.2 Existant | liste des tables ou diagramme du schéma MAVIS (DBeaver, pgAdmin), sans données | optionnel |
 | C02 | `C02_gantt.png` | 4.4 Planification | feuille Gantt de `documents/Gantt_suivi_projet.xlsx`, du 06/07 à fin octobre | retiré du rapport (29/09/2026) |
 | C03 | `C03_connexion.png` | 5.3.1 IHM | page `/login` | retiré du rapport (29/09/2026) |
-| C04 | `C04_synthese.png` | 5.3.1 IHM | page `/synthese` : maîtres, doublons, taux, accords/refus | **essentiel** |
+| C04 | `C04_synthese.png` | 5.3.1 IHM | page `/synthese` : maîtres, doublons, taux, accords/refus | réalisée le 30/09/2026 |
 | C05 | `C05_doublons.png` | 5.3.1 IHM | page `/doublons` : répartition par méthode | retiré du rapport (29/09/2026) |
 | C06 | `C06_gouvernance.png` | 5.3.1 IHM | page `/gouvernance`, filtrée sur une finalité | retiré du rapport (29/09/2026) |
-| C07 | `C07_pipeline.png` | 5.3.1 IHM | page `/dashboard` ou `/pipeline` : zones, dernier run, planification | **essentiel** |
+| C07 | `C07_pipeline.png` | 5.3.1 IHM | page `/dashboard` ou `/pipeline` : zones, dernier run, planification | réalisée le 30/09/2026 |
 | C08 | `C08_patients.png` | 5.3.1 IHM | page `/patients` avec recherche et finalité | retiré du rapport (29/09/2026) |
-| C09 | `C09_fiche_patient.png` | 5.3.1 IHM | page `/patients/{id}` d'un patient à plusieurs fiches (cas « Jean Rakoto ») | **essentiel** |
-| C10 | `C10_swagger.png` | 5.3.2 API | `/docs` de l'API FastAPI (port 8000), points d'entrée listés | recommandé |
-| C11 | `C11_hdfs_datalake.png` | 6.2 Architecture technique | interface HDFS (port 9870) > Browse, dossier `/datalake` (raw, silver, gold) | **essentiel** |
-| C12 | `C12_run_pipeline.png` | 7.3.1 Pipeline | terminal VM : sortie de `run_pipeline.sh` ou fin de `elt.log`, étapes OK | **essentiel** |
+| C09 | `C09_fiche_patient.png` | 5.3.1 IHM | page `/patients/{id}` d'un patient à plusieurs fiches (cas « Jean Rakoto ») | réalisée le 30/09/2026 |
+| C10 | `C10_swagger.png` | 5.3.2 API | `/docs` de l'API FastAPI (port 8000), points d'entrée listés | réalisée le 30/09/2026 |
+| C11 | `C11_hdfs_datalake.png` | 6.2 Architecture technique | interface HDFS (port 9870) > Browse, dossier `/datalake` (raw, silver, gold) | réalisée le 30/09/2026 |
+| C12 | `C12_run_pipeline.png` | 7.3.1 Pipeline | terminal VM : sortie de `run_pipeline.sh` ou fin de `elt.log`, étapes OK | réalisée le 30/09/2026 |
 | C13 | `C13_comptages.png` | 7.3.1 Pipeline | requête Spark/Hive : 214 lignes SILVER, 145 maîtres | retiré du rapport (29/09/2026) |
-| C14 | `C14_refus_403.png` | 7.3.3 Gouvernance | réponse 403 + ligne `access_audit` (purpose, refusal_reason) | retiré du rapport (29/09/2026) |
-| C15 | `C15_pytest.png` | 8.1 Tests | fin de `pytest projet/code-source/tests` : « 102 passed » | **essentiel** |
-| C16 | `C16_evaluation.png` | 8.4 Évaluation | sortie de `evaluate_engine.py` sur le jeu hard (P/R/F1) | recommandé |
+| C14 | `C14_refus_403.png` | 7.3.3 Gouvernance | réponse 403 + ligne `access_audit` (purpose, refusal_reason) | réalisée le 30/09/2026 |
+| C15 | `C15_pytest.png` | 8.1 Tests | fin de `pytest projet/code-source/tests` : « 102 passed » | réalisée le 30/09/2026 |
+| C16 | `C16_evaluation.png` | 8.4 Évaluation | sortie de `evaluate_engine.py` sur le jeu hard (P/R/F1) | réalisée le 30/09/2026 |
 
 ## Extraits de code (déjà remplis)
 

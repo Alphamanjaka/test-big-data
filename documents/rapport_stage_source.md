@@ -25,7 +25,7 @@ Dans un établissement de santé, les données des patients sont réparties entr
 
 Ce stage, réalisé chez Madagascar Medical Technology (MMT), a porté sur la conception d'une plateforme de centralisation et de gouvernance de ces données. L'architecture retenue est un lac de données organisé en trois zones de qualité croissante (RAW, SILVER, GOLD) sur HDFS, Hive et Spark, alimenté par un pipeline ELT rejouable, incrémental et planifiable. Elle est complétée par un moteur de déduplication explicable, qui combine une passe exacte sur clés normalisées et une passe probabiliste par score pondéré, et par une gouvernance des accès associant rôles, consentement du patient par finalité et journal d'audit.
 
-Sur le jeu de démonstration, la plateforme ramène 214 enregistrements à 145 patients, soit un taux de doublons de 32,24 %. Évaluée sur trois jeux synthétiques dont la vérité est connue, la déduplication atteint une précision de 1,000 sur tous les niveaux — aucune fusion à tort — et un rappel de 0,422 sur le jeu le plus difficile. Les implémentations Pandas et Spark produisent des résultats strictement identiques. Toutes les données manipulées sont fictives.
+Rejouée sur la VM avec un jeu synthétique difficile, la plateforme ramène 1 057 fiches à 803 patients. Évaluée sur trois jeux synthétiques dont la vérité est connue, la déduplication atteint une précision de 1,000 sur tous les niveaux — aucune fusion à tort — et un rappel de 0,422 sur le jeu le plus difficile ; le pipeline complet, mesuré de la même façon, obtient le même résultat. Les implémentations Pandas et Spark produisent des résultats strictement identiques. Toutes les données manipulées sont fictives.
 
 #= Abstract
 
@@ -33,7 +33,7 @@ In a healthcare institution, patient data is spread across several independent i
 
 This internship, carried out at Madagascar Medical Technology (MMT), focused on designing a platform to centralise and govern this data. The chosen architecture is a data lake organised in three zones of increasing quality (RAW, SILVER, GOLD) on HDFS, Hive and Spark, fed by a replayable, incremental and schedulable ELT pipeline. It is complemented by an explainable deduplication engine, combining an exact pass on normalised keys with a probabilistic pass based on a weighted score, and by access governance that associates roles, purpose-based patient consent and an audit log.
 
-On the demonstration dataset, the platform reduces 214 records to 145 patients, a duplicate rate of 32.24 %. Evaluated on three synthetic datasets with known ground truth, deduplication reaches a precision of 1.000 at every level — no false merge — and a recall of 0.422 on the hardest dataset. The Pandas and Spark implementations produce strictly identical results. All data used is fictitious.
+Run on the virtual machine with a hard synthetic dataset, the platform reduces 1,057 records to 803 patients. Evaluated on three synthetic datasets with known ground truth, deduplication reaches a precision of 1.000 at every level — no false merge — and a recall of 0.422 on the hardest dataset; the full pipeline, measured the same way, achieves the same result. The Pandas and Spark implementations produce strictly identical results. All data used is fictitious.
 
 **Keywords**: healthcare data, data lake, Medallion architecture, Spark, Hive, FHIR, deduplication, Master Patient Index, consent, GDPR.
 
@@ -372,7 +372,7 @@ Tableau: Livrables et état en fin de stage.
 | 1 | Code source complet dans un dépôt unique | réalisé |
 | 2 | Pipeline ELT Big Data | réalisé ; 4 étapes sur 4 réussies au run de référence du 07/09/2026, orchestration portée depuis à 5 étapes |
 | 3 | Moteur de déduplication et évaluation sur vérité terrain | réalisé |
-| 4 | Base centrale PostgreSQL (patients maîtres, consentements, audit) | schéma réalisé et testé ; base non peuplée pendant le stage |
+| 4 | Base centrale PostgreSQL (patients maîtres, consentements, audit) | réalisé ; alimentée par le pipeline sur une base de test (30/09/2026) |
 | 5 | API des indicateurs et API de gouvernance | réalisé |
 | 6 | Documentation technique et manuel conceptuel | réalisé |
 | 7 | Frontend (optionnel) | réalisé partiellement : pilotage du pipeline et consultation des patients |
@@ -438,7 +438,7 @@ Tableau: Les outils du projet. {logos}
 | Exposition | logo:fastapi FastAPI | ≥ 0.115 | API de gouvernance : rôles, finalité, consentement, audit |
 | ^ | logo:flask Flask | non épinglée | API des indicateurs des zones SILVER et GOLD |
 | ^ | logo:nextjs Next.js | 15.4.6 | interface web optionnelle (React, TypeScript, Tailwind CSS, D3.js) |
-| Qualité et documentation | logo:pytest pytest | ≥ 7.0 | 102 tests du moteur, de la gouvernance et de la planification |
+| Qualité et documentation | logo:pytest pytest | ≥ 7.0 | 123 tests du moteur, de la gouvernance et du pipeline |
 | ^ | logo:mermaid Mermaid | CLI (npx) | diagrammes de conception de ce rapport |
 
 Les versions sont celles du provisionnement de la VM et des fichiers de dépendances ; « ≥ » indique une version minimale.
@@ -454,10 +454,10 @@ Tableau: Contraintes et risques du projet.
 |---|---|---|
 | VM de 8 Go et 4 cœurs | 4 Go pour l'exécuteur, 2 Go pour le driver, 8 partitions | maîtrisé : pipeline complet au run de référence |
 | Nœud MAVIS distant instable | répliques locales, puis sources synthétiques pour le run final | contourné |
-| Hétérogénéité des sources | synonymes et similarité pour le mapping FHIR | partiellement maîtrisé : table des événements GOLD vide |
+| Hétérogénéité des sources | synonymes et similarité pour le mapping FHIR | maîtrisé au 30/09/2026 : dates et noms corrigés, 1 761 événements en GOLD |
 | Reproductibilité | graine 42, seuil et pondérations fixés en configuration | appliqué |
 | Données sensibles (RGPD, article 9) | données synthétiques uniquement ; rôles, audit et consentement | maîtrisé |
-| VM indisponible en fin de stage | tests hors VM avant toute exécution réelle | partiel : planification testée mais non rejouée sur la VM |
+| VM indisponible en fin de stage | tests hors VM avant toute exécution réelle | VM relancée le 30/09/2026 : runs complets et en reprise réussis ; cron non activé |
 
 Les contraintes techniques découvertes en cours de développement (Python 3.8, partage de fichiers de la VM) sont traitées avec les difficultés rencontrées, au chapitre 7.
 
@@ -530,7 +530,7 @@ Tableau: Exigences fonctionnelles.
 
 ### Étape 1 : Intégration des sources
 
-**CU1 — Ingérer un lot de sources.** Le processus automatique lit chaque source et écrit ses fiches dans la zone RAW du lac, sans transformation ; le nombre de lignes écrites doit égaler la somme des lignes lues. Un fichier absent ou tronqué interrompt le lot et l'erreur est journalisée : un lot n'est jamais écrit à moitié.
+**CU1 — Ingérer un lot de sources.** Le processus automatique lit chaque source et l'écrit telle quelle dans la zone RAW du lac ; le nombre de lignes écrites par table figure dans le rapport d'extraction et dans l'historique du run. Une table absente ou illisible est consignée comme échec sans bloquer les autres, et une source inchangée depuis le run précédent n'est pas relue.
 
 **CU2 — Ramener des formats différents à un modèle unique.** L'étape de mapping associe chaque champ FHIR attendu à la colonne source la plus proche, puis la normalisation produit le modèle canonique dans la zone SILVER. Toute fiche en sort au même format, quelle que soit sa source. Un champ sans équivalent reste vide et n'est jamais deviné ; les règles de mapping sont décrites dans un fichier, et non dans le code.
 
@@ -540,9 +540,9 @@ Tableau: Exigences fonctionnelles.
 
 ### Étape 3 : Gouvernance des accès
 
-**CU4 — Appliquer le consentement avant d'exposer la donnée.** La construction de la zone GOLD ne conserve, pour chaque patient maître, que les finalités effectivement accordées ; en l'absence d'avis, le refus s'applique par défaut.
+**CU4 — Préparer le consentement dans la zone GOLD.** L'étape GOLD associe à chaque patient maître ses avis par finalité, lus dans la base centrale ; sans avis, la finalité est considérée comme refusée. Le contrôle lui-même s'applique au moment de l'accès, par l'API (CU5).
 
-**CU5 — Interroger l'API pour un patient.** Un utilisateur présente une clé d'API. La clé est résolue en utilisateur et en rôle, la finalité demandée est comparée aux consentements, la réponse est renvoyée, et l'appel est journalisé. Une finalité non consentie produit un refus explicite (code 403), et non une réponse vide, et ce refus est journalisé au même titre qu'un accès accordé : un refus doit être visible pour que le dispositif soit crédible.
+**CU5 — Interroger l'API pour un patient.** Un utilisateur présente une clé d'API. La clé est résolue en utilisateur et en rôle, la finalité demandée est comparée aux consentements, la réponse est renvoyée, et l'appel est journalisé. Pour la fiche d'un patient, une finalité non consentie produit un refus explicite (code 403), et non une réponse vide, journalisé au même titre qu'un accès accordé ; dans une liste, les patients non consentis sont retirés et leur nombre est journalisé. Un refus doit être visible pour que le dispositif soit crédible.
 
 ### Étape 4 : Exploitation et pilotage
 
@@ -570,8 +570,8 @@ Tableau: Exigences non fonctionnelles.
 | Performance | pipeline complet en moins de 30 minutes | cible atteinte au run de référence | volume réel non mesuré |
 | Scalabilité | changer d'échelle sans changer la logique | moteur porté en PySpark avec parité stricte, comparaisons bornées | résultats identiques Pandas et Spark (section 8.4) |
 | Sécurité | aucun accès sans rôle, finalité et consentement | rôles, clés hachées, consentement, audit, secrets hors dépôt | codes 401, 403 et 422 vérifiés ; hachage non salé |
-| Maintenabilité | faire évoluer le comportement sans toucher la logique | poids, seuil et blocking en configuration ; schéma idempotent | 102 tests sur 102 réussis |
-| Fiabilité | ne pas retraiter en boucle, reprendre après échec | empreinte des sources, reprise, verrou anti-double exécution | 45 tests dédiés ; non rejoué sur la VM |
+| Maintenabilité | faire évoluer le comportement sans toucher la logique | poids, seuil et blocking en configuration ; schéma idempotent | 123 tests sur 123 réussis |
+| Fiabilité | ne pas retraiter en boucle, reprendre après échec | empreinte des sources, reprise, verrou anti-double exécution, historique des runs | 66 tests ; reprise validée sur la VM (6 tables sur 6 sautées) ; cron non exécuté |
 | Confidentialité | aucune donnée réelle | générateur synthétique à graine fixe | aucune donnée réelle dans le dépôt |
 
 ## Interfaces détaillées
@@ -729,7 +729,7 @@ Le schéma est **idempotent** : tables et colonnes sont créées seulement si el
 Tableau: Calcul du score de similarité.
 | Critère | Similarité | Poids |
 |---|---|---:|
-| Nom | similarité de chaînes, indépendante de l'ordre des mots | 0,50 |
+| Nom | similarité de chaînes, sensible à l'ordre des mots (l'inversion est rattrapée par la règle exacte) | 0,50 |
 | Date de naissance | égalité | 0,30 |
 | CIN | égalité (si présent) | 0,10 |
 | Ville de naissance | égalité après normalisation | 0,10 |
@@ -759,7 +759,7 @@ Tableau: Les étapes du pipeline ELT.
 | 4 — SILVER | normalisation FHIR et déduplication par le moteur | quatre tables FHIR enrichies du patient maître |
 | 5 — GOLD | agrégation et application du consentement | table des événements patients, table des consentements |
 
-Deux mécanismes évitent de retraiter en boucle. La **reprise** : l'état de chaque exécution et de chaque étape est persisté ; un run échoué repart de la première étape non terminée, et un run en cours verrouille tout lancement concurrent. L'**ingestion incrémentale** : chaque source conserve une empreinte (hachage, taille, date de modification) ; une source inchangée n'est pas ré-extraite. La **planification** confie le lancement régulier au planificateur de la VM, qui vérifie l'échéance chaque minute et lance le pipeline en arrière-plan. Cette mécanique est écrite et testée hors VM ; **elle n'a pas encore été rejouée sur la VM**, indisponible en fin de stage.
+Deux mécanismes évitent de retraiter en boucle. La **reprise** : l'état de chaque exécution et de chaque étape est persisté ; un run échoué repart de la première étape non terminée, et un run en cours verrouille tout lancement concurrent. L'**ingestion incrémentale** : chaque source conserve une empreinte (hachage, taille, date de modification) ; une source inchangée n'est pas ré-extraite. La **planification** confie le lancement régulier au planificateur de la VM, qui vérifie l'échéance chaque minute et lance le pipeline en arrière-plan. Chaque run laisse aussi son **historique chiffré** dans la base centrale (lignes par source, patients maîtres, doublons, volumes GOLD), restitué par l'API et le tableau de bord. Cette mécanique a été rejouée sur la VM le 30/09/2026 : un run en mode reprise a sauté les six tables inchangées ; seule la planification par cron n'a pas été activée.
 
 Capture: C12 | Exécution du pipeline. | C12_run_pipeline.png | Terminal de la VM : sortie de run_pipeline.sh (ou fin de elt.log) montrant chaque étape terminée avec succès.
 
@@ -774,9 +774,23 @@ Tableau: Run de référence du 07/09/2026.
 | Lignes de la table GOLD des consentements | 145 |
 | Lignes de la table GOLD des événements | 0 |
 
-Le passage de 214 à 145 se vérifie par un simple comptage : 214 − 69 = 145. La table des consentements aligne 145 lignes sur 145 patients maîtres, mais la finalité et l'accord y sont vides, la base centrale n'ayant pas été peuplée au moment du run. La table des événements est vide : les consultations et pathologies ne sont pas encore rattachées au patient. La zone GOLD certifie donc aujourd'hui l'identité, pas encore les événements de soin.
+Le passage de 214 à 145 se vérifie par un simple comptage : 214 − 69 = 145. À cette date, la table des événements était vide et la base centrale n'était pas alimentée.
 
-Ce jeu de 214 fiches a été généré sur la VM avec un nombre de patients plus petit que l'actuel ; ses paramètres n'ont pas été conservés dans le dépôt. Le script de préparation génère désormais 500 patients, soit **1 057 fiches** (404 / 353 / 300), le même volume que le jeu d'évaluation : le prochain run ne reproduira donc pas les chiffres 214 et 145.
+Le pipeline a été rejoué sur la VM les 29 et 30/09/2026, avec en source le jeu d'évaluation difficile, dont la vérité terrain est connue. Ces runs ont révélé deux défauts de données, corrigés depuis : des dates de naissance perdues à l'extraction et des noms tronqués pour la source consultation.
+
+Tableau: Runs réels du pipeline sur la VM (jeu difficile, 29–30/09/2026).
+| Indicateur | Valeur |
+|---|---:|
+| Fiches SILVER (404 + 353 + 300) | 1 057 |
+| Patients maîtres distincts | 803 |
+| Doublons rattachés (exacts / probabilistes) | 254 (245 / 9) |
+| Taux de doublons | 24,03 % |
+| Table GOLD des événements | 1 761 lignes |
+| Table GOLD des consentements (803 patients × 3 finalités) | 2 409 lignes |
+| Durée d'un run complet | 2 min 56 s |
+| Run en mode reprise : tables sources sautées | 6 sur 6 |
+
+Mesuré sur la vérité terrain, le run complet obtient une précision de 1,000, un rappel de 0,424 et un F1 de 0,595 (0,422 et 0,594 pour le moteur seul) : la chaîne Big Data ne dégrade pas la déduplication.
 
 ### Moteur de déduplication : Pandas et Spark
 
@@ -807,6 +821,8 @@ Code: X05 | Vérification du consentement | engine/governance/consent.py::check_
 
 Seuls les patients maîtres consolidés sont exposés, jamais les données brutes de la zone RAW. La distinction avec l'API des indicateurs, qui ne contrôle pas l'accès, est présentée au chapitre 5.
 
+Capture: C14 | Contrôle d'accès sur la base peuplée et trace dans le journal d'audit. | C14_refus_403.png | Sortie réelle des requêtes (clés masquées) et des dernières lignes de access_audit.
+
 ### Difficultés rencontrées et résolutions
 
 Tableau: Difficultés et correctifs.
@@ -819,6 +835,9 @@ Tableau: Difficultés et correctifs.
 | HiveServer2 instable | service fragile sur la VM | contrôle des volumes par scripts Spark |
 | NLP lourd inutilisable | plantage de `sentence_transformers` sous Python 3.8 | RapidFuzz et dictionnaire de synonymes |
 | Script d'extraction non compilable | caractère invisible dans un commentaire | caractère supprimé, script recompilé |
+| NameNode qui ne redémarrait plus (30/09) | métadonnées HDFS dans `/tmp`, vidé au redémarrage de la VM | données HDFS déplacées hors de `/tmp` |
+| Environ 20 % des dates de naissance perdues (30/09) | quatre formats mêlés dans une colonne ; seul le dominant était lu | lecture valeur par valeur, format par format |
+| Noms tronqués pour la source consultation (30/09) | nom en deux colonnes, dont une seule était retenue | nom complet reconstitué avant le mapping |
 
 Ces incidents relèvent de trois familles. Les incidents de **données** ont donné lieu à des correctifs documentés comme pièges à ne pas reproduire. Les incidents d'**infrastructure** ont été contournés par des règles de configuration. L'incident d'**outillage** est le seul qui ait changé la méthode : l'approche par vecteurs a été abandonnée au profit d'un score pondéré, plus léger et plus explicable.
 
@@ -835,12 +854,12 @@ Tableau: Niveaux de test et résultats.
 | Moteur et gouvernance | rapprochement (12), consentement (21), normalisation (8), API de gouvernance (16) | 57 sur 57 |
 | Planification et reprise | échéances (22), empreintes (10), état du pipeline (5), API de planification (8) | 45 sur 45 |
 | MVP | pipeline, chargement PostgreSQL, authentification, audit, API | 20 tests réussis |
-| API des indicateurs | trois vérifications sur données réelles | 3 sur 3 |
+| API des indicateurs | trois vérifications sur les données du lac | 3 sur 3 |
 | Pipeline | exécution complète RAW → SILVER → GOLD sur la VM | 4 étapes sur 4 (07/09/2026) |
 
-Capture: C15 | Exécution des tests automatisés. | C15_pytest.png | Terminal : fin de la sortie de pytest projet/code-source/tests avec « 102 passed ».
+Capture: C15 | Exécution des tests automatisés. | C15_pytest.png | Terminal : sortie de pytest projet/code-source/tests avec « 123 passed ».
 
-La suite principale réunit les tests du moteur, de la gouvernance et de la planification : **102 tests sur 102 réussis** (exécution du 28/09/2026), sans aucun échec.
+La suite principale réunit les tests du moteur, de la gouvernance et du pipeline : **123 tests sur 123 réussis** (exécution du 30/09/2026), sans aucun échec.
 
 ## Tests unitaires et d'intégration
 
@@ -881,23 +900,23 @@ Tableau: Évaluation sur vérité terrain (08/09/2026).
 
 Capture: C16 | Évaluation sur le jeu difficile. | C16_evaluation.png | Terminal : sortie de evaluate_engine.py sur le jeu hard (précision, rappel, F1, VP/FP/FN).
 
-L'algorithme **ne fusionne jamais à tort** : aucun faux positif sur les trois niveaux, propriété essentielle en santé, où fusionner deux personnes est plus grave que de les laisser séparées. Sur le jeu difficile, il ne reconnaît pas toutes les variantes (rappel de 0,422). L'introduction du CIN dans la clé exacte a relevé ce rappel de 0,287 à 0,422 sans créer de faux positif.
+L'algorithme **ne fusionne jamais à tort** : aucun faux positif sur les trois niveaux, propriété essentielle en santé, où fusionner deux personnes est plus grave que de les laisser séparées. Sur le jeu difficile, il ne reconnaît pas toutes les variantes (rappel de 0,422). L'introduction du CIN dans la clé exacte a relevé ce rappel de 0,287 à 0,422 sans créer de faux positif. Le pipeline complet, mesuré sur la même vérité terrain, obtient les mêmes résultats : précision de 1,000, rappel de 0,424.
 
 La décomposition par méthode localise la faiblesse : sur le jeu difficile, le rapprochement exact atteint un rappel de 0,854 et le rapprochement probabiliste de 0,533, avec une précision de 1,000 dans les deux cas. Le rappel est homogène entre les sources (0,422 ; 0,422 ; 0,423) : la dégradation vient du taux de variation, et non d'une source particulière. Enfin, les implémentations Pandas et Spark produisent exactement les mêmes résultats : 307 vrais positifs, 0 faux positif, 420 faux négatifs et 804 patients maîtres prédits pour 500 groupes réels.
 
-Une précision mérite d'être faite sur l'absence de faux positif : le générateur dégrade des enregistrements existants mais ne construit jamais deux personnes distinctes presque identiques. La précision de 1,000 est donc un **plancher observé**, et non une garantie ; la confirmer demanderait un jeu d'homonymes proches.
+Une précision mérite d'être faite sur l'absence de faux positif : le générateur dégrade des enregistrements existants mais ne construit jamais deux personnes distinctes presque identiques. La précision de 1,000 vaut donc pour les erreurs simulées : face à des homonymes réels, c'est une estimation **optimiste**, et non une garantie ; la confirmer demanderait un jeu d'homonymes proches.
 
 ## Limites identifiées
 
 Le prototype présente des limites identifiées et documentées :
 
 - **Rappel de 0,422 sur le jeu difficile** : 420 paires manquées, en raison d'un seuil volontairement conservateur ; l'abaisser ou enrichir la clé suppose une validation métier.
-- **Table GOLD des événements vide** : les rencontres et pathologies ne sont pas encore rattachées au patient ; le mapping FHIR est à enrichir.
-- **Consentement non alimenté en base centrale** : la mécanique est démontrée par les tests, mais la base n'a pas été peuplée pendant le stage.
+- **Consentement par type de dossier** : en cours de développement ; le contrôle actuel porte sur la finalité.
+- **Base centrale de test** : alimentée par le pipeline et par des consentements de démonstration, pas par des avis réellement recueillis.
 - **Absence de cas adversarial** : pas de jeu d'homonymes proches pour éprouver la précision.
 - **API des indicateurs non sécurisée** : elle ne sert que du reporting ; le contrôle d'accès est appliqué et testé sur l'API de gouvernance.
 - **Clés d'API hachées sans sel** : l'empreinte protège la lecture directe de la table, mais un hachage salé ou lent (bcrypt) serait préférable.
-- **Pas d'intégration continue ni de tests en environnement déployé**, et planification incrémentale non rejouée sur la VM.
+- **Pas d'intégration continue ni de tests en environnement déployé**, et planification par cron non activée sur la VM.
 
 #! Conclusion générale
 
@@ -906,20 +925,20 @@ Ce stage avait pour objet de concevoir une plateforme capable d'intégrer, netto
 Tableau: Réponse à la problématique.
 | Volet | Réponse réalisée | Preuve |
 |---|---|---|
-| Intégrer | extraction abstraite vers la zone RAW (Parquet sur HDFS, tables Hive) | 3 sources de démonstration et 3 sources réelles capturées |
-| Nettoyer et normaliser | modèle canonique et schéma pivot FHIR | 214 lignes SILVER cohérentes |
-| Dédupliquer de façon explicable | blocking, passe exacte, passe probabiliste ; méthode, score et explication pour chaque décision | 145 patients maîtres, 69 doublons, taux de 32,24 % |
-| Centraliser avec traçabilité | zones RAW, SILVER, GOLD ; origine conservée ; reprise et incrémental | 214 − 69 = 145 vérifié sur le lac |
-| Gouverner par consentement | rôles, clés hachées, finalité obligatoire, refus 403 journalisé | 102 tests sur 102, dont 401, 403 et 422 |
+| Intégrer | extraction abstraite vers la zone RAW (Parquet sur HDFS, tables Hive) | 3 sources de test (CSV synthétiques) ; extraction PostgreSQL et SQLite implémentée |
+| Nettoyer et normaliser | modèle canonique et schéma pivot FHIR | 1 057 lignes SILVER, dates et noms complets |
+| Dédupliquer de façon explicable | blocking, passe exacte, passe probabiliste ; méthode, score et explication pour chaque décision | 803 patients maîtres, 254 doublons ; précision de 1,000 pour le moteur et pour le pipeline |
+| Centraliser avec traçabilité | zones RAW, SILVER, GOLD ; origine conservée ; reprise, incrémental et historique des runs | 1 057 − 254 = 803 vérifié sur le lac |
+| Gouverner par consentement | rôles, clés hachées, finalité obligatoire, refus 403 journalisé | 123 tests ; 401, 403 et 422 vérifiés aussi sur base peuplée |
 | Ne jamais fusionner sans logique | méthode obligatoire pour tout patient maître | précision de 1,000 sur les trois niveaux |
 
-Le projet démontre quatre résultats. **La démarche progressive tient** : le même moteur, écrit en Pandas puis porté en PySpark et intégré au lac, conserve exactement la même sémantique. **L'explicabilité a un coût maîtrisé** : le seuil est positionné pour ne jamais fusionner à tort, et le rappel limité sur le jeu difficile est expliqué plutôt que masqué. **La gouvernance est dans le système** : un refus pour finalité non consentie est décidé, opposé et journalisé, et cela est vérifié par des tests qui empruntent le vrai chemin d'authentification. **Le contexte dicte les choix** : VM de 8 Go, Python 3.8 et nœud distant instable ont chacun conduit à une décision documentée.
+Le projet démontre quatre résultats. **La démarche progressive tient** : le même moteur, écrit en Pandas puis porté en PySpark et intégré au lac, conserve exactement la même sémantique, jusque dans le pipeline complet mesuré sur la vérité terrain. **La prudence a un coût, mesuré** : le seuil est positionné pour ne jamais fusionner à tort, et le rappel limité sur le jeu difficile est expliqué plutôt que masqué. **La gouvernance est dans le système** : un refus pour finalité non consentie est décidé, opposé et journalisé, et cela est vérifié par des tests qui empruntent le vrai chemin d'authentification. **Le contexte dicte les choix** : VM de 8 Go, Python 3.8 et nœud distant instable ont chacun conduit à une décision documentée.
 
-Les difficultés rencontrées ont été techniques (sept incidents corrigés), d'environnement (nœud distant instable, VM indisponible en fin de stage), d'organisation (développement mené seul, algorithme écrit deux fois) et de méthode. La plus instructive a été de définir ce que l'on accepte de perdre — des doublons non retrouvés — au regard de ce que l'on refuse de risquer — la fusion de deux patients — et de pouvoir le démontrer par des chiffres reproductibles.
+Les difficultés rencontrées ont été techniques (dix incidents corrigés, dont trois découverts en rejouant le pipeline sur la VM le 30/09), d'environnement (nœud distant instable, VM longtemps indisponible en fin de stage), d'organisation (développement mené seul, algorithme écrit deux fois) et de méthode. La plus instructive a été de définir ce que l'on accepte de perdre — des doublons non retrouvés — au regard de ce que l'on refuse de risquer — la fusion de deux patients — et de pouvoir le démontrer par des chiffres reproductibles.
 
 Sur le plan personnel, ce stage m'a permis de pratiquer le Big Data, domaine dans lequel mon expérience était limitée : installer et faire fonctionner une chaîne HDFS, Hive et Spark, et découvrir ce que la documentation ne dit pas, comme l'ordre de démarrage des services ou le coût de Spark sur de petits volumes. Il m'a appris à relier le modèle statistique du rapprochement d'identités, l'architecture qui le rend exploitable et la règle de gouvernance qui décide qui peut le lire. Il m'a enfin appris une discipline : ne rien affirmer sans preuve reproductible, et écrire une limite plutôt que de la taire.
 
-Plusieurs perspectives prolongent ce travail. À court terme : enrichir le mapping FHIR pour alimenter la table des événements, peupler la base centrale de consentements pour démontrer le refus sur données, calibrer le seuil et les poids sur la vérité terrain, et rejouer la planification sur la VM. À moyen terme : ajouter une intégration continue, passer à l'échelle par un blocking partitionné et une consolidation transitive des groupes, et reprendre la source MAVIS réelle lorsque le nœud sera stable. À plus long terme : brancher la gouvernance sur un catalogue de métadonnées pour le lignage des données, et généraliser le moteur à d'autres entités, comme les médecins ou les médicaments.
+Plusieurs perspectives prolongent ce travail. À court terme : terminer le consentement par type de dossier, déployer la base centrale et y enregistrer des consentements réellement recueillis, calibrer le seuil et les poids sur la vérité terrain, et activer la planification sur la VM. À moyen terme : ajouter une intégration continue, passer à l'échelle par un blocking partitionné et une consolidation transitive des groupes, et reprendre la source MAVIS réelle lorsque le nœud sera stable. À plus long terme : brancher la gouvernance sur un catalogue de métadonnées pour le lignage des données, et généraliser le moteur à d'autres entités, comme les médecins ou les médicaments.
 
 #! Références et bibliographie
 

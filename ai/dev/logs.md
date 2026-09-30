@@ -2236,3 +2236,15 @@ ch. 8 : 2 221 → 2 103 ; ch. 9 : 2 251 → 2 200). Export : 100 pages, 18 figur
 - Deck : slides 15, 17, 18 et 19 (texte des runs uniquement, formes et animations inchangées) ; notes de
   l'orateur régénérées depuis le script. Rendu PowerPoint contrôlé (slides 15, 18, 19). Copie du deck avant
   modification dans le dossier temporaire.
+
+## 30/09/2026 — Rapport de stage et Résumés alignés ; erreur de rappel corrigée dans le Résumé du mémoire
+
+- `export_memoire_docx.py` (Résumé et Abstract du mémoire) : **erreur corrigée** — le rappel annoncé sur le jeu
+  facile était 0,578 alors que l'évaluation donne 1,000 (chapitre 8) ; chiffres du run du 29/09 (1 057 fiches,
+  803 patients) à la place du jeu de 214 fiches.
+- `documents/rapport_stage_source.md` : mêmes corrections que le mémoire (CU1, CU4, CU5, `fuzz.ratio` sensible à
+  l'ordre, précision « plancher » → optimiste, livrable base centrale, risques, ENF, tests 123), tableau des runs
+  réels, trois incidents du 30/09, limites et conclusion à jour, capture C14 réintégrée ; « 3 sources réelles
+  capturées » (inexact) → « 3 sources de test ; extraction PostgreSQL et SQLite implémentée ».
+- Rapport régénéré : 69 pages, 14 957 mots, captures C04, C07, C09, C10, C11, C12, C14, C15, C16 insérées ; C01
+  (schéma MAVIS) en attente de la décision de l'auteur. `documents/captures/README.md` à jour.
