@@ -5,7 +5,8 @@
 Ce script mesure la chaîne entière : extraction RAW, mapping FHIR, SILVER, moteur,
 puis chargement de la base centrale. Il lit la table de correspondance
 (`patient_identity_map`) écrite par le pipeline et la compare à la vérité terrain
-du jeu qui a servi de source (`--level`), avec les mêmes métriques par paires.
+du jeu qui a servi de source (`--level`, ou `--truth` pour un autre jeu), avec les
+mêmes métriques par paires.
 
 Prérequis : le pipeline a été lancé sur les fichiers du jeu évalué (copiés dans
 `data/raw/`), avec `DATABASE_URL` pointant vers la base centrale.
@@ -29,8 +30,8 @@ if str(ROOT) not in sys.path:
 from evaluation.evaluate_engine import ground_truth_path, pairs_metrics  # noqa: E402
 
 
-def load_truth(level: str) -> dict:
-    with open(ground_truth_path(level), encoding="utf-8") as f:
+def load_truth(path: Path) -> dict:
+    with open(path, encoding="utf-8") as f:
         return {(r["source"], r["source_patient_id"]): r["ground_truth_id"] for r in csv.DictReader(f)}
 
 
@@ -53,16 +54,22 @@ def load_pipeline_predictions(conn) -> tuple:
 def main() -> int:
     parser = argparse.ArgumentParser(description="Évalue le run du pipeline sur la vérité terrain.")
     parser.add_argument("--level", default="hard", choices=["easy", "medium", "hard"])
+    parser.add_argument(
+        "--truth", type=Path, default=None,
+        help="identity_mapping.csv d'un autre jeu (ex. data/experiments_12000/easy/ground_truth/...)",
+    )
     args = parser.parse_args()
 
     import psycopg
 
-    truth = load_truth(args.level)
+    truth_path = args.truth or ground_truth_path(args.level)
+    truth = load_truth(truth_path)
+    print(f"Vérité terrain : {truth_path}")
     with psycopg.connect(os.environ["DATABASE_URL"]) as conn:
         pred, methods = load_pipeline_predictions(conn)
     covered = sum(1 for k in truth if k in pred)
     m = pairs_metrics(truth, pred)
-    print(f"Jeu {args.level} : {len(truth)} fiches de vérité, {covered} retrouvées dans la base centrale")
+    print(f"{len(truth)} fiches de vérité, {covered} retrouvées dans la base centrale")
     print(f"Patients maîtres prédits : {m['n_masters']} (vérité : {m['n_groups_truth']})")
     print(f"TP={m['tp']} FP={m['fp']} FN={m['fn']}  "
           f"précision={m['precision']:.3f} rappel={m['recall']:.3f} F1={m['f1']:.3f}")

@@ -2275,3 +2275,39 @@ ch. 8 : 2 221 → 2 103 ; ch. 9 : 2 251 → 2 200). Export : 100 pages, 18 figur
   Résultat : 12 000 patients maîtres, **25 587 fiches** (pharmacy 9 765, consultation 8 543, imaging 7 279),
   transactions 19 488 achats, 12 762 consultations, 10 891 examens ; patients présents dans 1 / 2 / 3 sources :
   2 541 / 5 331 / 4 128 ; vérité terrain `ground_truth/identity_mapping.csv` et `master_patients.csv`.
+
+## 30/09/2026 — Pipeline complet sur le jeu « facile » de 12 000 patients ; évaluation sur vérité terrain
+
+- Entrée : `data/experiments_12000/easy/{pharmacy,consultation,imaging}/*.csv` copiés dans `data/raw/<source>/`
+  (remplace le jeu difficile ; `data/` non versionné). Base centrale : PostgreSQL de test (port 5433).
+- `evaluation/evaluate_pipeline_run.py` : option `--truth <identity_mapping.csv>` pour évaluer un jeu hors des
+  trois jeux de référence (`--level` inchangé par défaut).
+- **Run 20260930T063345 (complet) : échec** à `create_silver`. Cause : blocage des processeurs virtuels de la VM
+  (noyau : `soft lockup - CPU#2 stuck for 119s`, `rcu_sched self-detected stall`), JVM Spark sans heartbeat
+  (127 s > 120 s) puis perdue (`Answer from Java side is empty`). Pas d'OOM dans la VM ; hôte : ~2 Go de RAM
+  libre sur 16 (VM 8 Go, serveur Next.js ~1 Go). La déduplication et le chargement de la base centrale avaient
+  abouti avant la perte de la JVM. Run enregistré `failed` dans `pipeline_run` (historique conservé).
+- Next.js arrêté pendant le run (≈ 3 Go libres), relancé ensuite.
+- **Run 20260930T065246 (complet) : succès**, 06:52:46 → 07:08:01 (UTC VM), **15 min 15 s**. Un nouveau
+  heartbeat manqué (217 s) toléré. Extraction sans perte : pharmacy 29 253 lignes (9 765 + 19 488),
+  consultation 21 305 (8 543 + 12 762), imaging 18 170 (7 279 + 10 891). SILVER 25 587 fiches → **12 000
+  patients maîtres**, 13 587 doublons (tous exacts, 0 probabiliste), 53,10 % ; GOLD : 43 141 événements
+  (= somme des transactions), 2 409 consentements.
+- Évaluation (`evaluate_pipeline_run.py --truth …/experiments_12000/easy/ground_truth/identity_mapping.csv`) :
+  25 587 / 25 587 fiches retrouvées, 12 000 patients maîtres (vérité 12 000), VP 17 715, FP 0, FN 0,
+  **précision 1,000, rappel 1,000, F1 1,000** (jeu facile : aucune variation de saisie).
+- API Flask : sa session Spark avait disparu pendant le blocage (réponses `mocked: true`) ; redémarrée,
+  `mocked: false`, mêmes chiffres (25 587 / 12 000 / 53,1 %).
+- **Constat 1 — passage à l'échelle du moteur** : l'étape SILVER dure ≈ 13 min 50 s, presque entièrement dans
+  `engine/identity/matcher.deduplicate`. Mesure hôte, moteur seul, même jeu : `matcher` 887 s, `spark_dedup`
+  244 s, décisions identiques (P = R = F1 = 1,000). Cause : la passe exacte de `matcher` (l. 127-134) parcourt
+  **tous** les patients maîtres pour chaque fiche en recalculant `matching_key` (coût quadratique, ≈ 25 587 ×
+  12 000) ; l'index de blocage ne sert qu'à la passe probabiliste. `spark_dedup` a le même défaut, atténué
+  (`exact_birth_cin`, `representative` : parcours linéaires). Correctif possible à sémantique identique :
+  dictionnaires `matching_key → premier indice` et `(naissance, CIN) → premier indice`. **Non appliqué** (moteur
+  cœur du mémoire) : en attente de décision de l'auteur.
+- **Constat 2 — identifiants de patients maîtres non stables** : `PAT-0001…` sont des numéros de session (ordre
+  de traitement). Après ce run, `PAT-0001` désigne une autre personne qu'avant ; les 2 409 consentements de test
+  (créés pour les 803 patients maîtres du jeu difficile) sont donc rattachés à d'autres personnes (données
+  fictives, sans conséquence ici). Limite absente du mémoire ; à décider par l'auteur (identifiant persistant
+  repris de la base centrale, ou mention en limite).
