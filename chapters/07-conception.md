@@ -257,7 +257,7 @@ l'empreinte n'a pas changé n'est **pas ré-extraite** (incrémental, anti-retra
 |---|---|---|
 | **RAW** | donnée brute, inchangée (schéma-on-read) | parquet HDFS `/datalake/raw/{source}/{table}` + tables Hive externes |
 | **SILVER** | normalisée selon un **schéma pivot inspiré de FHIR** (4 entités, une colonne par champ ; aucune ressource FHIR produite), chaque fiche rattachée à son patient maître (méthode, score) | `datalake_silver.{patient,encounter,condition,observation}_fhir` |
-| **GOLD** | agrégats prêts à l'analyse + consentement | `datalake_gold.patient_events_gold` (8 tranches d'âge), `patient_consent_gold` |
+| **GOLD** | agrégats prêts à l'analyse + consentement | `datalake_gold.patient_events_gold` (8 tranches d'âge, événements rattachés au patient maître), `patient_consent_gold`, vue `patient_events_analytics` (patients consentants seulement) |
 
 La logique ELT impose : l'ingestion **charge** la donnée brute, la transformation
 s'applique *a posteriori* dans les couches suivantes — la zone RAW reste le
@@ -410,7 +410,7 @@ flowchart LR
 | **2 — Extraction RAW** | `gen_extract_raw.py` | parquet `/datalake/raw/{source}/{table}`, tables Hive externes, `extract_raw_report.json` |
 | **3 — Mapping FHIR** | `gen_fhir_mapping.py` | `fhir_mapping.json` (table→entité FHIR, cartes explicites) |
 | **4 — SILVER FHIR** | `create_silver.py` | `datalake_silver.{patient,encounter,condition,observation}_fhir` ; patients maîtres et correspondances chargés dans la base centrale |
-| **5 — GOLD** | `create_gold.py` | `patient_events_gold` (8 tranches d'âge), `patient_consent_gold` |
+| **5 — GOLD** | `create_gold.py` | `patient_events_gold` (8 tranches d'âge, `master_patient_id`), `patient_consent_gold`, vue `patient_events_analytics` |
 
 Chaque étape est un programme distinct plutôt qu'une fonction d'un programme
 unique : une étape qui échoue ne laisse pas la zone suivante dans un état
@@ -552,7 +552,14 @@ qu'approchée : sur le jeu difficile, le pipeline trouvait 803 patients maîtres
   associe aux patients maîtres ; sur la base de démonstration, 2 826 lignes (942 patients,
   3 finalités).
   Si la base est inaccessible, la table est créée avec des consentements vides et l'API des
-  indicateurs bascule sur son jeu de démonstration.
+  indicateurs bascule sur son jeu de démonstration. Chaque ligne indique si elle porte le
+  **dernier avis** du patient pour sa finalité, selon la règle de l'API.
+- **Vue analytique** : une **vue** est une requête enregistrée dans le catalogue Hive, relue comme
+  une table. `patient_events_analytics` ne garde que les événements des patients maîtres dont le
+  dernier avis « statistiques » est un accord, sans nom, date de naissance ni identifiant source :
+  le consentement s'applique aussi dans le lac, pas seulement à l'API. Refus par défaut : un
+  patient sans avis n'y figure pas. Sur la base de démonstration, 726 des 1 761 événements
+  (395 patients).
 
 ### 7.3.5 Gouvernance et API
 
@@ -562,7 +569,12 @@ clé hachée SHA-256 + rôles `admin`/`analyst`/`viewer`), `consent.py` (router 
 chaque requête, refus compris), `app.py` (points d'entrée décrits au § 5.3.2). Les
 **données brutes de la zone RAW ne sont jamais exposées** par l'API : seuls les patients maîtres
 consolidés le sont. Les endpoints `/patients` et `/patients/{id}` réalisent la
-recherche plein texte, la pagination et le **filtrage silencieux** conçus au § 7.2.3.
+recherche plein texte, la pagination et le **filtrage silencieux** conçus au § 7.2.3. Pour la
+liste, les trois sont exécutés par PostgreSQL, qui ne renvoie que la page demandée : sur la base
+de 100 000 patients, au plus 25 lignes au lieu de la table entière. Les connexions viennent d'un
+**pool de connexions** (une réserve de connexions ouvertes, réutilisées d'une requête à l'autre)
+au lieu d'être ouvertes à chaque lecture, et un audit qui ne peut pas être écrit ne bloque pas la
+réponse mais laisse un avertissement dans le journal de l'API.
 
 L'API des indicateurs (Flask, port 5000) est couverte par `test_api.py`, qui interroge ses deux
 points d'entrée et réussit ses **3 vérifications** sur les données du lac (et non sur le jeu de

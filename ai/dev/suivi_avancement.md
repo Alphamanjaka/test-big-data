@@ -172,7 +172,9 @@ dans `Mon_Memoire` (subtree → `projet/code-source/`, `projet/mvp/`, `archives/
     **Preuves :** `pytest` hôte 160 réussis / 2 ignorés (dont 10 sur vrai PostgreSQL) ; VM 32 réussis
     (parités Spark) ; run `20260930T173256` (88 s) : 942 maîtres, 1 761 événements, `unknown` 499 → 451
     (tous sans date), vue 726 événements / 395 patients = les 395 consentants PostgreSQL. Code mort
-    supprimé (4 fichiers, `spark-warehouse/`). **Reste :** ré-export du mémoire ; notes du deck.
+    supprimé (4 fichiers, `spark-warehouse/`). Mémoire, rapport, script oral et deck alignés (160 tests,
+    FHIR « partiel », vue analytique ; DOCX ré-exportés, C15 et figure 9 refaites). **Reste :** vidéo de
+    démonstration à enregistrer avec les chiffres actuels.
 21. **[Moteur v2 — règle d'identité stricte, 30/09]** Demande de l'auteur : CIN, genre, date et ville de naissance
     identiques, sans probabilité (sans CIN : nom en plus). Score, seuil et poids supprimés ; règle exécutée dans
     Spark (UDF + `row_number`, sans `collect()`) ; identifiant du patient maître dérivé de la clé (permanent, HMAC

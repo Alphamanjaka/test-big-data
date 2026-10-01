@@ -264,11 +264,13 @@ Tableau: Comparaison des solutions.
 | Critère | EMPI | Talend | Azure | HAPI | Splink | Atlas | Stage |
 |---|:---:|:---:|:---:|:---:|:---:|:---:|:---:|
 | Déduplication explicable | oui | oui | non | non | partiel | non | oui, testé |
-| Interopérabilité FHIR | partiel | non | oui | oui | non | non | oui, testé |
+| Interopérabilité FHIR | partiel | non | oui | oui | non | non | partiel, testé |
 | Rôle, consentement et audit | partiel | partiel | oui | non | non | partiel | oui, conçu |
 | Montée en charge Big Data | partiel | oui | oui | non | oui | oui | oui, testé |
 | Hébergement interne | oui | oui | non | oui | oui | oui | oui, testé |
 | VM 8 Go et Python 3.8 | non | non | non | non | partiel | non | oui, testé |
+
+Pour FHIR, la solution du stage reste partielle : les sources sont traduites vers un schéma pivot inspiré de quatre ressources FHIR, éprouvé à chaque run, mais aucune ressource FHIR n'est produite ni lue.
 
 Aucun produit ne satisfait les six critères. Les solutions les plus complètes sur l'identité (EMPI, Talend) sont les plus lourdes et les plus coûteuses ; les solutions compatibles avec l'hébergement interne ne résolvent ni le rapprochement, ni la gouvernance, ni l'explicabilité. Le délai de quatre mois et l'environnement entièrement interne achèvent d'écarter l'adoption d'un produit.
 
@@ -438,7 +440,7 @@ Tableau: Les outils du projet. {logos}
 | Exposition | logo:fastapi FastAPI | ≥ 0.115 | API de gouvernance : rôles, finalité, consentement, audit |
 | ^ | logo:flask Flask | non épinglée | API des indicateurs des zones SILVER et GOLD |
 | ^ | logo:nextjs Next.js | 15.4.6 | interface web optionnelle (React, TypeScript, Tailwind CSS, D3.js) |
-| Qualité et documentation | logo:pytest pytest | ≥ 7.0 | 131 tests du moteur, de la gouvernance et du pipeline |
+| Qualité et documentation | logo:pytest pytest | ≥ 7.0 | 160 tests du moteur, de la gouvernance et du pipeline |
 | ^ | logo:mermaid Mermaid | CLI (npx) | diagrammes de conception de ce rapport |
 
 Les versions sont celles du provisionnement de la VM et des fichiers de dépendances ; « ≥ » indique une version minimale.
@@ -570,7 +572,7 @@ Tableau: Exigences non fonctionnelles.
 | Performance | pipeline complet en moins de 30 minutes | cible atteinte : 1 min 30 s sur le jeu difficile, 2 min 48 s sur 212 523 fiches | volume réel non mesuré |
 | Scalabilité | changer d'échelle sans changer la logique | règle d'identité exécutée dans Spark, par regroupement sur la clé | identifiants identiques en Python et dans Spark (212 523 fiches) |
 | Sécurité | aucun accès sans rôle, finalité et consentement | rôles, clés hachées, consentement, audit, secrets hors dépôt | codes 401, 403 et 422 vérifiés ; hachage non salé |
-| Maintenabilité | faire évoluer le comportement sans toucher la logique | règle d'identité isolée dans un module partagé par Python et Spark ; schéma idempotent | 131 tests sur 131 réussis |
+| Maintenabilité | faire évoluer le comportement sans toucher la logique | règle d'identité isolée dans un module partagé par Python et Spark ; schéma idempotent | 160 tests sur 160 réussis |
 | Fiabilité | ne pas retraiter en boucle, reprendre après échec | empreinte des sources, reprise, verrou anti-double exécution, historique des runs | 76 tests ; reprise validée sur la VM (6 tables sur 6 sautées) ; cron non exécuté |
 | Confidentialité | aucune donnée réelle | générateur synthétique à graine fixe | aucune donnée réelle dans le dépôt |
 
@@ -719,7 +721,7 @@ Code: X02 | Identity map et consentements | sql/schema.sql:30-65 | X02_schema.pn
 
 Le schéma est **idempotent** : tables et colonnes sont créées seulement si elles n'existent pas, et les insertions ignorent les doublons ; relancer le même traitement ne duplique rien.
 
-**Les zones du lac.** La zone RAW reçoit la donnée brute en Parquet sur HDFS, décrite par des tables Hive externes. La zone SILVER contient les quatre tables FHIR normalisées, avec les doublons marqués et expliqués. La zone GOLD contient la table des événements patients (18 colonnes, 8 tranches d'âge) et la table des consentements.
+**Les zones du lac.** La zone RAW reçoit la donnée brute en Parquet sur HDFS, décrite par des tables Hive externes. La zone SILVER contient les quatre tables au schéma pivot inspiré de FHIR, avec les doublons marqués et expliqués. La zone GOLD contient la table des événements patients (19 colonnes, 8 tranches d'âge, chaque événement rattaché à son patient maître), la table des consentements et une vue analytique qui ne garde que les événements des patients consentant aux statistiques, sans donnée identifiante.
 
 ### Composants
 
@@ -859,15 +861,15 @@ Tableau: Niveaux de test et résultats.
 | Niveau | Périmètre | Résultat |
 |---|---|---|
 | Générateur | variations, distribution, identity mapping, construction des jeux | 44 tests réussis |
-| Moteur et gouvernance | rapprochement (12), consentement (21), normalisation (8), API de gouvernance (16) | 57 sur 57 |
-| Planification et reprise | échéances (22), empreintes (10), état du pipeline (5), API de planification (8) | 45 sur 45 |
+| Moteur et gouvernance | règle d'identité (10), consentement (19), normalisation (8), API de gouvernance (17), API sur un vrai PostgreSQL (10) | 64 sur 64 ; parité Spark réussie dans la VM |
+| Pipeline hors VM | échéances (23), empreintes (10), état et reprise (11), API du pipeline (11), historique des runs (13), base centrale (8), tranches d'âge (20) | 96 sur 96 ; parité des tranches réussie dans la VM |
 | MVP | pipeline, chargement PostgreSQL, authentification, audit, API | 20 tests réussis |
 | API des indicateurs | trois vérifications sur les données du lac | 3 sur 3 |
-| Pipeline | exécution complète RAW → SILVER → GOLD sur la VM | 4 étapes sur 4 (07/09/2026) |
+| Pipeline | exécution complète RAW → SILVER → GOLD sur la VM | 5 étapes sur 5 (run du 30/09/2026, 88 s) |
 
-Capture: C15 | Exécution des tests automatisés. | C15_pytest.png | Terminal : sortie de pytest projet/code-source/tests avec « 131 passed, 1 skipped ».
+Capture: C15 | Exécution des tests automatisés. | C15_pytest.png | Terminal : sortie de pytest projet/code-source/tests avec « 160 passed, 2 skipped ».
 
-La suite principale réunit les tests du moteur, de la gouvernance et du pipeline : **131 tests sur 131 réussis** (exécution du 30/09/2026), sans aucun échec ; le test de parité Spark, ignoré sans PySpark, réussit dans la VM.
+La suite principale réunit les tests du moteur, de la gouvernance et du pipeline : **160 tests sur 160 réussis** (exécution du 30/09/2026), sans aucun échec, dont 10 qui rejouent l'API de gouvernance sur un vrai PostgreSQL ; les deux tests de parité Spark (règle d'identité, tranches d'âge), ignorés sans PySpark, réussissent dans la VM.
 
 ## Tests unitaires et d'intégration
 
@@ -941,7 +943,7 @@ Tableau: Réponse à la problématique.
 | Nettoyer et normaliser | modèle canonique et schéma pivot FHIR | 1 057 lignes SILVER, dates et noms complets |
 | Dédupliquer de façon explicable | règle d'identité stricte (CIN, genre, date et ville identiques), exécutée dans Spark ; méthode et explication pour chaque décision | 942 patients maîtres, 115 doublons ; aucune fusion à tort sur aucun jeu, 100 000 patients compris |
 | Centraliser avec traçabilité | zones RAW, SILVER, GOLD ; origine conservée ; reprise, incrémental et historique des runs | 1 057 − 115 = 942 vérifié sur le lac |
-| Gouverner par consentement | rôles, clés hachées, finalité obligatoire, refus 403 journalisé | 131 tests ; 401, 403 et 422 vérifiés aussi sur base peuplée |
+| Gouverner par consentement | rôles, clés hachées, finalité obligatoire, refus 403 journalisé ; vue GOLD réservée aux patients consentants | 160 tests ; vue analytique : 395 patients, exactement les consentants ; 401, 403 et 422 vérifiés aussi sur base peuplée |
 | Ne jamais fusionner sans logique | méthode obligatoire pour tout patient maître | précision de 1,000 sur tous les jeux |
 
 Le projet démontre quatre résultats. **La démarche progressive tient** : le moteur, écrit en Pandas, porté en PySpark puis intégré au lac, applique en v2 la même règle en Python et dans Spark, avec les mêmes identifiants fiche par fiche. **La prudence a un coût, mesuré** : le test à 100 000 patients a montré qu'un score reste exposé aux homonymes ; la règle stricte ne fusionne plus à tort, et le rappel limité sur le jeu difficile est expliqué plutôt que masqué. **La gouvernance est dans le système** : un refus pour finalité non consentie est décidé, opposé et journalisé, et cela est vérifié par des tests qui empruntent le vrai chemin d'authentification. **Le contexte dicte les choix** : VM de 8 Go, Python 3.8 et nœud distant instable ont chacun conduit à une décision documentée.
@@ -1037,6 +1039,6 @@ La fonction de déduplication applique la règle stricte décrite à la section 
 
 Code: X06 | Déduplication par règle d'identité stricte | engine/identity/matcher.py::deduplicate | X06_deduplicate.png
 
-Le journal d'audit est un *middleware* : il s'exécute après chaque requête, quelle qu'en soit l'issue, et enregistre la finalité et le motif d'un éventuel refus.
+Le journal d'audit est un *middleware* : il s'exécute après chaque requête, quelle qu'en soit l'issue, et enregistre la finalité et le motif d'un éventuel refus. L'écriture passe par le pool de threads, hors de la boucle qui sert les requêtes ; si elle échoue, la réponse part quand même, mais la perte est signalée dans le journal de l'API.
 
-Code: X07 | Journalisation de chaque accès | engine/governance/audit.py::AuditMiddleware | X07_audit.png
+Code: X07 | Journalisation de chaque accès | engine/governance/audit.py::record_access,AuditMiddleware | X07_audit.png

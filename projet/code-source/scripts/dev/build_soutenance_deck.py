@@ -451,7 +451,7 @@ def s08_market(d: Deck):
                 "sur mesure, adossée aux standards : Fellegi-Sunter, FHIR, Medallion.")
     header = ["Critère", "EMPI", "Talend", "Azure", "HAPI", "Splink", "Atlas", "Stage"]
     rows = [("Déduplication explicable", "✔", "✔", "✖", "✖", "◐", "✖", "✔"),
-            ("Interopérabilité FHIR", "◐", "✖", "✔", "✔", "✖", "✖", "✔"),
+            ("Interopérabilité FHIR", "◐", "✖", "✔", "✔", "✖", "✖", "◐"),
             ("Rôle, consentement, audit", "◐", "◐", "✔", "✖", "✖", "◐", "✔"),
             ("Montée en charge Big Data", "◐", "✔", "✔", "✖", "✔", "✔", "✔"),
             ("Hébergement interne", "✔", "✔", "✖", "✔", "✔", "✔", "✔"),
@@ -589,7 +589,7 @@ def s12_architecture(d: Deck):
     d.text(s, MX, y0 - 0.05, 2.1, 0.3, "SOURCES", size=12, color=BLUE, bold=True)
     for i, t in enumerate(["Pharmacie", "Consultation", "Imagerie"]):
         d.label_box(s, MX, y0 + 0.3 + i * 0.72, 2.1, 0.58, t, size=14, fill=WHITE, line=LINE)
-    zones = [("RAW", "brut, inchangé", RAW_C), ("SILVER", "FHIR normalisé\n+ patient maître", SILVER_C),
+    zones = [("RAW", "brut, inchangé", RAW_C), ("SILVER", "inspiré de FHIR\n+ patient maître", SILVER_C),
              ("GOLD", "agrégats\n+ consentement", GOLD_C)]
     zx, zw, zg = MX + 2.75, 1.95, 0.45
     d.text(s, zx, y0 - 0.05, 3 * zw + 2 * zg, 0.3, "LAC DE DONNÉES — HDFS · HIVE · SPARK", size=12, color=BLUE,
@@ -605,7 +605,7 @@ def s12_architecture(d: Deck):
     d.arrow(s, MX + 2.15, y0 + 1.3, zx - 0.05, y0 + 1.3)
     # Moteur sous SILVER
     mx = zx + zw + zg
-    d.label_box(s, mx - 0.25, y0 + 2.75, zw + 0.5, 0.85, ["**Moteur de déduplication**", "exact + probabiliste"],
+    d.label_box(s, mx - 0.25, y0 + 2.75, zw + 0.5, 0.85, ["**Moteur de déduplication**", "règle d'identité stricte"],
                 size=13, fill=AMBER_T)
     d.arrow(s, mx + zw / 2, y0 + 2.7, mx + zw / 2, y0 + 2.37, color=AMBER)
     # API et PostgreSQL
@@ -867,7 +867,7 @@ def s19_conclusion(d: Deck):
                 "Et chaque résultat se vérifie dans le dépôt.")
     items = [("Centraliser", "lac Medallion RAW → SILVER → GOLD", "214 fiches intégrées"),
              ("Normaliser", "modèle canonique + pivot FHIR", "4 entités FHIR"),
-             ("Dédupliquer", "exact + probabiliste, explicable", "précision 1,000"),
+             ("Dédupliquer", "règle stricte, explicable", "précision 1,000"),
              ("Gouverner", "rôle · finalité · consentement · audit", "401 · 403 · 422 testés")]
     cw = (W - 2 * MX - 3 * 0.3) / 4
     for i, (t, how, proof) in enumerate(items):

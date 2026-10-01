@@ -3,6 +3,7 @@
 Usage :
     python scripts/dev/render_mermaid_figures.py     # une fois : produit les PNG
     python scripts/dev/export_memoire_docx.py [--out documents/memoire_M2_MBDS.docx]
+    python scripts/dev/export_memoire_docx.py --chapitres 00,02,03,06,09 --out …   # version partielle
 
 Convertit `chapters/00..09.md` (introduction générale, chapitres 1 à 8, conclusion générale,
 selon le plan MBDS) en un unique .docx A4 : pièce liminaire (page de garde, remerciements,
@@ -39,10 +40,10 @@ from pathlib import Path
 from docx import Document
 from docx.enum.section import WD_ORIENT, WD_SECTION
 from docx.enum.table import WD_TABLE_ALIGNMENT
-from docx.enum.text import WD_ALIGN_PARAGRAPH
+from docx.enum.text import WD_ALIGN_PARAGRAPH, WD_TAB_ALIGNMENT, WD_TAB_LEADER
 from docx.oxml import OxmlElement
 from docx.oxml.ns import qn
-from docx.shared import Cm, Pt
+from docx.shared import Cm, Pt, RGBColor
 
 ROOT = Path(__file__).resolve().parents[4]
 CHAPTERS_DIR = ROOT / "chapters"
@@ -93,6 +94,10 @@ GANTT_MARK = "{gantt}"
 GANTT_FILLS = {"■": "1F3864", "□": "8EAADB", "○": "D9D9D9"}
 
 TABLE_CAPTION_RE = re.compile(r"\*\*Tableau\s+(\d+)\s*[—–-]\s*([^*]+)\*\*")
+
+# Export partiel (--chapitres) : profondeur du plan complet et teinte des parties non incluses.
+PLAN_DEPTH = {"chapitre": 3, "bibliographie": 1, "annexes": 2}
+PLAN_EXCLUDED = RGBColor(0x80, 0x80, 0x80)
 
 # Pièces liminaires : le texte est ici, et nulle part ailleurs, pour rester la source unique.
 RESUME = (
@@ -690,6 +695,148 @@ def add_toc(doc: Document) -> None:
     doc.add_page_break()
 
 
+def plan_entries() -> list:
+    """Titres de tout le mémoire, dans l'ordre : (niveau, texte, fichier source).
+
+    Chapitres jusqu'au niveau 3, bibliographie au niveau 1, annexes au niveau 2 (PLAN_DEPTH).
+    Les lignes des blocs de code sont ignorées : un commentaire « # … » n'est pas un titre.
+    """
+    sources = [(path, PLAN_DEPTH["chapitre"]) for path in sorted(CHAPTERS_DIR.glob("0*.md"))]
+    sources += [(path, PLAN_DEPTH[kind]) for path, kind in
+                ((BIBLIOGRAPHY, "bibliographie"), (ANNEXES, "annexes")) if path.exists()]
+    entries = []
+    for path, depth in sources:
+        in_code = False
+        for line in path.read_text(encoding="utf-8").splitlines():
+            stripped = line.strip()
+            if stripped.startswith("```"):
+                in_code = not in_code
+                continue
+            match = re.match(r"^(#{1,3}) (.+)$", stripped)
+            if match and not in_code and len(match.group(1)) <= depth:
+                entries.append((len(match.group(1)), match.group(2).strip(), path))
+    return entries
+
+
+def add_plan(doc: Document, entries: list, kept: list) -> list:
+    """Plan complet du mémoire, y compris les parties absentes de l'export partiel.
+
+    Une partie incluse renvoie à sa page par un champ PAGEREF ; une partie absente est
+    grisée et son chapitre porte la mention « non inclus ». Retourne, dans l'ordre des titres
+    inclus, les signets (nom, texte) que link_plan pose ensuite sur les titres du corps.
+    """
+    add_liminaire_title(doc, "Plan du mémoire")
+    note = doc.add_paragraph()
+    note.alignment = WD_ALIGN_PARAGRAPH.JUSTIFY
+    note.paragraph_format.space_after = Pt(10)
+    run = note.add_run(
+        "Cette version contient les parties dont la page est indiquée ; les autres figurent "
+        "au plan pour situer l'ensemble. Les numéros des tableaux, des figures et des renvois "
+        "(§) sont ceux du mémoire complet."
+    )
+    run.italic = True
+    run.font.size = Pt(10)
+
+    bookmarks = []
+    for level, text, path in entries:
+        included = path in kept
+        paragraph = doc.add_paragraph()
+        fmt = paragraph.paragraph_format
+        fmt.space_before = Pt(6 if level == 1 else 0)
+        fmt.space_after = Pt(1)
+        fmt.left_indent = Cm(0.6 * (level - 1))
+        fmt.tab_stops.add_tab_stop(
+            Cm(TEXT_WIDTH_PORTRAIT_CM), WD_TAB_ALIGNMENT.RIGHT,
+            WD_TAB_LEADER.DOTS if included else WD_TAB_LEADER.SPACES,
+        )
+        title = paragraph.add_run(text)
+        title.bold = level == 1
+        title.font.size = Pt(11 if level < 3 else 10)
+        if included:
+            name = "_Plan{0:03d}".format(len(bookmarks) + 1)
+            bookmarks.append((name, text))
+            paragraph.add_run("\t")
+            add_field(paragraph, "PAGEREF {0} \\h".format(name))
+            continue
+        title.font.color.rgb = PLAN_EXCLUDED
+        if level == 1:
+            paragraph.add_run("\t")
+            mention = paragraph.add_run("non inclus")
+            mention.italic = True
+            mention.font.size = Pt(9)
+            mention.font.color.rgb = PLAN_EXCLUDED
+    return bookmarks
+
+
+def link_plan(doc: Document, bookmarks: list) -> None:
+    """Pose les signets du plan sur les titres du corps, dans l'ordre.
+
+    Le corps ne contient que les chapitres inclus : ses titres de niveaux 1 à 3 doivent
+    correspondre un à un aux entrées incluses du plan, sinon l'export s'arrête plutôt que
+    d'afficher des numéros de page faux.
+    """
+    headings = [p for p in doc.paragraphs
+                if p.style.name in ("Heading 1", "Heading 2", "Heading 3")]
+    if len(headings) != len(bookmarks):
+        raise SystemExit("Plan : {0} titres dans le corps pour {1} entrées incluses.".format(
+            len(headings), len(bookmarks)))
+    for index, (paragraph, (name, text)) in enumerate(zip(headings, bookmarks)):
+        if paragraph.text.strip() != text:
+            raise SystemExit("Plan : titre « {0} » attendu, « {1} » trouvé.".format(
+                text, paragraph.text.strip()))
+        start = OxmlElement("w:bookmarkStart")
+        start.set(qn("w:id"), str(1000 + index))
+        start.set(qn("w:name"), name)
+        end = OxmlElement("w:bookmarkEnd")
+        end.set(qn("w:id"), str(1000 + index))
+        if paragraph._p.pPr is not None:
+            paragraph._p.pPr.addnext(start)
+        else:
+            paragraph._p.insert(0, start)
+        paragraph._p.append(end)
+
+
+def build_extract(out_path: Path, prefixes: list) -> None:
+    """Export partiel : page de garde, plan complet, puis les seuls chapitres retenus.
+
+    Aucune autre pièce liminaire, ni bibliographie, ni annexes : le plan les montre comme
+    non incluses, pour situer la version envoyée dans l'ensemble du mémoire.
+    """
+    chapters = sorted(CHAPTERS_DIR.glob("0*.md"))
+    known = {chapter.name.split("-")[0] for chapter in chapters}
+    unknown = sorted(set(prefixes) - known)
+    if unknown:
+        raise SystemExit("Chapitres inconnus : {0} (connus : {1}).".format(
+            ", ".join(unknown), ", ".join(sorted(known))))
+    kept = [chapter for chapter in chapters if chapter.name.split("-")[0] in prefixes]
+
+    doc = Document()
+    set_page(doc.sections[0], landscape=False)
+    manifest = load_manifest()
+    add_cover(doc)
+    bookmarks = add_plan(doc, plan_entries(), kept)
+
+    body = doc.add_section(WD_SECTION.NEW_PAGE)
+    set_page(body, landscape=False)
+    figure_number = 0
+    for index, chapter in enumerate(kept):
+        if index:
+            doc.add_page_break()
+        figure_number = add_markdown(
+            doc, chapter.read_text(encoding="utf-8"), manifest, figure_number
+        )
+    link_plan(doc, bookmarks)
+    add_page_footer(doc)
+    enable_update_fields(doc)
+
+    out_path.parent.mkdir(parents=True, exist_ok=True)
+    doc.save(out_path)
+    print("DOCX écrit : {0}".format(out_path.resolve()))
+    print("Export partiel : {0}".format(", ".join(chapter.stem for chapter in kept)))
+    print("Plan : {0} entrées, dont {1} incluses avec renvoi de page".format(
+        len(plan_entries()), len(bookmarks)))
+
+
 def set_page_numbering(section, fmt: str = "decimal", start: int = 1) -> None:
     """Format de numérotation d'une section (`lowerRoman` pour la pièce liminaire).
 
@@ -856,8 +1003,17 @@ def main() -> None:
         default=str(ROOT / "documents" / "memoire_M2_MBDS.docx"),
         help="Chemin de sortie du fichier .docx",
     )
+    parser.add_argument(
+        "--chapitres",
+        default="",
+        help="export partiel : préfixes des chapitres à inclure, séparés par des virgules "
+             "(ex. 00,02,03,06,09) ; seuls la page de garde et le plan complet les précèdent",
+    )
     args = parser.parse_args()
-    build(Path(args.out))
+    if args.chapitres:
+        build_extract(Path(args.out), [p.strip() for p in args.chapitres.split(",") if p.strip()])
+    else:
+        build(Path(args.out))
 
 
 if __name__ == "__main__":

@@ -41,7 +41,7 @@ emplacement (`inséré` / `EN ATTENTE`).
 | C12 | `C12_run_pipeline.png` | 7.3.1 Pipeline | terminal VM : sortie de `run_pipeline.sh` ou fin de `elt.log`, étapes OK | réalisée le 30/09/2026 |
 | C13 | `C13_comptages.png` | 7.3.1 Pipeline | requête Spark/Hive : 214 lignes SILVER, 145 maîtres | retiré du rapport (29/09/2026) |
 | C14 | `C14_refus_403.png` | 7.3.3 Gouvernance | réponse 403 + ligne `access_audit` (purpose, refusal_reason) | réalisée le 30/09/2026 |
-| C15 | `C15_pytest.png` | 8.1 Tests | fin de `pytest projet/code-source/tests` : « 131 passed, 1 skipped » | réalisée le 30/09/2026 |
+| C15 | `C15_pytest.png` | 8.1 Tests | `pytest projet/code-source/tests` avec la base de test PostgreSQL : « 160 passed, 2 skipped » | réalisée le 30/09/2026 (refaite après l'ajout des tests PostgreSQL et des tranches d'âge) |
 | C16 | `C16_evaluation.png` | 8.4 Évaluation | sortie de `evaluate_pipeline_run.py --level hard --parity` (P/R/F1 et parité Spark) | réalisée le 30/09/2026 |
 
 ## Extraits de code (déjà remplis)

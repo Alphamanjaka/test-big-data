@@ -9,8 +9,8 @@ La validation suit une pyramide : unitaire (générateur et moteur), intégratio
 flowchart TD
     subgraph Unitaire
         G["Générateur : 44 tests<br/>variation, distribution, mapping"]
-        E["Moteur et gouvernance : 55/55<br/>règle stricte 10 · consent 21 · canonique 8<br/>API de gouvernance 16 · parité Spark 1 (VM)"]
-        P["Pipeline : 76/76<br/>échéances 23 · empreintes 10 · état 11<br/>API du pipeline 11 · historique 13 · base centrale 8"]
+        E["Moteur et gouvernance : 64/64<br/>règle stricte 10 · consent 19 · canonique 8<br/>API de gouvernance 17 · sur PostgreSQL 10<br/>parité Spark 1 (VM)"]
+        P["Pipeline : 96/96<br/>échéances 23 · empreintes 10 · état 11<br/>API du pipeline 11 · historique 13 · base centrale 8<br/>tranches d'âge 20 · parité Spark 1 (VM)"]
     end
     subgraph Intégration
         MVP["MVP : 20 tests<br/>pipeline, loader, auth, audit, api"]
@@ -31,8 +31,8 @@ flowchart TD
 | Niveau | Périmètre | Résultat |
 |---|---|---|
 | **Générateur** (7 fichiers de tests) | moteur de variations, générateurs de sources, répartition, vérité terrain, construction des jeux | **44 tests réussis** |
-| **Moteur et gouvernance `engine/`** | `test_matcher.py` (10 cas, règle stricte), `test_consent.py` (21), `test_deduplication.py` (8, modèle canonique), `test_governance_api.py` (16) ; `test_spark_dedup.py` (parité, dans la VM) | **55 sur 55** (`pytest projet/code-source/tests`, 30/09/2026) ; parité : 1 sur 1 dans la VM |
-| **Pipeline `provision/`** | `test_schedule_logic.py` (23 cas), `test_watermark.py` (10), `test_pipeline_state.py` (11), `test_pipeline_api.py` (11), `test_run_metrics.py` (13), `test_central_db.py` (8) | **76 sur 76** (même suite) |
+| **Moteur et gouvernance `engine/`** | `test_matcher.py` (10 cas, règle stricte), `test_consent.py` (19), `test_deduplication.py` (8, modèle canonique), `test_governance_api.py` (17), `test_governance_pg.py` (10, sur un vrai PostgreSQL) ; `test_spark_dedup.py` (parité, dans la VM) | **64 sur 64** (`pytest projet/code-source/tests`, 30/09/2026) ; parité : 1 sur 1 dans la VM |
+| **Pipeline `provision/`** | `test_schedule_logic.py` (23 cas), `test_watermark.py` (10), `test_pipeline_state.py` (11), `test_pipeline_api.py` (11), `test_run_metrics.py` (13), `test_central_db.py` (8), `test_age_tranches.py` (20, et parité Spark dans la VM) | **96 sur 96** (même suite) ; parité : 1 sur 1 dans la VM |
 | **MVP** (`test_bigdata`) | pipeline, chargement PostgreSQL, authentification, audit, API | **20 tests réussis** |
 | **API des indicateurs (Flask)** | `test_api.py` — 3 vérifications sur les données du lac | **3 sur 3** (joignabilité seulement) |
 | **Pipeline sur la VM** | `run_pipeline.sh` RAW → SILVER → GOLD | runs complets, en reprise et à 100 000 patients réussis (29–30/09/2026) ; v2 : précision 1,000, rappel 0,179 (jeu difficile), parité Spark = Python |
@@ -43,9 +43,10 @@ la VM. En l'absence d'intégration continue, hors périmètre du stage, chaque n
 **rejouable manuellement** (`pytest` pour le moteur et le pipeline, `run_pipeline.sh` pour le lac,
 `test_api.py` pour l'API des indicateurs).
 
-La suite principale (`pytest projet/code-source/tests`) réussit **131 tests sur 131** (55 pour le
-moteur et la gouvernance, 76 pour le pipeline), sans échec ; le test de parité Spark, ignoré sans
-PySpark, réussit dans la VM avec les 10 cas de la règle.
+La suite principale (`pytest projet/code-source/tests`) réussit **160 tests sur 160** (64 pour le
+moteur et la gouvernance, dont 10 sur un vrai PostgreSQL, 96 pour le pipeline), sans échec ; les
+deux tests de parité Spark (règle d'identité, tranches d'âge), ignorés sans PySpark, réussissent
+dans la VM, avec les 10 cas de la règle et les 20 des tranches d'âge (32 tests).
 
 ## 8.2 Tests unitaires
 
@@ -62,7 +63,12 @@ protégé par secret, et **parité avec Spark** (test exécuté dans la VM).
 **Pipeline.** Six fichiers vérifient hors VM la mécanique d'exploitation : calcul des échéances
 (23 cas), empreintes et décision de saut (10), état et reprise d'un run, runs orphelins compris
 (11), API du pipeline, historique compris (11), historique des runs (13) et chargement de la base
-centrale, par lots compris (8) : **76 sur 76**.
+centrale, par lots compris (8). Un septième couvre les tranches d'âge de la zone GOLD (20) :
+chaque âge, au jour près, de la naissance à 120 ans, reçoit une tranche. Il a été écrit après la
+découverte d'un défaut : appliquées comme des bornes fermées, les limites entières des tranches
+laissaient sans tranche les âges situés entre deux d'entre elles (4,25 ans, par exemple), soit
+4,5 % des âges classés « unknown ». Chaque tranche s'étend désormais jusqu'au début de la
+suivante. Au total : **96 sur 96**.
 
 ## 8.3 Tests d'intégration
 
@@ -77,16 +83,29 @@ inchangées. Avec la v2, le pipeline a traité le jeu difficile et celui de 100 
 des identifiants identiques à la référence Python. Seule la planification par cron n'a pas été
 exécutée.
 
+**API de gouvernance sur un vrai PostgreSQL.** La recherche, le filtrage par consentement et la
+pagination de la liste des patients sont exécutés par la base (§ 7.3.5) : les fausses connexions
+des tests unitaires ne peuvent pas évaluer ce SQL. Dix tests rejouent donc ces contrats sur un vrai
+PostgreSQL, à travers le pool de connexions de l'API, dans un schéma temporaire créé puis supprimé :
+dernier avis retenu, refus par défaut d'un patient sans avis, recherche par nom, CIN et
+identifiant, pagination après filtrage, refus 403 avec son motif dans l'audit, indicateurs de
+`/metrics` et présence des index.
+
+**Consentement dans le lac.** Le run du 30/09/2026 (`20260930T173256`, 88 s) a construit la vue
+analytique de la zone GOLD (§ 7.3.4) : 726 des 1 761 événements, pour 395 patients maîtres. Ce
+sont exactement les 395 patients dont le dernier avis « statistiques » est un accord dans la base
+centrale : les deux listes ont été comparées.
+
 ## 8.4 Tests fonctionnels
 
 **L'API des indicateurs (Flask).** `test_api.py` est un **test de fumée** : il vérifie que chaque
 point d'entrée répond avec le code attendu sur les données du lac, sans authentification. Il
 prouve la **joignabilité** des deux points d'entrée (`/api/governance/duplicates` et
-`/api/governance/consent`), **pas** le contrôle d'accès. Celui-ci est vérifié ailleurs, par les 16 cas de l'API de
+`/api/governance/consent`), **pas** le contrôle d'accès. Celui-ci est vérifié ailleurs, par les 17 cas de l'API de
 gouvernance, qui emprunte le chemin d'authentification réel (tableau ci-dessous). Aucun des deux
 niveaux ne se substitue à l'autre.
 
-**Le contrôle d'accès et le consentement (FastAPI).** Les 16 cas de l'API ne simulent que la
+**Le contrôle d'accès et le consentement (FastAPI).** Les 17 cas de l'API ne simulent que la
 connexion PostgreSQL : ils empruntent le **chemin réel** `Authorization: Bearer <clé>` →
 résolution de l'utilisateur → contrôle du rôle → contrôle du consentement, sans jamais
 contourner l'authentification. Ils prouvent les mécanismes du § 7.2.3, qui traduisent les
@@ -109,6 +128,10 @@ exigences juridiques du § 2.1.6. Le tableau reprend les principaux.
 | `/patients` — pagination | `page` / `page_size` renvoient une tranche bornée avec le total |
 | `/audit` | lit `accessed_at` (régression : la requête interrogeait `recorded_at`, inexistant) |
 | Absence de ligne de consentement | refus par défaut |
+| Base d'audit injoignable | la réponse part, la perte d'audit est signalée dans le journal |
+
+Pour la liste des patients, ces cas vérifient l'enchaînement (finalité, requêtes, page, motif
+d'audit) ; le résultat du SQL est vérifié sur un vrai PostgreSQL (§ 8.3).
 
 > **Sensibilité des tests.** Le test de refus 403 a été vérifié par *mutation* : neutraliser le
 > contrôle de consentement fait **échouer** le test. Un test qui réussirait quelle que soit
@@ -217,7 +240,7 @@ Spark est vérifiée fiche par fiche (§ 7.3.3).
 - **Consentement en GOLD** : au 07/09, la table des consentements comptait une ligne par patient
   maître, finalité et accord vides faute de base alimentée ; au 30/09, elle porte les 2 409 avis
   enregistrés (803 patients, 3 finalités), puis 2 826 sur la base de démonstration v2 (942
-  patients).
+  patients) ; la vue analytique n'en retient que les patients consentant aux statistiques (395).
 
 ## 8.6 Limites et dettes identifiées
 
@@ -234,13 +257,16 @@ Les limites suivantes sont reprises dans la conclusion générale :
   consentements de démonstration, pas par des avis réellement recueillis.
 - **Consentement par type de dossier** (consultations, imagerie…) : en cours de développement ;
   le contrôle actuel porte sur la finalité.
+- **Consentement du lac lu à chaque run** : la vue analytique applique les avis connus au dernier
+  run GOLD ; un avis retiré ensuite ne s'y applique qu'au run suivant, alors que l'API lit la base à
+  chaque requête.
 - **Ni tests sur un environnement déployé, ni intégration continue**, hors périmètre du stage.
 
 ## Conclusion
 
-La stratégie de test couvre le générateur (44 tests), le moteur et la gouvernance (55, plus la
-parité Spark dans la VM), le pipeline (76), le MVP (20), l'API des indicateurs (3) et le pipeline
-complet rejoué sur la VM. L'évaluation sur vérité terrain montre que la règle centrale est tenue :
+La stratégie de test couvre le générateur (44 tests), le moteur et la gouvernance (64, dont 10 sur
+un vrai PostgreSQL, plus la parité Spark dans la VM), le pipeline (96, plus la parité des tranches
+d'âge dans la VM), le MVP (20), l'API des indicateurs (3) et le pipeline complet rejoué sur la VM. L'évaluation sur vérité terrain montre que la règle centrale est tenue :
 la v2 ne fusionne à tort sur aucun jeu, y compris à 100 000 patients où la v1 réunissait deux
 homonymes, pour le moteur seul comme pour le pipeline complet. Son prix est un rappel de 0,18 sur le
 jeu difficile, où les fiches incomplètes restent seules. La gouvernance est vérifiée par son comportement

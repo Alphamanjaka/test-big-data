@@ -138,7 +138,7 @@ Il reste **environ 3 minutes de marge** sur 20 minutes : elles servent à ralent
 > sur l'algorithme, mais ses poids sont difficiles à expliquer à un gestionnaire de données.
 >
 > Aucune ne coche les six critères. J'ai donc construit une chaîne sur mesure, mais adossée aux
-> standards : Fellegi-Sunter pour la décision, FHIR pour le format, Medallion pour le lac.
+> standards : Fellegi-Sunter pour la décision, FHIR comme modèle du format pivot, Medallion pour le lac.
 
 → « Côté établissement, qu'est-ce qui existait ? »
 
@@ -231,7 +231,7 @@ Il reste **environ 3 minutes de marge** sur 20 minutes : elles servent à ralent
 
 > Sur le jeu difficile, rejoué dans la VM : 1 057 fiches, 942 patients distincts, 115 doublons
 > rattachés. La cohérence se vérifie par une soustraction : 1 057 moins 115, 942. Sur 100 000
-> patients, le run complet prend moins de trois minutes. Et les 131 tests passent.
+> patients, le run complet prend moins de trois minutes. Et les 160 tests passent.
 
 → « Mais ces 942 patients sont-ils les bons ? »
 
@@ -263,7 +263,7 @@ Il reste **environ 3 minutes de marge** sur 20 minutes : elles servent à ralent
 
 | Plan | À l'écran | À dire pendant le plan |
 |---|---|---|
-| 0:45 | tests | « 131 tests, aucun échec : moteur, gouvernance, pipeline. » |
+| 0:45 | tests | « 160 tests, aucun échec : moteur, gouvernance, pipeline. » |
 | 0:45 | évaluation, jeu difficile | « Précision 1,000, rappel 0,179, mêmes identifiants en Python et dans Spark. » |
 | 1:00 | pipeline RAW → SILVER → GOLD | « Les étapes s'enchaînent jusqu'à la zone GOLD. » |
 | 0:30 | tableau de bord | « Les zones, le dernier run et la planification. » |
@@ -329,16 +329,17 @@ Il reste **environ 3 minutes de marge** sur 20 minutes : elles servent à ralent
 ## Contrôle du débit
 
 Mots réellement prononcés par slide (texte « à dire » et transitions), recomptés par script le
-30/09/2026 après le passage à la règle stricte. La vidéo (S17) n'est comptée que pour sa narration.
+30/09/2026 après le passage à la règle stricte ; S7 à S16 recomptés le même jour après la
+requalification de FHIR (S8, S12). La vidéo (S17) n'est comptée que pour sa narration.
 
 | Slides | Durée prévue | Mots | Débit |
 |---|---|---|---|
 | S1 à S6 (ouverture) | 3:30 | 421 | 120 /min |
-| S7 à S10 (état de l'art, existant) | 2:45 | 285 | 104 /min |
-| S11 à S16 (solution, résultats) | 5:15 | 580 | 110 /min |
+| S7 à S10 (état de l'art, existant) | 2:45 | 287 | 104 /min |
+| S11 à S16 (solution, résultats) | 5:15 | 583 | 111 /min |
 | S17 (vidéo 3:30) | 3:30 | 68 | narration seule |
 | S18 à S20 (limites, conclusion) | 1:30 | 147 | 98 /min |
-| **Total** | **16:30** | **1 501** | — |
+| **Total** | **16:30** | **1 506** | — |
 
 Les slides S1 à S4 sont les plus denses (environ 130 mots par minute) : ce sont celles du récit,
 à dire posément. Les slides techniques laissent le temps de montrer l'écran. Avec la marge, l'exposé

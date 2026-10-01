@@ -2570,3 +2570,92 @@ importait (`git grep` sans résultat). Mentions mises à jour : README du code, 
 `documents/documentation/architecture.md`, `pipeline_elt.md` (les synonymes viennent de
 `fhir_entities.json` via `fhir_schema.py`). Preuves : `pytest` hôte 160 réussis / 2 ignorés ; VM :
 `fhir_schema` et `paths` importables (4 entités, 11 synonymes).
+
+## 30/09/2026 — Mémoire, rapport, script oral et deck alignés sur les correctifs du jour
+
+Demande de l'auteur : mettre à jour mémoire et présentation. Total de tests retenu (l'auteur n'ayant pas
+tranché) : suite de l'hôte avec la base de test, **160 réussis, 2 ignorés** (parités Spark, réussies dans la
+VM) ; décomposition recomptée par `pytest --collect-only` : moteur et gouvernance 64 (règle 10, consentement
+19, canonique 8, API 17, PostgreSQL 10), pipeline 96 (échéances 23, empreintes 10, état 11, API 11,
+historique 13, base centrale 8, tranches d'âge 20).
+
+- **Mémoire** (`chapters/`) : ch. 8 (figure 9, tableau 42, § 8.1, § 8.2 avec le défaut des tranches d'âge,
+  § 8.3 : tests sur vrai PostgreSQL et vue analytique vérifiée, tableau 43 + ligne « base d'audit
+  injoignable », § 8.4 : 17 cas, § 8.5.3, § 8.6 : limite « consentement du lac lu à chaque run »,
+  conclusion) ; ch. 7 (tableau des zones, étape GOLD, § 7.3.4 : vue analytique, « vue » définie ; § 7.3.5 :
+  pagination SQL, « pool de connexions » défini, perte d'audit signalée) ; ch. 5 (160 tests) ; ch. 9 (ligne
+  « Gouverner par consentement ») ; annexe, figure 17. Figure 9 re-rendue (seule image modifiée :
+  les 8 autres rendus sont identiques octet pour octet). Export DOCX : 47 tableaux, 18 figures, résumé
+  222 mots (inchangés).
+- **Rapport** (`rapport_stage_source.md`) : tableau comparatif (FHIR « partiel, testé » + phrase), outils
+  (160 tests), exigences, tableau des niveaux de test (était resté à 57 + 45 tests et au run du 07/09),
+  capture C15, zones du lac (19 colonnes, vue analytique, schéma inspiré de FHIR), conclusion ; extrait X07
+  élargi à `record_access` (l'INSERT d'audit y a été déplacé). DOCX : 72 pages, 15 994 mots, C15 insérée.
+- **Capture C15** refaite : vraie sortie de `pytest` (commande exacte affichée, en-tête plateforme/rootdir
+  omis comme dans la capture précédente), rendue par Edge sans tête avec la mise en forme de `shots_v2.py`.
+- **Script oral** : S8 (« FHIR comme modèle du format pivot »), S15 et S17 (160 tests) ; débit recompté :
+  S7-S10 287 mots, S11-S16 583, total 1 506 (méthode validée : elle redonne 285 / 580 / 68 sur l'ancienne
+  version ; S1-S6 et S18-S20, non modifiés, gardent leurs chiffres publiés).
+- **Deck** (sur place, python-pptx, textes contrôlés avant remplacement ; copie de sauvegarde dans le
+  scratchpad) : S8 case FHIR du stage ✔ → ◐ (couleur des cases « partiel ») ; S12 « FHIR normalisé » →
+  « inspiré de FHIR » et « exact + probabiliste » → « règle d'identité stricte » (reste de la v1) ; S15 et
+  S17 : 160 / 160 ; S19 « exact + probabiliste, explicable » → « règle stricte, explicable » ; notes S8, S12,
+  S15, S17. Rendu vérifié par export PNG (PowerPoint, lecture seule) des slides 8, 12, 15, 17, 19.
+  `build_soutenance_deck.py` aligné sur ces textes.
+- Non modifié : la vidéo de démonstration (pas encore insérée dans S17) ; les jalons J2 (« exact et
+  probabiliste », 07–08/09) restent exacts pour leur date.
+
+## 30/09/2026 — Versions 1 à envoyer : mémoire (DOCX) et support de soutenance en Word
+
+Demande de l'auteur : préparer une première version du mémoire et de la présentation, celle-ci au
+format Word ; sur la slide de démonstration, raconter le scénario de démonstration envisagé.
+
+| # | Action | Fichiers | Détail |
+| - | ------ | -------- | ------ |
+| 1 | Export du mémoire | `documents/Memoire_M2_MBDS_RANOMENJANAHARY_V1.docx` (non commité, `documents/*.docx`) | `export_memoire_docx.py --out …` sans avertissement : 10 chapitres, 9 figures rendues, 18 figures et 47 tableaux listés, résumé 222 mots, abstract 184 mots. Sommaire et champs mis à jour par Word (COM) puis enregistré : **103 pages**, 29 783 mots ; `updateFields` retiré par Word (plus d'invite à l'ouverture). Recherche de marqueurs (TODO, emplacement réservé, consigne) : aucun hors contenu (le ch. 4 cite `ai/dev/logs.md` comme outil de suivi). |
+| 2 | Générateur de la présentation Word | `projet/code-source/scripts/dev/export_presentation_docx.py` (nouveau) | Une page par slide : surtitre, titre et notes lus dans le deck ; image exportée par PowerPoint (COM) depuis une copie ; durée et repères lus dans `soutenance_script_oral.md`. Page de garde, « À propos », déroulé par partie, liste des slides. Réutilise `add_field`, `set_page`, `shade_cell` de l'exporteur du mémoire. |
+| 3 | Slide 17 racontée en scénario | même script (`SCENARIO`) | « Un patient, de la source à l'accès contrôlé » : ouverture (0:10) + 6 étapes (run du pipeline, tableau de bord, fiche de Thibaut Aubry, contrôle d'accès 401/422/403/200, journal d'audit, évaluation) = 3:30, somme vérifiée par le script contre la durée de S17. Chaque étape cite une capture réelle du 30/09 (C12, C07, C09, C14 en deux bandes, C16 ; annexe H, fig. 11 à 18) ; chiffres repris des captures. Préparation, repli et points « à dire comme tels » (consentements de démonstration, cron non activé). |
+| 4 | Présentation V1 | `documents/Presentation_soutenance_RANOMENJANAHARY_V1.docx` (non commité) | 20 slides, **26 pages** (Word), 6 étapes de démonstration. |
+| 5 | Coquille des notes S1 du deck | `documents/slide_soutenance/Soutenance_M2_MBDS_RANOMENJANAHARY.pptx` | « m'avoir donner la parole » → « donné » (un seul run modifié, python-pptx) ; sauvegarde préalable dans le scratchpad ; 20 slides relues après enregistrement. |
+
+**Vérifications :** rendu PDF des deux documents par Word, pages converties en images et relues. Trois
+défauts corrigés dans le générateur avant la version finale : ligne « Démonstration » absente du
+déroulé (la ligne S17 seule n'était pas reconnue ; « Limites » affichait 5:30 au lieu de 2:00),
+légende de capture isolée en haut de page (image désormais liée à sa légende), captures du tableau
+de bord et de la fiche patient trop petites (hauteur max 11,5 cm). Coupes des captures C14 (0,655)
+et C07 (0,685) placées dans des bandes vides, repérées sur les pixels.
+
+**Non modifié :** la slide 17 du deck (emplacement vidéo) et la section S17 du script oral (plan de la
+vidéo) : le scénario n'existe que dans la version Word. Le script oral garde l'ouverture « Bonjour à
+toutes et à tous », que l'auteur a remplacée dans les notes du deck.
+
+**Résultat :** deux fichiers prêts à l'envoi dans `documents/`. Régénération :
+`python projet/code-source/scripts/dev/export_presentation_docx.py --out documents/Presentation_soutenance_RANOMENJANAHARY_V1.docx`.
+
+**Suite (même jour, demande de l'auteur) : mémoire V1 limité à six parties.** Seuls doivent figurer le
+plan complet, l'introduction, l'état de l'art, l'étude de l'existant, l'architecture et la conclusion,
+sans aucune autre partie.
+
+| # | Action | Fichiers | Détail |
+| - | ------ | -------- | ------ |
+| 1 | Export partiel | `projet/code-source/scripts/dev/export_memoire_docx.py` | Option `--chapitres 00,02,03,06,09` (`build_extract`) : page de garde, **plan complet** (`add_plan` : chapitres jusqu'au niveau 3, bibliographie niveau 1, annexes niveau 2 ; 106 entrées), puis les seuls chapitres retenus. Pas de remerciements, résumé, abstract, sommaire, listes, glossaire, bibliographie ni annexes. Parties incluses : numéro de page par champ PAGEREF vers un signet posé sur le titre (`link_plan`, arrêt si un titre du corps ne correspond pas à son entrée) ; parties absentes grisées, « non inclus ». Une note sous le titre du plan prévient que tableaux, figures et renvois (§) gardent la numérotation du mémoire complet. Export complet par défaut inchangé. |
+| 2 | Mémoire V1 partiel | `documents/Memoire_M2_MBDS_RANOMENJANAHARY_V1_partielle.docx` (non commité) | 5 chapitres, 40 entrées du plan avec page ; champs calculés par Word : **41 pages**, 12 227 mots ; introduction p. 1, ch. 2 p. 2, ch. 3 p. 16, ch. 6 p. 25, conclusion p. 31. Nom distinct : `…_V1.docx` (version complète de la première passe) était ouvert dans Word et n'a pas pu être remplacé. |
+
+**Vérifications :** titres de niveau 1 du fichier = les 5 parties demandées ; aucun titre liminaire
+parasite ; `updateFields` absent après passage dans Word ; rendu PDF relu (plan sur 3 pages,
+pages paysage des figures larges conservées). Non-régression : export complet par défaut vers le
+scratchpad, mêmes compteurs qu'avant (10 chapitres, 9 figures rendues, 16 sections, 18 figures et
+47 tableaux listés, résumé 222 mots). Le pilotage de Word ne masque ni ne ferme une instance qui
+contient déjà des documents.
+
+**À noter pour l'envoi :** l'état de l'art cite 99 fois la bibliographie ([B1] à [B31]), marquée
+« non incluse » au plan, et les chapitres retenus renvoient à des paragraphes des chapitres 1, 4, 5, 7
+et 8, absents de cette version.
+
+**Nettoyage (même jour, choix de l'auteur : la version partielle est celle envoyée).** Version complète
+`documents/Memoire_M2_MBDS_RANOMENJANAHARY_V1.docx` (103 pages) supprimée ; la version partielle
+renommée à sa place en `Memoire_M2_MBDS_RANOMENJANAHARY_V1.docx` (5 titres de niveau 1 vérifiés après
+renommage). Livrables restants de la session : ce mémoire V1 et
+`Presentation_soutenance_RANOMENJANAHARY_V1.docx`. Scratchpad de la session vidé (rendus de contrôle,
+sauvegarde du deck avant correction d'un mot). `documents/memoire_M2_MBDS.docx` (export complet
+antérieur à la session) laissé en place.

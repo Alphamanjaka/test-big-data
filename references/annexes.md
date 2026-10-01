@@ -145,7 +145,7 @@ des sorties réelles, sans modification ; les clés d'API y sont masquées.
 
 ![](documents/captures/C15_pytest.png)
 
-> **Figure 17 — Suite de tests automatisés : 131 tests réussis.**
+> **Figure 17 — Suite de tests automatisés : 160 tests réussis.**
 
 ![](documents/captures/C16_evaluation.png)
 
